@@ -13,6 +13,7 @@
 #define FIELD_MAX 64
 
 // TODO: implement lowercase and trimming support....
+// bounds checking
 char * read_until(uint8_t ** p, char until, int * buf_size) {
     int count = 0;
     uint8_t * buf = *p;

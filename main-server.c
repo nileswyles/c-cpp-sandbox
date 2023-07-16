@@ -12,13 +12,88 @@
 #define READ_BUFFER_SIZE 8096
 #define FIELD_MAX 64
 
-// ehhh, should really try to key off of EOF
+// ehhh, should really read until a specific char but this will do for now...
 #define TIME_TO_WAIT_FOR_READ_MS 10000
-#define TIME_TO_WAIT_AFTER_READ_DATA_MS 500
+#define TIME_TO_WAIT_AFTER_READ_DATA_MS 100
+
+typedef struct http_field {
+    char * name;
+    char * value;
+} http_field;
+
+typedef struct http_request {
+    char * method;
+    char * path;
+    char * version;
+    http_field fields[FIELD_MAX];
+    uint8_t * content;
+} http_request;
+
+// p == pointer to pointer of byte array
+// *p = pointer to byte array
+// uint8_t * p == pointer to byte array (first element)
+// uint8_t ** y == pointer to afformentioned pointer.
+// uint8_t * new_p = pointer to new byte array
+// *y = new_p
+
+// uint8_t val == val
+// uint8_t *val == pointer to val
+// uint8_t new_val = new_val
+// *val = new_val
+static int read_request(int fd, uint8_t ** p) {
+    uint8_t buf[READ_BUFFER_SIZE];
+    int bytes_read = 0;
+    int sleep_before_read = 0;
+    int sleep_after_read = 0;
+    bool read_something = false;
+    // TODO: limit size of this buffer?
+    while (1) {
+        // TODO: allocate memory for old + new + ETX?
+        // assuming FD is non-buffering
+        int res = read(fd, buf, READ_BUFFER_SIZE);
+        if (res > 0) {
+            // printf("read something\n");
+            read_something = true;
+            uint8_t * new_p = malloc((bytes_read + res)*sizeof(uint8_t));
+            // TODO: malloc err checking?
+            // copy data from previous reads...
+            memcpy(new_p, *p, bytes_read);
+            // copy data from latest read....
+            memcpy(new_p, buf, res);
+            // increment byte read count
+            bytes_read += res;
+            // free old memory...
+            free(*p);
+            // update new pointer
+            *p = new_p;
+            // try reading more
+        }
+        // printf("stuck here huh? shouldn't this return zero and exit the loop?\n");
+        if (!read_something) {
+            if (sleep_before_read < TIME_TO_WAIT_FOR_READ_MS) {
+                usleep(1000);
+                sleep_before_read += 1;
+            } else {
+                // didn't read anything in time...
+                break;
+            }
+        } else { // else if read_something (res > 0?)
+            // continue trying to read until TIME_TO_WAIT_AFTER_READ_DATA_MS
+            if (sleep_after_read < TIME_TO_WAIT_AFTER_READ_DATA_MS) {
+                usleep(1000);
+                sleep_after_read += 1;
+            } else {
+                // read data.
+                break;
+            }
+        }
+    }
+    return bytes_read;
+}
 
 // TODO: implement lowercase and trimming support....
 // bounds checking
-char * read_until(uint8_t ** p, char until, int * buf_size) {
+static char * read_until(uint8_t ** p, char until, int * buf_size) {
     int count = 0;
     uint8_t * buf = *p;
     char prev;
@@ -54,73 +129,6 @@ char * read_until(uint8_t ** p, char until, int * buf_size) {
     *buf_size -= (count + 1); // subtract bytes read from running buf size......
     // TODO: bounds checking... though not currently an issue because content
     return s;
-}
-
-typedef struct http_field {
-    char * name;
-    char * value;
-} http_field;
-
-typedef struct http_request {
-    char * method;
-    char * path;
-    char * version;
-    http_field fields[FIELD_MAX];
-    uint8_t * content;
-} http_request;
-
-// p == pointer to pointer of byte array
-// *p = pointer to byte array
-// uint8_t * p == pointer to byte array (first element)
-// uint8_t ** y == pointer to afformentioned pointer.
-// uint8_t * new_p = pointer to new byte array
-// *y = new_p
-
-// uint8_t val == val
-// uint8_t *val == pointer to val
-// uint8_t new_val = new_val
-// *val = new_val
-int read_request(int fd, uint8_t ** p) {
-    uint8_t buf[READ_BUFFER_SIZE];
-    int bytes_read = 0;
-    int res = read(fd, buf, READ_BUFFER_SIZE);
-    // printf("read_request, %d, %d, %d\n", res, bytes_read, errno);
-
-    // yuckk... 
-    int loop_count = 0;
-    bool read_something = false;
-    // TODO: limit size of this buffer?
-    while (res > 0 || (loop_count < 10 && errno == 11)) {
-        // TODO: should I parse while reading????.... this is gonna need some work..
-        // allocate memory for old + new + ETX
-        if (res > 0) {
-        // printf("read something\n");
-        read_something = true;
-        uint8_t * new_p = malloc((bytes_read + res)*sizeof(uint8_t));
-        // TODO: malloc err checking?
-        // copy data from previous reads...
-        memcpy(new_p, *p, bytes_read);
-        // copy data from latest read....
-        memcpy(new_p, buf, res);
-        // increment byte read count
-        bytes_read += res;
-        // free old memory...
-        free(*p);
-        // update new pointer
-        *p = new_p;
-        // try reading more
-
-        } else if (read_something) {
-            break;
-        } else {
-            sleep(1);
-        }
-        // printf("stuck here huh? shouldn't this return zero and exit the loop?\n");
-        res = read(fd, buf, READ_BUFFER_SIZE);
-        // printf("read_request, %d, %d, %d\n", res, bytes_read, errno);
-        loop_count++;
-    }
-    return bytes_read;
 }
 
 void print_buffer(uint8_t * p, int size) {
@@ -272,6 +280,7 @@ void * http_connection_handler(int * conn_fd) {
     delete_request(&r);
     // TODO: make sure this is actually freeing properly, i.e. it points to the correct obj?
     free(buf);
+    // TODO: shoudl I care about ret here?
     int ret = close(fd);
     // pthread_exit();
     return NULL;

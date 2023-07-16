@@ -22,29 +22,7 @@ typedef struct connection {
 // connection connections[MAX_CONNECTIONS] = {-1};
 int connections[MAX_CONNECTIONS] = {-1};
 
-void thread_cleanup(connection * connection) {
-    // done elsewhere for now
-    // int ret = close(connection->conn_fd);
-    // pthread_cleanup_pop(connection);
-    // do stuff
-}
-
-void * dummy() {
-    sleep(1);
-}
-
 void server_listen(char * address, uint16_t port, void * handler_func) {
-    // struct rlimit old = {};
-    // getrlimit(RLIMIT_NPROC, &old);
-    // printf("old: %ld, %ld\n", old.rlim_cur, old.rlim_max);
-    // struct rlimit new = {
-    //     .rlim_cur = 10,
-    //     .rlim_max = 10,
-    // };
-    // setrlimit(RLIMIT_NPROC, &new);
-    // getrlimit(RLIMIT_NPROC, &old);
-    // printf("new: %ld, %ld\n", old.rlim_cur, old.rlim_max);
-
     // NOTE: as currently implemented, this will potentially use up all "availble" threads.. any otherwise long-running threads required by the application should be created prior to this function...
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     int idx = 0;
@@ -75,7 +53,8 @@ void server_listen(char * address, uint16_t port, void * handler_func) {
             // check errno for error
             printf("error binding, %d\n", errno);
         } else {
-            if (listen(fd, 1024) == -1) {
+            // queue up to MAX_CONNECTIONS before refusing connections.
+            if (listen(fd, MAX_CONNECTIONS) == -1) {
                 printf("Error listening\n");
             } else {
                 pthread_attr_t attr;

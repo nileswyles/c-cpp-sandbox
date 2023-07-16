@@ -22,18 +22,19 @@ static int fill_buffer(reader * r) {
 
 void reader_initialize(reader * r, int fd) {
     // TODO: this is all being initialized to zero automatically... is this a compiler option????
-    printf("r.cursor, %d\n", r->cursor);
-    for (int i = 0; i < READ_BUFFER_SIZE; i++) {
-        printf("%x,", r->buf[i]);
-    }
-    printf("\n");
+    // printf("r.cursor, %d\n", r->cursor);
+    // for (int i = 0; i < READ_BUFFER_SIZE; i++) {
+    //     printf("%x,", r->buf[i]);
+    // }
+    // printf("\n");
     r->cursor = -1;
     r->fd = fd;
+    r->bytes_in_buffer = -1;
 }
 
 // if return == NULL, check errno for read error.
-uint8_t * read_bytes(reader * r, int n) {
-    if (r->cursor == -1) {
+uint8_t * reader_read_bytes(reader * r, int n) {
+    if (r->cursor == r->bytes_in_buffer) { // if read past buffer
         int ret = fill_buffer(r);
         if (ret == -1) {
             return NULL;
@@ -59,6 +60,8 @@ uint8_t * read_bytes(reader * r, int n) {
 
             int ret = fill_buffer(r);
             if (ret == -1) {
+                // TODO:
+                // If an input or output function blocks for this period of time, and data has been sent or received, the return value of that function will be the amount of data transferred; if no data has been transferred and the timeout has been reached then -1 is returned with errno set to EAGAIN or EWOULDBLOCK, or EINPROGRESS
                 free(data);
                 return NULL;
             }
@@ -75,18 +78,18 @@ uint8_t * read_bytes(reader * r, int n) {
 }
 
 // if return == NULL, check errno for read error.
-char * read_until(reader * r, char until) {
-    if (r->cursor == -1) {
+char * reader_read_until(reader * r, char until) {
+    if (r->cursor == r->bytes_in_buffer) { // read past buffer
         int ret = fill_buffer(r);
         if (ret == -1) {
             return NULL;
         }
     }
 
-    int string_size = 0;
+    int string_size = 1; // size including NUL byte
     int start_cursor = r->cursor;
     char c;
-    char * s;
+    char * s = "";
     while(c != until) {
         c = (char)r->buf[r->cursor++];
         string_size++;
@@ -94,11 +97,12 @@ char * read_until(reader * r, char until) {
             // copy all data in buffer to string and read more
             int bytes_left_in_buffer = r->bytes_in_buffer - start_cursor;
             char * new_s = malloc((string_size+bytes_left_in_buffer)*sizeof(char));
-            memcpy(new_s, s, string_size);
+            memcpy(new_s, s, string_size-1); // don't copy NUL byte
             memcpy(new_s, r->buf + start_cursor, bytes_left_in_buffer);
             free(s);
             s = new_s;
             string_size += bytes_left_in_buffer;
+            s[string_size] = 0; // NUL terminate...
 
             int ret = fill_buffer(r);
             if (ret == -1) {
@@ -112,13 +116,14 @@ char * read_until(reader * r, char until) {
     // need to append up until to string...
     int bytes_up_until_cursor = r->cursor;
     char * new_s = malloc((string_size + bytes_up_until_cursor)*sizeof(char));
-    memcpy(new_s, s, string_size);
+    memcpy(new_s, s, string_size-1); // Don't copy NUL byte
     memcpy(new_s, r->buf, bytes_up_until_cursor); // copy form start of buffer to cursor
                                     // if cursor == 0; then it should copy nothing?
                                     // if cursor == 1; then it should copy byte at index 0
                                     // if cursour == 2; then it should copy bytes at index 0 and 1.
     free(s);
     s = new_s;
+    s[string_size] = 0; // NUL terminate...
 
     return s;
 }

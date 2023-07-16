@@ -12,8 +12,8 @@ typedef struct reader {
 } reader;
 
 void reader_initialize(reader * r, int fd);
-uint8_t * read_bytes(reader * r, int n);
-char * read_until(reader * r, char until);
+uint8_t * reader_read_bytes(reader * r, int n);
+char * reader_read_until(reader * r, char until);
 
 int read_chunk_non_blocking_fd(int fd, uint8_t ** p);
 #endif

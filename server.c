@@ -42,12 +42,12 @@ void server_listen(char * address, uint16_t port, void * handler_func) {
         uint8_t keep_alive = 1;
         setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &keep_alive, 1);
 
-        // struct timeval timeout = {
-        //     .tv_sec = 0,
-        //     .tv_usec = 500 * 1000, // 500ms
-        // };
-        // setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval));
-        // setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(struct timeval));
+        struct timeval timeout = {
+            .tv_sec = 15,
+            .tv_usec = 0, // 15s
+        };
+        setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval));
+        setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(struct timeval));
 
         if (bind(fd, (struct sockaddr *)(&address), sizeof(struct sockaddr_in)) == -1) {
             // check errno for error
@@ -62,9 +62,7 @@ void server_listen(char * address, uint16_t port, void * handler_func) {
                 pthread_attr_setdetachstate(&attr, 1);
 
                 int idx = 0;
-                // int conn = accept(fd, NULL, NULL);
-                // TODO: use this for now.... until I identify best option
-                int conn = accept4(fd, NULL, NULL, SOCK_NONBLOCK);
+                int conn = accept(fd, NULL, NULL);
                 while (conn != -1) {
                     connections[idx] = conn;
                     pthread_t thread;
@@ -79,8 +77,7 @@ void server_listen(char * address, uint16_t port, void * handler_func) {
                     if (++idx == MAX_CONNECTIONS) {
                         idx = 0;
                     }
-                    conn = accept4(fd, NULL, NULL, SOCK_NONBLOCK);
-                    // conn = accept(fd, NULL, NULL);
+                    conn = accept(fd, NULL, NULL);
                 }
                 if (conn == -1) {
                     printf("ERROR ACCEPTING connections\n");

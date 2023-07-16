@@ -197,16 +197,10 @@ void * http_connection_handler(int * conn_fd) {
     reader reader = {0}; // explicitly initialize to zero, I think {0} == {};
     reader_initialize(&reader, *conn_fd);
 
-    uint8_t * buf;
-    int bytes_read = read_chunk(&reader, &buf);
-    // printf("%x,%x,%x,%x\n", &buf_ptr, buf_ptr, *buf_ptr, **buf_ptr);
-    // printf("%x\n", buf);
-    if (bytes_read == 0) {
-        goto CLEANUP; // because no multiple returns... lol... is this worse?
-    } 
-
     http_request r;
-    int err = new_request(&r, buf, bytes_read);
+    // TODO: use convention when handling errors where possible... should I return error, leverage errno, pass in error type as reference...
+    // same for other outputs....
+    int err = new_request(&r, reader);
     if (err == 0) {
         printf("ERROR PROCESSING REQUEST\n");
         goto CLEANUP_REQUEST;

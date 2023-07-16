@@ -24,6 +24,7 @@ typedef struct http_request {
     char * method;
     char * path;
     char * version;
+    // TODO: does static array contribute to stack usage?
     http_field fields[FIELD_MAX];
     uint8_t * content;
 } http_request;
@@ -188,38 +189,34 @@ void * http_connection_handler(int * conn_fd) {
     // read and parse http header....
     // do stuff, write response...
     // voila ....
+
     // TODO:
     // dereference right away so that caller can do whatever with memory....
-    int fd = *conn_fd;
+
+    // TODO: this is all being initialized to zero automatically... is this a compiler option????
+    reader reader = {0}; // explicitly initialize to zero, I think {0} == {};
+    reader_initialize(&reader, *conn_fd);
 
     uint8_t * buf;
-    // printf("%d,%d,%d\n", &buf_ptr, buf_ptr, *buf_ptr);
-    int bytes_read = read_chunk(fd, &buf);
+    int bytes_read = read_chunk(&reader, &buf);
     // printf("%x,%x,%x,%x\n", &buf_ptr, buf_ptr, *buf_ptr, **buf_ptr);
     // printf("%x\n", buf);
     if (bytes_read == 0) {
-        // check errno, and handle err... 
-        // should we free here or in readRequest??? probably yes now...
-        free(buf);
-        return NULL;
-    } // else done, reading request.. should have full request...
-    // TODO: I am effectively reading until EOF... revisit
+        goto CLEANUP; // because no multiple returns... lol... is this worse?
+    } 
 
     http_request r;
     int err = new_request(&r, buf, bytes_read);
-    if (err != 0) {
-        // process request...
+    if (err == 0) {
         printf("ERROR PROCESSING REQUEST\n");
+        goto CLEANUP_REQUEST;
     }
     print_request(r);
-
-    // cleanup
+CLEANUP_REQUEST:
     delete_request(&r);
-    // TODO: make sure this is actually freeing properly, i.e. it points to the correct obj?
+CLEANUP:
     free(buf);
-    // TODO: shoudl I care about ret here?
-    int ret = close(fd);
-    // pthread_exit();
+    close(reader.fd); // doc's say you shouldn't retry close so ignore ret
     return NULL;
 }
 

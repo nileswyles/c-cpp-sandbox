@@ -12,6 +12,10 @@
 #define READ_BUFFER_SIZE 8096
 #define FIELD_MAX 64
 
+// ehhh, should really try to key off of EOF
+#define TIME_TO_WAIT_FOR_READ_MS 10000
+#define TIME_TO_WAIT_AFTER_READ_DATA_MS 500
+
 // TODO: implement lowercase and trimming support....
 // bounds checking
 char * read_until(uint8_t ** p, char until, int * buf_size) {
@@ -85,6 +89,7 @@ int read_request(int fd, uint8_t ** p) {
     // yuckk... 
     int loop_count = 0;
     bool read_something = false;
+    // TODO: limit size of this buffer?
     while (res > 0 || (loop_count < 10 && errno == 11)) {
         // TODO: should I parse while reading????.... this is gonna need some work..
         // allocate memory for old + new + ETX
@@ -92,6 +97,7 @@ int read_request(int fd, uint8_t ** p) {
         // printf("read something\n");
         read_something = true;
         uint8_t * new_p = malloc((bytes_read + res)*sizeof(uint8_t));
+        // TODO: malloc err checking?
         // copy data from previous reads...
         memcpy(new_p, *p, bytes_read);
         // copy data from latest read....
@@ -213,8 +219,8 @@ void print_request(http_request r) {
     int idx = 0;
     char * field_name = r.fields[idx].name;
     while(field_name != NULL && idx < FIELD_MAX) {
-        // TODO: add a separate field to request struct for this?
         // TODO: add field for cookies
+        // TODO: add a separate field to request struct for this?
         if (strcmp(field_name, "Content-Length") == 0) {
             content_length = atoi(r.fields[idx].value);
         }
@@ -232,22 +238,25 @@ void print_request(http_request r) {
     }
 }
 
-
-void http_connection_handler(int * conn_fd) {
+// # types
+void * http_connection_handler(int * conn_fd) {
     // read and parse http header....
     // do stuff, write response...
     // voila ....
+    // TODO:
+    // dereference right away so that caller can do whatever with memory....
+    int fd = *conn_fd;
 
     uint8_t * buf;
     // printf("%d,%d,%d\n", &buf_ptr, buf_ptr, *buf_ptr);
-    int bytes_read = read_request(*conn_fd, &buf);
+    int bytes_read = read_request(fd, &buf);
     // printf("%x,%x,%x,%x\n", &buf_ptr, buf_ptr, *buf_ptr, **buf_ptr);
-    printf("%x\n", buf);
+    // printf("%x\n", buf);
     if (bytes_read == 0) {
         // check errno, and handle err... 
         // should we free here or in readRequest??? probably yes now...
         free(buf);
-        return;
+        return NULL;
     } // else done, reading request.. should have full request...
     // TODO: I am effectively reading until EOF... revisit
 
@@ -261,9 +270,11 @@ void http_connection_handler(int * conn_fd) {
 
     // cleanup
     delete_request(&r);
+    // TODO: make sure this is actually freeing properly, i.e. it points to the correct obj?
     free(buf);
-    int ret = close(*conn_fd);
+    int ret = close(fd);
     // pthread_exit();
+    return NULL;
 }
 
 int main(int argc, char * argv[]) {

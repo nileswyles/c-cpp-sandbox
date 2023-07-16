@@ -8,13 +8,12 @@
 #include <stdbool.h>
 
 #include "server.h"
+#include "reader.h"
+
+// TODO: how to keep imports clean? don't want to rely on preprocessor stuff.?
 
 #define READ_BUFFER_SIZE 8096
 #define FIELD_MAX 64
-
-// ehhh, should really read until a specific char but this will do for now...
-#define TIME_TO_WAIT_FOR_READ_MS 10000
-#define TIME_TO_WAIT_AFTER_READ_DATA_MS 100
 
 typedef struct http_field {
     char * name;
@@ -29,71 +28,9 @@ typedef struct http_request {
     uint8_t * content;
 } http_request;
 
-// p == pointer to pointer of byte array
-// *p = pointer to byte array
-// uint8_t * p == pointer to byte array (first element)
-// uint8_t ** y == pointer to afformentioned pointer.
-// uint8_t * new_p = pointer to new byte array
-// *y = new_p
-
-// uint8_t val == val
-// uint8_t *val == pointer to val
-// uint8_t new_val = new_val
-// *val = new_val
-static int read_request(int fd, uint8_t ** p) {
-    uint8_t buf[READ_BUFFER_SIZE];
-    int bytes_read = 0;
-    int sleep_before_read = 0;
-    int sleep_after_read = 0;
-    bool read_something = false;
-    // TODO: limit size of this buffer?
-    while (1) {
-        // TODO: allocate memory for old + new + ETX?
-        // assuming FD is non-buffering
-        int res = read(fd, buf, READ_BUFFER_SIZE);
-        if (res > 0) {
-            // printf("read something\n");
-            read_something = true;
-            uint8_t * new_p = malloc((bytes_read + res)*sizeof(uint8_t));
-            // TODO: malloc err checking?
-            // copy data from previous reads...
-            memcpy(new_p, *p, bytes_read);
-            // copy data from latest read....
-            memcpy(new_p, buf, res);
-            // increment byte read count
-            bytes_read += res;
-            // free old memory...
-            free(*p);
-            // update new pointer
-            *p = new_p;
-            // try reading more
-        }
-        // printf("stuck here huh? shouldn't this return zero and exit the loop?\n");
-        if (!read_something) {
-            if (sleep_before_read < TIME_TO_WAIT_FOR_READ_MS) {
-                usleep(1000);
-                sleep_before_read += 1;
-            } else {
-                // didn't read anything in time...
-                break;
-            }
-        } else { // else if read_something (res > 0?)
-            // continue trying to read until TIME_TO_WAIT_AFTER_READ_DATA_MS
-            if (sleep_after_read < TIME_TO_WAIT_AFTER_READ_DATA_MS) {
-                usleep(1000);
-                sleep_after_read += 1;
-            } else {
-                // read data.
-                break;
-            }
-        }
-    }
-    return bytes_read;
-}
-
 // TODO: implement lowercase and trimming support....
 // bounds checking
-static char * read_until(uint8_t ** p, char until, int * buf_size) {
+static char * buf_read_until(uint8_t ** p, char until, int * buf_size) {
     int count = 0;
     uint8_t * buf = *p;
     char prev;
@@ -140,21 +77,21 @@ void print_buffer(uint8_t * p, int size) {
 
 int new_request(http_request * r, uint8_t * buf, int buf_size) {
     // p -> address of first byte.
-    // buf_ptr -> address of p on initialization and address of new p after each call to read_until.
+    // buf_ptr -> address of p on initialization and address of new p after each call to buf_read_until.
     print_buffer(buf, buf_size);
     // TODO: buf_size or pointer to end, to prevent overflow? or check for ETX?
-    r->method = read_until(&buf, ' ', &buf_size);
-    r->path = read_until(&buf, ' ', &buf_size);
-    r->version = read_until(&buf, '\n', &buf_size);
+    r->method = buf_read_until(&buf, ' ', &buf_size);
+    r->path = buf_read_until(&buf, ' ', &buf_size);
+    r->version = buf_read_until(&buf, '\n', &buf_size);
 
     int content_length = -1;
     int field_idx = 0; 
     // read fields until FIELD_MAX or empty line (\n, or \r\n)
     printf("0x%x,0x%x----\n", buf[0], buf[1]);
     while (field_idx < FIELD_MAX && buf_size > 0 && !(buf[0] == '\n' || (buf[0] == '\r' && buf[1] == '\n'))) {
-        char * field_name = read_until(&buf, ':', &buf_size);
+        char * field_name = buf_read_until(&buf, ':', &buf_size);
         // printf("adding field_name: %s---END---\n", field_name);
-        char * value = read_until(&buf, '\n', &buf_size);
+        char * value = buf_read_until(&buf, '\n', &buf_size);
 
         r->fields[field_idx++] = (http_field){.name = field_name, .value = value};
 
@@ -257,7 +194,7 @@ void * http_connection_handler(int * conn_fd) {
 
     uint8_t * buf;
     // printf("%d,%d,%d\n", &buf_ptr, buf_ptr, *buf_ptr);
-    int bytes_read = read_request(fd, &buf);
+    int bytes_read = read_chunk(fd, &buf);
     // printf("%x,%x,%x,%x\n", &buf_ptr, buf_ptr, *buf_ptr, **buf_ptr);
     // printf("%x\n", buf);
     if (bytes_read == 0) {

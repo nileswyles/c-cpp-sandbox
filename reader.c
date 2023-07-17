@@ -8,6 +8,8 @@
 #define TIME_TO_WAIT_FOR_READ_MS 10000
 #define TIME_TO_WAIT_AFTER_READ_DATA_MS 100
 
+// TODO: ******** TOGGLABLE DEBUG LOGGER AND GOOD DEBUG PRINTSTATEMENTS ***********
+
 // called when cursor == READ_BUFFER_SIZE.. cursor is then reset to 0
 static int fill_buffer(reader * r) {
     r->cursor = 0;
@@ -84,11 +86,10 @@ uint8_t * reader_read_bytes(reader * r, uint32_t n) {
     // TODO: limit size of this buffer?
     uint8_t * data = malloc(n*sizeof(uint8_t));
     uint8_t * data_cursor = data;
-    printf("HOW ABOUT HERE?\n");
     while (bytes_read < n) {
         int bytes_left_to_read = n - bytes_read;
         int bytes_left_in_buffer = r->bytes_in_buffer - r->cursor;
-        printf("bytes_read %d, bytes_to_read %d, bytes_left_to_read %d, bytes_left_in_buffer %d\n", bytes_read, n, bytes_left_to_read, bytes_left_in_buffer);
+        // printf("bytes_read %d, bytes_to_read %d, bytes_left_to_read %d, bytes_left_in_buffer %d\n", bytes_read, n, bytes_left_to_read, bytes_left_in_buffer);
 
         if (bytes_left_to_read > bytes_left_in_buffer) {
             // copy data left in buffer and read more
@@ -105,7 +106,7 @@ uint8_t * reader_read_bytes(reader * r, uint32_t n) {
             }
         } else {
             // else enough data in buffer
-            printf("ENOUGH DATA IN BUFFER\n");
+            // printf("cursor: %lx, start: %lx\n", data_cursor, data);
             memcpy(data_cursor, r->buf + r->cursor, bytes_left_to_read);
             r->cursor += bytes_left_to_read;
             data_cursor += bytes_left_to_read;
@@ -113,11 +114,11 @@ uint8_t * reader_read_bytes(reader * r, uint32_t n) {
         }
     } 
 
-    printf("START---");
-    for (int i = 0; i < n; i++) {
-        printf("%c", data[i]);
-    }
-    printf("---END\n");
+    // printf("START---");
+    // for (int i = 0; i < n; i++) {
+    //     printf("%c", data[i]);
+    // }
+    // printf("---END\n");
     return data;
 }
 

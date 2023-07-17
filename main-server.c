@@ -31,8 +31,6 @@ typedef struct http_request {
 } http_request;
 
 int new_request(http_request * request, reader * reader) {
-    printf("here 1?\n");
-
     if (request == NULL || reader == NULL) {
         goto ERROR;
     }
@@ -78,12 +76,14 @@ int new_request(http_request * request, reader * reader) {
 
     if (field_idx == FIELD_MAX) {
         // TODO: error... not enough space for all those fields... too many fields stop it...
-        printf("ERROR 1\n");
+        // printf("ERROR 1\n");
         goto ERROR;
     }
 
     if (request->content_length != -1) {
+        // printf("request->content: %lx\n", request->content);
         request->content = reader_read_bytes(reader, request->content_length);
+        // printf("request->content: %lx\n", request->content);
         if (request->content == NULL) {
             goto READ_ERROR;
         }
@@ -122,8 +122,8 @@ void print_request(http_request r) {
 
     if (r.content != NULL && r.content_length > 0) {
         printf("---CONTENT_START(%d)---\n", r.content_length);
-        for (int i = 0; i < content_length; i++) {
-            printf("%c", r.content[i]);
+        for (int i = 0; i < r.content_length; i++) {
+            printf("%c", (char)r.content[i]);
         }
     }
     printf("---END\n");

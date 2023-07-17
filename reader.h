@@ -7,7 +7,7 @@
 typedef struct reader {
     int fd;
     uint8_t buf[READ_BUFFER_SIZE];
-    int cursor;
+    int cursor; // TODO: this is probably better as uint8_t *?
     int bytes_in_buffer;
 } reader;
 

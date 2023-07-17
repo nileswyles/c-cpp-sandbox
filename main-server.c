@@ -26,6 +26,7 @@ typedef struct http_request {
     char * version;
     // TODO: does static array contribute to stack usage?
     http_field fields[FIELD_MAX];
+    int content_length;
     uint8_t * content;
 } http_request;
 
@@ -49,7 +50,7 @@ int new_request(http_request * request, reader * reader) {
         goto READ_ERROR;
     }
 
-    int content_length = -1;
+    request->content_length = -1;
     int field_idx = 0; 
     // for now, let's assume if no data in buffer by this point there won't be
     // no bound checking fornow...
@@ -67,23 +68,29 @@ int new_request(http_request * request, reader * reader) {
         request->fields[field_idx++] = (http_field){.name = field_name, .value = value};
 
         if (strcmp(field_name, "Content-Length") == 0) {
-            content_length = atoi(value);
+            request->content_length = atoi(value);
         }
     }
 
     printf("nalknsldknalk-0x%x,0x%x-------\n", reader->buf[reader->cursor], reader->buf[reader->cursor + 1]);
+    // TODO: make sure we don't go over... implement in reader??
+    if (reader->buf[reader->cursor] == '\n') {
+        reader->cursor += 1;
+    } else if (reader->buf[reader->cursor + 1] == '\n') {
+        reader->cursor += 2;
+    }
+
     if (field_idx == FIELD_MAX) {
         // TODO: error... not enough space for all those fields... too many fields stop it...
         printf("ERROR 1\n");
         goto ERROR;
     }
 
-    if (content_length != -1) {
-            // TODO: error checking as above...
-            request->content = reader_read_bytes(reader, content_length);
-            if (request->content = NULL) {
-                goto READ_ERROR;
-            }
+    if (request->content_length != -1) {
+        request->content = reader_read_bytes(reader, request->content_length);
+        if (request->content == NULL) {
+            goto READ_ERROR;
+        }
     }
     return 0;
 READ_ERROR:
@@ -112,21 +119,18 @@ void print_request(http_request r) {
     while(field_name != NULL && idx < FIELD_MAX) {
         // TODO: add field for cookies
         // TODO: add a separate field to request struct for this?
-        if (strcmp(field_name, "Content-Length") == 0) {
-            content_length = atoi(r.fields[idx].value);
-        }
         printf("%s: %s\n", field_name, r.fields[idx].value);
         idx++;
         field_name = r.fields[idx].name;
     }
-    printf("\n");
 
-    if (r.content != NULL && content_length > 0) {
+    if (r.content != NULL && r.content_length > 0) {
+        printf("---CONTENT_START(%d)---\n", r.content_length);
         for (int i = 0; i < content_length; i++) {
             printf("%c", r.content[i]);
         }
-        printf("\n");
     }
+    printf("---END\n");
 }
 
 // # types

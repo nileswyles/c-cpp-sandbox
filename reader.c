@@ -67,6 +67,7 @@ uint8_t * reader_read_bytes(reader * r, int n) {
             }
         } else {
             // else enough data in buffer
+            printf("ENOUGH DATA IN BUFFER\n");
             memcpy(data_cursor, r->buf + r->cursor, bytes_left_to_read);
             r->cursor += bytes_left_to_read;
             data_cursor += bytes_left_to_read;
@@ -74,6 +75,11 @@ uint8_t * reader_read_bytes(reader * r, int n) {
         }
     } 
 
+    printf("START---");
+    for (int i = 0; i < n; i++) {
+        printf("%c", data[i]);
+    }
+    printf("---END\n");
     return data;
 }
 
@@ -86,23 +92,28 @@ char * reader_read_until(reader * r, char until) {
         }
     }
 
-    int string_size = 1; // size including NUL byte
     int start_cursor = r->cursor;
+    printf("start_cursor, %d, %c\n", start_cursor, r->buf[start_cursor]);
     char c;
-    char * s = "";
+    char * s = NULL;
+    size_t s_size = 0;
     while(c != until) {
-        c = (char)r->buf[r->cursor++];
-        string_size++;
         if (r->cursor == r->bytes_in_buffer) { // if cursor pointing past data...
             // copy all data in buffer to string and read more
             int bytes_left_in_buffer = r->bytes_in_buffer - start_cursor;
-            char * new_s = malloc((string_size+bytes_left_in_buffer)*sizeof(char));
-            memcpy(new_s, s, string_size-1); // don't copy NUL byte
+            char * new_s = malloc((s_size+bytes_left_in_buffer)*sizeof(char));
+            if (new_s == NULL) {
+                // TODO: again, better error handling
+                printf("NEW_S == NULL\n");
+                free(s);
+                return NULL;
+            }
+            memcpy(new_s, s, s_size);
             memcpy(new_s, r->buf + start_cursor, bytes_left_in_buffer);
             free(s);
+
             s = new_s;
-            string_size += bytes_left_in_buffer;
-            s[string_size] = 0; // NUL terminate...
+            s_size += bytes_left_in_buffer;
 
             int ret = fill_buffer(r);
             if (ret == -1) {
@@ -111,21 +122,30 @@ char * reader_read_until(reader * r, char until) {
             }
             start_cursor = r->cursor; // == 0
         }
+        c = (char)r->buf[r->cursor++]; // we point at character past 'until' at the end of this loop
+        printf("%c", c);
     }
 
     // need to append up until to string...
-    int bytes_up_until_cursor = r->cursor;
-    char * new_s = malloc((string_size + bytes_up_until_cursor)*sizeof(char));
-    memcpy(new_s, s, string_size-1); // Don't copy NUL byte
-    memcpy(new_s, r->buf, bytes_up_until_cursor); // copy form start of buffer to cursor
+    int bytes_up_until_cursor = r->cursor - start_cursor;
+    char * new_s = malloc((s_size + bytes_up_until_cursor)*sizeof(char));
+    if (new_s == NULL) {
+        // TODO: again, better error handling
+        printf("NEW_S 2 == NULL\n");
+        free(s);
+        return NULL;
+    }
+    memcpy(new_s, s, s_size);
+    memcpy(new_s, r->buf + start_cursor, bytes_up_until_cursor); // copy form start of buffer to cursor
                                     // if cursor == 0; then it should copy nothing?
                                     // if cursor == 1; then it should copy byte at index 0
-                                    // if cursour == 2; then it should copy bytes at index 0 and 1.
+                                    // if cursor == 2; then it should copy bytes at index 0 and 1.
     free(s);
-    s = new_s;
-    s[string_size] = 0; // NUL terminate...
-
-    return s;
+    // s_size or bytes_up_until_cursor should be at least 1 at this point...
+    new_s[s_size+bytes_up_until_cursor-1] = 0; // replace until with NUL byte...
+    printf("end_cursor, %d, %c\n", r->cursor, r->buf[r->cursor]);
+    printf("new string: %s\n", new_s);
+    return new_s;
 }
 
 // In the spirit of overcomplicating things....

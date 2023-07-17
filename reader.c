@@ -94,7 +94,7 @@ char * reader_read_until(reader * r, char until) {
 
     int start_cursor = r->cursor;
     printf("start_cursor, %d, %c\n", start_cursor, r->buf[start_cursor]);
-    char c;
+    char c = (char)r->buf[start_cursor];
     char * s = NULL;
     size_t s_size = 0;
     while(c != until) {
@@ -128,6 +128,10 @@ char * reader_read_until(reader * r, char until) {
 
     // need to append up until to string...
     int bytes_up_until_cursor = r->cursor - start_cursor;
+    if (bytes_up_until_cursor == 0) {
+        // if cursor is already pointing at 'until', increment cursor because it didn't enter loop.. this will yield in an empty string
+        r->cursor++;
+    }
     char * new_s = malloc((s_size + bytes_up_until_cursor)*sizeof(char));
     if (new_s == NULL) {
         // TODO: again, better error handling
@@ -142,9 +146,9 @@ char * reader_read_until(reader * r, char until) {
                                     // if cursor == 2; then it should copy bytes at index 0 and 1.
     free(s);
     // s_size or bytes_up_until_cursor should be at least 1 at this point...
-    new_s[s_size+bytes_up_until_cursor-1] = 0; // replace until with NUL byte...
+    new_s[s_size+bytes_up_until_cursor-1] = 0; // replace until with NUL byte... -1 because size starts at 1 not index 0.
     printf("end_cursor, %d, %c\n", r->cursor, r->buf[r->cursor]);
-    printf("new string: %s\n", new_s);
+    printf("new string: %s---END\n", new_s);
     return new_s;
 }
 

@@ -13,11 +13,20 @@ static int fill_buffer(reader * r) {
     r->cursor = 0;
     int ret = read(r->fd, r->buf, READ_BUFFER_SIZE);
     if (ret == -1 || ret > READ_BUFFER_SIZE) {
-        r->bytes_in_buffer = 0;
-        return -1;
+        r->bytes_in_buffer = 0; // uint
     } else {
         r->bytes_in_buffer = ret;
     }
+    return ret;
+}
+
+static bool cursor_check(reader * r) {
+    if (r->cursor >= r->bytes_in_buffer) { // if read past buffer
+        if (fill_buffer(r) < 1) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void reader_initialize(reader * r, int fd) {
@@ -27,18 +36,45 @@ void reader_initialize(reader * r, int fd) {
     //     printf("%x,", r->buf[i]);
     // }
     // printf("\n");
-    r->cursor = -1;
+    r->cursor = 0;
     r->fd = fd;
-    r->bytes_in_buffer = -1;
+    r->bytes_in_buffer = 0;
+}
+
+// -1 == read error
+// 0 == not empty line
+// 1 == is empty line
+int reader_peek_for_empty_line(reader * r) {
+    if (!cursor_check(r)) {
+        return -1;
+    }
+    if (r->buf[r->cursor] == '\n') {
+        r->cursor += 1;
+        return 1;
+    } else if (r->cursor + 1 >= r->bytes_in_buffer) { 
+        // read and append to buffer...
+        uint8_t * tmp[READ_BUFFER_SIZE - 1];
+        int ret = read(r->fd, tmp, READ_BUFFER_SIZE - 1);
+        if (ret < 1 || ret > (READ_BUFFER_SIZE - 1)) {
+            return -1;
+        } else {
+            r->buf[0] = r->buf[r->cursor];
+            memcpy(r->buf + 1, tmp, ret);
+        }
+    } 
+    // should be safe now...
+    if (r->buf[r->cursor] == '\r' && r->buf[r->cursor + 1] == '\n') {
+        r->cursor += 2;
+        return 1;
+    }
+    return 0;
 }
 
 // if return == NULL, check errno for read error.
-uint8_t * reader_read_bytes(reader * r, int n) {
-    if (r->cursor == r->bytes_in_buffer) { // if read past buffer
-        int ret = fill_buffer(r);
-        if (ret == -1) {
-            return NULL;
-        }
+uint8_t * reader_read_bytes(reader * r, uint32_t n) {
+    if (!cursor_check(r)) {
+        // if read error..
+        return NULL; 
     }
 
     int bytes_read = 0;
@@ -48,11 +84,13 @@ uint8_t * reader_read_bytes(reader * r, int n) {
     // TODO: limit size of this buffer?
     uint8_t * data = malloc(n*sizeof(uint8_t));
     uint8_t * data_cursor = data;
+    printf("HOW ABOUT HERE?\n");
     while (bytes_read < n) {
         int bytes_left_to_read = n - bytes_read;
         int bytes_left_in_buffer = r->bytes_in_buffer - r->cursor;
+        printf("bytes_read %d, bytes_to_read %d, bytes_left_to_read %d, bytes_left_in_buffer %d\n", bytes_read, n, bytes_left_to_read, bytes_left_in_buffer);
 
-        if (bytes_left_to_read >= bytes_left_in_buffer) {
+        if (bytes_left_to_read > bytes_left_in_buffer) {
             // copy data left in buffer and read more
             memcpy(data_cursor, r->buf + r->cursor, bytes_left_in_buffer);
             bytes_read += bytes_left_in_buffer;
@@ -85,15 +123,12 @@ uint8_t * reader_read_bytes(reader * r, int n) {
 
 // if return == NULL, check errno for read error.
 char * reader_read_until(reader * r, char until) {
-    if (r->cursor == r->bytes_in_buffer) { // read past buffer
-        int ret = fill_buffer(r);
-        if (ret == -1) {
-            return NULL;
-        }
+    if (!cursor_check(r)) {
+        return NULL; 
     }
 
     int start_cursor = r->cursor;
-    printf("start_cursor, %d, %c\n", start_cursor, r->buf[start_cursor]);
+    // printf("start_cursor, %d, %c\n", start_cursor, r->buf[start_cursor]);
     char c = (char)r->buf[start_cursor];
     char * s = NULL;
     size_t s_size = 0;
@@ -123,7 +158,7 @@ char * reader_read_until(reader * r, char until) {
             start_cursor = r->cursor; // == 0
         }
         c = (char)r->buf[r->cursor++]; // we point at character past 'until' at the end of this loop
-        printf("%c", c);
+        // printf("%c", c);
     }
 
     // need to append up until to string...
@@ -147,8 +182,8 @@ char * reader_read_until(reader * r, char until) {
     free(s);
     // s_size or bytes_up_until_cursor should be at least 1 at this point...
     new_s[s_size+bytes_up_until_cursor-1] = 0; // replace until with NUL byte... -1 because size starts at 1 not index 0.
-    printf("end_cursor, %d, %c\n", r->cursor, r->buf[r->cursor]);
-    printf("new string: %s---END\n", new_s);
+    // printf("end_cursor, %d, %c\n", r->cursor, r->buf[r->cursor]);
+    // printf("new string: %s---END\n", new_s);
     return new_s;
 }
 

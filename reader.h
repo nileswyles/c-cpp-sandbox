@@ -6,13 +6,15 @@
 
 typedef struct reader {
     int fd;
+    // this stuff should only be modified by this module... else bad things can happen...
     uint8_t buf[READ_BUFFER_SIZE];
-    int cursor; // TODO: this is probably better as uint8_t *?
-    int bytes_in_buffer;
+    uint16_t cursor; // TODO: this is probably better as uint8_t *?
+    uint16_t bytes_in_buffer;
 } reader;
 
 void reader_initialize(reader * r, int fd);
-uint8_t * reader_read_bytes(reader * r, int n);
+int reader_peek_for_empty_line(reader * r);
+uint8_t * reader_read_bytes(reader * r, uint32_t n);
 char * reader_read_until(reader * r, char until);
 
 int read_chunk_non_blocking_fd(int fd, uint8_t ** p);

@@ -52,10 +52,8 @@ int new_request(http_request * request, reader * reader) {
 
     request->content_length = -1;
     int field_idx = 0; 
-    // for now, let's assume if no data in buffer by this point there won't be
-    // no bound checking fornow...
-    printf("here?\n");
-    while (field_idx < FIELD_MAX && reader->bytes_in_buffer > 0 && !(reader->buf[reader->cursor] == '\n' || (reader->buf[reader->cursor] == '\r' && reader->buf[reader->cursor + 1] == '\n'))) {
+    int peek = reader_peek_for_empty_line(reader);
+    while (field_idx < FIELD_MAX && peek == 0) {
         char * field_name = reader_read_until(reader, ':');
         if (field_name == NULL) {
             goto READ_ERROR;
@@ -68,16 +66,14 @@ int new_request(http_request * request, reader * reader) {
         request->fields[field_idx++] = (http_field){.name = field_name, .value = value};
 
         if (strcmp(field_name, "Content-Length") == 0) {
+            // TODO: negatives? use strtoul instead?
             request->content_length = atoi(value);
         }
+        peek = reader_peek_for_empty_line(reader);
     }
-
-    printf("nalknsldknalk-0x%x,0x%x-------\n", reader->buf[reader->cursor], reader->buf[reader->cursor + 1]);
-    // TODO: make sure we don't go over... implement in reader??
-    if (reader->buf[reader->cursor] == '\n') {
-        reader->cursor += 1;
-    } else if (reader->buf[reader->cursor + 1] == '\n') {
-        reader->cursor += 2;
+    
+    if (peek == -1) {
+        goto READ_ERROR;
     }
 
     if (field_idx == FIELD_MAX) {

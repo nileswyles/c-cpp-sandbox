@@ -74,6 +74,8 @@ int reader_peek_for_empty_line(reader * r) {
 }
 
 // if return == NULL, check errno for read error.
+// TODO: should I change ret type to char * and allocate the extra byte, in the event this data is actually a string?
+// Update to be g++ compatible?
 uint8_t * reader_read_bytes(reader * r, uint32_t n) {
     if (!cursor_check(r)) {
         // if read error..

@@ -11,31 +11,18 @@
 
 #define MAX_CONNECTIONS (1 << 16)
 
-typedef struct connection {
-    int conn_fd;
-    pthread_t thread;
-    int idx;
-} connection;
-
-// ring buffer, queue    or    malloc, free?????
-// connection connections[MAX_CONNECTIONS] = {-1};
-int connections[MAX_CONNECTIONS] = {-1};
-
 typedef struct thread_arg {
     connection_handler_t * handler;
-    int * fd;
+    int fd;
 } thread_arg;
 
 static void * handler_wrapper_func(void * handler) {
-    thread_arg h = *(thread_arg *)handler;
-    int fd = *h.fd;
-    h.handler(fd); // note: this should not call pthread_exit, else cleanup is skipped.. meaning memory leak...
-    // remove from connections data structure... 
+    thread_arg * h = (thread_arg *)handler;
+    (*h).handler((*h).fd); // Note: this should not call pthread_exit, else cleanup is skipped.. meaning memory leak...
+    free(h);
 }
 
-// void server_listen(char * address, uint16_t port, void * handler_func) {
 void server_listen(char * address, uint16_t port, connection_handler_t handler) {
-    // NOTE: as currently implemented, this will potentially use up all "availble" threads.. any otherwise long-running threads required by the application should be created prior to this function...
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     int idx = 0;
     if (fd == -1) {
@@ -72,22 +59,18 @@ void server_listen(char * address, uint16_t port, connection_handler_t handler) 
                 pthread_attr_init(&attr);
                 pthread_attr_setdetachstate(&attr, 1);
 
-                int idx = 0;
                 int conn = accept(fd, NULL, NULL);
                 while (conn != -1) {
-                    connections[idx] = conn;
                     pthread_t thread;
-                    // create 
-                    int ret = pthread_create(&thread, &attr, handler_wrapper_func, &connections[idx]);
+                    thread_arg * arg = malloc(sizeof(thread_arg));
+                    arg->fd = conn;
+                    arg->handler = handler;
+                    // wrapper func is responsible for freeing... 
+                    int ret = pthread_create(&thread, &attr, handler_wrapper_func, arg);
                     while (ret != 0) {
                         usleep(1000); // sleep for 1 ms
-                        ret = pthread_create(&thread, &attr, handler_wrapper_func, &connections[idx]);
-                    }
-                    // TODO: 
-                    // assume, connnection handlers are done with &conn_fd by this point...
-                    // Should I block until flag is set by caller? or something of that sort?
-                    if (++idx == MAX_CONNECTIONS) {
-                        idx = 0;
+                        // TODO: is it safe to assume this will eventually return 0?
+                        ret = pthread_create(&thread, &attr, handler_wrapper_func, arg);
                     }
                     conn = accept(fd, NULL, NULL);
                 }

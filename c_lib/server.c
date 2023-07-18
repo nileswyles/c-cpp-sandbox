@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/resource.h>
+#include <stdlib.h>
 
 #define MAX_CONNECTIONS (1 << 16)
 
@@ -16,10 +17,12 @@ typedef struct thread_arg {
     int fd;
 } thread_arg;
 
-static void * handler_wrapper_func(void * handler) {
-    thread_arg * h = (thread_arg *)handler;
-    (*h).handler((*h).fd); // Note: this should not call pthread_exit, else cleanup is skipped.. meaning memory leak...
-    free(h);
+static void * handler_wrapper_func(void * arg) {
+    thread_arg * a = (thread_arg *)arg;
+    connection_handler_t * handler = a->handler;
+    int fd = a->fd;
+    free(a); // free before function call, so that it can terminate thread however it wants... 
+    handler(fd);
 }
 
 void server_listen(char * address, uint16_t port, connection_handler_t handler) {
@@ -31,6 +34,8 @@ void server_listen(char * address, uint16_t port, connection_handler_t handler) 
     } else {
         // REMEMBER, Big-Endianness is prominent in network protocols like IP... (network order) - send most significant byte first...
         // so, call ntohs to convert port... addr is already defined in network order.
+
+        // TODO: use address arg
         static const uint8_t addr[] = {0, 0, 0, 0}; // addr uint32
         struct sockaddr_in address = {
             AF_INET,
@@ -40,12 +45,14 @@ void server_listen(char * address, uint16_t port, connection_handler_t handler) 
         uint8_t keep_alive = 1;
         setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &keep_alive, 1);
 
+        // TODO: make timeout as an arg to this func?
         struct timeval timeout = {
             .tv_sec = 15,
             .tv_usec = 0, // 15s
         };
         setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval));
         setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(struct timeval));
+        // TODO: RECVBUFSIZE and SENDBUFSIZE
 
         if (bind(fd, (struct sockaddr *)(&address), sizeof(struct sockaddr_in)) == -1) {
             // check errno for error

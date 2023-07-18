@@ -15,6 +15,7 @@
 static int fill_buffer(reader * r) {
     r->cursor = 0;
     ssize_t ret = read(r->fd, r->buf, READ_BUFFER_SIZE);
+    // TODO: retry on EAGAIN?, revisit possible errors...
     if (ret == -1 || ret > READ_BUFFER_SIZE) {
         r->bytes_in_buffer = 0; // uint
     } else {

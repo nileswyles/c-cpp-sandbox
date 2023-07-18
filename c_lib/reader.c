@@ -12,7 +12,7 @@
 // and stop using int, use int8_t, uint8_t, size_t etc instead
 
 // called when cursor == READ_BUFFER_SIZE.. cursor is then reset to 0
-static int fill_buffer(reader * r) {
+static int fill_buffer(reader * const r) {
     r->cursor = 0;
     ssize_t ret = read(r->fd, r->buf, READ_BUFFER_SIZE);
     // TODO: retry on EAGAIN?, revisit possible errors...
@@ -24,7 +24,7 @@ static int fill_buffer(reader * r) {
     return ret;
 }
 
-static bool cursor_check(reader * r) {
+static bool cursor_check(reader * const r) {
     if (r->cursor >= r->bytes_in_buffer) { // if read past buffer
         if (fill_buffer(r) < 1) {
             return false;
@@ -33,7 +33,7 @@ static bool cursor_check(reader * r) {
     return true;
 }
 
-void reader_initialize(reader * r, int fd) {
+void reader_initialize(reader * const r, const int fd) {
     // TODO: this is all being initialized to zero automatically... is this a compiler option????
     // printf("r.cursor, %d\n", r->cursor);
     // for (int i = 0; i < READ_BUFFER_SIZE; i++) {
@@ -48,7 +48,7 @@ void reader_initialize(reader * r, int fd) {
 // -1 == read error
 // 0 == not empty line
 // 1 == is empty line
-int reader_peek_for_empty_line(reader * r) {
+int reader_peek_for_empty_line(reader * const r) {
     if (!cursor_check(r)) {
         return -1;
     }
@@ -77,7 +77,7 @@ int reader_peek_for_empty_line(reader * r) {
 // if return == NULL, check errno for read error.
 // TODO: should I change ret type to char * and allocate the extra byte, in the event this data is actually a string?
 // Update to be g++ compatible?
-uint8_t * reader_read_bytes(reader * r, uint32_t n) {
+uint8_t * reader_read_bytes(reader * const r, const uint32_t n) {
     if (!cursor_check(r)) {
         // if read error..
         return NULL; 
@@ -124,7 +124,7 @@ uint8_t * reader_read_bytes(reader * r, uint32_t n) {
 }
 
 // if return == NULL, check errno for read error.
-char * reader_read_until(reader * r, char until) {
+char * reader_read_until(reader * const r, const char until) {
     if (!cursor_check(r)) {
         return NULL; 
     }

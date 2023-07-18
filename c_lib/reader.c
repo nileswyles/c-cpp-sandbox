@@ -85,7 +85,7 @@ uint8_t * reader_read_bytes(reader * const r, const uint32_t n) {
 
     int bytes_read = 0;
     // TODO: limit size of this buffer?
-    uint8_t * data = malloc(n*sizeof(uint8_t));
+    uint8_t * const data = malloc(n*sizeof(uint8_t));
     uint8_t * data_cursor = data;
     while (bytes_read < n) {
         int bytes_left_to_read = n - bytes_read;
@@ -138,7 +138,7 @@ char * reader_read_until(reader * const r, const char until) {
         if (r->cursor == r->bytes_in_buffer) { // if cursor pointing past data...
             // copy all data in buffer to string and read more
             int bytes_left_in_buffer = r->bytes_in_buffer - start_cursor;
-            char * new_s = malloc((s_size+bytes_left_in_buffer)*sizeof(char));
+            char * const new_s = malloc((s_size+bytes_left_in_buffer)*sizeof(char));
             if (new_s == NULL) {
                 // TODO: again, better error handling
                 printf("NEW_S == NULL\n");
@@ -169,7 +169,7 @@ char * reader_read_until(reader * const r, const char until) {
         // if cursor is already pointing at 'until', increment cursor because it didn't enter loop.. this will yield in an empty string
         r->cursor++;
     }
-    char * new_s = malloc((s_size + bytes_up_until_cursor)*sizeof(char));
+    char * const new_s = malloc((s_size + bytes_up_until_cursor)*sizeof(char));
     if (new_s == NULL) {
         // TODO: again, better error handling
         printf("NEW_S 2 == NULL\n");

@@ -9,11 +9,12 @@
 #define TIME_TO_WAIT_AFTER_READ_DATA_MS 100
 
 // TODO: ******** TOGGLABLE DEBUG LOGGER AND GOOD DEBUG PRINTSTATEMENTS ***********
+// and stop using int, use int8_t, uint8_t, size_t etc instead
 
 // called when cursor == READ_BUFFER_SIZE.. cursor is then reset to 0
 static int fill_buffer(reader * r) {
     r->cursor = 0;
-    int ret = read(r->fd, r->buf, READ_BUFFER_SIZE);
+    ssize_t ret = read(r->fd, r->buf, READ_BUFFER_SIZE);
     if (ret == -1 || ret > READ_BUFFER_SIZE) {
         r->bytes_in_buffer = 0; // uint
     } else {
@@ -56,7 +57,7 @@ int reader_peek_for_empty_line(reader * r) {
     } else if (r->cursor + 1 >= r->bytes_in_buffer) { 
         // read and append to buffer...
         uint8_t * tmp[READ_BUFFER_SIZE - 1];
-        int ret = read(r->fd, tmp, READ_BUFFER_SIZE - 1);
+        ssize_t ret = read(r->fd, tmp, READ_BUFFER_SIZE - 1);
         if (ret < 1 || ret > (READ_BUFFER_SIZE - 1)) {
             return -1;
         } else {
@@ -80,9 +81,6 @@ uint8_t * reader_read_bytes(reader * r, uint32_t n) {
     }
 
     int bytes_read = 0;
-    int sleep_before_read = 0;
-    int sleep_after_read = 0;
-    bool read_something = false;
     // TODO: limit size of this buffer?
     uint8_t * data = malloc(n*sizeof(uint8_t));
     uint8_t * data_cursor = data;
@@ -209,7 +207,7 @@ int read_chunk_non_blocking_fd(int fd, uint8_t ** p) {
     bool read_something = false;
     // TODO: limit size of this buffer?
     while (1) {
-        int res = read(fd, buf, READ_BUFFER_SIZE);
+        ssize_t res = read(fd, buf, READ_BUFFER_SIZE);
         if (res > 0) {
             read_something = true;
             uint8_t * new_p = malloc((bytes_read + res)*sizeof(uint8_t));

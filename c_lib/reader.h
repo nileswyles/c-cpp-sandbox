@@ -1,4 +1,11 @@
+#if defined __cplusplus
+extern "C"
+{
+#endif
+
 #ifndef READER_H
+#define READER_H
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -6,9 +13,8 @@
 
 typedef struct reader {
     int fd;
-    // this stuff should only be modified by this module... else bad things can happen...
     uint8_t buf[READ_BUFFER_SIZE];
-    uint16_t cursor; // TODO: this is probably better as uint8_t *?
+    uint16_t cursor;
     uint16_t bytes_in_buffer;
 } reader;
 
@@ -18,4 +24,8 @@ uint8_t * reader_read_bytes(reader * r, uint32_t n);
 char * reader_read_until(reader * r, char until);
 
 int read_chunk_non_blocking_fd(int fd, uint8_t ** p);
+#endif
+
+#if defined __cplusplus
+}
 #endif

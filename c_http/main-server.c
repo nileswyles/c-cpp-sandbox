@@ -130,7 +130,7 @@ void print_request(http_request r) {
 }
 
 // # types
-void * http_connection_handler(int * conn_fd) {
+uint8_t http_connection_handler(int conn_fd) {
     // read and parse http header....
     // do stuff, write response...
     // voila ....
@@ -140,7 +140,7 @@ void * http_connection_handler(int * conn_fd) {
 
     // TODO: this is all being initialized to zero automatically... is this a compiler option????
     reader reader = {0}; // explicitly initialize to zero, I think {0} == {};
-    reader_initialize(&reader, *conn_fd);
+    reader_initialize(&reader, conn_fd);
 
     http_request r;
     // TODO: use convention when handling errors where possible... should I return error, leverage errno, pass in error type as reference...
@@ -155,7 +155,7 @@ CLEANUP_REQUEST:
     delete_request(&r);
 CLEANUP:
     close(reader.fd); // doc's say you shouldn't retry close so ignore ret
-    return NULL;
+    return 1;
 }
 
 int main(int argc, char * argv[]) {

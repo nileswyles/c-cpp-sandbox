@@ -11,7 +11,11 @@
 // TODO: ******** TOGGLABLE DEBUG LOGGER AND GOOD DEBUG PRINTSTATEMENTS ***********
 // and stop using int, use int8_t, uint8_t, size_t etc instead
 
-// called when cursor == READ_BUFFER_SIZE.. cursor is then reset to 0
+// ssize_t read(int __fd, void *__buf, size_t __nbytes) {
+//     printf("This is a test\n");
+//     return 0;
+// }
+
 static int fill_buffer(reader * const r) {
     r->cursor = 0;
     ssize_t ret = read(r->fd, r->buf, READ_BUFFER_SIZE);
@@ -31,6 +35,17 @@ static bool cursor_check(reader * const r) {
         }
     }
     return true;
+}
+
+// this may seem like much for this obj, but let's get in the habit of doing this...
+reader * reader_constructor(const int fd) {
+    reader * r = (reader *)malloc(sizeof(reader));
+    reader_initialize(r, fd);
+    return r;
+}
+
+void reader_destructor(reader * const r) {
+    free(r);
 }
 
 void reader_initialize(reader * const r, const int fd) {
@@ -83,9 +98,9 @@ uint8_t * reader_read_bytes(reader * const r, const uint32_t n) {
         return NULL; 
     }
 
-    int bytes_read = 0;
+    uint32_t bytes_read = 0;
     // TODO: limit size of this buffer?
-    uint8_t * const data = malloc(n*sizeof(uint8_t));
+    uint8_t * const data = (uint8_t *)malloc(n*sizeof(uint8_t));
     uint8_t * data_cursor = data;
     while (bytes_read < n) {
         int bytes_left_to_read = n - bytes_read;
@@ -138,7 +153,7 @@ char * reader_read_until(reader * const r, const char until) {
         if (r->cursor == r->bytes_in_buffer) { // if cursor pointing past data...
             // copy all data in buffer to string and read more
             int bytes_left_in_buffer = r->bytes_in_buffer - start_cursor;
-            char * const new_s = malloc((s_size+bytes_left_in_buffer)*sizeof(char));
+            char * const new_s = (char *)malloc((s_size+bytes_left_in_buffer)*sizeof(char));
             if (new_s == NULL) {
                 // TODO: again, better error handling
                 printf("NEW_S == NULL\n");
@@ -169,7 +184,7 @@ char * reader_read_until(reader * const r, const char until) {
         // if cursor is already pointing at 'until', increment cursor because it didn't enter loop.. this will yield in an empty string
         r->cursor++;
     }
-    char * const new_s = malloc((s_size + bytes_up_until_cursor)*sizeof(char));
+    char * const new_s = (char *)malloc((s_size + bytes_up_until_cursor)*sizeof(char));
     if (new_s == NULL) {
         // TODO: again, better error handling
         printf("NEW_S 2 == NULL\n");
@@ -213,7 +228,7 @@ int read_chunk_non_blocking_fd(int fd, uint8_t ** p) {
         ssize_t res = read(fd, buf, READ_BUFFER_SIZE);
         if (res > 0) {
             read_something = true;
-            uint8_t * new_p = malloc((bytes_read + res)*sizeof(uint8_t));
+            uint8_t * new_p = (uint8_t *)malloc((bytes_read + res)*sizeof(uint8_t));
             // copy data from previous reads...
             memcpy(new_p, *p, bytes_read);
             // copy data from latest read....

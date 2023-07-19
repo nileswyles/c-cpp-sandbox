@@ -24,6 +24,7 @@ static void * handler_wrapper_func(void * arg) {
     int fd = a->fd;
     free(a); // free before function call, so that it can terminate thread however it wants... 
     handler(fd);
+    return NULL;
 }
 
 void server_listen(const char * address, const uint16_t port, connection_handler_t handler) {
@@ -88,7 +89,7 @@ void server_listen(const char * address, const uint16_t port, connection_handler
                     int conn = accept(fd, NULL, NULL);
                     while (conn != -1) {
                         pthread_t thread;
-                        thread_arg * arg = malloc(sizeof(thread_arg));
+                        thread_arg * arg = (thread_arg *)malloc(sizeof(thread_arg));
                         arg->fd = conn;
                         arg->handler = handler;
                         // wrapper func is responsible for freeing... 

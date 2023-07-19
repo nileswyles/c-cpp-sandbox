@@ -109,7 +109,6 @@ void delete_request(http_request * r) {
 void print_request(http_request r) {
     printf("%s %s %s\n", r.method, r.path, r.version);
 
-    int content_length = 0;
     int idx = 0;
     char * field_name = r.fields[idx].name;
     while(field_name != NULL && idx < FIELD_MAX) {
@@ -148,12 +147,11 @@ uint8_t http_connection_handler(int conn_fd) {
     int err = new_request(&r, &reader);
     if (err != 0) {
         printf("ERROR PROCESSING REQUEST\n");
-        goto CLEANUP_REQUEST;
+        goto CLEANUP;
     }
     print_request(r);
-CLEANUP_REQUEST:
-    delete_request(&r);
 CLEANUP:
+    delete_request(&r);
     close(reader.fd); // doc's say you shouldn't retry close so ignore ret
     return 1;
 }

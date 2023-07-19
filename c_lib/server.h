@@ -9,7 +9,8 @@ extern "C"
 
 typedef uint8_t(connection_handler_t)(int);
 
-void server_listen(const char * address, const uint16_t port, connection_handler_t * handler);
+extern void server_listen(const char * address, const uint16_t port, connection_handler_t * handler);
+
 #endif
 
 #if defined __cplusplus

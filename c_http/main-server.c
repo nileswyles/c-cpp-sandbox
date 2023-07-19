@@ -12,7 +12,6 @@
 
 // TODO: how to keep imports clean? don't want to rely on preprocessor stuff.?
 
-#define READ_BUFFER_SIZE 8096
 #define FIELD_MAX 64
 
 typedef struct http_field {

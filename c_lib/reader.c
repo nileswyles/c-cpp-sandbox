@@ -122,7 +122,7 @@ char * reader_read_until(reader * const r, const char until) {
     }
 
     int start_cursor = r->cursor;
-    // printf("start_cursor, %d, %c\n", start_cursor, r->buf[start_cursor]);
+    printf("start_cursor, %d, %c\n", start_cursor, r->buf[start_cursor]);
     char c = (char)r->buf[start_cursor];
     char * s = NULL;
     size_t s_size = 0;
@@ -130,6 +130,13 @@ char * reader_read_until(reader * const r, const char until) {
         if (r->cursor == r->bytes_in_buffer) { // if cursor pointing past data...
             // copy all data in buffer to string and read more
             int bytes_left_in_buffer = r->bytes_in_buffer - start_cursor;
+            if (s != NULL) {
+                printf("reached end of buffer, old string: ");
+                for (int i = 0; i < s_size; i++) {
+                    printf("%c", s[i]);
+                }
+                printf("\n");
+            }
             char * const new_s = (char *)malloc((s_size+bytes_left_in_buffer)*sizeof(char));
             if (new_s == NULL) {
                 // TODO: again, better error handling
@@ -138,11 +145,16 @@ char * reader_read_until(reader * const r, const char until) {
                 return NULL;
             }
             memcpy(new_s, s, s_size);
-            memcpy(new_s, r->buf + start_cursor, bytes_left_in_buffer);
+            memcpy(new_s + s_size, r->buf + start_cursor, bytes_left_in_buffer);
             free(s);
 
             s = new_s;
             s_size += bytes_left_in_buffer;
+            printf("reached end of buffer, new string: ");
+            for (int i = 0; i < s_size; i++) {
+                printf("%c", s[i]);
+            }
+            printf("\n");
 
             int ret = fill_buffer(r);
             if (ret == -1) {
@@ -169,15 +181,15 @@ char * reader_read_until(reader * const r, const char until) {
         return NULL;
     }
     memcpy(new_s, s, s_size);
-    memcpy(new_s, r->buf + start_cursor, bytes_up_until_cursor); // copy form start of buffer to cursor
+    memcpy(new_s + s_size, r->buf + start_cursor, bytes_up_until_cursor); // copy form start of buffer to cursor
                                     // if cursor == 0; then it should copy nothing?
                                     // if cursor == 1; then it should copy byte at index 0
                                     // if cursor == 2; then it should copy bytes at index 0 and 1.
     free(s);
     // s_size or bytes_up_until_cursor should be at least 1 at this point...
     new_s[s_size+bytes_up_until_cursor-1] = 0; // replace until with NUL byte... -1 because size starts at 1 not index 0.
-    // printf("end_cursor, %d, %c\n", r->cursor, r->buf[r->cursor]);
-    // printf("new string: %s---END\n", new_s);
+    printf("end_cursor, %d, %c\n", r->cursor, r->buf[r->cursor]);
+    printf("new string: %s---END\n", new_s);
     return new_s;
 }
 

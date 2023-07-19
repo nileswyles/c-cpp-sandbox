@@ -9,8 +9,7 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
-#define READ_BUFFER_SIZE 7
-// #define READ_BUFFER_SIZE 8096
+#define READ_BUFFER_SIZE 8096
 
 typedef struct reader {
     int fd;

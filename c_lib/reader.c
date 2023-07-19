@@ -13,6 +13,7 @@
 
 static int fill_buffer(reader * const r);
 static bool cursor_check(reader * const r);
+static uint8_t * arr_cat(uint8_t * t, ssize_t t_size, uint8_t * b, ssize_t b_size);
 
 // this may seem like much for this obj, but let's get in the habit of doing this...
 reader * reader_constructor(const int fd) {
@@ -77,7 +78,7 @@ uint8_t * reader_read_bytes(reader * const r, const uint32_t n) {
 
     uint32_t bytes_read = 0;
     // TODO: limit size of this buffer?
-    uint8_t * const data = (uint8_t *)malloc(n*sizeof(uint8_t));
+    uint8_t * const data = (uint8_t *)malloc((n + 1)*sizeof(uint8_t));
     uint8_t * data_cursor = data;
     while (bytes_read < n) {
         int bytes_left_to_read = n - bytes_read;
@@ -107,6 +108,9 @@ uint8_t * reader_read_bytes(reader * const r, const uint32_t n) {
         }
     } 
 
+    // null terminate so that if caller knows, data will not contain a NUL, they can simply cast to get a c_string.
+    data[n] = 0;  
+
     // printf("START---");
     // for (int i = 0; i < n; i++) {
     //     printf("%c", data[i]);
@@ -116,45 +120,36 @@ uint8_t * reader_read_bytes(reader * const r, const uint32_t n) {
 }
 
 // if return == NULL, check errno for read error.
-char * reader_read_until(reader * const r, const char until) {
+uint8_t * reader_read_until(reader * const r, const char until) {
     if (!cursor_check(r)) {
         return NULL; 
     }
 
     int start_cursor = r->cursor;
-    printf("start_cursor, %d, %c\n", start_cursor, r->buf[start_cursor]);
-    char c = (char)r->buf[start_cursor];
-    char * s = NULL;
+    // printf("start_cursor, %d, %c\n", start_cursor, r->buf[start_cursor]);
+    uint8_t c = r->buf[start_cursor];
+    uint8_t * s = NULL;
     size_t s_size = 0;
     while(c != until) {
         if (r->cursor == r->bytes_in_buffer) { // if cursor pointing past data...
             // copy all data in buffer to string and read more
             int bytes_left_in_buffer = r->bytes_in_buffer - start_cursor;
-            if (s != NULL) {
-                printf("reached end of buffer, old string: ");
-                for (int i = 0; i < s_size; i++) {
-                    printf("%c", s[i]);
-                }
-                printf("\n");
-            }
-            char * const new_s = (char *)malloc((s_size+bytes_left_in_buffer)*sizeof(char));
-            if (new_s == NULL) {
-                // TODO: again, better error handling
-                printf("NEW_S == NULL\n");
-                free(s);
-                return NULL;
-            }
-            memcpy(new_s, s, s_size);
-            memcpy(new_s + s_size, r->buf + start_cursor, bytes_left_in_buffer);
+            // if (s != NULL) {
+            //     printf("reached end of buffer, old string: ");
+            //     for (int i = 0; i < s_size; i++) {
+            //         printf("%c", s[i]);
+            //     }
+            //     printf("\n");
+            // }
+            uint8_t * new_s = arr_cat(s, s_size, r->buf + start_cursor, bytes_left_in_buffer);
             free(s);
-
             s = new_s;
             s_size += bytes_left_in_buffer;
-            printf("reached end of buffer, new string: ");
-            for (int i = 0; i < s_size; i++) {
-                printf("%c", s[i]);
-            }
-            printf("\n");
+            // printf("reached end of buffer, new string: ");
+            // for (int i = 0; i < s_size; i++) {
+            //     printf("%c", s[i]);
+            // }
+            // printf("\n");
 
             int ret = fill_buffer(r);
             if (ret == -1) {
@@ -163,7 +158,7 @@ char * reader_read_until(reader * const r, const char until) {
             }
             start_cursor = r->cursor; // == 0
         }
-        c = (char)r->buf[r->cursor++]; // we point at character past 'until' at the end of this loop
+        c = r->buf[r->cursor++]; // we point at character past 'until' at the end of this loop
         // printf("%c", c);
     }
 
@@ -171,25 +166,16 @@ char * reader_read_until(reader * const r, const char until) {
     int bytes_up_until_cursor = r->cursor - start_cursor;
     if (bytes_up_until_cursor == 0) {
         // if cursor is already pointing at 'until', increment cursor because it didn't enter loop.. this will yield in an empty string
+        s_size = 1;
         r->cursor++;
     }
-    char * const new_s = (char *)malloc((s_size + bytes_up_until_cursor)*sizeof(char));
-    if (new_s == NULL) {
-        // TODO: again, better error handling
-        printf("NEW_S 2 == NULL\n");
-        free(s);
-        return NULL;
-    }
-    memcpy(new_s, s, s_size);
-    memcpy(new_s + s_size, r->buf + start_cursor, bytes_up_until_cursor); // copy form start of buffer to cursor
-                                    // if cursor == 0; then it should copy nothing?
-                                    // if cursor == 1; then it should copy byte at index 0
-                                    // if cursor == 2; then it should copy bytes at index 0 and 1.
-    free(s);
-    // s_size or bytes_up_until_cursor should be at least 1 at this point...
-    new_s[s_size+bytes_up_until_cursor-1] = 0; // replace until with NUL byte... -1 because size starts at 1 not index 0.
-    printf("end_cursor, %d, %c\n", r->cursor, r->buf[r->cursor]);
-    printf("new string: %s---END\n", new_s);
+    uint8_t * new_s = arr_cat(s, s_size, r->buf + start_cursor, bytes_up_until_cursor);
+    // null terminate so that if caller knows, data will not contain a NUL, they can simply cast to get a c_string.
+    new_s[s_size+bytes_up_until_cursor-1] = 0; // replace 'until' char with NUL byte... -1 because size starts at 1 not index 0.
+
+    // printf("end_cursor, %d, %c\n", r->cursor, r->buf[r->cursor]);
+    // printf("new string: %s---END\n", new_s);
+    free(s); 
     return new_s;
 }
 
@@ -271,4 +257,11 @@ static bool cursor_check(reader * const r) {
         }
     }
     return true;
+}
+
+static uint8_t * arr_cat(uint8_t * t, ssize_t t_size, uint8_t * b, ssize_t b_size) {
+    uint8_t * const a = (uint8_t *)malloc((t_size+b_size)*sizeof(char));
+    memcpy(a, t, t_size);
+    memcpy(a + t_size, b, b_size);
+    return a;
 }

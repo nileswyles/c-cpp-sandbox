@@ -1,6 +1,5 @@
 #include "reader.h"
 
-#include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,26 +15,19 @@ static bool cursor_check(reader * const r);
 static uint8_t * arr_cat(uint8_t * t, ssize_t t_size, uint8_t * b, ssize_t b_size);
 
 // this may seem like much for this obj, but let's get in the habit of doing this...
-reader * reader_constructor(const int fd) {
+reader * reader_constructor(const int fd, const size_t buf_size) {
     reader * r = (reader *)malloc(sizeof(reader));
-    reader_initialize(r, fd);
+    r->buf = (uint8_t *)(malloc(buf_size * sizeof(uint8_t)));
+    r->buf_size = buf_size;
+    r->cursor = 0;
+    r->fd = fd;
+    r->bytes_in_buffer = 0;
     return r;
 }
 
 void reader_destructor(reader * const r) {
+    free(r->buf);
     free(r);
-}
-
-void reader_initialize(reader * const r, const int fd) {
-    // TODO: this is all being initialized to zero automatically... is this a compiler option????
-    // printf("r.cursor, %d\n", r->cursor);
-    // for (int i = 0; i < READ_BUFFER_SIZE; i++) {
-    //     printf("%x,", r->buf[i]);
-    // }
-    // printf("\n");
-    r->cursor = 0;
-    r->fd = fd;
-    r->bytes_in_buffer = 0;
 }
 
 // -1 == read error
@@ -50,9 +42,9 @@ int reader_peek_for_empty_line(reader * const r) {
         return 1;
     } else if (r->cursor + 1 >= r->bytes_in_buffer) { 
         // read and append to buffer...
-        uint8_t * tmp[READ_BUFFER_SIZE - 1];
-        ssize_t ret = read(r->fd, tmp, READ_BUFFER_SIZE - 1);
-        if (ret < 1 || ret > (READ_BUFFER_SIZE - 1)) {
+        uint8_t * tmp[r->buf_size - 1];
+        ssize_t ret = read(r->fd, tmp, r->buf_size - 1);
+        if (ret < 1 || ret > (r->buf_size - 1)) {
             return -1;
         } else {
             r->buf[0] = r->buf[r->cursor];
@@ -158,25 +150,19 @@ uint8_t * reader_read_until(reader * const r, const char until) {
             }
             start_cursor = r->cursor; // == 0
         }
-        c = r->buf[r->cursor++]; // we point at character past 'until' at the end of this loop
-        // printf("%c", c);
+        c = r->buf[++r->cursor]; 
     }
-
-    // need to append up until to string...
+    r->cursor++;
     int bytes_up_until_cursor = r->cursor - start_cursor;
-    if (bytes_up_until_cursor == 0) {
-        // if cursor is already pointing at 'until', increment cursor because it didn't enter loop.. this will yield in an empty string
-        s_size = 1;
-        r->cursor++;
-    }
     uint8_t * new_s = arr_cat(s, s_size, r->buf + start_cursor, bytes_up_until_cursor);
     // null terminate so that if caller knows, data will not contain a NUL, they can simply cast to get a c_string.
     new_s[s_size+bytes_up_until_cursor-1] = 0; // replace 'until' char with NUL byte... -1 because size starts at 1 not index 0.
-
+    free(s);
+    s = new_s;
+    
     // printf("end_cursor, %d, %c\n", r->cursor, r->buf[r->cursor]);
     // printf("new string: %s---END\n", new_s);
-    free(s); 
-    return new_s;
+    return s;
 }
 
 // In the spirit of overcomplicating things....
@@ -193,14 +179,14 @@ uint8_t * reader_read_until(reader * const r, const char until) {
 // uint8_t new_val = new_val
 // *val = new_val
 int read_chunk_non_blocking_fd(int fd, uint8_t ** p) {
-    uint8_t * buf[READ_BUFFER_SIZE];
+    uint8_t * buf[4096];
     int bytes_read = 0;
     int sleep_before_read = 0;
     int sleep_after_read = 0;
     bool read_something = false;
     // TODO: limit size of this buffer?
     while (1) {
-        ssize_t res = read(fd, buf, READ_BUFFER_SIZE);
+        ssize_t res = read(fd, buf, 4096);
         if (res > 0) {
             read_something = true;
             uint8_t * new_p = (uint8_t *)malloc((bytes_read + res)*sizeof(uint8_t));
@@ -240,9 +226,9 @@ int read_chunk_non_blocking_fd(int fd, uint8_t ** p) {
 
 static int fill_buffer(reader * const r) {
     r->cursor = 0;
-    ssize_t ret = read(r->fd, r->buf, READ_BUFFER_SIZE);
+    ssize_t ret = read(r->fd, r->buf, r->buf_size);
     // TODO: retry on EAGAIN?, revisit possible errors...
-    if (ret == -1 || ret > READ_BUFFER_SIZE) {
+    if (ret == -1 || ret > r->buf_size) {
         r->bytes_in_buffer = 0; // uint
     } else {
         r->bytes_in_buffer = ret;

@@ -6,21 +6,22 @@ extern "C"
 #ifndef READER_H
 #define READER_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-#define READ_BUFFER_SIZE 8096
+#define READER_RECOMMENDED_BUF_SIZE 8096
 
 typedef struct reader {
     int fd;
-    uint8_t buf[READ_BUFFER_SIZE];
+    uint8_t * buf;
+    size_t buf_size;
     uint16_t cursor;
     uint16_t bytes_in_buffer;
 } reader;
 
-extern reader * reader_constructor(const int fd);
+extern reader * reader_constructor(const int fd, const size_t buf_size);
 extern void reader_destructor(reader * const r);
-extern void reader_initialize(reader * const r, const int fd);
 
 extern int reader_peek_for_empty_line(reader * const r);
 

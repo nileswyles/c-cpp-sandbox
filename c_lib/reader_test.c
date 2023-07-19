@@ -12,27 +12,38 @@
 char * buffer;
 
 ssize_t read(int fd, void *buf, size_t nbytes) {
-    ssize_t ret = MIN(nbytes, strlen(buffer));
+    ssize_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
     memcpy(buf, buffer, ret);
     if (TEST_DEBUG) {
         printf("READ RETURNED (%ld): ", ret);
         for (int i = 0; i < ret; i++) {
-            printf("%c", ((char *)buf)[i]);
+            char c = ((char *)buf)[i];
+            if (c <= 0x20) {
+                printf("[%x]", c);
+            } else {
+                printf("%c", c);
+            }
         }
         printf("\n");
     }
-    buffer = buffer + ret; // duh
+    // TODO: bound check
+    buffer += ret; // duh
     return ret; 
 }
 
 void testReadUntil() {
-    reader * reader = reader_constructor(-1);
+    reader * reader = reader_constructor(-1, READER_RECOMMENDED_BUF_SIZE);
     printf("\nTest Func: testReadUntil\n");
-    buffer = "TESTSTRINGWITHSPACE BLAHBLAHBLAH";
+    char * test_string = "TESTSTRINGWITHSPACE BLAH";
+    buffer = test_string;
     char * ret = (char *)reader_read_until(reader, ' ');
     if (TEST_DEBUG) {
-        printf("Test String:\n%s\n", buffer); // lol
-        printf("Result:\n%s = readUntil(' ')\n", ret);
+        printf("Test String:\n%s\n", test_string); // lol
+        // printf("Buffer after read:\n%s\n", buffer);
+        printf("Until char:\n[%x]\n", ' ');
+        // printf("Buffer after read:\n%s\n", buffer);
+        printf("Result:\n%s\n", ret);
+        printf("Expected:\n%s\n", "TESTSTRINGWITHSPACE");
     }
     if (strcmp(ret, "TESTSTRINGWITHSPACE") == 0) {
         printf("Test Passed!\n");
@@ -42,57 +53,88 @@ void testReadUntil() {
     reader_destructor(reader);
 }
 
+void testReadUntilCursorAtUntil() {
+    reader * reader = reader_constructor(-1, READER_RECOMMENDED_BUF_SIZE);
+    printf("\nTest Func: testReadUntilCursorAtUntil\n");
+    buffer = " BLAH";
+    char * ret = (char *)reader_read_until(reader, ' ');
+    if (TEST_DEBUG) {
+        printf("Test String:\n BLAH\n"); // lol
+        // printf("Buffer after read:\n%s\n", buffer);
+        printf("Until char:\n[%x]\n", ' ');
+        // printf("Buffer after read:\n%s\n", buffer);
+        printf("Result:\n%s\n", ret);
+        printf("Expected:\n%s\n", "");
+    }
+    if (strcmp(ret, "") == 0) {
+        printf("Test Passed!\n");
+    } else {
+        printf("Test Failed!\n");
+    }
+    reader_destructor(reader);
+}
+
 void testReadUntilFillBufferOnce() {
-    reader * reader = reader_constructor(-1);
+    reader * reader = reader_constructor(-1, 7);
     printf("\nTest Func: testReadUntilFillBufferOnce\n");
-    // 8103 = READ_BUFFER_SIZE + 7 because no malloc.
-    char buf[8103];
+    int size = reader->buf_size + 7;
+    char buf[size];
     int i = 0;
-    for (i = 0; i < 8103; i++) {
+    for (i = 0; i < size; i++) {
         buf[i] = '$';
     }
-    buf[8099] = ' ';
-    buf[8102] = 0;
+    buf[size - 3] = ' ';
+    buf[size] = 0; // TODO: still puzzled by why this is necessary and whether or not compiler ensures it's safe.
     buffer = buf;
 
-    char expected[8100];
-    strncpy(expected, buf, 8100); // more lame std lib stuff? lol
-    expected[8099] = 0;
+    // buf = $$$<8099 = ' '>
+    // actual = $$$<8099 = 'NUL'>
+    // expected = $$$<8099 = 'NUL'>
+    char expected[size-3]; // until char should == NUL
+    strncpy(expected, buf, size-3); // more lame std lib stuff? lol
+    expected[size-3] = 0;
 
     char * ret = (char *)reader_read_until(reader, ' ');
     if (TEST_DEBUG) {
-        printf("Test String:\n%s\n", buffer);
-        printf("Result:\n%s = readUntil(' ')\n", ret);
+        printf("Test String:\n%s\n", buf);
+        printf("Until char:\n[%x]\n", ' ');
+        // printf("Buffer after read:\n%s\n", buffer);
+        printf("Result:\n%s\n", ret);
+        printf("Expected:\n%s\n", expected);
     }
-    if (strcmp(ret, expected) == 0) {
+    if (strcmp(ret, (char *)expected) == 0) {
         printf("Test Passed!\n");
     } else {
+        printf("Expected:\n%s\n", expected);
         printf("Test Failed!\n");
     }
     reader_destructor(reader);
 }
 
 void testReadUntilFillBufferTwice() {
-    reader * reader = reader_constructor(-1);
+    reader * reader = reader_constructor(-1, 7);
     printf("\nTest Func: testReadUntilFillBufferTwice\n");
-    // 16199 = (READ_BUFFER_SIZE * 2) + 7 because no malloc.
-    char buf[16199];
+    int size = (reader->buf_size * 2) + 7;
+    char buf[size];
     int i = 0;
-    for (i = 0; i < 16199; i++) {
+    for (i = 0; i < size; i++) {
         buf[i] = '$';
     }
-    buf[16194] = ' ';
-    buf[16198] = 0;
+    buf[size - 3] = ' ';
+    buf[size] = 0;
     buffer = buf;
 
-    char expected[16195];
-    strncpy(expected, buf, 16195); // more lame std lib stuff? lol
-    expected[16194] = 0;
+    char expected[size-3]; // until char should == NUL
+    strncpy(expected, buf, size-3); // more lame std lib stuff? lol
+    expected[size-3] = 0;
 
     char * ret = (char *)reader_read_until(reader, ' ');
     if (TEST_DEBUG) {
-        printf("Test String:\n%s\n", buffer);
-        printf("Result:\n%s = readUntil(' ')\n", ret);
+        printf("Test String:\n%s\n", buf);
+        printf("Until char:\n[%x]\n", ' ');
+        // printf("Buffer after read:\n%s\n", buffer);
+        printf("Result:\n%s\n", ret);
+        printf("Expected:\n%s\n", expected);
     }
     if (strcmp(ret, expected) == 0) {
         printf("Test Passed!\n");
@@ -102,8 +144,12 @@ void testReadUntilFillBufferTwice() {
     reader_destructor(reader);
 }
 
+// void testReadUntilCursorCheck?
+// void testReadBytesCursorCheck?
+
 int main() {
     testReadUntil();
+    testReadUntilCursorAtUntil();
     testReadUntilFillBufferOnce();
     testReadUntilFillBufferTwice();
 

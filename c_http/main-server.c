@@ -129,20 +129,9 @@ void print_request(http_request r) {
 
 // # types
 uint8_t http_connection_handler(int conn_fd) {
-    // read and parse http header....
-    // do stuff, write response...
-    // voila ....
-
-    // TODO:
-    // dereference right away so that caller can do whatever with memory....
-
-    // TODO: this is all being initialized to zero automatically... is this a compiler option????
-    reader reader = {0}; // explicitly initialize to zero, I think {0} == {};
-    reader_initialize(&reader, conn_fd);
+    reader * reader = reader_constructor(conn_fd, READER_RECOMMENDED_BUF_SIZE); // explicitly initialize to zero, I think {0} == {};
 
     http_request r;
-    // TODO: use convention when handling errors where possible... should I return error, leverage errno, pass in error type as reference...
-    // same for other outputs....
     int err = new_request(&r, &reader);
     if (err != 0) {
         printf("ERROR PROCESSING REQUEST\n");
@@ -150,8 +139,9 @@ uint8_t http_connection_handler(int conn_fd) {
     }
     print_request(r);
 CLEANUP:
+    reader_destructor(reader);
     delete_request(&r);
-    close(reader.fd); // doc's say you shouldn't retry close so ignore ret
+    close(conn_fd); // doc's say you shouldn't retry close so ignore ret
     return 1;
 }
 

@@ -10,22 +10,18 @@
 #include <unistd.h>
 #include <sys/resource.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 #define MAX_CONNECTIONS (1 << 16)
+#define DEBUG 0
 
 typedef struct thread_arg {
     connection_handler_t * handler;
     int fd;
 } thread_arg;
 
-static void * handler_wrapper_func(void * arg) {
-    thread_arg * a = (thread_arg *)arg;
-    connection_handler_t * handler = a->handler;
-    int fd = a->fd;
-    free(a); // free before function call, so that it can terminate thread however it wants... 
-    handler(fd);
-    return NULL;
-}
+static void * handler_wrapper_func(void * arg);
+static void process_sockopts(int fd);
 
 void server_listen(const char * address, const uint16_t port, connection_handler_t handler) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -42,36 +38,6 @@ void server_listen(const char * address, const uint16_t port, connection_handler
                 ntohs(port),
                 addr,
             };
-            socklen_t byte_len = sizeof(uint8_t);
-            socklen_t uint32_t_len = sizeof(uint32_t);
-            socklen_t timeval_len = sizeof(struct timeval);
-
-            uint8_t keep_alive = 1;
-            setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &keep_alive, byte_len);
-     
-            // TODO: make timeout as an arg to this func?
-            struct timeval timeout = {
-                .tv_sec = 15,
-                .tv_usec = 0, // 15s
-            };
-            setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
-            setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);
-            // TODO: set RECVBUFSIZE and SENDBUFSIZE, arg it up?
-
-            // read and print relevant options, ignore any error's reading... this is a nice to have...
-            uint32_t rcv_buf_size = 0;
-            getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &rcv_buf_size, &uint32_t_len); // why pointer to len?
-            uint32_t snd_buf_size = 0;
-            getsockopt(fd, SOL_SOCKET, SO_SNDBUF, &snd_buf_size, &uint32_t_len);
-            struct timeval rcv_timeout = {0};
-            getsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, &timeval_len);
-            struct timeval snd_timeout = {0};
-            getsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &snd_timeout, &timeval_len);
-            uint8_t ret_keep_alive = 1;
-            getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &ret_keep_alive, &byte_len);
-
-            printf("SOCK OPTS: KEEP_ALIVE %u, SO_RCVBUF %u, SO_RCVTIMEO %lds %ldus, SO_SNDBUF %u, SO_SNDTIMEO %lds %ldus\n", ret_keep_alive, rcv_buf_size, rcv_timeout.tv_sec, rcv_timeout.tv_usec, snd_buf_size, snd_timeout.tv_sec, snd_timeout.tv_usec);
-     
             if (bind(fd, (struct sockaddr *)(&a), sizeof(struct sockaddr_in)) == -1) {
                 // check errno for error
                 printf("error binding, %d\n", errno);
@@ -107,5 +73,52 @@ void server_listen(const char * address, const uint16_t port, connection_handler
                 }
             }
         }
+    }
+}
+
+static void * handler_wrapper_func(void * arg) {
+    thread_arg * a = (thread_arg *)arg;
+    connection_handler_t * handler = a->handler;
+    int fd = a->fd;
+    free(a); // free before function call, so that it can terminate thread however it wants... 
+
+    // it's lame that I need to do this for each 'connection'. And 'socket' is same as 'connection' which is the same as 'socket'? lol
+    // I thought it was a 1 (socket) to many (connections) kind of thing (at least for bind).
+    process_sockopts(fd);
+    printf("HTTP START!\n");
+    handler(fd);
+    printf("HTTP DONE!\n");
+    return NULL;
+}
+
+static void process_sockopts(int fd) {
+    socklen_t byte_len = sizeof(uint8_t);
+    socklen_t uint32_t_len = sizeof(uint32_t);
+    socklen_t timeval_len = sizeof(struct timeval);
+
+    // TODO: set RECVBUFSIZE and SENDBUFSIZE, arg it up?
+    uint8_t keep_alive = 1;
+    setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &keep_alive, byte_len);
+    struct timeval timeout = {
+        .tv_sec = 15,
+        .tv_usec = 0, // 15s
+    };
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
+    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);
+
+    // read and print relevant options, ignore any error's reading... this is a nice to have...
+    if (DEBUG) {
+        uint32_t rcv_buf_size = 0;
+        getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &rcv_buf_size, &uint32_t_len); // why pointer to len? also lame
+        uint32_t snd_buf_size = 0;
+        getsockopt(fd, SOL_SOCKET, SO_SNDBUF, &snd_buf_size, &uint32_t_len);
+        struct timeval rcv_timeout = {0};
+        getsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, &timeval_len);
+        struct timeval snd_timeout = {0};
+        getsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &snd_timeout, &timeval_len);
+        uint8_t ret_keep_alive = 1;
+        getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &ret_keep_alive, &byte_len);
+
+        printf("SOCK OPTS: KEEP_ALIVE %u, SO_RCVBUF %u, SO_RCVTIMEO %lds %ldus, SO_SNDBUF %u, SO_SNDTIMEO %lds %ldus\n", ret_keep_alive, rcv_buf_size, rcv_timeout.tv_sec, rcv_timeout.tv_usec, snd_buf_size, snd_timeout.tv_sec, snd_timeout.tv_usec);
     }
 }

@@ -11,31 +11,8 @@
 // TODO: ******** TOGGLABLE DEBUG LOGGER AND GOOD DEBUG PRINTSTATEMENTS ***********
 // and stop using int, use int8_t, uint8_t, size_t etc instead
 
-// ssize_t read(int __fd, void *__buf, size_t __nbytes) {
-//     printf("This is a test\n");
-//     return 0;
-// }
-
-static int fill_buffer(reader * const r) {
-    r->cursor = 0;
-    ssize_t ret = read(r->fd, r->buf, READ_BUFFER_SIZE);
-    // TODO: retry on EAGAIN?, revisit possible errors...
-    if (ret == -1 || ret > READ_BUFFER_SIZE) {
-        r->bytes_in_buffer = 0; // uint
-    } else {
-        r->bytes_in_buffer = ret;
-    }
-    return ret;
-}
-
-static bool cursor_check(reader * const r) {
-    if (r->cursor >= r->bytes_in_buffer) { // if read past buffer
-        if (fill_buffer(r) < 1) {
-            return false;
-        }
-    }
-    return true;
-}
+static int fill_buffer(reader * const r);
+static bool cursor_check(reader * const r);
 
 // this may seem like much for this obj, but let's get in the habit of doing this...
 reader * reader_constructor(const int fd) {
@@ -261,4 +238,25 @@ int read_chunk_non_blocking_fd(int fd, uint8_t ** p) {
         }
     }
     return bytes_read;
+}
+
+static int fill_buffer(reader * const r) {
+    r->cursor = 0;
+    ssize_t ret = read(r->fd, r->buf, READ_BUFFER_SIZE);
+    // TODO: retry on EAGAIN?, revisit possible errors...
+    if (ret == -1 || ret > READ_BUFFER_SIZE) {
+        r->bytes_in_buffer = 0; // uint
+    } else {
+        r->bytes_in_buffer = ret;
+    }
+    return ret;
+}
+
+static bool cursor_check(reader * const r) {
+    if (r->cursor >= r->bytes_in_buffer) { // if read past buffer
+        if (fill_buffer(r) < 1) {
+            return false;
+        }
+    }
+    return true;
 }

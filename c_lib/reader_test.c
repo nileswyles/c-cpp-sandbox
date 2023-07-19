@@ -39,6 +39,7 @@ void testReadUntil() {
     } else {
         printf("Test Failed!\n");
     }
+    reader_destructor(reader);
 }
 
 void testReadUntilFillBufferOnce() {
@@ -68,11 +69,43 @@ void testReadUntilFillBufferOnce() {
     } else {
         printf("Test Failed!\n");
     }
+    reader_destructor(reader);
+}
+
+void testReadUntilFillBufferTwice() {
+    reader * reader = reader_constructor(-1);
+    printf("\nTest Func: testReadUntilFillBufferTwice\n");
+    // 16199 = (READ_BUFFER_SIZE * 2) + 7 because no malloc.
+    char buf[16199];
+    int i = 0;
+    for (i = 0; i < 16199; i++) {
+        buf[i] = '$';
+    }
+    buf[16194] = ' ';
+    buf[16198] = 0;
+    buffer = buf;
+
+    char expected[16195];
+    strncpy(expected, buf, 16195); // more lame std lib stuff? lol
+    expected[16194] = 0;
+
+    char * ret = (char *)reader_read_until(reader, ' ');
+    if (TEST_DEBUG) {
+        printf("Test String:\n%s\n", buffer);
+        printf("Result:\n%s = readUntil(' ')\n", ret);
+    }
+    if (strcmp(ret, expected) == 0) {
+        printf("Test Passed!\n");
+    } else {
+        printf("Test Failed!\n");
+    }
+    reader_destructor(reader);
 }
 
 int main() {
     testReadUntil();
     testReadUntilFillBufferOnce();
+    testReadUntilFillBufferTwice();
 
     return 0;
 }

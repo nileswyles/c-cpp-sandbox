@@ -13,7 +13,7 @@
 
 static int fill_buffer(reader * const r);
 static bool cursor_check(reader * const r);
-static uint8_t * arr_cat(uint8_t * t, ssize_t t_size, uint8_t * b, ssize_t b_size);
+static uint8_t * arr_cat(uint8_t * t, size_t t_size, uint8_t * b, size_t b_size);
 
 // this may seem like much for this obj, but let's get in the habit of doing this...
 reader * reader_constructor(const int fd, const size_t buf_size) {
@@ -65,13 +65,13 @@ int reader_peek_for_empty_line(reader * const r) {
 // if return == NULL, check errno for read error.
 // TODO: should I change ret type to char * and allocate the extra byte, in the event this data is actually a string?
 // Update to be g++ compatible?
-uint8_t * reader_read_bytes(reader * const r, const uint32_t n) {
+uint8_t * reader_read_bytes(reader * const r, const size_t n) {
     if (!cursor_check(r)) {
         // if read error..
         return NULL; 
     }
 
-    uint32_t bytes_read = 0;
+    size_t bytes_read = 0;
     // TODO: limit size of this buffer?
     uint8_t * const data = (uint8_t *)malloc((n + 1)*sizeof(uint8_t));
     uint8_t * data_cursor = data;
@@ -120,15 +120,15 @@ uint8_t * reader_read_until(reader * const r, const char until) {
         return NULL; 
     }
 
-    int start_cursor = r->cursor;
-    logger_debug_printf("reader_read_until start_cursor: %u\n", start_cursor);
+    size_t start_cursor = r->cursor;
+    logger_debug_printf("reader_read_until start_cursor: %lu\n", start_cursor);
     uint8_t c = r->buf[start_cursor];
     uint8_t * s = NULL;
     size_t s_size = 0;
     while(c != until) {
         if (r->cursor == r->bytes_in_buffer) { // if cursor pointing past data...
             // copy all data in buffer to string and read more
-            int bytes_left_in_buffer = r->bytes_in_buffer - start_cursor;
+            size_t bytes_left_in_buffer = r->bytes_in_buffer - start_cursor;
             uint8_t * new_s = arr_cat(s, s_size, r->buf + start_cursor, bytes_left_in_buffer);
             free(s);
             s = new_s;
@@ -148,14 +148,14 @@ uint8_t * reader_read_until(reader * const r, const char until) {
         c = r->buf[++r->cursor]; 
     }
     r->cursor++;
-    int bytes_up_until_cursor = r->cursor - start_cursor;
+    size_t bytes_up_until_cursor = r->cursor - start_cursor;
     uint8_t * new_s = arr_cat(s, s_size, r->buf + start_cursor, bytes_up_until_cursor);
     // null terminate so that if caller knows, data will not contain a NUL, they can simply cast to get a c_string.
     new_s[s_size+bytes_up_until_cursor-1] = 0; // replace 'until' char with NUL byte... -1 because size starts at 1 not index 0.
     free(s);
     s = new_s;
     
-    logger_debug_printf("reader_read_until end cursor: %d\n", r->cursor);
+    logger_debug_printf("reader_read_until end cursor: %lu\n", r->cursor);
     logger_debug_printf("reader_read_until string: %s\n", s);
     return s;
 }
@@ -240,7 +240,7 @@ static bool cursor_check(reader * const r) {
     return true;
 }
 
-static uint8_t * arr_cat(uint8_t * t, ssize_t t_size, uint8_t * b, ssize_t b_size) {
+static uint8_t * arr_cat(uint8_t * t, size_t t_size, uint8_t * b, size_t b_size) {
     uint8_t * const a = (uint8_t *)malloc((t_size+b_size)*sizeof(char));
     memcpy(a, t, t_size);
     memcpy(a + t_size, b, b_size);

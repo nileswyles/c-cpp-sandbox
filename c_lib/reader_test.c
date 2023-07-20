@@ -15,11 +15,8 @@ const char * buffer;
 ssize_t read(int fd, void *buf, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
     memcpy(buf, buffer, ret);
-    if (TEST_DEBUG) {
-        printf("READ RETURNED (%ld): ", ret);
-        logger_print_array((uint8_t*)buf, ret);
-        printf("\n");
-    }
+    logger_debug_printf("READ RETURNED (%ld): ", ret);
+    logger_debug_print_array((uint8_t*)buf, ret);
     buffer += ret; // duh
     return ret; 
 }
@@ -30,14 +27,10 @@ void testReadUntil() {
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
     char * ret = (char *)reader_read_until(reader, ' ');
-    if (TEST_DEBUG) {
-        printf("Test String:\n%s\n", test_string); // lol
-        // printf("Buffer after read:\n%s\n", buffer);
-        printf("Until char:\n[%x]\n", ' ');
-        // printf("Buffer after read:\n%s\n", buffer);
-        printf("Result:\n%s\n", ret);
-        printf("Expected:\n%s\n", "TESTSTRINGWITHSPACE");
-    }
+    printf("Test String:\n%s\n", test_string); // lol
+    printf("Until char:\n[%x]\n", ' ');
+    printf("Result:\n%s\n", ret);
+    printf("Expected:\n%s\n", "TESTSTRINGWITHSPACE");
     if (strcmp(ret, "TESTSTRINGWITHSPACE") == 0) {
         printf("Test Passed!\n");
     } else {
@@ -51,14 +44,10 @@ void testReadUntilCursorAtUntil() {
     printf("\nTest Func: testReadUntilCursorAtUntil\n");
     buffer = " BLAH";
     char * ret = (char *)reader_read_until(reader, ' ');
-    if (TEST_DEBUG) {
-        printf("Test String:\n BLAH\n"); // lol
-        // printf("Buffer after read:\n%s\n", buffer);
-        printf("Until char:\n[%x]\n", ' ');
-        // printf("Buffer after read:\n%s\n", buffer);
-        printf("Result:\n%s\n", ret);
-        printf("Expected:\n%s\n", "");
-    }
+    printf("Test String:\n BLAH\n"); // lol
+    printf("Until char:\n[%x]\n", ' ');
+    printf("Result:\n%s\n", ret);
+    printf("Expected:\n%s\n", "");
     if (strcmp(ret, "") == 0) {
         printf("Test Passed!\n");
     } else {
@@ -85,13 +74,10 @@ void testReadUntilFillBufferOnce() {
     expected[size-3] = 0;
 
     char * ret = (char *)reader_read_until(reader, ' ');
-    if (TEST_DEBUG) {
-        printf("Test String:\n%s\n", buf);
-        printf("Until char:\n[%x]\n", ' ');
-        // printf("Buffer after read:\n%s\n", buffer);
-        printf("Result:\n%s\n", ret);
-        printf("Expected:\n%s\n", expected);
-    }
+    printf("Test String:\n%s\n", buf);
+    printf("Until char:\n[%x]\n", ' ');
+    printf("Result:\n%s\n", ret);
+    printf("Expected:\n%s\n", expected);
     if (strcmp(ret, (char *)expected) == 0) {
         printf("Test Passed!\n");
     } else {
@@ -119,13 +105,10 @@ void testReadUntilFillBufferTwice() {
     expected[size-3] = 0;
 
     char * ret = (char *)reader_read_until(reader, ' ');
-    if (TEST_DEBUG) {
-        printf("Test String:\n%s\n", buf);
-        printf("Until char:\n[%x]\n", ' ');
-        // printf("Buffer after read:\n%s\n", buffer);
-        printf("Result:\n%s\n", ret);
-        printf("Expected:\n%s\n", expected);
-    }
+    printf("Test String:\n%s\n", buf);
+    printf("Until char:\n[%x]\n", ' ');
+    printf("Result:\n%s\n", ret);
+    printf("Expected:\n%s\n", expected);
     if (strcmp(ret, expected) == 0) {
         printf("Test Passed!\n");
     } else {

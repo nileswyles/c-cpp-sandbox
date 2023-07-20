@@ -19,8 +19,10 @@ extern void tester_destructor(Tester * t) {
 }
 
 extern void tester_add_test_with_name(Tester *t, const char * name, test_function * func) {
-    array_append(t->tests, (void *)&(Test){.name = name, .func = func}, 1);
-    t->num_tests++;
+    if (OPERATION_SUCCESS == array_append(t->tests, (void *)&(Test){.name = name, .func = func}, 1)) {
+        // only increment if successful 
+        t->num_tests++;
+    }
 }
 
 extern void tester_run(Tester * t) {

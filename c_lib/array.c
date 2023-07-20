@@ -21,12 +21,15 @@ extern void array_destructor(Array * arr) {
     free(arr);
 }
 
-extern void array_append(Array * arr, const void * els, const size_t num_els) {
+extern operation_result array_append(Array * arr, const void * els, const size_t num_els) {
     // O(n) with at least no alloc, maybe one alloc
 
     size_t total_size = arr->size * arr->size_of_el;
     if (resize_buf(arr, num_els)) {
         void * new_buf = alloc_new_buf(arr);
+        if (new_buf == NULL) {
+            return MEMORY_OPERATION_ERROR;
+        }
         memcpy(new_buf, arr->buf, total_size);
         free(arr->buf);
         arr->buf = new_buf;
@@ -34,15 +37,20 @@ extern void array_append(Array * arr, const void * els, const size_t num_els) {
 
     size_t total_size_new_els = num_els * arr->size_of_el;
     memcpy(arr->buf + total_size, els, total_size_new_els);
+
+    return OPERATION_SUCCESS;
 }
 
-extern void array_insert(Array * arr, const size_t pos, const void * els, const size_t num_els) {
+extern operation_result array_insert(Array * arr, const size_t pos, const void * els, const size_t num_els) {
     // O(n) with at least one alloc
     // pos out of bounds, return error...
     if (pos < 0 || pos > arr->size) return NULL;
 
     resize_buf(arr, num_els);
     void * new_buf = alloc_new_buf(arr);
+    if (new_buf == NULL) {
+        return MEMORY_OPERATION_ERROR;
+    }
 
     size_t total_size_up_to_pos = pos * arr->size_of_el;
     memcpy(new_buf, arr->buf, total_size_up_to_pos); // copy from buf up to pos
@@ -53,14 +61,19 @@ extern void array_insert(Array * arr, const size_t pos, const void * els, const 
 
     free(arr->buf);
     arr->buf = new_buf;
+
+    return OPERATION_SUCCESS;
 }
 
-extern void array_remove(Array * arr, const size_t pos, const size_t num_els) {
+extern operation_result array_remove(Array * arr, const size_t pos, const size_t num_els) {
     // O(n) with at least one alloc
     // pos out of bounds, return error...
     if (pos < 0 || pos > arr->size) return NULL;
 
     void * new_buf = alloc_new_buf(arr);
+    if (new_buf == NULL) {
+        return MEMORY_OPERATION_ERROR;
+    }
 
     size_t total_size_up_to_pos = pos * arr->size_of_el;
     memcpy(new_buf, arr->buf, total_size_up_to_pos); // copy from buf up to pos
@@ -71,10 +84,11 @@ extern void array_remove(Array * arr, const size_t pos, const size_t num_els) {
 
     free(arr->buf);
     arr->buf = new_buf;
+
+    return OPERATION_SUCCESS;
 }
 
 static inline void * alloc_new_buf(Array * arr) {
-    // TODO: NULL check...
     return malloc(arr->cap*arr->size_of_el);
 }
 

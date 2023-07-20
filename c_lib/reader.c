@@ -1,4 +1,5 @@
 #include "reader.h"
+#include "logger.h"
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -16,6 +17,8 @@ static uint8_t * arr_cat(uint8_t * t, ssize_t t_size, uint8_t * b, ssize_t b_siz
 
 // this may seem like much for this obj, but let's get in the habit of doing this...
 reader * reader_constructor(const int fd, const size_t buf_size) {
+    // TODO: malloc error checking..
+    // ensure buf_size > some amount and fd > 0?
     reader * r = (reader *)malloc(sizeof(reader));
     r->buf = (uint8_t *)(malloc(buf_size * sizeof(uint8_t)));
     r->buf_size = buf_size;
@@ -118,7 +121,7 @@ uint8_t * reader_read_until(reader * const r, const char until) {
     }
 
     int start_cursor = r->cursor;
-    // printf("start_cursor, %d, %c\n", start_cursor, r->buf[start_cursor]);
+    logger_debug_printf("reader_read_until start_cursor: %u\n", start_cursor);
     uint8_t c = r->buf[start_cursor];
     uint8_t * s = NULL;
     size_t s_size = 0;
@@ -126,22 +129,14 @@ uint8_t * reader_read_until(reader * const r, const char until) {
         if (r->cursor == r->bytes_in_buffer) { // if cursor pointing past data...
             // copy all data in buffer to string and read more
             int bytes_left_in_buffer = r->bytes_in_buffer - start_cursor;
-            // if (s != NULL) {
-            //     printf("reached end of buffer, old string: ");
-            //     for (int i = 0; i < s_size; i++) {
-            //         printf("%c", s[i]);
-            //     }
-            //     printf("\n");
-            // }
             uint8_t * new_s = arr_cat(s, s_size, r->buf + start_cursor, bytes_left_in_buffer);
             free(s);
             s = new_s;
             s_size += bytes_left_in_buffer;
-            // printf("reached end of buffer, new string: ");
-            // for (int i = 0; i < s_size; i++) {
-            //     printf("%c", s[i]);
-            // }
-            // printf("\n");
+
+            logger_debug_printf("reached end of buffer, flush buffer to string and read more:\n");
+            logger_debug_print_array(s, s_size);
+            logger_debug_printf("\n");
 
             int ret = fill_buffer(r);
             if (ret == -1) {
@@ -160,8 +155,8 @@ uint8_t * reader_read_until(reader * const r, const char until) {
     free(s);
     s = new_s;
     
-    // printf("end_cursor, %d, %c\n", r->cursor, r->buf[r->cursor]);
-    // printf("new string: %s---END\n", new_s);
+    logger_debug_printf("reader_read_until end cursor: %d\n", r->cursor);
+    logger_debug_printf("reader_read_until string: %s\n", s);
     return s;
 }
 

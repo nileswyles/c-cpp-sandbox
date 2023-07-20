@@ -10,8 +10,11 @@
 
 -- Are there any cool optimization related tips and tricks?
 -- Weak symbols for testing? GCC -nostdlib? Apparently, syscalls are (functionally) weak symbols - I was able to stub the read call without any compiler/linker FOO. 
+-- Macros
 
 TODO: Read about more best practices
 https://en.cppreference.com/w/c/keyword
 https://en.cppreference.com/w/c/language/storage_duration
 https://gcc.gnu.org/onlinedocs/gcc/Option-Summary.html
+https://gcc.gnu.org/onlinedocs/gcc/Common-Variable-Attributes.html
+https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html

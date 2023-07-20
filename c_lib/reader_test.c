@@ -1,5 +1,5 @@
 #include "reader.h"
-// #include <unistd.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -12,7 +12,7 @@
 char * buffer;
 
 ssize_t read(int fd, void *buf, size_t nbytes) {
-    ssize_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
+    size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
     memcpy(buf, buffer, ret);
     if (TEST_DEBUG) {
         printf("READ RETURNED (%ld): ", ret);
@@ -26,7 +26,6 @@ ssize_t read(int fd, void *buf, size_t nbytes) {
         }
         printf("\n");
     }
-    // TODO: bound check
     buffer += ret; // duh
     return ret; 
 }
@@ -87,9 +86,6 @@ void testReadUntilFillBufferOnce() {
     buf[size] = 0; // TODO: still puzzled by why this is necessary and whether or not compiler ensures it's safe.
     buffer = buf;
 
-    // buf = $$$<8099 = ' '>
-    // actual = $$$<8099 = 'NUL'>
-    // expected = $$$<8099 = 'NUL'>
     char expected[size-3]; // until char should == NUL
     strncpy(expected, buf, size-3); // more lame std lib stuff? lol
     expected[size-3] = 0;
@@ -145,13 +141,39 @@ void testReadUntilFillBufferTwice() {
 }
 
 // void testReadUntilCursorCheck?
+// void testReadUntilCursorNonZero?
+
+// void testReadBytes?
+// void testReadBytesMax?
+// void testReadBytesMin?
+// void testReadBytesFillBufferOnce?
+// void testReadBytesFillBufferTwice?
 // void testReadBytesCursorCheck?
+// void testReadBytesCursorNonZero?
+// void testReadBytesThenReadUntil?
+// void testReadUntilThenReadBytes?
+void testRunner(void func()) {
+    printf("\n#######################################\n");
+    // before test 
+    func();
+    // after test 
+}
 
 int main() {
-    testReadUntil();
-    testReadUntilCursorAtUntil();
-    testReadUntilFillBufferOnce();
-    testReadUntilFillBufferTwice();
+    // before suite
+    testRunner(testReadUntil);
+    testRunner(testReadUntilCursorAtUntil);
+    testRunner(testReadUntilFillBufferOnce);
+    testRunner(testReadUntilFillBufferTwice);
+    printf("\n#######################################\n");
+    // after suite
+    // testRunner(testReadUntil);
+    // testReadUntil();
+    // testReadUntilCursorAtUntil();
+    // printf("\n#######################################\n");
+    // testReadUntilFillBufferOnce();
+    // printf("\n#######################################\n");
+    // testReadUntilFillBufferTwice();
 
     return 0;
 }

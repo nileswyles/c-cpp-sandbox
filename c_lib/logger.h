@@ -5,7 +5,7 @@
 #include <stdarg.h>
 
 #ifndef LOGGER_LEVEL
-// default to "ERROR"
+// default to "LOGGER_ERROR"
 #define LOGGER_LEVEL 0
 #endif
 
@@ -15,13 +15,13 @@
     fprintf(stderr, "%s:%d (%s) " fmt, __FILE__, __LINE__, __func__, ##__VA_ARGS__);
 
 #define logger_debug_printf(fmt, ...) \
-    if (LOGGER_LEVEL >= DEBUG) { \
+    if (LOGGER_LEVEL >= LOGGER_DEBUG) { \
         fprintf(stdout, "%s:%d (%s) " fmt, __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
     }
 
 #define logger_print_array(arr, size) \
     FILE * file = stderr;\
-    if (LOGGER_LEVEL >= DEBUG) {\
+    if (LOGGER_LEVEL >= LOGGER_DEBUG) {\
         file = stdout;\
     }\
     fprintf(file, "%s:%d (%s) ", __FILE__, __LINE__, __func__);\
@@ -35,11 +35,11 @@
     }\
     fprintf(file, "\n");
 
-#define logger_debug_print_array(arr, size) logger_print_array(arr, size)
+#define logger_debug_print_array(arr, size) logger_print_array(arr, size);
 
 typedef enum log_level {
-    ERROR, // 0
-    DEBUG,
+    LOGGER_ERROR, // 0
+    LOGGER_DEBUG,
 } log_level;
 
 #endif

@@ -2,7 +2,7 @@
 
 static void run(Tester * tester, Test * test);
 
-Tester * tester_constructor(test_function * before, test_function * beforeEach, test_function * after, test_function * afterEach) {
+extern Tester * tester_constructor(test_function * before, test_function * beforeEach, test_function * after, test_function * afterEach) {
     Tester * t = (Tester *)malloc(sizeof(Tester));
     t->before = before;
     t->beforeEach = beforeEach;
@@ -13,17 +13,17 @@ Tester * tester_constructor(test_function * before, test_function * beforeEach, 
     return t;
 }
 
-void tester_destructor(Tester * t) {
+extern void tester_destructor(Tester * t) {
     array_destructor(t->tests);
     free(t);
 }
 
-void tester_add_test_with_name(Tester *t, const char * name, test_function * func) {
+extern void tester_add_test_with_name(Tester *t, const char * name, test_function * func) {
     array_append(t->tests, (void *)&(Test){.name = name, .func = func}, 1);
     t->num_tests++;
 }
 
-void tester_run(Tester * t) {
+extern void tester_run(Tester * t) {
     if (t->before != NULL) {
         t->before(t);
     }

@@ -1,4 +1,6 @@
 #include "server.h"
+#include "logger.h"
+
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -13,7 +15,6 @@
 #include <fcntl.h>
 
 #define MAX_CONNECTIONS (1 << 16)
-#define DEBUG 0
 
 typedef struct thread_arg {
     connection_handler_t * handler;
@@ -23,7 +24,7 @@ typedef struct thread_arg {
 static void * handler_wrapper_func(void * arg);
 static void process_sockopts(int fd);
 
-void server_listen(const char * address, const uint16_t port, connection_handler_t handler) {
+extern void server_listen(const char * address, const uint16_t port, connection_handler_t handler) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
         // check errno for error
@@ -107,7 +108,7 @@ static void process_sockopts(int fd) {
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);
 
     // read and print relevant options, ignore any error's reading... this is a nice to have...
-    if (DEBUG) {
+    if (LOGGER_LEVEL >= LOGGER_DEBUG) {
         uint32_t rcv_buf_size = 0;
         getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &rcv_buf_size, &uint32_t_len); // why pointer to len? also lame
         uint32_t snd_buf_size = 0;
@@ -119,6 +120,6 @@ static void process_sockopts(int fd) {
         uint8_t ret_keep_alive = 1;
         getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &ret_keep_alive, &byte_len);
 
-        printf("SOCK OPTS: KEEP_ALIVE %u, SO_RCVBUF %u, SO_RCVTIMEO %lds %ldus, SO_SNDBUF %u, SO_SNDTIMEO %lds %ldus\n", ret_keep_alive, rcv_buf_size, rcv_timeout.tv_sec, rcv_timeout.tv_usec, snd_buf_size, snd_timeout.tv_sec, snd_timeout.tv_usec);
+        logger_debug_printf("SOCK OPTS: KEEP_ALIVE %u, SO_RCVBUF %u, SO_RCVTIMEO %lds %ldus, SO_SNDBUF %u, SO_SNDTIMEO %lds %ldus\n", ret_keep_alive, rcv_buf_size, rcv_timeout.tv_sec, rcv_timeout.tv_usec, snd_buf_size, snd_timeout.tv_sec, snd_timeout.tv_usec);
     }
 }

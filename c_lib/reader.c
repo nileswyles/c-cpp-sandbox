@@ -16,7 +16,7 @@ static bool cursor_check(reader * const r);
 static uint8_t * arr_cat(uint8_t * t, size_t t_size, uint8_t * b, size_t b_size);
 
 // this may seem like much for this obj, but let's get in the habit of doing this...
-reader * reader_constructor(const int fd, const size_t buf_size) {
+extern reader * reader_constructor(const int fd, const size_t buf_size) {
     // TODO: malloc error checking..
     // ensure buf_size > some amount and fd > 0?
     reader * r = (reader *)malloc(sizeof(reader));
@@ -28,7 +28,7 @@ reader * reader_constructor(const int fd, const size_t buf_size) {
     return r;
 }
 
-void reader_destructor(reader * const r) {
+extern void reader_destructor(reader * const r) {
     free(r->buf);
     free(r);
 }
@@ -36,7 +36,7 @@ void reader_destructor(reader * const r) {
 // -1 == read error
 // 0 == not empty line
 // 1 == is empty line
-int reader_peek_for_empty_line(reader * const r) {
+extern int reader_peek_for_empty_line(reader * const r) {
     if (!cursor_check(r)) {
         return -1;
     }
@@ -65,7 +65,7 @@ int reader_peek_for_empty_line(reader * const r) {
 // if return == NULL, check errno for read error.
 // TODO: should I change ret type to char * and allocate the extra byte, in the event this data is actually a string?
 // Update to be g++ compatible?
-uint8_t * reader_read_bytes(reader * const r, const size_t n) {
+extern uint8_t * reader_read_bytes(reader * const r, const size_t n) {
     if (!cursor_check(r)) {
         // if read error..
         return NULL; 
@@ -115,7 +115,7 @@ uint8_t * reader_read_bytes(reader * const r, const size_t n) {
 }
 
 // if return == NULL, check errno for read error.
-uint8_t * reader_read_until(reader * const r, const char until) {
+extern uint8_t * reader_read_until(reader * const r, const char until) {
     if (!cursor_check(r)) {
         return NULL; 
     }
@@ -172,7 +172,7 @@ uint8_t * reader_read_until(reader * const r, const char until) {
 // uint8_t *val == pointer to val
 // uint8_t new_val = new_val
 // *val = new_val
-int read_chunk_non_blocking_fd(int fd, uint8_t ** p) {
+extern int read_chunk_non_blocking_fd(int fd, uint8_t ** p) {
     uint8_t * buf[4096];
     int bytes_read = 0;
     int sleep_before_read = 0;

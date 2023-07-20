@@ -76,8 +76,8 @@ uint8_t * reader_read_bytes(reader * const r, const size_t n) {
     uint8_t * const data = (uint8_t *)malloc((n + 1)*sizeof(uint8_t));
     uint8_t * data_cursor = data;
     while (bytes_read < n) {
-        int bytes_left_to_read = n - bytes_read;
-        int bytes_left_in_buffer = r->bytes_in_buffer - r->cursor;
+        size_t bytes_left_to_read = n - bytes_read;
+        size_t bytes_left_in_buffer = r->bytes_in_buffer - r->cursor;
         // printf("bytes_read %d, bytes_to_read %d, bytes_left_to_read %d, bytes_left_in_buffer %d\n", bytes_read, n, bytes_left_to_read, bytes_left_in_buffer);
 
         if (bytes_left_to_read > bytes_left_in_buffer) {
@@ -136,7 +136,6 @@ uint8_t * reader_read_until(reader * const r, const char until) {
 
             logger_debug_printf("reached end of buffer, flush buffer to string and read more:\n");
             logger_debug_print_array(s, s_size);
-            logger_debug_printf("\n");
 
             int ret = fill_buffer(r);
             if (ret == -1) {

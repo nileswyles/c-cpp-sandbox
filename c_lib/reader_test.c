@@ -1,4 +1,5 @@
 #include "reader.h"
+#include "logger.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,21 +10,14 @@
 #define TEST_DEBUG 1
 #endif
 
-char * buffer;
+const char * buffer;
 
 ssize_t read(int fd, void *buf, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
     memcpy(buf, buffer, ret);
     if (TEST_DEBUG) {
         printf("READ RETURNED (%ld): ", ret);
-        for (int i = 0; i < ret; i++) {
-            char c = ((char *)buf)[i];
-            if (c <= 0x20) {
-                printf("[%x]", c);
-            } else {
-                printf("%c", c);
-            }
-        }
+        logger_print_array((uint8_t*)buf, ret);
         printf("\n");
     }
     buffer += ret; // duh
@@ -33,7 +27,7 @@ ssize_t read(int fd, void *buf, size_t nbytes) {
 void testReadUntil() {
     reader * reader = reader_constructor(-1, READER_RECOMMENDED_BUF_SIZE);
     printf("\nTest Func: testReadUntil\n");
-    char * test_string = "TESTSTRINGWITHSPACE BLAH";
+    const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
     char * ret = (char *)reader_read_until(reader, ' ');
     if (TEST_DEBUG) {

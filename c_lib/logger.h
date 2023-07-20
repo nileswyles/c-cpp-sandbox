@@ -10,7 +10,8 @@ extern "C"
 #include <stdarg.h>
 
 #ifndef LOGGER_LEVEL
-#define LOGGER_LEVEL 1
+// default to "ERROR"
+#define LOGGER_LEVEL 0
 #endif
 
 // TODO: portability? what other interesting things can we do with macros?

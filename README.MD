@@ -1,6 +1,6 @@
 # Philosophy, (my)best practices
 -- BE EXPLICIT (especially in header files)
--- remember to extern, const (but maybe don't over use?), static, inline and ?restrict?
+-- remember to extern, const (i.e, string literals), static, inline and ?restrict?
 -- explicitly cast/convert types, because g++ (among other things)...
 -- declare static functions at top of file, define at bottom - because order matters, so if static function calls another static function it can get annoying.
 -- define static variables at top of file...

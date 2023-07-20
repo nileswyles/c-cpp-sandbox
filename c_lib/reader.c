@@ -47,7 +47,7 @@ int reader_peek_for_empty_line(reader * const r) {
         // read and append to buffer...
         uint8_t * tmp[r->buf_size - 1];
         ssize_t ret = read(r->fd, tmp, r->buf_size - 1);
-        if (ret < 1 || ret > (r->buf_size - 1)) {
+        if (ret < 1 || (size_t)ret > (r->buf_size - 1)) {
             return -1;
         } else {
             r->buf[0] = r->buf[r->cursor];
@@ -223,7 +223,7 @@ static int fill_buffer(reader * const r) {
     r->cursor = 0;
     ssize_t ret = read(r->fd, r->buf, r->buf_size);
     // TODO: retry on EAGAIN?, revisit possible errors...
-    if (ret == -1 || ret > r->buf_size) {
+    if (ret == -1 || (size_t)ret > r->buf_size) {
         r->bytes_in_buffer = 0; // uint
     } else {
         r->bytes_in_buffer = ret;

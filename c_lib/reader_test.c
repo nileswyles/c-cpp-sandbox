@@ -58,7 +58,6 @@ void testReadUntilCursorAtUntil() {
 
 void testReadUntilFillBufferOnce() {
     reader * reader = reader_constructor(-1, 7);
-    printf("\nTest Func: testReadUntilFillBufferOnce\n");
     int size = reader->buf_size + 7;
     char buf[size];
     int i = 0;
@@ -130,10 +129,6 @@ void testReadUntilFillBufferTwice() {
 // void testReadBytesThenReadUntil?
 // void testReadUntilThenReadBytes?
 void testRunner(void func()) {
-    printf("\n#######################################\n");
-    // before test 
-    func();
-    // after test 
 }
 
 int main() {

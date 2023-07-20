@@ -54,7 +54,7 @@ extern operation_result array_insert(Array * arr, const size_t pos, void * els, 
 
     // removed const from els,,, if not resizing the entire buf,
     // start from pos, swap els from els and buf until reach num els, then append the swapped bytes in els...
-    // resulting in no allocation... in this case, data is already in "stack" from previous call? 
+    // resulting in no allocation... in this case, data is already allocated (in stack?) from calling function? 
 
     size_t total_size_up_to_pos = pos * arr->size_of_el;
     memcpy(new_buf, arr->buf, total_size_up_to_pos); // copy from buf up to pos

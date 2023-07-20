@@ -41,7 +41,7 @@ extern operation_result array_append(Array * arr, const void * els, const size_t
     return OPERATION_SUCCESS;
 }
 
-extern operation_result array_insert(Array * arr, const size_t pos, const void * els, const size_t num_els) {
+extern operation_result array_insert(Array * arr, const size_t pos, void * els, const size_t num_els) {
     // O(n) with at least one alloc
     // pos out of bounds, return error...
     if (pos < 0 || pos > arr->size) return NULL;
@@ -51,6 +51,10 @@ extern operation_result array_insert(Array * arr, const size_t pos, const void *
     if (new_buf == NULL) {
         return MEMORY_OPERATION_ERROR;
     }
+
+    // removed const from els,,, if not resizing the entire buf,
+    // start from pos, swap els from els and buf until reach num els, then append the swapped bytes in els...
+    // resulting in no allocation...
 
     size_t total_size_up_to_pos = pos * arr->size_of_el;
     memcpy(new_buf, arr->buf, total_size_up_to_pos); // copy from buf up to pos
@@ -74,6 +78,9 @@ extern operation_result array_remove(Array * arr, const size_t pos, const size_t
     if (new_buf == NULL) {
         return MEMORY_OPERATION_ERROR;
     }
+
+    // can do this without re-allocating the entire buffer? but is it worth making that optimization?
+    // more and more worth it for pos closer to size, do we have to deal with stack size constraints?
 
     size_t total_size_up_to_pos = pos * arr->size_of_el;
     memcpy(new_buf, arr->buf, total_size_up_to_pos); // copy from buf up to pos

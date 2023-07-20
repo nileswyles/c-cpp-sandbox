@@ -1,7 +1,9 @@
 #include "array.h"
 
+#include <stdbool.h>
+
 static inline void * alloc_new_buf(Array * arr);
-static inline void * resize_buf(Array * arr, const size_t num_els);
+static inline bool resize_buf(Array * arr, const size_t num_els);
 
 extern Array * array_constructor(const size_t initial_cap, const size_t size_of_el) {
     Array * arr = (Array *)malloc(sizeof(Array));
@@ -21,10 +23,10 @@ extern void array_destructor(Array * arr) {
 
 extern void array_append(Array * arr, const void * els, const size_t num_els) {
     // O(n) with at least no alloc, maybe one alloc
-    void * new_buf = resize_buf(arr, num_els);
 
     size_t total_size = arr->size * arr->size_of_el;
-    if (new_buf != NULL) {
+    if (resize_buf(arr, num_els)) {
+        void * new_buf = alloc_new_buf(arr);
         memcpy(new_buf, arr->buf, total_size);
         free(arr->buf);
         arr->buf = new_buf;
@@ -39,10 +41,8 @@ extern void array_insert(Array * arr, const size_t pos, const void * els, const 
     // pos out of bounds, return error...
     if (pos < 0 || pos > arr->size) return NULL;
 
-    void * new_buf = resize_buf(arr, num_els);
-    if (new_buf == NULL) {
-        new_buf = alloc_new_buf(arr);
-    }
+    resize_buf(arr, num_els);
+    void * new_buf = alloc_new_buf(arr);
 
     size_t total_size_up_to_pos = pos * arr->size_of_el;
     memcpy(new_buf, arr->buf, total_size_up_to_pos); // copy from buf up to pos
@@ -78,13 +78,13 @@ static inline void * alloc_new_buf(Array * arr) {
     return malloc(arr->cap*arr->size_of_el);
 }
 
-static inline void * resize_buf(Array * arr, const size_t num_els) {
-    void * new_buf = NULL;
+static inline bool resize_buf(Array * arr, const size_t num_els) {
+    bool resized = false;
     if (num_els + arr->size > arr->cap) {
         // TODO: hmm.....
         size_t new_cap = (arr->cap * 2);
         arr->cap = new_cap;
-        new_buf = alloc_new_buf(arr);
+        resized = true;
     } 
-    return new_buf;
+    return resized;
 }

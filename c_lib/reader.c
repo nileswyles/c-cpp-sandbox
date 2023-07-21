@@ -135,7 +135,7 @@ extern uint8_t * reader_read_until(reader * const r, const char until) {
             s_size += bytes_left_in_buffer;
 
             logger_printf(LOGGER_DEBUG, "reached end of buffer, flush buffer to string and read more:\n");
-            logger_print_array(LOGGER_DEBUG, s, s_size);
+            logger_print_byte_array(LOGGER_DEBUG, s, s_size);
 
             int ret = fill_buffer(r);
             if (ret == -1) {

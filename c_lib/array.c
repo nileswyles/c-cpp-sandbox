@@ -1,6 +1,8 @@
 #include "array.h"
 
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 static inline void * alloc_new_buf(Array * arr);
 static inline bool resize_buf(Array * arr, const size_t num_els);
@@ -38,13 +40,15 @@ extern operation_result array_append(Array * arr, const void * els, const size_t
     size_t total_size_new_els = num_els * arr->size_of_el;
     memcpy(arr->buf + total_size, els, total_size_new_els);
 
+    arr->size += num_els;
+
     return OPERATION_SUCCESS;
 }
 
-extern operation_result array_insert(Array * arr, const size_t pos, void * els, const size_t num_els) {
+extern operation_result array_insert(Array * arr, const size_t pos, const void * els, const size_t num_els) {
     // O(n) with at least one alloc
     // pos out of bounds, return error...
-    if (pos < 0 || pos > arr->size) return NULL;
+    if (pos < 0 || pos > arr->size) return OPERATION_ERROR;
 
     resize_buf(arr, num_els);
     void * new_buf = alloc_new_buf(arr);
@@ -74,7 +78,7 @@ extern operation_result array_insert(Array * arr, const size_t pos, void * els, 
 extern operation_result array_remove(Array * arr, const size_t pos, const size_t num_els) {
     // O(n) with at least one alloc
     // pos out of bounds, return error...
-    if (pos < 0 || pos > arr->size) return NULL;
+    if (pos < 0 || pos > arr->size) return OPERATION_ERROR;
 
     void * new_buf = alloc_new_buf(arr);
     if (new_buf == NULL) {
@@ -104,8 +108,7 @@ static inline void * alloc_new_buf(Array * arr) {
 static inline bool resize_buf(Array * arr, const size_t num_els) {
     bool resized = false;
     if (num_els + arr->size > arr->cap) {
-        // TODO: hmm.....
-        size_t new_cap = (arr->cap * 2);
+        size_t new_cap = (size_t)((num_els + arr->size) * 1.75);
         arr->cap = new_cap;
         resized = true;
     } 

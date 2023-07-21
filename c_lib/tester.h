@@ -3,10 +3,18 @@
 
 #include "array.h"
 #include <stddef.h>
+#include <stdbool.h>
+
+#ifdef TEST_DEBUG
+#define LOGGER_LEVEL LOGGER_DEBUG
+#endif
+
+#include "logger.h"
 
 typedef struct Test {
     const char * name;
     test_function * func;
+    bool fail;
 } Test;
 
 typedef struct Tester {
@@ -16,6 +24,8 @@ typedef struct Tester {
     test_function * afterEach;
     Array * tests;
     size_t num_tests;
+    size_t num_passed;
+    size_t num_failed;
 } Tester;
 
 // test suite

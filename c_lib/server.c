@@ -83,6 +83,14 @@ static void * handler_wrapper_func(void * arg) {
     int fd = a->fd;
     free(a); // free before function call, so that it can terminate thread however it wants... 
 
+    // TODO: SIGHANDLING, seccomp?
+    //  SIGSEGV 
+    //  SIGFPE?
+    //  SIGSYS?
+    //  SIGTRAP?
+    //  SIGXCPU?
+    //  SIGXFSZ?
+
     // it's lame that I need to do this for each 'connection'. And 'socket' is same as 'connection' which is the same as 'socket'? lol
     // I thought it was a 1 (socket) to many (connections) kind of thing (at least for bind).
     process_sockopts(fd);

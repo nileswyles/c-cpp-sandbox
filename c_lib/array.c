@@ -56,6 +56,8 @@ extern operation_result array_insert(Array * arr, const size_t pos, void * els, 
     // start from pos, swap els from els and buf until reach num els, then append the swapped bytes in els...
     // resulting in no allocation... in this case, data is already allocated (in stack?) from calling function? 
 
+    // something to consider, does the compiler make some sort of optimization when stack data is const that makes what I'm proposing a bad idea?? 
+
     size_t total_size_up_to_pos = pos * arr->size_of_el;
     memcpy(new_buf, arr->buf, total_size_up_to_pos); // copy from buf up to pos
     size_t total_size_new_els = num_els * arr->size_of_el;

@@ -121,7 +121,7 @@ extern uint8_t * reader_read_until(reader * const r, const char until) {
     }
 
     size_t start_cursor = r->cursor;
-    logger_debug_printf("reader_read_until start_cursor: %lu\n", start_cursor);
+    logger_printf(LOGGER_DEBUG, "reader_read_until start_cursor: %lu\n", start_cursor);
     uint8_t c = r->buf[start_cursor];
     uint8_t * s = NULL;
     size_t s_size = 0;
@@ -134,8 +134,8 @@ extern uint8_t * reader_read_until(reader * const r, const char until) {
             s = new_s;
             s_size += bytes_left_in_buffer;
 
-            logger_debug_printf("reached end of buffer, flush buffer to string and read more:\n");
-            logger_debug_print_array(s, s_size);
+            logger_printf(LOGGER_DEBUG, "reached end of buffer, flush buffer to string and read more:\n");
+            logger_print_array(LOGGER_DEBUG, s, s_size);
 
             int ret = fill_buffer(r);
             if (ret == -1) {
@@ -154,8 +154,8 @@ extern uint8_t * reader_read_until(reader * const r, const char until) {
     free(s);
     s = new_s;
     
-    logger_debug_printf("reader_read_until end cursor: %lu\n", r->cursor);
-    logger_debug_printf("reader_read_until string: %s\n", s);
+    logger_printf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", r->cursor);
+    logger_printf(LOGGER_DEBUG, "reader_read_until string: %s\n", s);
     return s;
 }
 

@@ -15,8 +15,8 @@ const char * buffer;
 ssize_t read(int fd, void *buf, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
     memcpy(buf, buffer, ret);
-    logger_debug_printf("READ RETURNED (%ld): ", ret);
-    logger_debug_print_array((uint8_t*)buf, ret);
+    logger_printf(LOGGER_DEBUG, "READ RETURNED (%ld): ", ret);
+    logger_print_array(LOGGER_DEBUG, (uint8_t*)buf, ret);
     buffer += ret; // duh
     return ret; 
 }

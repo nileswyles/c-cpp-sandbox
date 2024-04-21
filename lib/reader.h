@@ -1,10 +1,10 @@
+#ifndef READER_H
+#define READER_H
+
 #if defined __cplusplus
 extern "C"
 {
 #endif
-
-#ifndef READER_H
-#define READER_H
 
 #include <stdio.h>
 #include <stdint.h>
@@ -31,8 +31,9 @@ extern uint8_t * reader_read_bytes(reader * const r, const size_t n);
 extern uint8_t * reader_read_until(reader * const r, const char until);
 
 extern int read_chunk_non_blocking_fd(int fd, uint8_t ** p);
-#endif
 
 #if defined __cplusplus
 }
+#endif
+
 #endif

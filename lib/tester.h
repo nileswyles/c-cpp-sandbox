@@ -1,6 +1,11 @@
 #ifndef TESTER_H
 #define TESTER_H
 
+#if defined __cplusplus
+extern "C"
+{
+#endif
+
 #include "array.h"
 #include <stddef.h>
 #include <stdbool.h>
@@ -40,5 +45,9 @@ extern Tester * tester_constructor(test_function * before, test_function * befor
 extern void tester_destructor(Tester * t);
 extern void tester_add_test_with_name(Tester *t, const char * name, test_function * func);
 extern void tester_run(Tester * t);
+
+#if defined __cplusplus
+}
+#endif
 
 #endif

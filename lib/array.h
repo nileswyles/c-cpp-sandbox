@@ -1,6 +1,11 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
+#if defined __cplusplus
+extern "C"
+{
+#endif
+
 #include <stddef.h>
 #include "result.h"
 
@@ -21,5 +26,9 @@ extern void array_destructor(Array * arr);
 extern operation_result array_append(Array * arr, const void * els, const size_t num_els);
 extern operation_result array_insert(Array * arr, const size_t pos, const void * els, const size_t num_els);
 extern operation_result array_remove(Array * arr, const size_t pos, const size_t num_els);
+
+#if defined __cplusplus
+}
+#endif
 
 #endif 

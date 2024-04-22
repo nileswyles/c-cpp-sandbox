@@ -4,7 +4,7 @@
 #include <string>
 using namespace std;
 
-// Assuming unix paths for now... 
+// Assuming unix paths for now... binary size not a concern, so definition in .h
 namespace WylesLibs::Paths {
 
 static string getParent(string path) {

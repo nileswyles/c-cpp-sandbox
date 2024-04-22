@@ -12,6 +12,14 @@
 -- Weak symbols for testing? GCC -nostdlib? Apparently, syscalls are (functionally) weak symbols - I was able to stub the read call without any compiler/linker FOO. 
 -- Macros
 
+- Sort of decided to use g++ for everything but why?
+    - Should I implement shared_ptr, string and other abstractions from the standard library? (Still yes?)
+    - Do templates/generics provide any value? Classes, polymorphism or inheritance? 
+        - Can you generally structure programs in a simpler way instead of leveraging these language features? 
+
+    - I think they do, so while we're at it - use namespaces too.
+    - It's about Options... Options... Options...
+
 TODO: Read about more best practices
 https://en.cppreference.com/w/c/keyword
 https://en.cppreference.com/w/c/language/storage_duration

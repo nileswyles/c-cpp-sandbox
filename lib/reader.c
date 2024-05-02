@@ -29,6 +29,7 @@ extern reader * reader_constructor(const int fd, const size_t buf_size) {
 }
 
 extern void reader_destructor(reader * const r) {
+    // LMAOO
     free(r->buf);
     free(r);
 }
@@ -63,18 +64,19 @@ extern int reader_peek_for_empty_line(reader * const r) {
 }
 
 // if return == NULL, check errno for read error.
-// TODO: should I change ret type to char * and allocate the extra byte, in the event this data is actually a string?
-// Update to be g++ compatible?
-extern uint8_t * reader_read_bytes(reader * const r, const size_t n) {
+// TODO:
+// Can probably be simplified to do 1 read and 1 copy but let's keep changes 'incremental'. 
+//  Need to update tests before making that change. Which I don't feel like doing right now.
+extern reader * reader_read_bytes(reader * const r, const size_t n) {
     if (!cursor_check(r)) {
         // if read error..
         return NULL; 
     }
 
+    reader * copy = reader_constructor(r->fd, n+1);
     size_t bytes_read = 0;
     // TODO: limit size of this buffer?
-    uint8_t * const data = (uint8_t *)malloc((n + 1)*sizeof(uint8_t));
-    uint8_t * data_cursor = data;
+    uint8_t * data_cursor = copy->buf;
     while (bytes_read < n) {
         size_t bytes_left_to_read = n - bytes_read;
         size_t bytes_left_in_buffer = r->bytes_in_buffer - r->cursor;
@@ -90,7 +92,7 @@ extern uint8_t * reader_read_bytes(reader * const r, const size_t n) {
             if (ret == -1) {
                 // TODO:
                 // If an input or output function blocks for this period of time, and data has been sent or received, the return value of that function will be the amount of data transferred; if no data has been transferred and the timeout has been reached then -1 is returned with errno set to EAGAIN or EWOULDBLOCK, or EINPROGRESS
-                free(data);
+                reader_destructor(copy);
                 return NULL;
             }
         } else {
@@ -104,18 +106,19 @@ extern uint8_t * reader_read_bytes(reader * const r, const size_t n) {
     } 
 
     // null terminate so that if caller knows, data will not contain a NUL, they can simply cast to get a c_string.
-    data[n] = 0;  
+    copy->buf[n] = 0;  
+    copy->bytes_in_buffer = copy->buf_size;
 
     // printf("START---");
     // for (int i = 0; i < n; i++) {
-    //     printf("%c", data[i]);
+    //     printf("%c", copy->buf[i]);
     // }
     // printf("---END\n");
-    return data;
+    return copy;
 }
 
 // if return == NULL, check errno for read error.
-extern uint8_t * reader_read_until(reader * const r, const char until) {
+extern reader * reader_read_until(reader * const r, const char until) {
     if (!cursor_check(r)) {
         return NULL; 
     }
@@ -149,14 +152,25 @@ extern uint8_t * reader_read_until(reader * const r, const char until) {
     r->cursor++;
     size_t bytes_up_until_cursor = r->cursor - start_cursor;
     uint8_t * new_s = arr_cat(s, s_size, r->buf + start_cursor, bytes_up_until_cursor);
+
+    size_t new_size = s_size+bytes_up_until_cursor;
     // null terminate so that if caller knows, data will not contain a NUL, they can simply cast to get a c_string.
-    new_s[s_size+bytes_up_until_cursor-1] = 0; // replace 'until' char with NUL byte... -1 because size starts at 1 not index 0.
+    new_s[new_size-1] = 0; // replace 'until' char with NUL byte... -1 because size starts at 1 not index 0.
     free(s);
-    s = new_s;
+
+    // Don't constructor because performance!
+    // TODO: how to dry this up?
+    //   there's a name for this? lol Copy constructor?
+    reader * copy = (reader *)malloc(sizeof(reader));
+    copy->buf = new_s;
+    copy->buf_size = new_size;
+    copy->bytes_in_buffer = new_size;
+    copy->cursor = 0;
     
     logger_printf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", r->cursor);
     logger_printf(LOGGER_DEBUG, "reader_read_until string: %s\n", s);
-    return s;
+
+    return copy;
 }
 
 // In the spirit of overcomplicating things....
@@ -239,6 +253,7 @@ static bool cursor_check(reader * const r) {
     return true;
 }
 
+// MAD EXTRA!!!!
 static uint8_t * arr_cat(uint8_t * t, size_t t_size, uint8_t * b, size_t b_size) {
     uint8_t * const a = (uint8_t *)malloc((t_size+b_size)*sizeof(char));
     memcpy(a, t, t_size);

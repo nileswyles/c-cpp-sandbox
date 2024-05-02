@@ -12,6 +12,8 @@
 
 const char * buffer;
 
+// TODO: LMAO! when your tests aren't proper... While probably inconsequential in tests, get in the habit of freeing the copied buffers once no longer needed.
+
 ssize_t read(int fd, void *buf, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
     memcpy(buf, buffer, ret);

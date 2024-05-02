@@ -20,6 +20,7 @@ typedef struct reader {
     size_t bytes_in_buffer;
 } reader;
 
+// TODO: refactor interface functions to follow the code guidelines I defined.
 extern reader * reader_constructor(const int fd, const size_t buf_size);
 extern void reader_destructor(reader * const r);
 
@@ -27,8 +28,9 @@ extern int reader_peek_for_empty_line(reader * const r);
 
 // These functions return NUL-terminated byte sequences. 
 //  If the caller knows the expected data does not contain a NUL byte, they can simply cast to get a c_string.
-extern uint8_t * reader_read_bytes(reader * const r, const size_t n);
-extern uint8_t * reader_read_until(reader * const r, const char until);
+
+extern reader * reader_read_bytes(reader * const r, const size_t n);
+extern reader * reader_read_until(reader * const r, const char until);
 
 extern int read_chunk_non_blocking_fd(int fd, uint8_t ** p);
 

@@ -25,7 +25,7 @@
 - Also, testing is important. Limiting exposure to bugs among and above? other things.
 
 # Library Details
-- Interfaces with POSIX.
+- Interfaces with POSIX. Win32 as well, eventually - why either or? Should be easy to extend. 
 - API will not be very thought out at first but should improve over time.
 
 TODO: Read about more best practices

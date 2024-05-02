@@ -21,6 +21,7 @@ typedef struct reader {
 } reader;
 
 // TODO: refactor interface functions to follow the code guidelines I defined.
+//   this can also be changed to a class... because it makes sense here and other data structure stuff?
 extern reader * reader_constructor(const int fd, const size_t buf_size);
 extern void reader_destructor(reader * const r);
 

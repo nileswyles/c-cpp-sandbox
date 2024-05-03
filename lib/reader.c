@@ -26,7 +26,7 @@ extern reader * reader_constructor(const int fd, const size_t buf_size) {
     return r;
 }
 
-extern reader * reader_initialize(reader * r, uint8_t * buf, const int fd, const size_t buf_size) {
+extern void reader_initialize(reader * r, uint8_t * buf, const int fd, const size_t buf_size) {
     r->buf = buf;
     r->buf_size = buf_size;
     r->cursor = 0;

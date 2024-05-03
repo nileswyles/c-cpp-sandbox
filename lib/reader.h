@@ -22,7 +22,7 @@ typedef struct reader {
 } reader;
 
 extern reader * reader_constructor(const int fd, const size_t buf_size);
-extern reader * reader_initialize(reader * r, uint8_t * buf, const int fd, const size_t buf_size);
+extern void reader_initialize(reader * r, uint8_t * buf, const int fd, const size_t buf_size);
 extern void reader_destructor(reader * const r);
 
 extern int reader_peek_for_empty_line(reader * const r);

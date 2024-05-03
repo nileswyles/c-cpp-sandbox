@@ -1,10 +1,5 @@
-#ifndef READER_H
-#define READER_H
+#pragma once // instead of ifndef guard?
 
-#if defined __cplusplus
-extern "C"
-{
-#endif
 #include "array.h"
 
 #include <stdio.h>
@@ -13,30 +8,35 @@ extern "C"
 
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
-typedef struct reader {
-    int fd;
-    uint8_t * buf;
-    size_t buf_size;
-    size_t cursor;
-    size_t bytes_in_buffer;
-} reader;
+namespace WylesLibs {
+class Reader {
+    private:
+        int fd;
+        uint8_t * buf;
+        size_t buf_size;
+        size_t cursor;
+        size_t bytes_in_buffer;
+        
+        int fillBuffer();
+        bool cursorCheck();
 
-extern reader * reader_constructor(const int fd, const size_t buf_size);
-extern void reader_initialize(reader * r, uint8_t * buf, const int fd, const size_t buf_size);
-extern void reader_destructor(reader * const r);
-
-extern int reader_peek_for_empty_line(reader * const r);
-
-// These functions return NUL-terminated byte sequences. 
-//  If the caller knows the expected data does not contain a NUL byte, they can simply cast to get a c_string.
-
-extern Array * reader_read_bytes(reader * const r, const size_t n);
-extern Array * reader_read_until(reader * const r, const char until);
-
-extern int read_chunk_non_blocking_fd(int fd, uint8_t ** p);
-
-#if defined __cplusplus
+    public:
+        Reader(const int fd) : Reader(fd, READER_RECOMMENDED_BUF_SIZE) {}
+        Reader(const int pFd, const size_t pBuf_size) {
+            // TODO:
+            // ensure buf_size > some amount and fd > 0? else return null? lol idk
+            buf = newCArray<uint8_t>(buf_size);
+            buf_size = pBuf_size;
+            cursor = 0;
+            fd = pFd;
+            bytes_in_buffer = 0;
+        }
+        ~Reader() {
+            delete buf;
+        }
+        int peekForEmptyLine();
+        Array<uint8_t> * readBytes(const size_t n);
+        Array<uint8_t> * readUntil(const char until);
+        int read_chunk_non_blocking_fd(int fd, uint8_t ** p);
+};
 }
-#endif
-
-#endif

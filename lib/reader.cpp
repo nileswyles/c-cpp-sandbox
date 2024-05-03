@@ -99,7 +99,7 @@ Array<uint8_t> * Reader::readUntil(const char until) {
     logger_printf(LOGGER_DEBUG, "reader_read_until start_cursor: %lu\n", start_cursor);
     uint8_t c = this->buf[start_cursor];
 
-    Array<uint8_t> * data = new Array<uint8_t>(READER_RECOMMENDED_BUF_SIZE);
+    Array<uint8_t> * data = new Array<uint8_t>();
     while(c != until) {
         if (this->cursor == this->bytes_in_buffer) { // if cursor pointing past data...
             // copy all data in buffer to string and read more

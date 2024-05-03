@@ -1,4 +1,5 @@
 #include "reader.h"
+#include "array.h"
 #include "logger.h"
 
 #include <unistd.h>
@@ -20,12 +21,17 @@ extern reader * reader_constructor(const int fd, const size_t buf_size) {
     // TODO: malloc error checking..
     // ensure buf_size > some amount and fd > 0?
     reader * r = (reader *)malloc(sizeof(reader));
-    r->buf = (uint8_t *)(malloc(buf_size * sizeof(uint8_t)));
+    uint8_t * buf = (uint8_t *)(malloc(buf_size * sizeof(uint8_t)));
+    reader_initialize(r, buf, fd, buf_size);
+    return r;
+}
+
+extern reader * reader_initialize(reader * r, uint8_t * buf, const int fd, const size_t buf_size) {
+    r->buf = buf;
     r->buf_size = buf_size;
     r->cursor = 0;
     r->fd = fd;
     r->bytes_in_buffer = 0;
-    return r;
 }
 
 extern void reader_destructor(reader * const r) {
@@ -67,16 +73,16 @@ extern int reader_peek_for_empty_line(reader * const r) {
 // TODO:
 // Can probably be simplified to do 1 read and 1 copy but let's keep changes 'incremental'. 
 //  Need to update tests before making that change. Which I don't feel like doing right now.
-extern reader * reader_read_bytes(reader * const r, const size_t n) {
+//  or by reading a single byte per read call, but that seems like the wrong way to do it.
+extern Array * reader_read_bytes(reader * const r, const size_t n) {
     if (!cursor_check(r)) {
         // if read error..
         return NULL; 
     }
 
-    reader * copy = reader_constructor(r->fd, n+1);
+    Array * data = array_constructor(n+1, sizeof(uint8_t));
     size_t bytes_read = 0;
     // TODO: limit size of this buffer?
-    uint8_t * data_cursor = copy->buf;
     while (bytes_read < n) {
         size_t bytes_left_to_read = n - bytes_read;
         size_t bytes_left_in_buffer = r->bytes_in_buffer - r->cursor;
@@ -84,41 +90,39 @@ extern reader * reader_read_bytes(reader * const r, const size_t n) {
 
         if (bytes_left_to_read > bytes_left_in_buffer) {
             // copy data left in buffer and read more
-            memcpy(data_cursor, r->buf + r->cursor, bytes_left_in_buffer);
+            array_append(data, r->buf + r->cursor, bytes_left_in_buffer);
             bytes_read += bytes_left_in_buffer;
-            data_cursor += bytes_left_in_buffer;
 
             int ret = fill_buffer(r);
             if (ret == -1) {
                 // TODO:
                 // If an input or output function blocks for this period of time, and data has been sent or received, the return value of that function will be the amount of data transferred; if no data has been transferred and the timeout has been reached then -1 is returned with errno set to EAGAIN or EWOULDBLOCK, or EINPROGRESS
-                reader_destructor(copy);
+                array_destructor(data);
                 return NULL;
             }
         } else {
             // else enough data in buffer
             // printf("cursor: %lx, start: %lx\n", data_cursor, data);
-            memcpy(data_cursor, r->buf + r->cursor, bytes_left_to_read);
+            array_append(data, r->buf + r->cursor, bytes_left_to_read);
             r->cursor += bytes_left_to_read;
-            data_cursor += bytes_left_to_read;
             bytes_read += bytes_left_to_read; // no more loop after this...
         }
     } 
 
     // null terminate so that if caller knows, data will not contain a NUL, they can simply cast to get a c_string.
-    copy->buf[n] = 0;  
-    copy->bytes_in_buffer = copy->buf_size;
+    uint8_t nul[1] = {0};
+    array_append(data, nul, 1);
 
     // printf("START---");
     // for (int i = 0; i < n; i++) {
     //     printf("%c", copy->buf[i]);
     // }
     // printf("---END\n");
-    return copy;
+    return data;
 }
 
 // if return == NULL, check errno for read error.
-extern reader * reader_read_until(reader * const r, const char until) {
+extern Array * reader_read_until(reader * const r, const char until) {
     if (!cursor_check(r)) {
         return NULL; 
     }
@@ -126,23 +130,20 @@ extern reader * reader_read_until(reader * const r, const char until) {
     size_t start_cursor = r->cursor;
     logger_printf(LOGGER_DEBUG, "reader_read_until start_cursor: %lu\n", start_cursor);
     uint8_t c = r->buf[start_cursor];
-    uint8_t * s = NULL;
-    size_t s_size = 0;
+
+    Array * data = array_constructor(READER_RECOMMENDED_BUF_SIZE, sizeof(char));
     while(c != until) {
         if (r->cursor == r->bytes_in_buffer) { // if cursor pointing past data...
             // copy all data in buffer to string and read more
             size_t bytes_left_in_buffer = r->bytes_in_buffer - start_cursor;
-            uint8_t * new_s = arr_cat(s, s_size, r->buf + start_cursor, bytes_left_in_buffer);
-            free(s);
-            s = new_s;
-            s_size += bytes_left_in_buffer;
+            array_append(data, r->buf + start_cursor, bytes_left_in_buffer);
 
             logger_printf(LOGGER_DEBUG, "reached end of buffer, flush buffer to string and read more:\n");
-            logger_print_byte_array(LOGGER_DEBUG, s, s_size);
+            logger_print_byte_array(LOGGER_DEBUG, data->buf, data->size);
 
             int ret = fill_buffer(r);
             if (ret == -1) {
-                free(s);
+                array_destructor(data);
                 return NULL;
             }
             start_cursor = r->cursor; // == 0
@@ -151,26 +152,16 @@ extern reader * reader_read_until(reader * const r, const char until) {
     }
     r->cursor++;
     size_t bytes_up_until_cursor = r->cursor - start_cursor;
-    uint8_t * new_s = arr_cat(s, s_size, r->buf + start_cursor, bytes_up_until_cursor);
+    array_append(data, r->buf + start_cursor, bytes_up_until_cursor);
 
-    size_t new_size = s_size+bytes_up_until_cursor;
     // null terminate so that if caller knows, data will not contain a NUL, they can simply cast to get a c_string.
-    new_s[new_size-1] = 0; // replace 'until' char with NUL byte... -1 because size starts at 1 not index 0.
-    free(s);
+    uint8_t nul[1] = {0};
+    array_append(data, nul, 1);
 
-    // Don't constructor because performance!
-    // TODO: how to dry this up?
-    //   there's a name for this? lol Copy constructor?
-    reader * copy = (reader *)malloc(sizeof(reader));
-    copy->buf = new_s;
-    copy->buf_size = new_size;
-    copy->bytes_in_buffer = new_size;
-    copy->cursor = 0;
-    
     logger_printf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", r->cursor);
-    logger_printf(LOGGER_DEBUG, "reader_read_until string: %s\n", s);
+    logger_printf(LOGGER_DEBUG, "reader_read_until string: %s\n", (char *)data->buf);
 
-    return copy;
+    return data;
 }
 
 // In the spirit of overcomplicating things....
@@ -251,12 +242,4 @@ static bool cursor_check(reader * const r) {
         }
     }
     return true;
-}
-
-// MAD EXTRA!!!!
-static uint8_t * arr_cat(uint8_t * t, size_t t_size, uint8_t * b, size_t b_size) {
-    uint8_t * const a = (uint8_t *)malloc((t_size+b_size)*sizeof(char));
-    memcpy(a, t, t_size);
-    memcpy(a + t_size, b, b_size);
-    return a;
 }

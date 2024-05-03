@@ -10,13 +10,15 @@
 
 namespace WylesLibs::File {
 
-static reader * read(const char * file_path) {
+static Array * read(const char * file_path) {
+    // because VLA?
+    const size_t buf_size = 1024;
+
     int fd = open(file_path, O_RDONLY);
-    reader * r = reader_constructor(fd, READER_RECOMMENDED_BUF_SIZE);
-    // so I am not a complete retard...
-    reader * copy = reader_read_until(r, (char)EOF);
-    reader_destructor(r);
-    return copy;
+    reader r;
+    uint8_t buf[buf_size];
+    reader_initialize(&r, buf, fd, buf_size);
+    return reader_read_until(&r, (char)EOF);
 }
 
 }

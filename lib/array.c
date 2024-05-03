@@ -4,18 +4,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-static inline void * alloc_new_buf(Array * arr);
+static inline void * alloc_new_buffer(const size_t initial_cap, const size_t size_of_el);
+static inline void * alloc_new_buffer_for_array(Array * arr);
 static inline bool resize_buf(Array * arr, const size_t num_els);
 
 extern Array * array_constructor(const size_t initial_cap, const size_t size_of_el) {
     Array * arr = (Array *)malloc(sizeof(Array));
+    void * buf = alloc_new_buffer(initial_cap, size_of_el);
+    array_initialize(arr, buf, initial_cap, size_of_el);
+    return arr;
+}
+
+extern void array_initialize(Array * arr, void * buf, const size_t initial_cap, const size_t size_of_el) {
+    arr->buf = buf;
     arr->cap = initial_cap; 
     arr->size_of_el = size_of_el;
     arr->size = 0;
-    
-    arr->buf = alloc_new_buf(arr);
-
-    return arr;
 }
 
 extern void array_destructor(Array * arr) {
@@ -28,7 +32,7 @@ extern operation_result array_append(Array * arr, const void * els, const size_t
 
     size_t total_size = arr->size * arr->size_of_el;
     if (resize_buf(arr, num_els)) {
-        void * new_buf = alloc_new_buf(arr);
+        void * new_buf = alloc_new_buffer_for_array(arr);
         if (new_buf == NULL) {
             return MEMORY_OPERATION_ERROR;
         }
@@ -51,7 +55,7 @@ extern operation_result array_insert(Array * arr, const size_t pos, const void *
     if (pos < 0 || pos > arr->size) return OPERATION_ERROR;
 
     resize_buf(arr, num_els);
-    void * new_buf = alloc_new_buf(arr);
+    void * new_buf = alloc_new_buffer_for_array(arr);
     if (new_buf == NULL) {
         return MEMORY_OPERATION_ERROR;
     }
@@ -80,7 +84,7 @@ extern operation_result array_remove(Array * arr, const size_t pos, const size_t
     // pos out of bounds, return error...
     if (pos < 0 || pos > arr->size) return OPERATION_ERROR;
 
-    void * new_buf = alloc_new_buf(arr);
+    void * new_buf = alloc_new_buffer_for_array(arr);
     if (new_buf == NULL) {
         return MEMORY_OPERATION_ERROR;
     }
@@ -101,8 +105,16 @@ extern operation_result array_remove(Array * arr, const size_t pos, const size_t
     return OPERATION_SUCCESS;
 }
 
-static inline void * alloc_new_buf(Array * arr) {
-    return malloc(arr->cap*arr->size_of_el);
+extern size_t array_num_elements(Array * arr) {
+    return arr->size/arr->size_of_el;
+}
+
+static inline void * alloc_new_buffer_for_array(Array * arr) {
+    return alloc_new_buffer(arr->cap, arr->size_of_el);
+}
+
+static inline void * alloc_new_buffer(const size_t initial_cap, const size_t size_of_el) {
+    return malloc(initial_cap*size_of_el);
 }
 
 static inline bool resize_buf(Array * arr, const size_t num_els) {

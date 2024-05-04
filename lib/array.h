@@ -12,12 +12,14 @@
 #define ARRAY_RECOMMENDED_INITIAL_CAP 8
 
 namespace WylesLibs {
+
 template <class T>
 static inline T * newCArray(size_t size) {
     return (T *) ::operator new (sizeof(T) * size);
 }
 
 // hm...... so templates in header file only, makes sense? array translation unit (array.cpp) didn't have any source... 
+    // I wonder what that means for code size, I always thought using the linker helped with that? like linking translation units together?
 // and only header stuff is prepended to translation units using #include, right? How to get a definitive answer
 //      linker doesn't have anything to link lol, so I guess that's the answer :)
 
@@ -25,6 +27,9 @@ static inline T * newCArray(size_t size) {
 
 //   but no cleaner way to implement? .h makes easier to import - in any case. 
 //        maybe move template definition to class definition? or do template member functions need to be declared and implement/defined separately?
+
+// Template Class
+
 template <class T>
 class Array {
     private:
@@ -63,12 +68,13 @@ class Array {
         }
 };
 
+// Template Class Member functions
+
 // TODO: remove excessive allocations and dependency on memcpy
     // also void return types and handle exceptions?
 static inline size_t resizeBuffer(size_t num_els, size_t current_size);
 static constexpr double RESIZE_FACTOR = 1.75;
 
-// hmm..... 
 template <class T>
 operation_result Array<T>::append(const T * els, const size_t num_els) {
     // O(n) with at least no alloc, maybe one alloc

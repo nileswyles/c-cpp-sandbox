@@ -126,7 +126,6 @@ class Array {
             return this->remove(pos, 1);
         }
         operation_result remove(const size_t pos, const size_t num_els) {
-            // O(n) with at least one alloc
             // pos out of bounds, return error...
             if (pos < 0 || pos > this->size) return OPERATION_ERROR;
 
@@ -230,7 +229,7 @@ class Array<char *> {
             if (temp_buff == nullptr) {
                 return MEMORY_OPERATION_ERROR;
             }
-            // make shift stack
+            // make-shift stack
             size_t temp_push = 0;
             size_t temp_pop = 0;
             // num_els == 2
@@ -257,6 +256,7 @@ class Array<char *> {
                     // call addElement with oldest value in temp_buff
                 }
                 // if i >= size then no more buffering needed, let's guard to not go out of bounds
+                // TODO: loop until, size then loop num_els to flush buffer, cleaner?
                 if (i < this->size) {
                     temp_buff[temp_push] = this->buf[i]; // store value
                     if (++temp_push == num_els) {
@@ -289,7 +289,6 @@ class Array<char *> {
             return this->remove(pos, 1);
         }
         operation_result remove(const size_t pos, const size_t num_els) {
-            // O(n) with at least one alloc
             // pos out of bounds, return error...
             if (pos < 0 || pos > this->size) return OPERATION_ERROR;
 

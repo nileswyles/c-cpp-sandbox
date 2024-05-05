@@ -9,6 +9,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "logger.h"
+
 #define ARRAY_RECOMMENDED_INITIAL_CAP 8
 
 namespace WylesLibs {
@@ -43,7 +45,7 @@ class Array {
             // pos out of bounds, return error...
             if (pos < 0 || pos > this->size) return OPERATION_ERROR;
 
-            printf("num_els: %ld, size: %ld, cap: %ld, pos: %ld\n", num_els, this->size, this->cap, pos);
+            logger_printf(LOGGER_DEBUG, "num_els: %ld, size: %ld, cap: %ld, pos: %ld\n", num_els, this->size, this->cap, pos);
 
             T * new_buf = this->buf; 
             // recap buffer if needed. 
@@ -133,6 +135,7 @@ class Array {
         }
 };
 
+// LMAOOOOOOO
 template<>
 class Array<char *> {
     private:
@@ -158,10 +161,10 @@ class Array<char *> {
             char * new_cstring = newCArray<char>(strlen(el) + 1);
             // copy el into new_cstring
             strcpy(new_cstring, el);
-            printf("New String: %s\n", new_cstring);
+            logger_printf(LOGGER_DEBUG, "New String: %s\n", new_cstring);
             // store new string pointer
             buffer[pos] = new_cstring;
-            printf("pointer to first character of string in buffer location %x\n", buffer[pos]);
+            logger_printf(LOGGER_DEBUG, "pointer to first character of string in buffer location %x\n", buffer[pos]);
         }
     public:
         char ** buf;
@@ -182,7 +185,7 @@ class Array<char *> {
             // pos out of bounds, return error...
             if (pos < 0 || pos > this->size) return OPERATION_ERROR;
 
-            printf("num_els: %ld, size: %ld, cap: %ld, pos: %ld\n", num_els, this->size, this->cap, pos);
+            logger_printf(LOGGER_DEBUG, "num_els: %ld, size: %ld, cap: %ld, pos: %ld\n", num_els, this->size, this->cap, pos);
 
             char ** new_buf = this->buf; 
             // recap buffer if needed. 
@@ -221,7 +224,7 @@ class Array<char *> {
             // temp_buff = [6, 7] ; 2, 0    ; buf = [1, 2, 8, 9, 10]
             // temp_buff = [8, 7] ; 0, 1    ; buf = [1, 2, 6, 7]
             for (size_t i = pos; i < this->size + num_els; i++) {
-                printf("push: %ld pop: %ld\n", temp_push, temp_pop);
+                logger_printf(LOGGER_DEBUG, "push: %ld pop: %ld\n", temp_push, temp_pop);
                 char * value;
                 if (i < pos + num_els) {
                     value = els[i - pos];
@@ -244,10 +247,20 @@ class Array<char *> {
             }
             delete[] temp_buff;
 
+            for (size_t i = 0; i < num_els; i++) {
+                 logger_printf(LOGGER_DEBUG, "%s\n", new_buf[i]);
+            }
+
             // This should only remove pointers to strings, not strings, no?
+            // LMAO, what changed?
+
             delete[] this->buf;
             this->buf = new_buf;
             this->size += num_els;
+
+            for (size_t i = 0; i < this->size; i++) {
+                 logger_printf(LOGGER_DEBUG, "%s\n", this->buf[i]);
+            }
 
             return OPERATION_SUCCESS;
         }

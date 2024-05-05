@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <string>
 #include <stdio.h>
 
 // TODO: still unsure about this?
@@ -75,6 +76,15 @@ bool test_array_append_cstrings() {
     Array<char *> arr;
 
     size_t expected_size = 7;
+    // const char * expected[7] = {
+    //     std::string("STRING 1").c_str(),
+    //     std::string("STRING 2").c_str(),
+    //     std::string("STRING 3").c_str(),
+    //     std::string("STRING 4").c_str(),
+    //     std::string("STRING 5").c_str(),
+    //     std::string("STRING 6").c_str(),
+    //     std::string("STRING 7").c_str()
+    // };
     char * expected[7] = {
         "STRING 1",
         "STRING 2",
@@ -90,7 +100,8 @@ bool test_array_append_cstrings() {
    // bool res = assert(&arr, (void *)expected, expected_size, ARRAY_RECOMMENDED_INITIAL_CAP, sizeof(uint8_t));
    bool res = true;
 
-   for (size_t i = 0; i < 7; i++) {
+    printf("WTF?, %d, %x\n", arr.size, arr.buf[0]);
+   for (size_t i = 0; i < arr.size; i++) {
         logger_printf(LOGGER_DEBUG, "%s\n", arr.buf[i]);
    }
 

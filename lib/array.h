@@ -55,12 +55,14 @@ class Array {
 
             T * new_buf = this->buf; 
             // recap buffer if needed. 
+            bool recapped = false;
             if (num_els + this->size > this->cap) {
                 size_t new_cap = (size_t)((num_els + this->size) * RESIZE_FACTOR);
                 new_buf = newCArray<T>(new_cap);
                 if (new_buf == nullptr) {
                     return MEMORY_OPERATION_ERROR;
                 } else {
+                    recapped = true;
                     this->cap = new_cap;
                     // if recapped, copy elements up until pos.
                     //  the rest will be automagically intialized by insert operation... (see use new_buf vs this->buf variables below)
@@ -115,9 +117,10 @@ class Array {
             }
             delete[] temp_buff;
 
-            // This should only remove pointers to strings, not strings, no?
-            delete[] this->buf;
-            this->buf = new_buf;
+            if (recapped) {
+                delete[] this->buf;
+                this->buf = new_buf;
+            }
             this->size += num_els;
 
             return OPERATION_SUCCESS;
@@ -205,13 +208,15 @@ class Array<const char *> {
             logger_printf(LOGGER_DEBUG, "num_els: %ld, size: %ld, cap: %ld, pos: %ld\n", num_els, this->size, this->cap, pos);
 
             char ** new_buf = this->buf; 
-            // recap buffer if needed. 
+            // recap buffer if needed.
+            bool recapped = false;
             if (num_els + this->size > this->cap) {
                 size_t new_cap = (size_t)((num_els + this->size) * RESIZE_FACTOR);
                 new_buf = newCArray<char *>(new_cap);
                 if (new_buf == nullptr) {
                     return MEMORY_OPERATION_ERROR;
                 } else {
+                    recapped = true;
                     this->cap = new_cap;
                     // if recapped, copy elements up until pos.
                     //  the rest will be automagically intialized by insert operation... (see use new_buf vs this->buf variables below)
@@ -273,11 +278,10 @@ class Array<const char *> {
                  logger_printf(LOGGER_DEBUG, "%s\n", new_buf[i]);
             }
 
-            // This should only remove pointers to strings, not strings, no?
-            // LMAO, what changed?
-
-            delete[] this->buf;
-            this->buf = new_buf;
+            if (recapped) {
+                delete[] this->buf;
+                this->buf = new_buf;
+            }
             this->size += num_els;
 
             for (size_t i = 0; i < this->size; i++) {

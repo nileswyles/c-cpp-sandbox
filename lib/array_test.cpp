@@ -6,11 +6,6 @@
 #include <string>
 #include <stdio.h>
 
-// TODO: still unsure about this?
-#ifdef TEST_DEBUG
-#define LOGGER_LEVEL LOGGER_DEBUG
-#endif
-
 #include "logger.h"
 
 using namespace WylesLibs;
@@ -27,15 +22,15 @@ bool assert(Array<uint8_t> * arr, void * expected, size_t expected_size, size_t 
     // bool cap_match = arr->cap == expected_cap && arr->size <= arr->cap; 
     // bool size_of_el_match = expected_size_of_el == arr->size_of_el;
 
-    logger_printf(LOGGER_DEBUG, "Expected:\n");
-    logger_print_byte_array(LOGGER_DEBUG, (uint8_t *)expected, expected_size * expected_size_of_el);
-    logger_printf(LOGGER_DEBUG, "Actual:\n");
-    logger_print_byte_array(LOGGER_DEBUG, (uint8_t *)arr->buf, arr->size * expected_size_of_el);
-    logger_printf(LOGGER_DEBUG, "Memory Match: %s, Size Match: %s (%lu == %lu)\n", 
+    logger_printf(LOGGER_TEST, "Expected:\n");
+    logger_print_byte_array(LOGGER_TEST, (uint8_t *)expected, expected_size * expected_size_of_el);
+    logger_printf(LOGGER_TEST, "Actual:\n");
+    logger_print_byte_array(LOGGER_TEST, (uint8_t *)arr->buf, arr->size * expected_size_of_el);
+    logger_printf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu)\n", 
         memory_match ? "True" : "False", 
         size_match ? "True" : "False", expected_size, arr->size 
     );
-    // logger_printf(LOGGER_DEBUG, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu), Size of El Match: %s (%lu == %lu) \n", 
+    // logger_printf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu), Size of El Match: %s (%lu == %lu) \n", 
     //     memory_match ? "True" : "False", 
     //     size_match ? "True" : "False", expected_size, arr->size 
         // cap_match ? "True" : "False", expected_cap, arr->cap,
@@ -104,7 +99,7 @@ bool test_array_append_cstrings() {
 
     printf("WTF?, %d, %x\n", arr.size, arr.buf[0]);
    for (size_t i = 0; i < arr.size; i++) {
-        logger_printf(LOGGER_DEBUG, "%s\n", arr.buf[i]);
+        logger_printf(LOGGER_TEST, "%s\n", arr.buf[i]);
    }
 
     printf("\n#######################################\n");

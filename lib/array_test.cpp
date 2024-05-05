@@ -95,6 +95,8 @@ bool test_array_append_cstrings() {
         "STRING 7"
     };
 
+    arr.append("STRING!!!!");
+
     arr.append(expected, expected_size);
 
    // bool res = assert(&arr, (void *)expected, expected_size, ARRAY_RECOMMENDED_INITIAL_CAP, sizeof(uint8_t));

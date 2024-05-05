@@ -37,8 +37,14 @@ class Array {
         ~Array() {
             delete[] buf;
         }
+        operation_result append(T el) {
+            return this->append(&el, 1);
+        }
         operation_result append(const T * els, const size_t num_els) {
             return this->insert(this->size, els, num_els);
+        }
+        operation_result insert(const size_t pos, const T el) {
+            return this->insert(pos, &el, 1);
         }
         operation_result insert(const size_t pos, const T * els, const size_t num_els) {
             // O(n) with at least one alloc
@@ -113,6 +119,9 @@ class Array {
 
             return OPERATION_SUCCESS;
         }
+        operation_result remove(const size_t pos) {
+            return this->remove(pos, 1);
+        }
         operation_result remove(const size_t pos, const size_t num_els) {
             // O(n) with at least one alloc
             // pos out of bounds, return error...
@@ -177,8 +186,14 @@ class Array<char *> {
             }
             delete[] buf;
         }
+        operation_result append(char * el) {
+            return this->append(&el, 1);
+        }
         operation_result append(char ** els, const size_t num_els) {
             return this->insert(this->size, els, num_els);
+        }
+        operation_result insert(const size_t pos, const char * el) {
+            return this->insert(pos, &el, 1);
         }
         operation_result insert(const size_t pos, char ** els, const size_t num_els) {
             // O(n) with at least one alloc
@@ -263,6 +278,9 @@ class Array<char *> {
             }
 
             return OPERATION_SUCCESS;
+        }
+        operation_result remove(const size_t pos) {
+            return this->remove(pos, 1);
         }
         operation_result remove(const size_t pos, const size_t num_els) {
             // O(n) with at least one alloc

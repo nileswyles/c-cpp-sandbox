@@ -6,6 +6,10 @@
 #include <string>
 #include <stdio.h>
 
+#ifndef LOGGER_LEVEL 
+#define LOGGER_LEVEL LOGGER_TEST
+#endif
+
 #include "logger.h"
 
 using namespace WylesLibs;

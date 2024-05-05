@@ -10,8 +10,8 @@ extern "C"
 #include <stddef.h>
 #include <stdbool.h>
 
-#ifdef TEST_DEBUG
-#define LOGGER_LEVEL LOGGER_DEBUG
+#ifndef LOGGER_LEVEL 
+#define LOGGER_LEVEL LOGGER_TEST
 #endif
 
 #include "logger.h"

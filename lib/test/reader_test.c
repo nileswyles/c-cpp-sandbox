@@ -6,8 +6,8 @@
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
-#ifndef TEST_DEBUG
-#define TEST_DEBUG 1
+#ifndef LOGGER_LEVEL 
+#define LOGGER_LEVEL LOGGER_TEST
 #endif
 
 const char * buffer;

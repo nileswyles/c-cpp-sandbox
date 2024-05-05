@@ -37,14 +37,14 @@ class Array {
         ~Array() {
             delete[] buf;
         }
-        operation_result append(T el) {
+        operation_result append(T& el) {
             return this->append(&el, 1);
         }
         operation_result append(const T * els, const size_t num_els) {
             return this->insert(this->size, els, num_els);
         }
-        operation_result insert(const size_t pos, const T el) {
-            return this->insert(pos, &el, 1);
+        operation_result insert(const size_t pos, const T& el) {
+            return this->insert(pos, el, 1);
         }
         operation_result insert(const size_t pos, const T * els, const size_t num_els) {
             // O(n) with at least one alloc
@@ -139,7 +139,7 @@ class Array {
             this->append(nul, 1);
             return std::string((char *)this->buf);
         }
-        T operator [] (const size_t pos) {
+        T& operator [] (const size_t pos) {
             return this->buf[pos];
         }
 };

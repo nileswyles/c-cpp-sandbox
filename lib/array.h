@@ -70,31 +70,31 @@ class Array {
                 }
             }
             
-            T * temp_buff = newCArray<T>(num_els);
-            if (temp_buff == nullptr) {
+            T * bucket = newCArray<T>(num_els);
+            if (bucket == nullptr) {
                 return MEMORY_OPERATION_ERROR;
             }
-            size_t temp_push = 0;
-            size_t temp_pop = 0;
+            size_t bucket_push = 0;
+            size_t bucket_pop = 0;
             for (size_t i = pos; i < this->size + num_els; i++) {
                 T value;
                 if (i < pos + num_els) {
                     value = els[i - pos];
                 } else {
-                    value = temp_buff[temp_pop];
-                    if (++temp_pop == num_els) {
-                        temp_pop = 0;
+                    value = bucket[bucket_pop];
+                    if (++bucket_pop == num_els) {
+                        bucket_pop = 0;
                     }
                 }
                 if (i < this->size) {
-                    temp_buff[temp_push] = this->buf[i];
-                    if (++temp_push == num_els) {
-                        temp_push = 0;
+                    bucket[bucket_push] = this->buf[i];
+                    if (++bucket_push == num_els) {
+                        bucket_push = 0;
                     }
                 }
                 addElement(new_buf, i, value);
             }
-            delete[] temp_buff;
+            delete[] bucket;
 
             if (recapped) {
                 delete[] this->buf;
@@ -183,32 +183,32 @@ class Array<const char *> {
                 }
             }
 
-            char ** temp_buff = newCArray<char *>(num_els);
-            if (temp_buff == nullptr) {
+            char ** bucket = newCArray<char *>(num_els);
+            if (bucket == nullptr) {
                 return MEMORY_OPERATION_ERROR;
             }
-            size_t temp_push = 0;
-            size_t temp_pop = 0;
+            size_t bucket_push = 0;
+            size_t bucket_pop = 0;
             for (size_t i = pos; i < this->size + num_els; i++) {
-                logger_printf(LOGGER_DEBUG, "push: %ld pop: %ld\n", temp_push, temp_pop);
+                logger_printf(LOGGER_DEBUG, "push: %ld pop: %ld\n", bucket_push, bucket_pop);
                 const char * value;
                 if (i < pos + num_els) {
                     value = els[i - pos];
                 } else {
-                    value = temp_buff[temp_pop];
-                    if (++temp_pop == num_els) {
-                        temp_pop = 0;
+                    value = bucket[bucket_pop];
+                    if (++bucket_pop == num_els) {
+                        bucket_pop = 0;
                     }
                 }
                 if (i < this->size) {
-                    temp_buff[temp_push] = this->buf[i]; 
-                    if (++temp_push == num_els) {
-                        temp_push = 0;
+                    bucket[bucket_push] = this->buf[i]; 
+                    if (++bucket_push == num_els) {
+                        bucket_push = 0;
                     }
                 }
                 addElement(new_buf, i, value);
             }
-            delete[] temp_buff;
+            delete[] bucket;
 
             if (recapped) {
                 delete[] this->buf;

@@ -103,10 +103,13 @@ class Array {
                     }
                     // call addElement with oldest value in temp_buff
                 }
-                temp_buff[temp_push] = this->buf[i]; // store value
-                if (++temp_push == num_els) {
-                    // increment temp index and wrap if needed...
-                    temp_push = 0;
+                // if i >= size then no more buffering needed, let's guard to not go out of bounds
+                if (i < this->size) {
+                    temp_buff[temp_push] = this->buf[i]; // store value
+                    if (++temp_push == num_els) {
+                        // increment temp index and wrap if needed...
+                        temp_push = 0;
+                    }
                 }
                 addElement(new_buf, i, value);
             }
@@ -253,10 +256,13 @@ class Array<char *> {
                     }
                     // call addElement with oldest value in temp_buff
                 }
-                temp_buff[temp_push] = this->buf[i]; // store value
-                if (++temp_push == num_els) {
-                    // increment temp index and wrap if needed...
-                    temp_push = 0;
+                // if i >= size then no more buffering needed, let's guard to not go out of bounds
+                if (i < this->size) {
+                    temp_buff[temp_push] = this->buf[i]; // store value
+                    if (++temp_push == num_els) {
+                        // increment temp index and wrap if needed...
+                        temp_push = 0;
+                    }
                 }
                 addElement(new_buf, i, value);
             }

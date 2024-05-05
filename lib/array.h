@@ -41,7 +41,7 @@ class Array {
         }
         size_t getCap() {
             // this is really only useful for testing.
-            return this->size;
+            return this->cap;
         }
         operation_result append(T& el) {
             return this->append(&el, 1);
@@ -161,7 +161,7 @@ class Array<const char *> {
         }
         size_t getCap() {
             // this is really only useful for testing.
-            return this->size;
+            return this->cap;
         }
         operation_result append(const char * el) {
             return this->append(&el, 1);

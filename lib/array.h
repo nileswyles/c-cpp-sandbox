@@ -25,16 +25,23 @@ template<typename T>
 class Array {
     private:
         size_t cap;
+        size_t size;
         void addElement(T * buf, const size_t pos, T el) {
             buf[pos] = el;
         }
     public:
         T * buf;
-        size_t size;
         Array() : Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         Array(const size_t initial_cap) : cap(initial_cap), size(0), buf(newCArray<T>(initial_cap)) {}
         ~Array() {
             delete[] buf;
+        }
+        size_t getSize() {
+            return this->size;
+        }
+        size_t getCap() {
+            // this is really only useful for testing.
+            return this->size;
         }
         operation_result append(T& el) {
             return this->append(&el, 1);
@@ -132,6 +139,7 @@ template<>
 class Array<const char *> {
     private:
         size_t cap;
+        size_t size;
         void addElement(char ** buffer, const size_t pos, const char * el) {
             char * new_cstring = newCArray<char>(strlen(el) + 1);
             strcpy(new_cstring, el);
@@ -140,7 +148,6 @@ class Array<const char *> {
         }
     public:
         char ** buf;
-        size_t size;
         Array() : Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         Array(const size_t initial_cap) : cap(initial_cap), size(0), buf(newCArray<char *>(initial_cap)) {}
         ~Array() {
@@ -148,6 +155,13 @@ class Array<const char *> {
                 delete[] buf[i];
             }
             delete[] buf;
+        }
+        size_t getSize() {
+            return this->size;
+        }
+        size_t getCap() {
+            // this is really only useful for testing.
+            return this->size;
         }
         operation_result append(const char * el) {
             return this->append(&el, 1);

@@ -73,27 +73,27 @@ bool test_array_append() {
 bool test_array_append_cstrings() {
     printf("\n#######################################\n");
     printf("\nTest Func: %s\n\n", __func__);
-    Array<char *> arr;
+    Array<const char *> arr;
 
     size_t expected_size = 7;
-    // const char * expected[7] = {
-    //     std::string("STRING 1").c_str(),
-    //     std::string("STRING 2").c_str(),
-    //     std::string("STRING 3").c_str(),
-    //     std::string("STRING 4").c_str(),
-    //     std::string("STRING 5").c_str(),
-    //     std::string("STRING 6").c_str(),
-    //     std::string("STRING 7").c_str()
-    // };
-    char * expected[7] = {
-        "STRING 1",
-        "STRING 2",
-        "STRING 3",
-        "STRING 4",
-        "STRING 5",
-        "STRING 6",
-        "STRING 7"
+    const char * expected[7] = {
+        std::string("STRING 1").c_str(),
+        std::string("STRING 2").c_str(),
+        std::string("STRING 3").c_str(),
+        std::string("STRING 4").c_str(),
+        std::string("STRING 5").c_str(),
+        std::string("STRING 6").c_str(),
+        std::string("STRING 7").c_str()
     };
+    // char * expected[7] = {
+    //     "STRING 1",
+    //     "STRING 2",
+    //     "STRING 3",
+    //     "STRING 4",
+    //     "STRING 5",
+    //     "STRING 6",
+    //     "STRING 7"
+    // };
 
     arr.append("STRING!!!!");
 

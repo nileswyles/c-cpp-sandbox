@@ -137,8 +137,8 @@ class Array {
             return OPERATION_SUCCESS;
         }
         std::string toString() {
-            T nul[1] = {0};
-            this->append(nul, 1);
+            T nul = {0};
+            this->append(nul);
             return std::string((char *)this->buf);
         }
         T& operator [] (const size_t pos) {
@@ -148,7 +148,7 @@ class Array {
 
 // LMAOOOOOOO
 template<>
-class Array<char *> {
+class Array<const char *> {
     private:
         size_t cap;
         // The reason for this is to create copys of the strings pointed to by els so that we don't have dangling pointers to strings that no longer exist. 
@@ -167,7 +167,7 @@ class Array<char *> {
             //      27: [27,28,29,30,31]
 
         //  After alot of toil for nothing! Template class specialization needed because destructor... Need to revisit this in the future. Can you function template the destructor?
-        void addElement(char ** buffer, const size_t pos, char * el) {
+        void addElement(char ** buffer, const size_t pos, const char * el) {
             // allocate memory for new cstring
             char * new_cstring = newCArray<char>(strlen(el) + 1);
             // copy el into new_cstring
@@ -188,16 +188,16 @@ class Array<char *> {
             }
             delete[] buf;
         }
-        operation_result append(char * el) {
+        operation_result append(const char * el) {
             return this->append(&el, 1);
         }
-        operation_result append(char ** els, const size_t num_els) {
+        operation_result append(const char ** els, const size_t num_els) {
             return this->insert(this->size, els, num_els);
         }
         operation_result insert(const size_t pos, const char * el) {
             return this->insert(pos, &el, 1);
         }
-        operation_result insert(const size_t pos, char ** els, const size_t num_els) {
+        operation_result insert(const size_t pos, const char ** els, const size_t num_els) {
             // O(n) with at least one alloc
             // pos out of bounds, return error...
             if (pos < 0 || pos > this->size) return OPERATION_ERROR;
@@ -242,7 +242,8 @@ class Array<char *> {
             // temp_buff = [8, 7] ; 0, 1    ; buf = [1, 2, 6, 7]
             for (size_t i = pos; i < this->size + num_els; i++) {
                 logger_printf(LOGGER_DEBUG, "push: %ld pop: %ld\n", temp_push, temp_pop);
-                char * value;
+                // ?
+                const char * value;
                 if (i < pos + num_els) {
                     value = els[i - pos];
                     // call addElement with els value
@@ -300,8 +301,8 @@ class Array<char *> {
             return OPERATION_SUCCESS;
         }
         std::string toString() {
-            char * nul[1] = {0};
-            this->append(nul, 1);
+            char * nul = {0};
+            this->append(nul);
             return std::string((char *)this->buf);
         }
         char * operator [] (const size_t pos) {

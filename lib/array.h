@@ -130,7 +130,7 @@ class Array {
         }
         operation_result remove(const size_t pos, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos > this->size) return OPERATION_ERROR;
+            if (pos < 0 || pos >= this->size) return OPERATION_ERROR;
 
             for (size_t i = pos + num_els; i < this->size; i++) {
                 this->buf[i - num_els] = this->buf[i];
@@ -295,7 +295,7 @@ class Array<const char *> {
         }
         operation_result remove(const size_t pos, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos > this->size) return OPERATION_ERROR;
+            if (pos < 0 || pos >= this->size) return OPERATION_ERROR;
 
             for (size_t i = pos + num_els; i < this->size; i++) {
                 this->buf[i - num_els] = this->buf[i];

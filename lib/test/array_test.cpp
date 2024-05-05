@@ -72,10 +72,9 @@ bool test_array_append() {
 bool test_array_append_cstrings() {
     printf("\n#######################################\n");
     printf("\nTest Func: %s\n\n", __func__);
-    Array<const char *> arr;
-
-    size_t expected_size = 7;
-    const char * expected[7] = {
+    Array<const char *> arr(ARRAY_RECOMMENDED_INITIAL_CAP);
+    size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP - 1;
+    const char * expected[ARRAY_RECOMMENDED_INITIAL_CAP] = {
         std::string("STRING 1").c_str(),
         std::string("STRING 2").c_str(),
         std::string("STRING 3").c_str(),
@@ -95,9 +94,7 @@ bool test_array_append_cstrings() {
     // };
 
     arr.append("STRING!!!!");
-
     arr.append(expected, expected_size);
-
    // bool res = assert(&arr, (void *)expected, expected_size, ARRAY_RECOMMENDED_INITIAL_CAP, sizeof(uint8_t));
    bool res = true;
 

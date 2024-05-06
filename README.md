@@ -42,4 +42,9 @@ https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
 - Statically allocated data structures for embedded systems with no real dynamic memory allocation mechanism, or where consistent, predictable performance is really important? 
     - CPP provide any value there?
     -   RAII?
-    - HMM... might want to bring back the C array implementation lol and reader too?
+    - HMM... might want to bring back the C array implementation lol and reader too? 
+        Which might have been the original plan?
+        Or write allocator/redefine new
+
+        Global replacements
+        The versions (1-4) are implicitly declared in each translation unit even if the <new> header is not included. Versions (1-8) are replaceable: a user-provided non-member function with the same signature defined anywhere in the program, in any source file, replaces the default version. Its declaration does not need to be visible.

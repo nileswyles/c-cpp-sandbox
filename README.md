@@ -29,6 +29,7 @@
 - API will not be very thought out at first but should improve over time.
 
 TODO: Read about more best practices
+https://google.github.io/styleguide/cppguide.html
 https://en.cppreference.com/w/c/keyword
 https://en.cppreference.com/w/c/language/storage_duration
 https://gcc.gnu.org/onlinedocs/gcc/Option-Summary.html

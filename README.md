@@ -1,9 +1,12 @@
 # Philosophy, (my)best practices
 - BE EXPLICIT (especially in header files)
+    - On second thought, how explicit do we want to be? Specifically regarding CPP class defintions, don't think I want to explicitly define all operators, constructors, etc... (YOU ARE THE ONLY EXCEPTION ---_ YOUUUUUUU ARE THE ONLY EXCEPTION LMAO)
+    - Definitely still explicitly use extern and static in C.  
 - remember to extern, const (i.e, string literals), static, inline and ?restrict?
-- explicitly cast/convert types, because g++ (among other things)...
 - declare static functions at top of file, define at bottom - because order matters, so if static function calls another static function it can get annoying.
 - define static variables at top of file...
+- explicitly cast/convert types, because g++ (among other things)...
+    - TODO: use of cpp cast wrappers?
 - when function needs to report error codes, return as value so that we can do 'if(routine() == 1) blah' 
 - GNU compiler flags... -Wall, and actually make sure to address warnings lol. Can optionally make them errors using -Wpedantic... This one seems useful... -Wincompatible-pointer-types
 - Where possible, declare and allocate memory for variables at top of function block, to more easily (visually) check that they are freed.
@@ -13,8 +16,8 @@
 - Macros
 - In an effort to keep things simple (but at the same time, in a round about way, make things more complicated) and because it's more fun, don't use the standard lib... let's write our own.
 
-- Sort of decided to use g++ for everything but why?
-    - Where C and C++ overlap. Use C syntax. Because why remember unnecessary things.
+- Sort of decided to use g++ for everything, but why?
+    - Draw clear distinction between C and CPP code. 
     - Should I implement shared_ptr, string and other abstractions from the standard library? (Still yes?)
     - Do templates/generics provide any value? Classes, polymorphism or inheritance? 
         - Can you generally structure programs in a simpler way instead of leveraging these language features? 
@@ -35,3 +38,7 @@ https://en.cppreference.com/w/c/language/storage_duration
 https://gcc.gnu.org/onlinedocs/gcc/Option-Summary.html
 https://gcc.gnu.org/onlinedocs/gcc/Common-Variable-Attributes.html
 https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
+
+- Statically allocated data structures for embedded systems with no real dynamic memory allocation mechanism, or where consistent, predictable performance is really important? 
+    - CPP provide any value there?
+    -   RAII?

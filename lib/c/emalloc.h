@@ -78,10 +78,10 @@
 
             // most "straight forward"? lol solution,
             //   malloc will iterate over freed blocks, find address where size > new_size;
-            //   update freed block and add used block, 
+            //   update/move freed block and/or add used block.
 
             //   freed will find used block at address provided... 
-            //      then remove entry from used blocks list completly and add new freed entry merging any contigious blocks? 
+            //      then remove entry from used blocks list completely and add new freed entry merging any contigious blocks? 
             //      or was that why I had requirement of also minimizing pointers lmao (fuck)...
 
             //   and so, no need to iterate more than length of lists described above.
@@ -253,6 +253,9 @@ static TreeNode * memPop(TreeNode * node, size_t size) {
     // BIG O(log n) but since?
     if (size <= mem_node->block_size) {
         // if node satisfies condition of >size
+
+        // TODO: actually remove the node.... LMAO
+
         return node;
     } 
 
@@ -316,36 +319,47 @@ extern void * emalloc(size_t size) {
 
     if (node == NULL || node->block_size < size) { 
         // freak out 
-
+        return NULL;
     } 
     
     void * extracted_ptr = memNode->ptr;
-    if (node->block_size > size) {
+    if (node->block_size == size) {
+        // just move the block to the used list
+        // LMAO
+        memPush(usedRootNode, node);
+    } else { // if (node->block_size > size) {
         memNode->ptr += size;
         memNode->block_size -= size;
-    } else {
-        // yeah, I need some sleep...
-    }
+ 
+        // re-insert updated node (in freed list), with new size...
+        memPush(rootNode, node);
 
-    // create new used memory node.
-    if (1 == sArrayAdd(&memArray)) {
-        // TODO:
-        // What do we do if, run out of blocks? 
-        //  if we make this size of individial indicies (DYNAMIC_MEMORY_SIZE), then we will never reach this limit?
-    }
-    memArray[memArray.push] = { .ptr = extracted_ptr, .block_size = size };
+        // create new node to add to used array...
+        //      since there are finite number of addresses... our node buffers can be set to size of memory array and we'll never go past the limit.
+        //      TODO: is this an acceptable tradeoff... hmm... actually might apply to the array implementation too... derp.
 
-    //  create new used tree node...
-    if (1 == sArrayAdd(&treeArray)) {
-        // TODO:
-        // What do we do if, run out of blocks? 
-        //  if we make this size of individial indicies (DYNAMIC_MEMORY_SIZE), then we will never reach this limit?
-    }
-    treeArray[treeArray.push] = { .data_ptr = memArray[memArray.push],.parent = NULL, .left = NULL, .right = NULL };
+        // more abstraction
 
-    if (1 == memPush(rootNode, treeArray[treeArray.push])) {
-        // TODO: this will change when ret values fixed as described above...
-    } // else error?
+        // create new used memory node.
+        if (1 == sArrayAdd(&memArray)) {
+            // TODO:
+            // What do we do if, run out of blocks? 
+            //  if we make this size of individial indicies (DYNAMIC_MEMORY_SIZE), then we will never reach this limit?
+        }
+        memArray[memArray.push] = { .ptr = extracted_ptr, .block_size = size };
+  
+        //  create new used tree node...
+        if (1 == sArrayAdd(&treeArray)) {
+            // TODO:
+            // What do we do if, run out of blocks? 
+            //  if we make this size of individial indicies (DYNAMIC_MEMORY_SIZE), then we will never reach this limit?
+        }
+        treeArray[treeArray.push] = { .data_ptr = memArray[memArray.push],.parent = NULL, .left = NULL, .right = NULL };
+  
+        if (1 == memPush(rootNode, treeArray[treeArray.push])) {
+            // TODO: this will change when ret values fixed as described above...
+        } // else error?
+    }
 }
 
 extern void efree(void * ptr);
@@ -355,6 +369,21 @@ extern void efree(void * ptr);
 
 //  think about ring buffer backed linked list and heap structure... and whether that was even a good decision...
 
-//  
+//  hmm... what data structure does the linux kernel use (not in glibc right?)?... doesn't necessarily have to be a heap... 
+//      and actually most definitely not a heap
+
+//  arrays obviously the most straight forward implementation
+//      append set value at current position.
+//      remove iterate until position mv anything after by 1 position.
+
+//  benefit of psuedo linked-list heap structure is that it takes more time to insert, to speed up removals because sorted... (LMAO)
+//      so there's something there, I guess....
+//      now, when we "remove" an element from said structure, what do we want to happen to the underlying data structure... 
+
+//      Nothing? Yeah, we just move it from used to freed structure and so we won't ever "lose" the pointer and it gets automatically reused...
+
+// regardless of which data structure is chosen for used/freed nodes, we'll need to allocate storage for the maximum number of nodes possible which is the same as dynamic memory size....
+//  so, continuing onward.
+
 
 #endif

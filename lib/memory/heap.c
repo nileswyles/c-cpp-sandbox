@@ -21,14 +21,16 @@ extern int memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode) {
         // TODO: enforce left < right, and maybe go left, right, left children? prioritize ehh probably not but interesting thought.
         newNode->left = node;
         newNode->parent = node->parent;
-        if (node->parent->left == node) {
+
+        if (node->parent == NULL) {
+            // root node...
+            *root = newNode;
+        } else if (node->parent->left == node) {
             node->parent->left = newNode;
         } else {
             node->parent->right = newNode; 
-
-            // right node is currently only set during pops... :)
-            //   hmm... actually doesn't work out that well because 
         }
+        node->parent = newNode;
         return 1;
     } 
 

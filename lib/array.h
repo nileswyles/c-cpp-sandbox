@@ -68,7 +68,7 @@ class Array {
                     recapped = true;
                     this->cap = new_cap;
                     // if recapped, copy elements up until pos.
-                    //  the rest will be automagically intialized by insert operation... (see use new_buf vs this->buf variables below)
+                    //  the rest will be automagically intialized by insert operation... (see use of new_buf vs this->buf variables below)
                     size_t total_size_up_to_pos = pos * sizeof(T);
                     for (size_t i = 0; i < pos; i++) {
                         new_buf[i] = this->buf[i];
@@ -188,7 +188,7 @@ class Array<const char *> {
                     recapped = true;
                     this->cap = new_cap;
                     // if recapped, copy elements up until pos.
-                    //  the rest will be automagically intialized by insert operation... (see use new_buf vs this->buf variables below)
+                    //  the rest will be automagically intialized by insert operation... (see use of new_buf vs this->buf variables below)
                     size_t total_size_up_to_pos = pos * sizeof(char *);
                     for (size_t i = 0; i < pos; i++) {
                         new_buf[i] = this->buf[i];

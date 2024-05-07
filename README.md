@@ -31,7 +31,7 @@
 - Interfaces with POSIX. Win32 as well, eventually - why either or? Should be easy to extend. 
 - API will not be very thought out at first but should improve over time.
 
-TODO: Read about more best practices
+TODO: Read about best practices
 https://google.github.io/styleguide/cppguide.html
 https://en.cppreference.com/w/c/keyword
 https://en.cppreference.com/w/c/language/storage_duration

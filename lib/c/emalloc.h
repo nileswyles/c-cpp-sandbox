@@ -201,19 +201,17 @@ static int memPush(TreeNode * node, TreeNode * newNode) {
     // traverse heap until satisfy min heap property. and left < right
     if (node == NULL) { // don't be an idiot
         return 0;
-    } else if (node->left == NULL && node->right == NULL) { // if no children
-        node->left = newNode;
-        return 0;
     }
     MemNode * newMemNode = (MemNode *)newNode->data_ptr;
     // because min heap, 
     // if current_node > size, then 
     //  wtf even is a binary heap? 
     // hmmm... for now let's swap node with NewNode and make node child of newNode.
-
-    // TODO: how to binary tree?
+    // TODO: how to binary tree? because this will get unbalanced quickly?
+    //      it's 
     MemNode * memNode = (MemNode *)node->data_ptr;
     if (memNode->block_size > newMemNode->block_size) {
+        // TODO: enforce left < right, and maybe go left, right, left children? prioritize ehh probably not but interesting thought.
         newNode->left = node;
         if (node->parent->left == node) {
             node->parent->left = newNode;
@@ -221,20 +219,29 @@ static int memPush(TreeNode * node, TreeNode * newNode) {
             node->parent->right = newNode;
         }
         return 1;
-    } else {
-        if (node->left != NULL) {
-            int ret = memPush(node->left, newNode);
-            if (ret == 1) { // means we found a place for this damn thing....
-                return ret;
-            }
+    } 
+
+    // else traverse tree
+    if (node->left == NULL && node->right == NULL) { // if no children
+        // TODO: balancing balancing balancing...
+        node->left = newNode;
+        return 1;
+    }
+    if (node->left != NULL) {
+        int ret = memPush(node->left, newNode);
+        if (ret == 1) { // means we found a place for this damn thing....
+            return ret;
         }
-        if (node->right != NULL) {
-            return memPush(node->right, newNode);
-        }
+    }
+    if (node->right != NULL) {
+        return memPush(node->right, newNode);
     }
 }
 
 static TreeNode * memPop(TreeNode * node, size_t size) {
+    if (node == NULL) { // don't be an idiot
+        return 0;
+    }
     // traverse heap until size <= mem_node.block_size,
     MemNode * mem_node = (MemNode *)current_node->data_ptr;
     // So, I think for this, since we are implementing a binary heap, we can assume, current_node < left < right?
@@ -242,25 +249,24 @@ static TreeNode * memPop(TreeNode * node, size_t size) {
     //      this might be too much lol
 
     // BIG O(log n) but since?
-
-    // TODO: multiple returns bad!
-    if(size > mem_node->block_size) {
-        TreeNode * ret_node = NULL;
-        if (node->left != NULL) {
-            ret_node = memPop(node->left);
-            if (ret_node != NULL) {
-                return ret_node;
-            }
-        }
-        if (node->right != NULL) {
-            // TODO:
-            // if right traversal == NULL, then return NULL, not current node right?... yeah need to think about this some more... later
-            return memPop(node->right);
-        }
-    } else if (node->left == NULL && node->right == NULL) { // if no children
-        return NULL;
-    } else {
+    if (size <= mem_node->block_size) {
+        // if node satisfies condition of >size
         return node;
+    } 
+
+    // else traverse tree
+    if (node->left == NULL && node->right == NULL) {
+        return NULL;
+    }
+    TreeNode * ret_node = NULL;
+    if (node->left != NULL) {
+        ret_node = memPop(node->left);
+        if (ret_node != NULL) {
+            return ret_node;
+        }
+    }
+    if (node->right != NULL) {
+        return memPop(node->right);
     }
 }
 

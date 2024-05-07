@@ -40,6 +40,10 @@ https://gcc.gnu.org/onlinedocs/gcc/Common-Variable-Attributes.html
 https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
 
 - Statically allocated data structures for embedded systems with no real dynamic memory allocation mechanism, or where consistent, predictable performance is really important? 
+    - Ring buffer..
+        - Heap
+        - Binary Tree
+
     - CPP provide any value there?
     -   RAII?
     - HMM... might want to bring back the C array implementation lol and reader too? 

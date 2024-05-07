@@ -1,6 +1,9 @@
 #ifndef EMALLOC_H
 #define EMALLOC_H
 
+// right?
+#define malloc emalloc
+
 // Working through problem, let's understand memory management...:
 //      because zephyr obviously supports non-A (cortex-M/R) arm cores.  
 
@@ -74,7 +77,7 @@
             // then continue with that algorithm... 
 
             // most "straight forward"? lol solution,
-            //   malloc will iterate over freed blocks, find min address where size > new_size;
+            //   malloc will iterate over freed blocks, find address where size > new_size;
             //   update freed block and add used block, 
 
             //   freed will find used block at address provided... 
@@ -91,13 +94,117 @@
             //      what's faster than BIG O(n)? 
             //      O(log n) and O(1)
 
-            //      log's typically mean we split search space in half periodically...
-            //          
+            //      log's typically mean we split search space in half periodically... right? yeah, log base 2.... lol
+
+            // good to remember definitions.
+            //  heap == parent statisfies min/max of child... You can have as many children... but in this case maybe just 1 child... () 
+            //  an array of contigious addresses just a special heap?
+
+            // 2 children
+
+            //  let's say we have a heap data structure...
+            //      
+            //      binary min heap == log n inserts and constant lookup... that's what we want.
+            //      so two heaps...
+            //      so, that's the most optimal solution? but let's rewind for a sec.
+
             //      O(1), wtf even is that? Hashes?
 
-///     because memoization (without it, you basically perform the following everytime you need that information?)
-extern void * emalloc(size_t size);
 
+//  So thought about it as a list (ring buffer?) but let's implement as a heap?...
+// need a ring buffer too lol no?
+
+typedef struct TreeNode {
+    void * data_ptr;
+    TreeNode * parent;
+    TreeNode * children; // binary search tree == 2, TODO: some way to define 
+} TreeNode;
+typedef struct MemNode {
+    void * ptr,
+    size_t block_size,
+} MemNode;
+typedef struct SArray {
+    // FIFO not stack, because seems more useful? (applicable to more situations)
+    size_t push;
+    size_t pop;
+    size_t cap;
+} SArray;
+
+#define MAX_MEM_NODES 2 << 32;
+static TreeNode[MAX_MEM_NODES] = {}; 
+static MemNode[MAX_MEM_NODES] = {}; 
+
+// return 1, if looped around, so that user knows and can do whatever it wants...
+//  after calling this function, push will point to most recently added item, pop will point to oldest item?
+static void sArrayInit(SArray * buffer, size_t cap) {
+    buffer->push = -1;
+    buffer->pop = -1;
+    buffer->cap = cap;
+}
+// -1, -1
+//  0, -1 - push - size = 1
+//  1, -1 - push - size = 2
+//  1, 0  - pop - size = 1
+//  1, 1  - pop - size = 0
+static size_t sArrayAdd(SArray * buffer) {
+    // push always and remove oldest element if needed lol
+    if (++buffer->push > buffer->cap) {
+        buffer->push = 0;
+    }
+    if (buffer->push == buffer->pop) {
+        buffer->pop++;
+        return 1; // return 1 if removed oldest element
+    }
+    return 0;
+}
+static void sArrayRemove(SArray * buffer) {
+    // if removed all elements, do nothing... else increment pop buffer and loop if needed.
+    if (buffer->push != buffer->pop) {
+        if (++buffer->pop > buffer->cap) {
+            buffer->pop = 0;
+        }
+    }
+}
+// I feel like there might be a simplified way but who cares.
+static size_t sArraySize(SArray * buffer) {
+    size_t size = 0;
+    if (buffer->push < buffer->pop) {
+        // size to push index + size from pop index to end of buffer , 
+        //  +1 because push index starts at zero, not +2 because cap and how numbers work.
+        size = buffer->push + (buffer->cap - buffer->pop) + 1;
+    } else if (buffer->push > buffer->pop) {
+        size = buffer->push - buffer->pop;
+    } // else equals so return 0
+    return size; 
+}
+
+static SArray treeArray;
+sArrayInit(&treeArray, MAX_MEM_NODES);
+// now we implement heap insert and remove, iterations?
+static void memPush(TreeNode * node, TreeNode * newNode) {
+    // traverse heap until satisfy min heap property.
+    MemNode * node = (MemNode *)node->data_ptr;
+    MemNode * newNode = (MemNode *)newNode->data_ptr; 
+
+    // yeah, need to think about this...
+    //      
+
+    if (node->size < newNode->size) { // max-heap but iterating backwards
+        memPush(node->parent, newNode);
+    } else { // else set newNode->child to node,
+        // hmmm... might want to iterate backwards? so node->parent = newNode 
+        node->parent = 
+    }
+
+}
+static void memPop(TreeNode * node, size_t size) {
+    // traverse heap until size <= mem_node.block_size,
+    // 
+}
+
+// root node is parent == NULL;
+//  because memoization (without it, you basically perform the following everytime you need that information?)
+extern void * emalloc(size_t size);
 extern void efree(void * ptr);
 
 #endif

@@ -10,21 +10,18 @@ nodes[0] = {
     .parent = NULL, .left = NULL, .right = NULL 
 };
 
-static TreeNode * freedRootNode = nodes[0];
+// use heap push function to intialize root
+static TreeNode * freedRootNode = NULL;
+memoryHeapPush(&freedRootNode, nodes[0]);
 
-// TODO: can initialize like this to make things easier?
-//  nah, I can't LMAO
-TreeNode * usedRootNode = { 
-    .data_ptr = NULL, 
-    .block_size = 0, 
-    .parent = NULL, .left = NULL, .right = NULL 
-};
+// use heap push function to intialize root
+static TreeNode * usedRootNode = NULL;
 
 // yeah, thinking about this some more might seldom use this but good to have? 
 //  without any paging, this is fucking dumb :)
 extern void * emalloc(size_t size) {
     // hmmm... yeah so 
-    TreeNode * node = memoryHeapPop(freedRootNode, size);
+    TreeNode * node = memoryHeapPop(&freedRootNode, size);
     // TODO:
     // input validation?
 
@@ -40,7 +37,7 @@ extern void * emalloc(size_t size) {
     if (node->block_size == size) {
         // just move the node to the used list
         // LMAO
-        memoryHeapPush(usedRootNode, node);
+        memoryHeapPush(&usedRootNode, node);
     } else { // if (node->block_size > size) {
         size_t nodes_index = extracted_ptr - DYNAMIC_MEMORIES;
         // TODO: I think, this will always be within bounds but revisit...
@@ -48,7 +45,7 @@ extern void * emalloc(size_t size) {
         node->block_size -= size;
  
         // re-insert updated node (in freed list), with new size...
-        memoryHeapPush(freedNode, node);
+        memoryHeapPush(&freedRootNode, node);
 
         // create new node to add to used array...
         //      since there are finite number of addresses... our node buffers can be set to size of memory array and we'll never go past the limit.
@@ -65,7 +62,7 @@ extern void * emalloc(size_t size) {
   
         // TODO:
         //  Don't care about return here... at least not yet lol
-        memoryHeapPush(usedRootNode, nodes[nodes_index]);
+        memoryHeapPush(&usedRootNode, nodes[nodes_index]);
     }
     return extracted_ptr;
 }
@@ -80,7 +77,7 @@ extern void efree(void * ptr) {
     // void * ptr_forreal = ptr;
     // &ptr_forreal
 
-    TreeNode * freed = memoryHeapPop(usedRootNode, ptrHeapPopCondition, &ptr);
+    TreeNode * freed = memoryHeapPop(&usedRootNode, ptrHeapPopCondition, &ptr);
 
     // hmm... now this next part
     // iterate over node array? that's an option...
@@ -92,13 +89,13 @@ extern void efree(void * ptr) {
 
     // TODO: lmao, follow code guidelines 
     //  LMAO LMAO LMAO LMAO sajnklsnjkalndjslknadljknskladjk
-    TreeNode * found_contigious = memoryHeapPop(freedRootNode, mergeHeapPopCondition, &ptr);
+    TreeNode * found_contigious = memoryHeapPop(&freedRootNode, mergeHeapPopCondition, &ptr);
 
     if (found_contigious == NULL) {
-        memoryHeapPush(freedRootNode, freed);
+        memoryHeapPush(&freedRootNode, freed);
     } else {
         found_contigious->block_size += freed->size;
-        memoryHeapPush(freedRootNode, found_contigious);
+        memoryHeapPush(&freedRootNode, found_contigious);
     }
 
     // yeah, this is actually pretty clean! I like the solution, assuming that mergeHeadPopCondition stuff works.

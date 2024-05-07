@@ -46,7 +46,7 @@ extern bool mergeHeapPopCondition(MemoryHeapNode * node, void * arg) {
 
 typedef bool(HeapPopCondition)(MemoryHeapNode *, void *);
 
-extern int memoryHeapPush(MemoryHeapNode * node, MemoryHeapNode * newNode);
+extern int memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode);
 extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode * node, HeapPopCondition condition_func);
 
 #endif 

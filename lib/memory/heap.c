@@ -1,11 +1,16 @@
 #include "heap.h"
 
 // this extern just for verbosity and to tell reader this is exported, right?
-extern int memoryHeapPop(MemoryHeapNode * node, MemoryHeapNode * newNode) {
+
+// fun fact, & pass by reference a cpp thing only? pointer * syntax more intuitive anyways... 
+extern int memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode) {
     // traverse heap until satisfy min heap property. and left < right
-    if (node == NULL) { // don't be an idiot
-        return 0;
+    if (*root == NULL) {
+        *root = newNode;
+        return 1;
     }
+
+    MemoryHeapNode * node = *root;
     // because min heap, 
     // if current_node > size, then 
     //  wtf even is a binary heap? 
@@ -51,7 +56,7 @@ extern int memoryHeapPop(MemoryHeapNode * node, MemoryHeapNode * newNode) {
 
 extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode * node, HeapPopCondition condition_func, void * condition_arg) {
     if (node == NULL) { // don't be an idiot
-        return 0;
+        return NULL;
     }
     // traverse heap until size <= mem_node.block_size,
     // So, I think for this, since we are implementing a binary heap, we can assume, current_node < left < right?

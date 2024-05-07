@@ -14,11 +14,49 @@
 
 using namespace WylesLibs;
 
+// TODO:
+//  Template and convert to uint8_t in assert function?
+//  Revisit and think about this some more later.
+typedef struct ArrayAssert {
+    uint8_t * actual;
+    size_t actual_size;
+    size_t actual_cap;
+    uint8_t * expected;
+    size_t expected_size;
+    size_t expected_cap;
+} ArrayAssert;
+
+// bool assert(Array * arr, Array * expected_arr) {
+// bool assert(ArrayAssert assert) {
+//     bool memory_match = memcmp(assert.expected, assert.actual, assert.expected_size) == 0;
+//     bool size_match = assert.actual_size == assert.expected_size;
+//     // make sure cap grows at the predetermined rate.
+//     // also make sure size doesn't exceed cap (arguably more important).
+//     bool cap_match = assert.actual_cap == assert.expected_cap && assert.actual_size <= assert.actual_cap; 
+
+//     logger_printf(LOGGER_TEST, "Expected:\n");
+//     logger_print_byte_array(LOGGER_TEST, assert.expected, assert.expected_size * expected_size_of_el);
+//     logger_printf(LOGGER_TEST, "Actual:\n");
+//     logger_print_byte_array(LOGGER_TEST, assert.actual, assert.actual_size * expected_size_of_el);
+//     logger_printf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu), Size of El Match: %s (%lu == %lu) \n", 
+//         memory_match ? "True" : "False", 
+//         size_match ? "True" : "False", assert.expected_size, assert.actual_size,
+//         cap_match ? "True" : "False", assert.expected_cap assert.actual_cap
+//     );
+
+//     if (!memory_match || !size_match || !cap_match) {
+//         printf("\nTest Failed!\n");
+//     } else {
+//         printf("\nTest Passed!\n");
+//     }
+
+//     return memory_match && size_match && cap_match;
+// }
 
 // bool assert(Array * arr, Array * expected_arr) {
 bool assert(Array<uint8_t> * arr, void * expected, size_t expected_size, size_t expected_cap, size_t expected_size_of_el) {
     bool memory_match = memcmp(expected, (uint8_t *)arr->buf, expected_size) == 0;
-    bool size_match = arr->size == expected_size;
+    bool size_match = arr->getSize() == expected_size;
     // make sure cap grows at the predetermined rate.
     // also make sure size doesn't exceed cap (arguably more important).
 
@@ -29,10 +67,10 @@ bool assert(Array<uint8_t> * arr, void * expected, size_t expected_size, size_t 
     logger_printf(LOGGER_TEST, "Expected:\n");
     logger_print_byte_array(LOGGER_TEST, (uint8_t *)expected, expected_size * expected_size_of_el);
     logger_printf(LOGGER_TEST, "Actual:\n");
-    logger_print_byte_array(LOGGER_TEST, (uint8_t *)arr->buf, arr->size * expected_size_of_el);
+    logger_print_byte_array(LOGGER_TEST, (uint8_t *)arr->buf, arr->getSize() * expected_size_of_el);
     logger_printf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu)\n", 
         memory_match ? "True" : "False", 
-        size_match ? "True" : "False", expected_size, arr->size 
+        size_match ? "True" : "False", expected_size, arr->getSize()
     );
     // logger_printf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu), Size of El Match: %s (%lu == %lu) \n", 
     //     memory_match ? "True" : "False", 
@@ -98,8 +136,8 @@ bool test_array_append_cstrings() {
    // bool res = assert(&arr, (void *)expected, expected_size, ARRAY_RECOMMENDED_INITIAL_CAP, sizeof(uint8_t));
    bool res = true;
 
-    printf("WTF?, %d, %x\n", arr.size, arr.buf[0]);
-   for (size_t i = 0; i < arr.size; i++) {
+    // printf("WTF?, %d, %x\n", arr.getSize(), arr.buf[0]);
+   for (size_t i = 0; i < arr.getSize(); i++) {
         logger_printf(LOGGER_TEST, "%s\n", arr.buf[i]);
    }
 

@@ -3,18 +3,17 @@
 #include <string>
 #include <stdint.h>
 #include <stddef.h>
-#include "result.h"
-
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "result.h"
 #include "logger.h"
 
-#define ARRAY_RECOMMENDED_INITIAL_CAP 8
-
 namespace WylesLibs {
-static constexpr double RESIZE_FACTOR = 1.75;
+
+constexpr size_t ARRAY_RECOMMENDED_INITIAL_CAP = 8;
+constexpr double RESIZE_FACTOR = 1.75;
 
 template<typename T>
 static inline T * newCArray(size_t size) {
@@ -151,7 +150,7 @@ class Array<const char *> {
         Array() : Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         Array(const size_t initial_cap) : cap(initial_cap), size(0), buf(newCArray<char *>(initial_cap)) {}
         ~Array() {
-            for (size_t i = 0; i < size; i++) {
+            for (size_t i = 0; i < this->size; i++) {
                 delete[] buf[i];
             }
             delete[] buf;

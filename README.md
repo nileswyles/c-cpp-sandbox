@@ -43,7 +43,7 @@ https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
     - CPP provide any value there?
     -   RAII?
     - HMM... might want to bring back the C array implementation lol and reader too? 
-        Which might have been the original plan?
+        Which might have been the original plan? embedded stuff typically c and isolated but cpp might be cleaner
         Or write allocator/redefine new
 
         Global replacements

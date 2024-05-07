@@ -350,4 +350,11 @@ extern void * emalloc(size_t size) {
 
 extern void efree(void * ptr);
 
+// More TODOS:
+//  append, insert and remove functions for statically allocated arrays...
+
+//  think about ring buffer backed linked list and heap structure... and whether that was even a good decision...
+
+//  
+
 #endif

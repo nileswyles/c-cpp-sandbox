@@ -54,10 +54,13 @@ extern int memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode) {
     }
 }
 
-extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode * node, HeapPopCondition condition_func, void * condition_arg) {
-    if (node == NULL) { // don't be an idiot
+// hmm... might need to update root right?
+//  yes, 
+extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition condition_func, void * condition_arg) {
+    if (*root == NULL) {
         return NULL;
     }
+    MemoryHeapNode * node = *root;
     // traverse heap until size <= mem_node.block_size,
     // So, I think for this, since we are implementing a binary heap, we can assume, current_node < left < right?
     //  realistically we can grab any node as long as it satifies that request, but minimizing size minimizes fragmentation? 
@@ -80,7 +83,12 @@ extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode * node, HeapPopCondition co
         // nah, then it's the same problem if child has children...
 
         // since push isn't loading right anyways (linked list), for now...
-        if (node->parent->left == node) {
+
+        if (node->parent == NULL) {
+            // root node...
+            *root = node->left;
+            node->left->parent = NULL;
+        } else if (node->parent->left == node) {
             node->parent->left = node->left; // set parent child to current node child
             node->left->parent = node->parent; // set child parent to current node parent
         } else {}

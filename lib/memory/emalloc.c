@@ -21,7 +21,7 @@ static TreeNode * usedRootNode = NULL;
 //  without any paging, this is fucking dumb :)
 extern void * emalloc(size_t size) {
     // hmmm... yeah so 
-    TreeNode * node = memoryHeapPop(&freedRootNode, size);
+    TreeNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
     // TODO:
     // input validation?
 

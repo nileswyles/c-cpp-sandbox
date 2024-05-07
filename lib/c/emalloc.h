@@ -81,7 +81,8 @@
             //   update freed block and add used block, 
 
             //   freed will find used block at address provided... 
-            //      then remove entry from used blocks list completly and add new freed entry...
+            //      then remove entry from used blocks list completly and add new freed entry merging any contigious blocks? 
+            //      or was that why I had requirement of also minimizing pointers lmao (fuck)...
 
             //   and so, no need to iterate more than length of lists described above.
 
@@ -310,19 +311,24 @@ extern void * emalloc(size_t size) {
     // TODO: might specialize the structure and remove the need for this 
     MemNode * memNode = (MemNode *)node->data_ptr;
 
+    if (node == NULL || node->block_size < size) { 
+        // freak out 
+
+    } 
+    
     void * extracted_ptr = memNode->ptr;
-    memNode->ptr += size;
-    memNode->block_size -= size;
+    if (node->block_size > size) {
+        memNode->ptr += size;
+        memNode->block_size -= size;
+    } else {
+        // yeah, I need some sleep...
+    }
 
     // create new used memory node.
     if (1 == sArrayAdd(&memArray)) {
         // TODO:
         // What do we do if, run out of blocks? 
         //  if we make this size of individial indicies (DYNAMIC_MEMORY_SIZE), then we will never reach this limit?
-
-        // hmm... yeah on second thought, not needed... not even without the heap stuff? I think they would be hard limits
-        //  but good to have ring buffer implementation anyways
-        //  hmmm.... I am bad at planning.
     }
     memArray[memArray.push] = { .ptr = extracted_ptr, .block_size = size };
 

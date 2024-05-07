@@ -319,6 +319,10 @@ extern void * emalloc(size_t size) {
         // TODO:
         // What do we do if, run out of blocks? 
         //  if we make this size of individial indicies (DYNAMIC_MEMORY_SIZE), then we will never reach this limit?
+
+        // hmm... yeah on second thought, not needed... not even without the heap stuff? I think they would be hard limits
+        //  but good to have ring buffer implementation anyways
+        //  hmmm.... I am bad at planning.
     }
     memArray[memArray.push] = { .ptr = extracted_ptr, .block_size = size };
 

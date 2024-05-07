@@ -299,6 +299,9 @@ treeArray[treeArray.push] = { .data_ptr = memArray[memArray.push], .parent = NUL
 TreeNode * rootNode = treeArray[treeArray.push];
 // root node is parent == NULL;
 //  because memoization (without it, you basically perform the following everytime you need that information?)
+
+// yeah, thinking about this some more might seldom use this but good to have? 
+//  without any paging, this is fucking dumb :)
 extern void * emalloc(size_t size) {
     // hmmm... yeah so 
     TreeNode * node = memPop(rootNode, size);

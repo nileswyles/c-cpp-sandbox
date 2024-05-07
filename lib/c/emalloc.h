@@ -117,7 +117,8 @@
 typedef struct TreeNode {
     void * data_ptr;
     TreeNode * parent;
-    TreeNode * children; // binary search tree == 2, TODO: some way to define 
+    TreeNode * left;
+    TreeNode * right;
 } TreeNode;
 typedef struct MemNode {
     void * ptr,
@@ -181,26 +182,88 @@ static size_t sArraySize(SArray * buffer) {
 static SArray treeArray;
 sArrayInit(&treeArray, MAX_MEM_NODES);
 // now we implement heap insert and remove, iterations?
-static void memPush(TreeNode * node, TreeNode * newNode) {
-    // traverse heap until satisfy min heap property.
-    MemNode * node = (MemNode *)node->data_ptr;
-    MemNode * newNode = (MemNode *)newNode->data_ptr; 
 
     // yeah, need to think about this...
-    //      
+    //
+    //  let's define a left and right node for each node.
+    //      let's also maintain that current < left < right node. Necessary?
 
-    if (node->size < newNode->size) { // max-heap but iterating backwards
-        memPush(node->parent, newNode);
-    } else { // else set newNode->child to node,
-        // hmmm... might want to iterate backwards? so node->parent = newNode 
-        node->parent = 
-    }
+    //  pop from root, 
+    //  push from root,
+    //  
 
-}
-static void memPop(TreeNode * node, size_t size) {
-    // traverse heap until size <= mem_node.block_size,
     // 
+
+// hmmm... seems dumb but let's roll with it.
+
+// TODO: fix ret values to be something meaningful
+static int memPush(TreeNode * node, TreeNode * newNode) {
+    // traverse heap until satisfy min heap property. and left < right
+    if (node == NULL) { // don't be an idiot
+        return 0;
+    } else if (node->left == NULL && node->right == NULL) { // if no children
+        node->left = newNode;
+        return 0;
+    }
+    MemNode * newMemNode = (MemNode *)newNode->data_ptr;
+    // because min heap, 
+    // if current_node > size, then 
+    //  wtf even is a binary heap? 
+    // hmmm... for now let's swap node with NewNode and make node child of newNode.
+
+    // TODO: how to binary tree?
+    MemNode * memNode = (MemNode *)node->data_ptr;
+    if (memNode->block_size > newMemNode->block_size) {
+        newNode->left = node;
+        if (node->parent->left == node) {
+            node->parent->left = newNode;
+        } else {
+            node->parent->right = newNode;
+        }
+        return 1;
+    } else {
+        if (node->left != NULL) {
+            int ret = memPush(node->left, newNode);
+            if (ret == 1) { // means we found a place for this damn thing....
+                return ret;
+            }
+        }
+        if (node->right != NULL) {
+            return memPush(node->right, newNode);
+        }
+    }
 }
+
+static TreeNode * memPop(TreeNode * node, size_t size) {
+    // traverse heap until size <= mem_node.block_size,
+    MemNode * mem_node = (MemNode *)current_node->data_ptr;
+    // So, I think for this, since we are implementing a binary heap, we can assume, current_node < left < right?
+    //  realistically we can grab any node as long as it satifies that request, but minimizing size minimizes fragmentation? 
+    //      this might be too much lol
+
+    // BIG O(log n) but since?
+
+    // TODO: multiple returns bad!
+    if(size > mem_node->block_size) {
+        TreeNode * ret_node = NULL;
+        if (node->left != NULL) {
+            ret_node = memPop(node->left);
+            if (ret_node != NULL) {
+                return ret_node;
+            }
+        }
+        if (node->right != NULL) {
+            // TODO:
+            // if right traversal == NULL, then return NULL, not current node right?... yeah need to think about this some more... later
+            return memPop(node->right);
+        }
+    } else if (node->left == NULL && node->right == NULL) { // if no children
+        return NULL;
+    } else {
+        return node;
+    }
+}
+
 
 // root node is parent == NULL;
 //  because memoization (without it, you basically perform the following everytime you need that information?)

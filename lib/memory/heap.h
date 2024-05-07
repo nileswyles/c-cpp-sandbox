@@ -1,6 +1,8 @@
 #ifndef MEMORY_HEAP_H
 #define MEMORY_HEAP_H
 
+// # pointer arithmetic! let's remember to compile this separately... because elevated privileges are a thing... 
+
 // #include <stdbool.h>
 // TODO: is extern static a C linkage thing ? forreal? 
 //  declaration added to source files through includes right and so it looks for source file with extern...
@@ -32,7 +34,6 @@ extern bool ptrHeapPopCondition(MemoryHeapNode * node, void * arg) {
 extern bool mergeHeapPopCondition(MemoryHeapNode * node, void * arg) {
     // search for pointer < ptr where pointer_size + ptr - pointer == ptr.
     //  lol what ?
-
     void * ptr = (void *)*arg;
 
     // parenthesis to enforce order of operations because computer maths?

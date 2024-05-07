@@ -131,9 +131,6 @@ typedef struct SArray {
     size_t cap;
 } SArray;
 
-#define MAX_MEM_NODES 2 << 32;
-static TreeNode[MAX_MEM_NODES] = {}; 
-static MemNode[MAX_MEM_NODES] = {}; 
 
 // return 1, if looped around, so that user knows and can do whatever it wants...
 //  after calling this function, push will point to most recently added item, pop will point to oldest item?
@@ -179,8 +176,6 @@ static size_t sArraySize(SArray * buffer) {
     return size; 
 }
 
-static SArray treeArray;
-sArrayInit(&treeArray, MAX_MEM_NODES);
 // now we implement heap insert and remove, iterations?
 
     // yeah, need to think about this...
@@ -213,6 +208,7 @@ static int memPush(TreeNode * node, TreeNode * newNode) {
     if (memNode->block_size > newMemNode->block_size) {
         // TODO: enforce left < right, and maybe go left, right, left children? prioritize ehh probably not but interesting thought.
         newNode->left = node;
+        newNode->parent = node->parent;
         if (node->parent->left == node) {
             node->parent->left = newNode;
         } else {
@@ -224,6 +220,11 @@ static int memPush(TreeNode * node, TreeNode * newNode) {
     // else traverse tree
     if (node->left == NULL && node->right == NULL) { // if no children
         // TODO: balancing balancing balancing...
+        //  non-binary heaps == sorted linked list... LMAO
+        //      hashed array better where I can just do hash_func(size) round to nearest? in "constant" time lol
+        //      but what would O(n) insert?
+
+        // 
         node->left = newNode;
         return 1;
     }
@@ -270,10 +271,70 @@ static TreeNode * memPop(TreeNode * node, size_t size) {
     }
 }
 
+#define DYNAMIC_MEMORY_SIZE 2 << 32;
+// void arr[] valid? lol (void == size_t?)
+static void DYNAMIC_MEMORIES[DYNAMIC_MEMORY_SIZE] = {};
 
+// TODO:
+// What do we do if, run out of blocks? 
+//  if we make this size of individial indicies (DYNAMIC_MEMORY_SIZE), then we will never reach this limit?
+#define MAX_MEM_NODES DYNAMIC_MEMORY_SIZE;
+static TreeNode[MAX_MEM_NODES] = {}; 
+static MemNode[MAX_MEM_NODES] = {}; 
+
+static SArray treeArray;
+sArrayInit(&treeArray, MAX_MEM_NODES);
+static SArray memArray;
+sArrayInit(&memArray, MAX_MEM_NODES);
+
+// initialize root node
+sArrayAdd(&memArray);
+memArray[memArray.push] = { .ptr = DYNAMIC_MEMORIES, .block_size = DYNAMIC_MEMORY_SIZE };
+
+// tree array needs to be split to used and free...
+sArrayAdd(&treeArray);
+treeArray[treeArray.push] = { .data_ptr = memArray[memArray.push], .parent = NULL, .left = NULL, .right = NULL };
+
+TreeNode * rootNode = treeArray[treeArray.push];
 // root node is parent == NULL;
 //  because memoization (without it, you basically perform the following everytime you need that information?)
-extern void * emalloc(size_t size);
+extern void * emalloc(size_t size) {
+    // hmmm... yeah so 
+    TreeNode * node = memPop(rootNode, size);
+
+    // TODO:
+    // input validation?
+
+    // TODO:
+    // get address from node, insert update node (only if block_size > size, else we remove...) in free structure...
+    // TODO: might specialize the structure and remove the need for this 
+    MemNode * memNode = (MemNode *)node->data_ptr;
+
+    void * extracted_ptr = memNode->ptr;
+    memNode->ptr += size;
+    memNode->block_size -= size;
+
+    // create new used memory node.
+    if (1 == sArrayAdd(&memArray)) {
+        // TODO:
+        // What do we do if, run out of blocks? 
+        //  if we make this size of individial indicies (DYNAMIC_MEMORY_SIZE), then we will never reach this limit?
+    }
+    memArray[memArray.push] = { .ptr = extracted_ptr, .block_size = size };
+
+    //  create new used tree node...
+    if (1 == sArrayAdd(&treeArray)) {
+        // TODO:
+        // What do we do if, run out of blocks? 
+        //  if we make this size of individial indicies (DYNAMIC_MEMORY_SIZE), then we will never reach this limit?
+    }
+    treeArray[treeArray.push] = { .data_ptr = memArray[memArray.push],.parent = NULL, .left = NULL, .right = NULL };
+
+    if (1 == memPush(rootNode, treeArray[treeArray.push])) {
+        // TODO: this will change when ret values fixed as described above...
+    } // else error?
+}
+
 extern void efree(void * ptr);
 
 #endif

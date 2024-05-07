@@ -44,12 +44,12 @@ extern void * emalloc(size_t size) {
         return NULL;
     } 
     
+    void * extracted_ptr = node->ptr;
     if (node->block_size == size) {
         // just move the node to the used list
         // LMAO
         memoryHeapPush(usedRootNode, node);
     } else { // if (node->block_size > size) {
-        void * extracted_ptr = node->ptr;
         size_t nodes_index = extracted_ptr - DYNAMIC_MEMORIES;
         // TODO: I think, this will always be within bounds but revisit...
         node->ptr += size;
@@ -75,6 +75,7 @@ extern void * emalloc(size_t size) {
         //  Don't care about return here... at least not yet lol
         memoryHeapPush(usedRootNode, nodes[nodes_index]);
     }
+    return extracted_ptr;
 }
 
 //   freed will find used block at address provided... 
@@ -82,6 +83,11 @@ extern void * emalloc(size_t size) {
 //      or was that why I had requirement of also minimizing pointers lmao (fuck)...
 extern void efree(void * ptr) {
     // does this work? lol
+
+    // this better? lmao
+    // void * ptr_forreal = ptr;
+    // &ptr_forreal
+
     TreeNode * freed = memoryHeapPop(usedRootNode, ptrHeapPopCondition, &ptr);
 
     // hmm... now this next part

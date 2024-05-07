@@ -8,7 +8,7 @@
 
 #define DYNAMIC_MEMORY_SIZE 2 << 32;
 
-// TODO: then add support for virtual memory addresses (MMU's?, page files, swap?)
+// TODO: then add support for virtual memory addresses (MMU's?, paging, swap?)
 static void DYNAMIC_MEMORIES[DYNAMIC_MEMORY_SIZE] = {};
 
 static TreeNode nodes[DYNAMIC_MEMORY_SIZE] = {}; 

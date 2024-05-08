@@ -59,13 +59,11 @@ extern void * emalloc(size_t size) {
         
         // lol this needs to be reorged
         uint32_t new_index = node_index + size;
-        // if (0 > node_index || node_index >= DYNAMIC_MEMORY_SIZE) {
-            nodes[new_index].index = new_index;
-            nodes[new_index].block_size = node->block_size - size;
-            nodes[new_index].child = NULL;
+        nodes[new_index].index = new_index;
+        nodes[new_index].block_size = node->block_size - size;
+        nodes[new_index].child = NULL;
      
-            printf("node_index: %u, node_size: %u\n", node->index, node->block_size);
-        // }
+        printf("node_index: %u, node_size: %u\n", node->index, node->block_size);
         // re-insert updated node (in freed list), with new size...
         printf("pushing to freed heap, %p\n", &freedRootNode);
         memoryHeapPush(&freedRootNode, nodes + new_index);

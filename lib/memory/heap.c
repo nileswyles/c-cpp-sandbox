@@ -68,6 +68,7 @@ extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition c
         if (prev_node == NULL) {
             // root node...
             printf("Root Node reset to node->child which could be null.\n");
+            printf("This means operation matched first in list, so node never null lol.\n");
             *root = node->child;
         } else {
             prev_node->child = node->child; // set parent child to current node child

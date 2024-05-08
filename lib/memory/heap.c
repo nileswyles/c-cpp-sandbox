@@ -1,12 +1,17 @@
 #include "heap.h"
+#include "stdio.h"
 
 // this extern just for verbosity and to tell reader this is exported, right?
 extern void memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode) {
     // traverse heap until satisfy min heap property. and child < right
     if (*root == NULL) {
         *root = newNode;
+        printf("EMPTY HEAP! root_index: %u, root_block_size: %u\n", (*root)->index, (*root)->block_size);
         return;
     }
+
+    printf("HEAP! newNode_index: %u, newNode_block_size: %u\n", newNode->index, newNode->block_size);
+    printf("HEAP! root_index: %u, root_block_size: %u\n", (*root)->index, (*root)->block_size);
 
     MemoryHeapNode * prev_node = NULL;
     MemoryHeapNode * node = *root;
@@ -46,6 +51,7 @@ extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition c
     MemoryHeapNode * prev_node = NULL;
     bool match = condition_func(node, condition_arg);
     while (!match) {
+        printf("POP! node_index: %u, node_block_size: %u\n", node->index, node->block_size);
         if (node->child == NULL) {
             // no more to traverse, return NULL
             break;
@@ -57,6 +63,7 @@ extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition c
     }
 
     if (match) {
+        printf("POP! node_index: %u, node_block_size: %u\n", node->index, node->block_size);
         if (prev_node == NULL) {
             // root node...
             *root = node->child;

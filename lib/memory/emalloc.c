@@ -23,8 +23,8 @@ static inline void initializeData() {
         nodes[0].index = 0;
         nodes[0].block_size = DYNAMIC_MEMORY_SIZE;
         nodes[0].child = NULL;
+        printf("intializing heap... \n");
         memoryHeapPush(&freedRootNode, nodes);
-        
         // printf("sizeof pointer, %u ", sizeof(uint8_t *)/2);
         // printf("sizeof size_t %u \n", sizeof(size_t)/2); // because 32-bit.... 
     }
@@ -38,32 +38,47 @@ extern void * emalloc(size_t size) {
         return NULL;
     } 
 
+    printf("popping from freed heap\n");
     MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
-    uint32_t nodes_index = node->index;
+    printf("lol\n");
+    uint32_t node_index = node->index;
+        
     if (node == NULL || node->block_size < size || 
-            0 > nodes_index || nodes_index >= DYNAMIC_MEMORY_SIZE) { 
+            0 > node_index || node_index >= DYNAMIC_MEMORY_SIZE) { 
         // freak out 
         return NULL;
     } 
-    void * extracted_ptr = (void *)(dynamic_memories + nodes_index);
+    printf("node->index: %u, node->block_size: %u\n", node->index, node->block_size);
+    void * extracted_ptr = (void *)(dynamic_memories + node_index);
     if (node->block_size == size) {
+        printf("pushing to used heap, same size\n");
         memoryHeapPush(&usedRootNode, node);
     } else { 
-
         // see check above...
         // if (node->block_size > size) {
-        node->index += size;
-        node->block_size -= size;
- 
+        
+        // lol this needs to be reorged
+        uint32_t new_index = node_index + size;
+        // if (0 > node_index || node_index >= DYNAMIC_MEMORY_SIZE) {
+            nodes[new_index].index = new_index;
+            nodes[new_index].block_size = node->block_size - size;
+            nodes[new_index].child = NULL;
+     
+            printf("node_index: %u, node_size: %u\n", node->index, node->block_size);
+        // }
         // re-insert updated node (in freed list), with new size...
-        memoryHeapPush(&freedRootNode, node);
+        printf("pushing to freed heap, %p\n", &freedRootNode);
+        memoryHeapPush(&freedRootNode, nodes + new_index);
 
-        nodes[nodes_index].index = nodes_index;
-        nodes[nodes_index].block_size = size;
-        nodes[nodes_index].child = NULL;
-  
-        memoryHeapPush(&usedRootNode, nodes + nodes_index);
+        nodes[node_index].index = node_index;
+        nodes[node_index].block_size = size;
+        nodes[node_index].child = NULL;
+
+        printf("pushing to used heap, %p\n", &usedRootNode);
+
+        memoryHeapPush(&usedRootNode, nodes + node_index);
     }
+    printf("node_ptr: %p, size: %lu\n", extracted_ptr, size);
     return extracted_ptr;
 }
 

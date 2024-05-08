@@ -8,7 +8,7 @@
 #define malloc emalloc
 
 #ifndef DYNAMIC_MEMORY_SIZE
-#define DYNAMIC_MEMORY_SIZE 2 << 16
+#define DYNAMIC_MEMORY_SIZE 65536
 #endif
 
 extern void * emalloc(size_t size);

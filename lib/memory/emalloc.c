@@ -17,8 +17,6 @@ memoryHeapPush(&freedRootNode, nodes[0]);
 // use heap push function to intialize root
 static MemoryHeapNode * usedRootNode = NULL;
 
-// yeah, thinking about this some more might seldom use this but good to have? 
-//  without any paging, this is fucking dumb :)
 extern void * emalloc(size_t size) {
     // hmmm... yeah so 
     MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
@@ -35,8 +33,6 @@ extern void * emalloc(size_t size) {
     
     void * extracted_ptr = node->ptr;
     if (node->block_size == size) {
-        // just move the node to the used list
-        // LMAO
         memoryHeapPush(&usedRootNode, node);
     } else { // if (node->block_size > size) {
         size_t nodes_index = extracted_ptr - DYNAMIC_MEMORIES;
@@ -47,21 +43,12 @@ extern void * emalloc(size_t size) {
         // re-insert updated node (in freed list), with new size...
         memoryHeapPush(&freedRootNode, node);
 
-        // create new node to add to used array...
-        //      since there are finite number of addresses... our node buffers can be set to size of memory array and we'll never go past the limit.
-        //      TODO: is this an acceptable tradeoff... hmm... actually might apply to the array implementation too... derp.
-
-        // more abstraction
-        // TODO: might want to use index of pointer in dynamic buffer as index for this node? 
-        // create new used memory node.
         nodes[nodes_index] = { 
             .ptr = extracted_ptr, 
             .block_size = size, 
             .child = NULL
         };
   
-        // TODO:
-        //  Don't care about return here... at least not yet lol
         memoryHeapPush(&usedRootNode, nodes[nodes_index]);
     }
     return extracted_ptr;
@@ -79,16 +66,7 @@ extern void efree(void * ptr) {
 
     MemoryHeapNode * freed = memoryHeapPop(&usedRootNode, ptrHeapPopCondition, &ptr);
 
-    // hmm... now this next part
-    // iterate over node array? that's an option...
-    // this means we'll go from nodes_index -> 0; which can be a lot of iterations.
-
-    // search for pointer < ptr where pointer_size + ptr - pointer == ptr.
-
-    // memPopCpp2... function pointer condition it is :)
-
-    // TODO: lmao, follow code guidelines 
-    //  LMAO LMAO LMAO LMAO sajnklsnjkalndjslknadljknskladjk
+    // search for found_contigious where found_contigious->ptr < ptr and found_contigious->block_size + found_cointigious->ptr == ptr.
     MemoryHeapNode * found_contigious = memoryHeapPop(&freedRootNode, mergeHeapPopCondition, &ptr);
 
     if (found_contigious == NULL) {

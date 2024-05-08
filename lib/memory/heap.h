@@ -37,12 +37,9 @@ static bool ptrHeapPopCondition(MemoryHeapNode * node, void * arg) {
 }
 
 static bool mergeHeapPopCondition(MemoryHeapNode * node, void * arg) {
-    // search for pointer < ptr where pointer_size + ptr - pointer == ptr.
-    //  lol what ?
     void * ptr = (void *)*arg;
-
-    // parenthesis to enforce order of operations because computer maths?
-
+    
+    // search for node->ptr < ptr and node->ptr + node->block_size == ptr.
     if (ptr < node->ptr && node->ptr + node->block_size == ptr) {
         return true;
     }

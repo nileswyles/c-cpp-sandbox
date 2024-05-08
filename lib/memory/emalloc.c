@@ -25,8 +25,8 @@ static inline void initializeData() {
         nodes[0].child = NULL;
         memoryHeapPush(&freedRootNode, nodes);
         
-        printf("sizeof pointer, %u ", sizeof(uint8_t *)/2);
-        printf("sizeof size_t %u \n", sizeof(size_t)/2); // because 32-bit.... 
+        // printf("sizeof pointer, %u ", sizeof(uint8_t *)/2);
+        // printf("sizeof size_t %u \n", sizeof(size_t)/2); // because 32-bit.... 
     }
 }
 
@@ -40,8 +40,8 @@ extern void * emalloc(size_t size) {
 
     MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
     uint32_t nodes_index = node->index;
-    if (node == NULL || node->block_size < size || 0 > nodes_index || nodes_index >= DYNAMIC_MEMORY_SIZE) { 
-
+    if (node == NULL || node->block_size < size || 
+            0 > nodes_index || nodes_index >= DYNAMIC_MEMORY_SIZE) { 
         // freak out 
         return NULL;
     } 

@@ -1,21 +1,33 @@
+#include <stdint.h>
 #include "emalloc.h"
+#include "heap.h"
 
 // TODO: then add support for virtual memory addresses (MMU's?, paging, swap?)
-static void DYNAMIC_MEMORIES[DYNAMIC_MEMORY_SIZE] = {};
-static MemoryHeapNode nodes[DYNAMIC_MEMORY_SIZE] = {}; 
 
-nodes[0].data_ptr = DYNAMIC_MEMORIES;
-nodes[0].block_size = DYNAMIC_MEMORY_SIZE;
-nodes[0].child = NULL;
+// let's assume byte addressable for now? yeah, most is probably byte addressable... who word addresses?
+
+// TODO:
+// I have a feeling this information is available somehow... but for now let's assume byte addressable 
+static uint8_t dynamic_memories[DYNAMIC_MEMORY_SIZE] = {0};
+static MemoryHeapNode nodes[DYNAMIC_MEMORY_SIZE] = {0}; 
 
 // use heap push function to intialize root
 static MemoryHeapNode * freedRootNode = NULL;
-memoryHeapPush(&freedRootNode, nodes);
-
 // use heap push function to intialize root
 static MemoryHeapNode * usedRootNode = NULL;
 
+static inline void initializeData() {
+    if (freedRootNode == NULL) {
+        nodes[0].ptr = (void *)dynamic_memories;
+        nodes[0].block_size = DYNAMIC_MEMORY_SIZE;
+        nodes[0].child = NULL;
+        memoryHeapPush(&freedRootNode, nodes);
+    }
+}
+
 extern void * emalloc(size_t size) {
+    initializeData();
+
     if (size < 1) { 
         // freak out 
         return NULL;
@@ -31,7 +43,8 @@ extern void * emalloc(size_t size) {
     if (node->block_size == size) {
         memoryHeapPush(&usedRootNode, node);
     } else { 
-        size_t nodes_index = extracted_ptr - DYNAMIC_MEMORIES;
+        void * start_of_memory = (void *)dynamic_memories;
+        size_t nodes_index = extracted_ptr - start_of_memory;
 
         // see check above...
         // if (node->block_size > size) {
@@ -41,7 +54,7 @@ extern void * emalloc(size_t size) {
         // re-insert updated node (in freed list), with new size...
         memoryHeapPush(&freedRootNode, node);
 
-        nodes[nodes_index].data_ptr = extracted_ptr;
+        nodes[nodes_index].ptr = extracted_ptr;
         nodes[nodes_index].block_size = size;
         nodes[nodes_index].child = NULL;
   
@@ -60,15 +73,15 @@ extern void efree(void * ptr) {
     // void * ptr_forreal = ptr;
     // &ptr_forreal
 
-    MemoryHeapNode * freed = memoryHeapPop(&usedRootNode, ptrHeapPopCondition, &ptr);
+    MemoryHeapNode * freed = memoryHeapPop(&usedRootNode, ptrHeapPopCondition, ptr);
 
     // search for found_contigious where found_contigious->ptr < ptr and found_contigious->block_size + found_cointigious->ptr == ptr.
-    MemoryHeapNode * found_contigious = memoryHeapPop(&freedRootNode, mergeHeapPopCondition, &ptr);
+    MemoryHeapNode * found_contigious = memoryHeapPop(&freedRootNode, mergeHeapPopCondition, ptr);
 
     if (found_contigious == NULL) {
         memoryHeapPush(&freedRootNode, freed);
     } else {
-        found_contigious->block_size += freed->size;
+        found_contigious->block_size += freed->block_size;
         memoryHeapPush(&freedRootNode, found_contigious);
     }
 

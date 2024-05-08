@@ -15,23 +15,21 @@ typedef struct MemoryHeapNode {
 
 static bool sizeHeapPopCondition(MemoryHeapNode * node, void * arg) {
     // if (size <= node->block_size)
-    if ((size_t)*arg <= node->block_size) {
+    if (*((size_t *)arg) <= node->block_size) {
         return true;
     }
     return false;
 }
 
-static bool ptrHeapPopCondition(MemoryHeapNode * node, void * arg) {
+static bool ptrHeapPopCondition(MemoryHeapNode * node, void * ptr) {
     // seems odd to cast like this but trust me?
-    if ((void *)*arg <= node->block_size) {
+    if (ptr == node->ptr) {
         return true;
     }
     return false;
 }
 
-static bool mergeHeapPopCondition(MemoryHeapNode * node, void * arg) {
-    void * ptr = (void *)*arg;
-    
+static bool mergeHeapPopCondition(MemoryHeapNode * node, void * ptr) {
     // search for node->ptr < ptr and node->ptr + node->block_size == ptr.
     if (ptr < node->ptr && node->ptr + node->block_size == ptr) {
         return true;
@@ -42,7 +40,7 @@ static bool mergeHeapPopCondition(MemoryHeapNode * node, void * arg) {
 typedef bool(HeapPopCondition)(MemoryHeapNode *, void *);
 
 extern int memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode);
-extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition condition_func);
+extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition condition_func, void * condition_arg);
 
 #endif 
 

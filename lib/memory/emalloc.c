@@ -63,16 +63,7 @@ extern void * emalloc(size_t size) {
     return extracted_ptr;
 }
 
-//   freed will find used block at address provided... 
-//      then remove entry from used blocks list completely and add new freed entry merging any contigious blocks? 
-//      or was that why I had requirement of also minimizing pointers lmao (fuck)...
 extern void efree(void * ptr) {
-    // does this work? lol
-
-    // this better? lmao
-    // void * ptr_forreal = ptr;
-    // &ptr_forreal
-
     MemoryHeapNode * freed = memoryHeapPop(&usedRootNode, ptrHeapPopCondition, ptr);
 
     // search for found_contigious where found_contigious->ptr < ptr and found_contigious->block_size + found_cointigious->ptr == ptr.

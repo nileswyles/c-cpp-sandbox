@@ -40,14 +40,14 @@ extern void * emalloc(size_t size) {
 
     printf("popping from freed heap\n");
     MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
-    printf("lol\n");
-    uint32_t node_index = node->index;
-        
-    if (node == NULL || node->block_size < size || 
-            0 > node_index || node_index >= DYNAMIC_MEMORY_SIZE) { 
+    if (node == NULL || node->block_size < size) { 
         // freak out 
         return NULL;
     } 
+    uint32_t node_index = node->index;
+    if (0 > node_index || node_index >= DYNAMIC_MEMORY_SIZE) { 
+        return NULL;
+    }
     printf("node->index: %u, node->block_size: %u\n", node->index, node->block_size);
     void * extracted_ptr = (void *)(dynamic_memories + node_index);
     if (node->block_size == size) {
@@ -57,7 +57,6 @@ extern void * emalloc(size_t size) {
         // see check above...
         // if (node->block_size > size) {
         
-        // lol this needs to be reorged
         uint32_t new_index = node_index + size;
         nodes[new_index].index = new_index;
         nodes[new_index].block_size = node->block_size - size;

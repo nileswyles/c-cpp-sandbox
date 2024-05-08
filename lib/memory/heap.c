@@ -42,9 +42,9 @@ extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition c
     if (*root == NULL) {
         return NULL;
     }
-    bool match = condition_func(node, condition_arg);
-    MemoryHeapNode * prev_node = NULL;
     MemoryHeapNode * node = *root;
+    MemoryHeapNode * prev_node = NULL;
+    bool match = condition_func(node, condition_arg);
     while (!match) {
         if (node->child == NULL) {
             // no more to traverse, return NULL

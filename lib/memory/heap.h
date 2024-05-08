@@ -1,6 +1,8 @@
 #ifndef MEMORY_HEAP_H
 #define MEMORY_HEAP_H
 
+#include <stddef.h>
+
 // # pointer arithmetic! let's remember to compile this separately... because elevated privileges are a thing... 
 
 // #include <stdbool.h>
@@ -39,7 +41,7 @@ static bool mergeHeapPopCondition(MemoryHeapNode * node, void * ptr) {
 
 typedef bool(HeapPopCondition)(MemoryHeapNode *, void *);
 
-extern int memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode);
+extern void memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode);
 extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition condition_func, void * condition_arg);
 
 #endif 

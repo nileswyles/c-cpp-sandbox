@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 #include "emalloc.h"
 #include "heap.h"
 
@@ -8,6 +9,7 @@
 
 // TODO:
 // I have a feeling this information is available somehow... but for now let's assume byte addressable 
+
 static uint8_t dynamic_memories[DYNAMIC_MEMORY_SIZE] = {0};
 static MemoryHeapNode nodes[DYNAMIC_MEMORY_SIZE] = {0}; 
 
@@ -22,6 +24,9 @@ static inline void initializeData() {
         nodes[0].block_size = DYNAMIC_MEMORY_SIZE;
         nodes[0].child = NULL;
         memoryHeapPush(&freedRootNode, nodes);
+        
+        printf("sizeof pointer, %u ", sizeof(uint8_t *)/2);
+        printf("sizeof size_t %u \n", sizeof(size_t)/2); // because 32-bit.... 
     }
 }
 
@@ -44,7 +49,9 @@ extern void * emalloc(size_t size) {
         memoryHeapPush(&usedRootNode, node);
     } else { 
         void * start_of_memory = (void *)dynamic_memories;
-        size_t nodes_index = extracted_ptr - start_of_memory;
+        printf("%lx, %lx\n", extracted_ptr, &(*dynamic_memories));
+        size_t nodes_index = 0;
+        // size_t nodes_index = extracted_ptr - start_of_memory;
 
         // see check above...
         // if (node->block_size > size) {

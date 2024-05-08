@@ -3,25 +3,25 @@
 // TODO: then add support for virtual memory addresses (MMU's?, paging, swap?)
 static void DYNAMIC_MEMORIES[DYNAMIC_MEMORY_SIZE] = {};
 
-static TreeNode nodes[DYNAMIC_MEMORY_SIZE] = {}; 
+static MemoryHeapNode nodes[DYNAMIC_MEMORY_SIZE] = {}; 
 nodes[0] = { 
     .data_ptr = DYNAMIC_MEMORIES, 
     .block_size = DYNAMIC_MEMORY_SIZE, 
-    .parent = NULL, .left = NULL, .right = NULL 
+    .child = NULL
 };
 
 // use heap push function to intialize root
-static TreeNode * freedRootNode = NULL;
+static MemoryHeapNode * freedRootNode = NULL;
 memoryHeapPush(&freedRootNode, nodes[0]);
 
 // use heap push function to intialize root
-static TreeNode * usedRootNode = NULL;
+static MemoryHeapNode * usedRootNode = NULL;
 
 // yeah, thinking about this some more might seldom use this but good to have? 
 //  without any paging, this is fucking dumb :)
 extern void * emalloc(size_t size) {
     // hmmm... yeah so 
-    TreeNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
+    MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
     // TODO:
     // input validation?
 
@@ -57,7 +57,7 @@ extern void * emalloc(size_t size) {
         nodes[nodes_index] = { 
             .ptr = extracted_ptr, 
             .block_size = size, 
-            .parent = NULL, .left = NULL, .right = NULL 
+            .child = NULL
         };
   
         // TODO:
@@ -77,7 +77,7 @@ extern void efree(void * ptr) {
     // void * ptr_forreal = ptr;
     // &ptr_forreal
 
-    TreeNode * freed = memoryHeapPop(&usedRootNode, ptrHeapPopCondition, &ptr);
+    MemoryHeapNode * freed = memoryHeapPop(&usedRootNode, ptrHeapPopCondition, &ptr);
 
     // hmm... now this next part
     // iterate over node array? that's an option...
@@ -89,7 +89,7 @@ extern void efree(void * ptr) {
 
     // TODO: lmao, follow code guidelines 
     //  LMAO LMAO LMAO LMAO sajnklsnjkalndjslknadljknskladjk
-    TreeNode * found_contigious = memoryHeapPop(&freedRootNode, mergeHeapPopCondition, &ptr);
+    MemoryHeapNode * found_contigious = memoryHeapPop(&freedRootNode, mergeHeapPopCondition, &ptr);
 
     if (found_contigious == NULL) {
         memoryHeapPush(&freedRootNode, freed);

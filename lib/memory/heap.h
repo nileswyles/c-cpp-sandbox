@@ -10,14 +10,14 @@
 // heaps aka priority queues, so will likely need to decouple again... or might be worth implementing one in Cpp with templates?
 
 // using array indexing instead of pointers (linked list) might save quite a bit on storage.
-//  alternate between left most and right most
+//  alternate between child most and right most
 //  [5,4,2,1,3,6,7]
+
+// Singly linked priority list data structure of memory nodes.
 typedef struct MemoryHeapNode {
     void * ptr;
     size_t block_size;
-    MemoryHeapNode * parent;
-    MemoryHeapNode * left;
-    MemoryHeapNode * right;
+    MemoryHeapNode * child;
 } MemoryHeapNode;
 
 static bool sizeHeapPopCondition(MemoryHeapNode * node, void * arg) {

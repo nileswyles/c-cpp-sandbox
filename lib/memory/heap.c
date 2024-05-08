@@ -31,6 +31,7 @@ extern void memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode) {
         // insert new node before matched node
         if (prev_node == NULL) {
             // root node...
+            printf("Root Node reset to newNode\n");
             *root = newNode;
         } else {
             prev_node->child = newNode;
@@ -66,6 +67,7 @@ extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition c
         printf("POP! node_index: %u, node_block_size: %u\n", node->index, node->block_size);
         if (prev_node == NULL) {
             // root node...
+            printf("Root Node reset to node->child which could be null.\n");
             *root = node->child;
         } else {
             prev_node->child = node->child; // set parent child to current node child

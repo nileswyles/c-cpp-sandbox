@@ -19,7 +19,7 @@ static MemoryHeapNode * freedRootNode = NULL;
 static MemoryHeapNode * usedRootNode = NULL;
 
 static inline void initializeData() {
-    if (freedRootNode == NULL) {
+    if (freedRootNode == NULL && usedRootNode == NULL) {
         nodes[0].index = 0;
         nodes[0].block_size = DYNAMIC_MEMORY_SIZE;
         nodes[0].child = NULL;

@@ -4,11 +4,20 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-// right?
 #define malloc emalloc
 
+// total size required =
+//  (2 + 2 + 4) * 65536
+//  +
+//  65536
+
+//  sizeof(MemoryHeapNode) * DYNAMIC_MEMORY_SIZE + DYNAMIC_MEMORY_SIZE
+
+//  (size_index + size_block_size + pointer_size(32/64 bits)) * DYNAMIC_MEMORY_SIZE
+//      +
+//  DYNAMIC_MEMORY_SIZE
 #ifndef DYNAMIC_MEMORY_SIZE
-#define DYNAMIC_MEMORY_SIZE 65536
+#define DYNAMIC_MEMORY_SIZE UINT16_MAX
 #endif
 
 extern void * emalloc(size_t size);

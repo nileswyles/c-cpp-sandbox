@@ -9,8 +9,8 @@
 // heaps aka priority queues, so will likely need to decouple again... or might be worth implementing one in Cpp with templates?
 // Singly linked priority list data structure of memory nodes.
 typedef struct MemoryHeapNode {
-    uint32_t index;
-    uint32_t block_size;
+    uint16_t index;
+    uint16_t block_size;
     MemoryHeapNode * child;
 } MemoryHeapNode;
 

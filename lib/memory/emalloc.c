@@ -16,25 +16,25 @@ memoryHeapPush(&freedRootNode, nodes);
 static MemoryHeapNode * usedRootNode = NULL;
 
 extern void * emalloc(size_t size) {
-    // hmmm... yeah so 
-    MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
-    // TODO:
-    // input validation?
+    if (size < 1) { 
+        // freak out 
+        return NULL;
+    } 
 
-    // TODO:
-    // get address from node, insert update node (only if block_size > size, else we remove...) in free structure...
-    // TODO: might specialize the structure and remove the need for this 
+    MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
     if (node == NULL || node->block_size < size) { 
         // freak out 
         return NULL;
     } 
-    
+
     void * extracted_ptr = node->ptr;
     if (node->block_size == size) {
         memoryHeapPush(&usedRootNode, node);
-    } else { // if (node->block_size > size) {
+    } else { 
         size_t nodes_index = extracted_ptr - DYNAMIC_MEMORIES;
-        // TODO: I think, this will always be within bounds but revisit...
+
+        // see check above...
+        // if (node->block_size > size) {
         node->ptr += size;
         node->block_size -= size;
  

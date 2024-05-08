@@ -4,15 +4,8 @@
 // # pointer arithmetic! let's remember to compile this separately... because elevated privileges are a thing... 
 
 // #include <stdbool.h>
-// TODO: is extern static a C linkage thing ? forreal? 
-//  declaration added to source files through includes right and so it looks for source file with extern...
 
 // heaps aka priority queues, so will likely need to decouple again... or might be worth implementing one in Cpp with templates?
-
-// using array indexing instead of pointers (linked list) might save quite a bit on storage.
-//  alternate between child most and right most
-//  [5,4,2,1,3,6,7]
-
 // Singly linked priority list data structure of memory nodes.
 typedef struct MemoryHeapNode {
     void * ptr;

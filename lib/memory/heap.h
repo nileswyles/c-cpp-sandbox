@@ -7,6 +7,11 @@
 // TODO: is extern static a C linkage thing ? forreal? 
 //  declaration added to source files through includes right and so it looks for source file with extern...
 
+// heaps aka priority queues, so will likely need to decouple again... or might be worth implementing one in Cpp with templates?
+
+// using array indexing instead of pointers (linked list) might save quite a bit on storage.
+//  alternate between left most and right most
+//  [5,4,2,1,3,6,7]
 typedef struct MemoryHeapNode {
     void * ptr;
     size_t block_size;

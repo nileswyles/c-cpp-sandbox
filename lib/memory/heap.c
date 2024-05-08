@@ -45,6 +45,8 @@ extern int memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode) {
         node->left = newNode;
         return 1;
     }
+    // as read, can remove parent ptr and instead set children on backwards pass of recursion...
+    //  right ptr not as crucial, if at all necessary
     if (node->left != NULL) {
         int ret = push(node->left, newNode);
         if (ret == 1) { // means we found a place for this damn thing....

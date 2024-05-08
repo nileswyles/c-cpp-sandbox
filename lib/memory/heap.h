@@ -4,8 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// # pointer arithmetic! let's remember to compile this separately... because elevated privileges are a thing... 
-
 // #include <stdbool.h>
 
 // heaps aka priority queues, so will likely need to decouple again... or might be worth implementing one in Cpp with templates?

@@ -2,17 +2,15 @@
 
 // TODO: then add support for virtual memory addresses (MMU's?, paging, swap?)
 static void DYNAMIC_MEMORIES[DYNAMIC_MEMORY_SIZE] = {};
-
 static MemoryHeapNode nodes[DYNAMIC_MEMORY_SIZE] = {}; 
-nodes[0] = { 
-    .data_ptr = DYNAMIC_MEMORIES, 
-    .block_size = DYNAMIC_MEMORY_SIZE, 
-    .child = NULL
-};
+
+nodes[0].data_ptr = DYNAMIC_MEMORIES;
+nodes[0].block_size = DYNAMIC_MEMORY_SIZE;
+nodes[0].child = NULL;
 
 // use heap push function to intialize root
 static MemoryHeapNode * freedRootNode = NULL;
-memoryHeapPush(&freedRootNode, nodes[0]);
+memoryHeapPush(&freedRootNode, nodes);
 
 // use heap push function to intialize root
 static MemoryHeapNode * usedRootNode = NULL;
@@ -43,13 +41,11 @@ extern void * emalloc(size_t size) {
         // re-insert updated node (in freed list), with new size...
         memoryHeapPush(&freedRootNode, node);
 
-        nodes[nodes_index] = { 
-            .ptr = extracted_ptr, 
-            .block_size = size, 
-            .child = NULL
-        };
+        nodes[nodes_index].data_ptr = extracted_ptr;
+        nodes[nodes_index].block_size = size;
+        nodes[nodes_index].child = NULL;
   
-        memoryHeapPush(&usedRootNode, nodes[nodes_index]);
+        memoryHeapPush(&usedRootNode, nodes + nodes_index);
     }
     return extracted_ptr;
 }

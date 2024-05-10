@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <new>
 
 #include "logger.h"
 
@@ -30,12 +31,14 @@ int main() {
     for (int i = 0; i < size + 1; i++) {
         logger_printf(LOGGER_TEST, "\n*********************new2 iteration: %d\n", i);
         // TODO: "type"-new function seg faults when malloc returns NULL... 
-        ptr[i] = new int(1);
+        try {
+            ptr[i] = new int(1);
+        } catch (const std::bad_alloc& e) {
+            logger_printf(LOGGER_TEST, "exception explanation: %s\n", e.what());
+
+        }
         //  (I assume it does some additional casting... and such but you would think they thought of that? LMAO) 
         // int * ptr = (int *) ::operator new(sizeof(int));
-        if (ptr[i] == NULL) {
-            logger_printf(LOGGER_TEST, "NULL POINTER!\n");
-        }
     }
     return 0;
 }

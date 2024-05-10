@@ -13,32 +13,27 @@ int main() {
     uint16_t size = 16 / 4;
     logger_printf(LOGGER_TEST, "size: %u\n", size);
     int * ptr[5];
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < size+1; i++) {
         logger_printf(LOGGER_TEST, "\n*********************new iteration: %d\n", i);
-        // TODO: "type"-new function seg faults when malloc returns NULL... 
-        ptr[i] = new int(1);
-        //  (I assume it does some additional casting... and such but you would think they thought of that? LMAO) 
-        // int * ptr = (int *) ::operator new(sizeof(int));
-        if (ptr[i] == NULL) {
-            logger_printf(LOGGER_TEST, "NULL POINTER!\n");
-        }
-    }
-    for (int i = 0; i < size; i++) {
-        logger_printf(LOGGER_TEST, "\n*********************delete iteration: %d\n", i);
-        // TODO: "type"-new function seg faults when malloc returns NULL... 
-        delete ptr[i];
-    }
-    for (int i = 0; i < size + 1; i++) {
-        logger_printf(LOGGER_TEST, "\n*********************new2 iteration: %d\n", i);
-        // TODO: "type"-new function seg faults when malloc returns NULL... 
         try {
             ptr[i] = new int(1);
         } catch (const std::bad_alloc& e) {
             logger_printf(LOGGER_TEST, "exception explanation: %s\n", e.what());
 
         }
-        //  (I assume it does some additional casting... and such but you would think they thought of that? LMAO) 
-        // int * ptr = (int *) ::operator new(sizeof(int));
+    }
+    for (int i = 0; i < size-2; i++) {
+        logger_printf(LOGGER_TEST, "\n*********************delete iteration: %d\n", i);
+        // TODO: "type"-new function seg faults when malloc returns NULL... 
+        delete ptr[i];
+    }
+    for (int i = 0; i < size; i++) {
+        logger_printf(LOGGER_TEST, "\n*********************new2 iteration: %d\n", i);
+        try {
+            ptr[i] = new int(1);
+        } catch (const std::bad_alloc& e) {
+            logger_printf(LOGGER_TEST, "exception explanation: %s\n", e.what());
+        }
     }
     return 0;
 }

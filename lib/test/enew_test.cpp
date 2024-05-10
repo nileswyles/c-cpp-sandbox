@@ -8,6 +8,9 @@
 #define LOGGER_LEVEL LOGGER_TEST
 #endif
 
+// TODO:
+//  yeah, add more tests...
+
 int main() {
     // uint16_t size = 65536 / 4;
     uint16_t size = DYNAMIC_MEMORY_SIZE;

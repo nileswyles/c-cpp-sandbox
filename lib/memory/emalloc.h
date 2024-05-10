@@ -1,6 +1,8 @@
 #ifndef EMALLOC_H
 #define EMALLOC_H
 
+// TODO: so extern "C" {} not required? LMAO. What happened to CPP variable/function name mangling?
+
 #include <stdbool.h>
 #include <stddef.h>
 

@@ -32,22 +32,15 @@ static inline void initializeData() {
 extern void * emalloc(size_t size) {
     initializeData();
 
-    if (size < 1) { 
-        return NULL;
-    } 
+    if (size < 1) return NULL;
 
     logger_printf(LOGGER_DEBUG, "Popping from freed heap. Root pointer: %p\n", freedRootNode);
     MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
-    if (node == NULL) { 
-        logger_printf(LOGGER_DEBUG, "Popped node is NULL, return NULL immediately.\n");
-        return NULL;
-    }
+    if (node == NULL) return NULL;
     logger_printf(LOGGER_DEBUG, "Node pointer: %p, Root pointer: %p\n", node, freedRootNode);
 
     uint32_t used_index = node->index;
-    if (node->block_size < size || 0 > used_index || used_index >= DYNAMIC_MEMORY_SIZE) { 
-        return NULL;
-    }
+    if (node->block_size < size || 0 > used_index || used_index >= DYNAMIC_MEMORY_SIZE) return NULL;
 
     logNodeContents(node);
 

@@ -17,7 +17,7 @@
 //      +
 //  DYNAMIC_MEMORY_SIZE
 #ifndef DYNAMIC_MEMORY_SIZE
-#define DYNAMIC_MEMORY_SIZE UINT16_MAX
+#define DYNAMIC_MEMORY_SIZE 16
 #endif
 
 extern void * emalloc(size_t size);

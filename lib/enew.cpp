@@ -1,48 +1,49 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <new>
+
+#include "logger.h"
 
 #include "emalloc.h"
 
 void* operator new(std::size_t sz) {
-    printf("1) new(size_t), size = %zu\n", sz);
+    logger_printf(LOGGER_DEBUG, "(1) new(size_t), size = %zu\n", sz);
     if (sz == 0)
         ++sz; // avoid std::malloc(0) which may return nullptr on success
 
     if (void* ptr = malloc(sz))
         return ptr;
 
-    return NULL;
-    // throw std::bad_alloc{}; // required by [new.delete.single]/3
+    throw std::bad_alloc{};
 }
 
 void* operator new[](std::size_t sz) {
-    printf("2) new[](size_t), size = %zu\n", sz);
+    logger_printf(LOGGER_DEBUG, "(2) new[](size_t), size = %zu\n", sz);
     if (sz == 0)
         ++sz; // avoid std::malloc(0) which may return nullptr on success
 
     if (void* ptr = malloc(sz))
         return ptr;
 
-    return NULL;
-    // throw std::bad_alloc{}; // required by [new.delete.single]/3
+    throw std::bad_alloc{};
 }
 
 void operator delete(void* ptr) noexcept {
-    printf("3) delete(void*)");
+    logger_printf(LOGGER_DEBUG, "(3) delete(void*)");
     free(ptr);
 }
 
 void operator delete(void* ptr, std::size_t size) noexcept {
-    printf("4) delete(void*, size_t), size = %zu\n", size);
+    logger_printf(LOGGER_DEBUG, "(4) delete(void*, size_t), size = %zu\n", size);
     free(ptr);
 }
 
 void operator delete[](void* ptr) noexcept {
-    printf("5) delete[](void* ptr)");
+    logger_printf(LOGGER_DEBUG, "(5) delete[](void* ptr)");
     free(ptr);
 }
 
 void operator delete[](void* ptr, std::size_t size) noexcept {
-    printf("6) delete[](void*, size_t), size = %zu\n", size);
+    logger_printf(LOGGER_DEBUG, "(6) delete[](void*, size_t), size = %zu\n", size);
     free(ptr);
 }

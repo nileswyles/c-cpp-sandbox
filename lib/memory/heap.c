@@ -3,18 +3,17 @@
 
 // this extern just for verbosity and to tell reader this is exported, right?
 extern void memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode) {
-    // traverse heap until satisfy min heap property. and child < right
-    if (*root == NULL) {
-        *root = newNode;
-        printf("EMPTY HEAP! root_index: %u, root_block_size: %u\n", (*root)->index, (*root)->block_size);
-        return;
-    }
-
-    printf("HEAP! newNode_index: %u, newNode_block_size: %u\n", newNode->index, newNode->block_size);
-    printf("HEAP! root_index: %u, root_block_size: %u\n", (*root)->index, (*root)->block_size);
-
     MemoryHeapNode * prev_node = NULL;
     MemoryHeapNode * node = *root;
+    if (*root == NULL) {
+        *root = newNode;
+        return;
+    }
+    logger_printf(LOGGER_DEBUG, "Root Node:\n");
+    logNodeContents(node); 
+    logger_printf(LOGGER_DEBUG, "New Node:\n");
+    logNodeContents(newNode); 
+
     bool match = node->block_size > newNode->block_size;
     while (!match) {
         if (node->child == NULL) {
@@ -25,13 +24,15 @@ extern void memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode) {
             node = node->child;
         }
         match = node->block_size > newNode->block_size;
+        logger_printf(LOGGER_DEBUG, "Current Node:\n");
+        logNodeContents(node); 
     } 
 
     if (match) {
         // insert new node before matched node
         if (prev_node == NULL) {
             // root node...
-            printf("Root Node reset to newNode\n");
+            logger_printf(LOGGER_DEBUG, "Root Node reset to newNode\n");
             *root = newNode;
         } else {
             prev_node->child = newNode;
@@ -45,14 +46,16 @@ extern void memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode) {
 }
 
 extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition condition_func, void * condition_arg) {
+    MemoryHeapNode * node = *root;
+    MemoryHeapNode * prev_node = NULL;
     if (*root == NULL) {
         return NULL;
     }
-    MemoryHeapNode * node = *root;
-    MemoryHeapNode * prev_node = NULL;
+    logger_printf(LOGGER_DEBUG, "Root Node:\n");
+    logNodeContents(*root); 
+
     bool match = condition_func(node, condition_arg);
     while (!match) {
-        printf("POP! node_index: %u, node_block_size: %u\n", node->index, node->block_size);
         if (node->child == NULL) {
             // no more to traverse, return NULL
             break;
@@ -61,20 +64,22 @@ extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition c
             node = node->child;
         }
         match = condition_func(node, condition_arg);
+        logger_printf(LOGGER_DEBUG, "Current Node:\n");
+        logNodeContents(node); 
     }
 
     if (match) {
-        printf("POP! node_index: %u, node_block_size: %u\n", node->index, node->block_size);
+        logger_printf(LOGGER_DEBUG, "Found match! node_index: %u, node_block_size: %u\n", node->index, node->block_size);
         if (prev_node == NULL) {
             // root node...
-            printf("Root Node reset to node->child which could be null.\n");
-            printf("This means operation matched first in list, so node never null lol.\n");
+            logger_printf(LOGGER_DEBUG, "Root Node reset to node->child which could be null.\n");
             *root = node->child;
         } else {
             prev_node->child = node->child; // set parent child to current node child
         }
     } else {
         // return NULL if didn't find a matching node. else return the extracted node.
+        logger_printf(LOGGER_DEBUG, "No match!\n");
         node = NULL;
     }
     return node;

@@ -77,6 +77,7 @@ extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition c
         } else {
             prev_node->child = node->child; // set parent child to current node child
         }
+        node->child = NULL;
     } else {
         // return NULL if didn't find a matching node. else return the extracted node.
         logger_printf(LOGGER_DEBUG, "No match!\n");

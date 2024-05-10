@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #define malloc emalloc
+#define free efree
 
 // total size required =
 //  (2 + 2 + 4) * 65536

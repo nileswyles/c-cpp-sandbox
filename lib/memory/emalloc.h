@@ -18,7 +18,7 @@
 //      +
 //  DYNAMIC_MEMORY_SIZE
 #ifndef DYNAMIC_MEMORY_SIZE
-#define DYNAMIC_MEMORY_SIZE 16
+#define DYNAMIC_MEMORY_SIZE 65536
 #endif
 
 extern void * emalloc(size_t size);

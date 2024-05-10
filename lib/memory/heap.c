@@ -42,6 +42,8 @@ extern void memoryHeapPush(MemoryHeapNode ** root, MemoryHeapNode * newNode) {
         // broke out of loop without match...
         //  append...
         node->child = newNode;
+        // make sure it's NULL, since we are appending to end of list.
+        newNode->child = NULL;
     }
 }
 

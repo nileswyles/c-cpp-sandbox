@@ -17,38 +17,11 @@ typedef struct MemoryHeapNode {
     MemoryHeapNode * child;
 } MemoryHeapNode;
 
-static bool sizeHeapPopCondition(MemoryHeapNode * node, void * arg) {
-    uint32_t size = *((uint32_t *)arg);
-    logger_printf(LOGGER_DEBUG, "Size arg: %u, Block Size: %u\n", size, node->block_size);
-    if (size <= node->block_size) {
-        return true;
-    }
-    return false;
-}
+extern void logNodeContents(MemoryHeapNode * node);
 
-static bool ptrHeapPopCondition(MemoryHeapNode * node, void * arg) {
-    uint32_t index = *((uint32_t *)arg);
-    logger_printf(LOGGER_DEBUG, "Popping node at index: %u\n", index);
-    logger_printf(LOGGER_DEBUG, "\tCurrent node: %u\n", node->block_size);
-    if (index == node->index) {
-        return true;
-    }
-    return false;
-}
-
-static bool mergeHeapPopCondition(MemoryHeapNode * node, void * arg) {
-    uint32_t index = *((uint32_t *)arg);
-    logger_printf(LOGGER_DEBUG, "Popping (contigious) node, preceding the node at index: %u\n", index);
-    logger_printf(LOGGER_DEBUG, "\tCurrent node: %u, Block Size: %u\n", node->index, node->block_size);
-    if (node->index + node->block_size == index) {
-        return true;
-    }
-    return false;
-}
-
-static inline void logNodeContents(MemoryHeapNode * node) {
-    logger_printf(LOGGER_DEBUG, "  node->index: %u, node->block_size: %u\n", node->index, node->block_size);
-}
+extern bool sizeHeapPopCondition(MemoryHeapNode * node, void * arg);
+extern bool ptrHeapPopCondition(MemoryHeapNode * node, void * arg);
+extern bool mergeHeapPopCondition(MemoryHeapNode * node, void * arg);
 
 typedef bool(HeapPopCondition)(MemoryHeapNode *, void *);
 

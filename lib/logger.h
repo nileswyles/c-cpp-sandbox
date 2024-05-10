@@ -12,6 +12,8 @@
 
 // TODO: portability? what other interesting things can we do with macros?
 // NOTE: ## removes trailing comma when args is empty.
+
+// Been meaning to document this... Not sure how __LINE__ evaluates to the correct line number, but it's working for now?
 #define logger_printf(min, fmt, ...) \
     if (LOGGER_LEVEL >= min) {\
         FILE * file = stderr;\

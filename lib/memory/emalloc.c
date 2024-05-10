@@ -47,35 +47,35 @@ extern void * emalloc(size_t size) {
         logger_printf(LOGGER_DEBUG, "Popped node is NULL, return NULL immediately.\n");
         return NULL;
     } 
-    uint32_t node_index = node->index;
-    if (node->block_size < size || 0 > node_index || node_index >= DYNAMIC_MEMORY_SIZE) { 
+    uint32_t used_index = node->index;
+    if (node->block_size < size || 0 > used_index || used_index >= DYNAMIC_MEMORY_SIZE) { 
         return NULL;
     }
     logNodeContents(node);
-    void * extracted_ptr = (void *)(dynamic_memories + node_index);
+    void * extracted_ptr = (void *)(dynamic_memories + used_index);
     if (node->block_size == size) {
         logger_printf(LOGGER_DEBUG, "Pushing to used heap, same size.\n");
         memoryHeapPush(&usedRootNode, node);
     } else { 
         // see check above...
         // if (node->block_size > size) {
-        uint32_t new_index = node_index + size;
-        nodes[new_index].index = new_index;
-        nodes[new_index].block_size = node->block_size - size;
-        nodes[new_index].child = NULL;
+        uint32_t freed_index = used_index + size;
+        nodes[freed_index].index = freed_index;
+        nodes[freed_index].block_size = node->block_size - size;
+        nodes[freed_index].child = NULL;
      
         // re-insert updated node (in freed list), with new size...
         logger_printf(LOGGER_DEBUG, "Pushing to freed heap.\n");
-        logNodeContents(nodes + new_index);
-        memoryHeapPush(&freedRootNode, nodes + new_index);
+        logNodeContents(nodes + freed_index);
+        memoryHeapPush(&freedRootNode, nodes + freed_index);
 
-        nodes[node_index].index = node_index;
-        nodes[node_index].block_size = size;
-        nodes[node_index].child = NULL;
+        nodes[used_index].index = used_index;
+        nodes[used_index].block_size = size;
+        nodes[used_index].child = NULL;
 
         logger_printf(LOGGER_DEBUG, "Pushing to used heap.\n");
-        logNodeContents(nodes + node_index);
-        memoryHeapPush(&usedRootNode, nodes + node_index);
+        logNodeContents(nodes + used_index);
+        memoryHeapPush(&usedRootNode, nodes + used_index);
     }
     logger_printf(LOGGER_DEBUG, "Returning pointer: %p, size: %lu\n", extracted_ptr, size);
     return extracted_ptr;

@@ -118,5 +118,6 @@ extern MemoryHeapNode * memoryHeapPop(MemoryHeapNode ** root, HeapPopCondition c
         logger_printf(LOGGER_DEBUG, "No match!\n");
         node = NULL;
     }
+
     return node;
 }

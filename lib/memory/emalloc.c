@@ -16,19 +16,16 @@ static MemoryHeapNode nodes[DYNAMIC_MEMORY_SIZE] = {0};
 
 // use heap push function to intialize root
 static MemoryHeapNode * freedRootNode = NULL;
-// use heap push function to intialize root
 static MemoryHeapNode * usedRootNode = NULL;
 
 static inline void initializeData() {
     if (freedRootNode == NULL && usedRootNode == NULL) {
-        logger_printf(LOGGER_DEBUG, "intializing heap... \n");
+        logger_printf(LOGGER_DEBUG, "Intializing heap... \n");
 
         nodes[0].index = 0;
         nodes[0].block_size = DYNAMIC_MEMORY_SIZE;
         nodes[0].child = NULL;
         memoryHeapPush(&freedRootNode, nodes);
-        // logger_printf(LOGGER_DEBUG, "sizeof pointer, %u ", sizeof(uint8_t *)/2);
-        // logger_printf(LOGGER_DEBUG, "sizeof size_t %u \n", sizeof(size_t)/2); // because 32-bit.... 
     }
 }
 
@@ -36,22 +33,24 @@ extern void * emalloc(size_t size) {
     initializeData();
 
     if (size < 1) { 
-        // freak out 
         return NULL;
     } 
 
     logger_printf(LOGGER_DEBUG, "Popping from freed heap. Root pointer: %p\n", freedRootNode);
     MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
-    logger_printf(LOGGER_DEBUG, "Node pointer: %p, Root pointer: %p\n", node, freedRootNode);
     if (node == NULL) { 
         logger_printf(LOGGER_DEBUG, "Popped node is NULL, return NULL immediately.\n");
         return NULL;
-    } 
+    }
+    logger_printf(LOGGER_DEBUG, "Node pointer: %p, Root pointer: %p\n", node, freedRootNode);
+
     uint32_t used_index = node->index;
     if (node->block_size < size || 0 > used_index || used_index >= DYNAMIC_MEMORY_SIZE) { 
         return NULL;
     }
+
     logNodeContents(node);
+
     void * extracted_ptr = (void *)(dynamic_memories + used_index);
     if (node->block_size == size) {
         logger_printf(LOGGER_DEBUG, "Pushing to used heap, same size.\n");
@@ -77,13 +76,16 @@ extern void * emalloc(size_t size) {
         logNodeContents(nodes + used_index);
         memoryHeapPush(&usedRootNode, nodes + used_index);
     }
+
     logger_printf(LOGGER_DEBUG, "Returning pointer: %p, size: %lu\n", extracted_ptr, size);
+
     return extracted_ptr;
 }
 
 extern void efree(void * ptr) {
     uint32_t index = (uint8_t *)ptr - (uint8_t *)dynamic_memories;
     logger_printf(LOGGER_DEBUG, "Freeing pointer: %p, node index: %u\n", ptr, index);
+
     if (0 <= index && index < DYNAMIC_MEMORY_SIZE) {
         MemoryHeapNode * freed = memoryHeapPop(&usedRootNode, ptrHeapPopCondition, &index);
         MemoryHeapNode * found_contigious = memoryHeapPop(&freedRootNode, mergeHeapPopCondition, &index);

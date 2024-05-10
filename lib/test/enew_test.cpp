@@ -10,10 +10,10 @@
 
 int main() {
     // uint16_t size = 65536 / 4;
-    uint16_t size = 16;
+    uint16_t size = DYNAMIC_MEMORY_SIZE;
     logger_printf(LOGGER_TEST, "size: %u\n", size);
-    uint8_t * ptr[16];
-    uint8_t vals[16];
+    uint8_t * ptr[DYNAMIC_MEMORY_SIZE];
+    uint8_t vals[DYNAMIC_MEMORY_SIZE];
     for (int i = 0; i < size+1; i++) {
         logger_printf(LOGGER_DEBUG, "*********************new iteration: %d\n", i);
         try {
@@ -29,9 +29,9 @@ int main() {
 
     for (int i = 0; i < size-2; i++) {
         logger_printf(LOGGER_DEBUG, "*********************delete iteration: %d\n", i);
-        // TODO: "type"-new function seg faults when malloc returns NULL... 
         delete ptr[i];
     }
+
     for (int i = 0; i < size; i++) {
         logger_printf(LOGGER_DEBUG, "*********************new2 iteration: %d\n", i);
         try {
@@ -43,5 +43,6 @@ int main() {
     }
 
     logger_print_byte_array(LOGGER_TEST, vals, size);
+
     return 0;
 }

@@ -16,6 +16,13 @@ CPP DataTypes:
         x> array<string> keys
         x> array<JSONValue> value
 
+class Example {
+    Example(JSONObject root) {
+        // then iterate over keys/values... 
+        // this is specific to class right?
+    }
+}
+
 so, array is basically Object without keys? Is it worth making distinction? or rather, is it worth combining types? LMAO, perspective.
 
 Depends on where you're at, I guess...

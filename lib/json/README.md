@@ -1,5 +1,7 @@
 https://www.json.org/json-en.html
 CPP DataTypes:
+    extends/implements... same thing? sometimes...
+
     extends - isa
     x> - hasa
 

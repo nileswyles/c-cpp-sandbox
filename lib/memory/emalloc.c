@@ -20,7 +20,7 @@ static MemoryHeapNode * usedRootNode = NULL;
 
 static inline void initializeData() {
     if (freedRootNode == NULL && usedRootNode == NULL) {
-        logger_printf(LOGGER_DEBUG, "Intializing heap... \n");
+        loggerPrintf(LOGGER_DEBUG, "Intializing heap... \n");
 
         nodes[0].index = 0;
         nodes[0].block_size = DYNAMIC_MEMORY_SIZE;
@@ -34,19 +34,19 @@ extern void * emalloc(size_t size) {
 
     if (size < 1) return NULL;
 
-    logger_printf(LOGGER_DEBUG, "Popping from freed heap. Root pointer: %p\n", freedRootNode);
+    loggerPrintf(LOGGER_DEBUG, "Popping from freed heap. Root pointer: %p\n", freedRootNode);
     MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
     if (node == NULL) return NULL;
-    logger_printf(LOGGER_DEBUG, "Node pointer: %p, Root pointer: %p\n", node, freedRootNode);
+    loggerPrintf(LOGGER_DEBUG, "Node pointer: %p, Root pointer: %p\n", node, freedRootNode);
 
     uint32_t used_index = node->index;
     if (node->block_size < size || 0 > used_index || used_index >= DYNAMIC_MEMORY_SIZE) return NULL;
 
-    logNodeContents(node);
+    memoryLogNodeContents(node);
 
     void * extracted_ptr = (void *)(dynamic_memories + used_index);
     if (node->block_size == size) {
-        logger_printf(LOGGER_DEBUG, "Pushing to used heap, same size.\n");
+        loggerPrintf(LOGGER_DEBUG, "Pushing to used heap, same size.\n");
         memoryHeapPush(&usedRootNode, node);
     } else { 
         // see check above...
@@ -57,27 +57,27 @@ extern void * emalloc(size_t size) {
         nodes[freed_index].child = NULL;
      
         // re-insert updated node (in freed list), with new size...
-        logger_printf(LOGGER_DEBUG, "Pushing to freed heap.\n");
-        logNodeContents(nodes + freed_index);
+        loggerPrintf(LOGGER_DEBUG, "Pushing to freed heap.\n");
+        memoryLogNodeContents(nodes + freed_index);
         memoryHeapPush(&freedRootNode, nodes + freed_index);
 
         nodes[used_index].index = used_index;
         nodes[used_index].block_size = size;
         nodes[used_index].child = NULL;
 
-        logger_printf(LOGGER_DEBUG, "Pushing to used heap.\n");
-        logNodeContents(nodes + used_index);
+        loggerPrintf(LOGGER_DEBUG, "Pushing to used heap.\n");
+        memoryLogNodeContents(nodes + used_index);
         memoryHeapPush(&usedRootNode, nodes + used_index);
     }
 
-    logger_printf(LOGGER_DEBUG, "Returning pointer: %p, size: %lu\n", extracted_ptr, size);
+    loggerPrintf(LOGGER_DEBUG, "Returning pointer: %p, size: %lu\n", extracted_ptr, size);
 
     return extracted_ptr;
 }
 
 extern void efree(void * ptr) {
     uint32_t index = (uint8_t *)ptr - (uint8_t *)dynamic_memories;
-    logger_printf(LOGGER_DEBUG, "Freeing pointer: %p, node index: %u\n", ptr, index);
+    loggerPrintf(LOGGER_DEBUG, "Freeing pointer: %p, node index: %u\n", ptr, index);
 
     if (0 <= index && index < DYNAMIC_MEMORY_SIZE) {
         MemoryHeapNode * freed = memoryHeapPop(&usedRootNode, ptrHeapPopCondition, &index);

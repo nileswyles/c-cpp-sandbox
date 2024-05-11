@@ -55,7 +55,7 @@ class Array {
             // pos out of bounds, return error...
             if (pos < 0 || pos > this->size) return OPERATION_ERROR;
 
-            logger_printf(LOGGER_DEBUG, "num_els: %ld, size: %ld, cap: %ld, pos: %ld\n", num_els, this->size, this->cap, pos);
+            loggerPrintf(LOGGER_DEBUG, "num_els: %ld, size: %ld, cap: %ld, pos: %ld\n", num_els, this->size, this->cap, pos);
 
             T * new_buf = this->buf; 
             bool recapped = false;
@@ -142,7 +142,7 @@ class Array<const char *> {
         void addElement(char ** buffer, const size_t pos, const char * el) {
             char * new_cstring = newCArray<char>(strlen(el) + 1);
             strcpy(new_cstring, el);
-            logger_printf(LOGGER_DEBUG, "New String: %s\n", new_cstring);
+            loggerPrintf(LOGGER_DEBUG, "New String: %s\n", new_cstring);
             buffer[pos] = new_cstring;
         }
     public:
@@ -175,7 +175,7 @@ class Array<const char *> {
             // pos out of bounds, return error...
             if (pos < 0 || pos > this->size) return OPERATION_ERROR;
 
-            logger_printf(LOGGER_DEBUG, "num_els: %ld, size: %ld, cap: %ld, pos: %ld\n", num_els, this->size, this->cap, pos);
+            loggerPrintf(LOGGER_DEBUG, "num_els: %ld, size: %ld, cap: %ld, pos: %ld\n", num_els, this->size, this->cap, pos);
 
             char ** new_buf = this->buf; 
             bool recapped = false;
@@ -203,7 +203,7 @@ class Array<const char *> {
             size_t bucket_push = 0;
             size_t bucket_pop = 0;
             for (size_t i = pos; i < this->size + num_els; i++) {
-                logger_printf(LOGGER_DEBUG, "push: %ld pop: %ld\n", bucket_push, bucket_pop);
+                loggerPrintf(LOGGER_DEBUG, "push: %ld pop: %ld\n", bucket_push, bucket_pop);
                 const char * value;
                 if (i < pos + num_els) {
                     value = els[i - pos];
@@ -230,7 +230,7 @@ class Array<const char *> {
             this->size += num_els;
 
             for (size_t i = 0; i < this->size; i++) {
-                 logger_printf(LOGGER_DEBUG, "%s\n", this->buf[i]);
+                 loggerPrintf(LOGGER_DEBUG, "%s\n", this->buf[i]);
             }
 
             return OPERATION_SUCCESS;

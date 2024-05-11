@@ -17,7 +17,7 @@ typedef struct MemoryHeapNode {
     MemoryHeapNode * child;
 } MemoryHeapNode;
 
-extern void logNodeContents(MemoryHeapNode * node);
+extern void memoryLogNodeContents(MemoryHeapNode * node);
 
 extern bool sizeHeapPopCondition(MemoryHeapNode * node, void * arg);
 extern bool ptrHeapPopCondition(MemoryHeapNode * node, void * arg);

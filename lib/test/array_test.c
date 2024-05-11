@@ -21,11 +21,11 @@ bool assert(Array * arr, void * expected, size_t expected_size, size_t expected_
     bool cap_match = arr->cap == expected_cap && arr->size <= arr->cap; 
     bool size_of_el_match = expected_size_of_el == arr->size_of_el;
 
-    logger_printf(LOGGER_DEBUG, "Expected:\n");
-    logger_print_byte_array(LOGGER_DEBUG, (uint8_t *)expected, expected_size * expected_size_of_el);
-    logger_printf(LOGGER_DEBUG, "Actual:\n");
-    logger_print_byte_array(LOGGER_DEBUG, (uint8_t *)arr->buf, arr->size * arr->size_of_el);
-    logger_printf(LOGGER_DEBUG, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu), Size of El Match: %s (%lu == %lu) \n", 
+    loggerPrintf(LOGGER_DEBUG, "Expected:\n");
+    loggerPrintByteArray(LOGGER_DEBUG, (uint8_t *)expected, expected_size * expected_size_of_el);
+    loggerPrintf(LOGGER_DEBUG, "Actual:\n");
+    loggerPrintByteArray(LOGGER_DEBUG, (uint8_t *)arr->buf, arr->size * arr->size_of_el);
+    loggerPrintf(LOGGER_DEBUG, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu), Size of El Match: %s (%lu == %lu) \n", 
         memory_match ? "True" : "False", 
         size_match ? "True" : "False", expected_size, arr->size, 
         cap_match ? "True" : "False", expected_cap, arr->cap,

@@ -15,17 +15,17 @@ static uint8_t dynamic_memories[DYNAMIC_MEMORY_SIZE] = {0};
 static MemoryHeapNode nodes[DYNAMIC_MEMORY_SIZE] = {0}; 
 
 // use heap push function to intialize root
-static MemoryHeapNode * freedRootNode = NULL;
-static MemoryHeapNode * usedRootNode = NULL;
+static MemoryHeapNode * freed_root_node = NULL;
+static MemoryHeapNode * used_root_node = NULL;
 
 static inline void initializeData() {
-    if (freedRootNode == NULL && usedRootNode == NULL) {
+    if (freed_root_node == NULL && used_root_node == NULL) {
         loggerPrintf(LOGGER_DEBUG, "Intializing heap... \n");
 
         nodes[0].index = 0;
         nodes[0].block_size = DYNAMIC_MEMORY_SIZE;
         nodes[0].child = NULL;
-        memoryHeapPush(&freedRootNode, nodes);
+        memoryHeapPush(&freed_root_node, nodes);
     }
 }
 
@@ -34,10 +34,10 @@ extern void * emalloc(size_t size) {
 
     if (size < 1) return NULL;
 
-    loggerPrintf(LOGGER_DEBUG, "Popping from freed heap. Root pointer: %p\n", freedRootNode);
-    MemoryHeapNode * node = memoryHeapPop(&freedRootNode, sizeHeapPopCondition, &size);
+    loggerPrintf(LOGGER_DEBUG, "Popping from freed heap. Root pointer: %p\n", freed_root_node);
+    MemoryHeapNode * node = memoryHeapPop(&freed_root_node, sizeHeapPopCondition, &size);
     if (node == NULL) return NULL;
-    loggerPrintf(LOGGER_DEBUG, "Node pointer: %p, Root pointer: %p\n", node, freedRootNode);
+    loggerPrintf(LOGGER_DEBUG, "Node pointer: %p, Root pointer: %p\n", node, freed_root_node);
 
     uint32_t used_index = node->index;
     if (node->block_size < size || 0 > used_index || used_index >= DYNAMIC_MEMORY_SIZE) return NULL;
@@ -47,7 +47,7 @@ extern void * emalloc(size_t size) {
     void * extracted_ptr = (void *)(dynamic_memories + used_index);
     if (node->block_size == size) {
         loggerPrintf(LOGGER_DEBUG, "Pushing to used heap, same size.\n");
-        memoryHeapPush(&usedRootNode, node);
+        memoryHeapPush(&used_root_node, node);
     } else { 
         // see check above...
         // if (node->block_size > size) {
@@ -59,7 +59,7 @@ extern void * emalloc(size_t size) {
         // re-insert updated node (in freed list), with new size...
         loggerPrintf(LOGGER_DEBUG, "Pushing to freed heap.\n");
         memoryLogNodeContents(nodes + freed_index);
-        memoryHeapPush(&freedRootNode, nodes + freed_index);
+        memoryHeapPush(&freed_root_node, nodes + freed_index);
 
         nodes[used_index].index = used_index;
         nodes[used_index].block_size = size;
@@ -67,7 +67,7 @@ extern void * emalloc(size_t size) {
 
         loggerPrintf(LOGGER_DEBUG, "Pushing to used heap.\n");
         memoryLogNodeContents(nodes + used_index);
-        memoryHeapPush(&usedRootNode, nodes + used_index);
+        memoryHeapPush(&used_root_node, nodes + used_index);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Returning pointer: %p, size: %lu\n", extracted_ptr, size);
@@ -80,13 +80,13 @@ extern void efree(void * ptr) {
     loggerPrintf(LOGGER_DEBUG, "Freeing pointer: %p, node index: %u\n", ptr, index);
 
     if (0 <= index && index < DYNAMIC_MEMORY_SIZE) {
-        MemoryHeapNode * freed = memoryHeapPop(&usedRootNode, ptrHeapPopCondition, &index);
-        MemoryHeapNode * found_contigious = memoryHeapPop(&freedRootNode, mergeHeapPopCondition, &index);
+        MemoryHeapNode * freed = memoryHeapPop(&used_root_node, ptrHeapPopCondition, &index);
+        MemoryHeapNode * found_contigious = memoryHeapPop(&freed_root_node, mergeHeapPopCondition, &index);
         if (found_contigious == NULL) {
-            memoryHeapPush(&freedRootNode, freed);
+            memoryHeapPush(&freed_root_node, freed);
         } else {
             found_contigious->block_size += freed->block_size;
-            memoryHeapPush(&freedRootNode, found_contigious);
+            memoryHeapPush(&freed_root_node, found_contigious);
         }
         // yeah, this is actually pretty clean! I like the solution, assuming that mergeHeadPopCondition stuff works.
     }

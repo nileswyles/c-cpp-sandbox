@@ -1,6 +1,8 @@
 #include "heap.h"
 #include "stdio.h"
 
+#include "logger.h"
+
 extern bool sizeHeapPopCondition(MemoryHeapNode * node, void * arg) {
     uint32_t size = *((uint32_t *)arg);
     loggerPrintf(LOGGER_DEBUG, "Size arg: %u, Block Size: %u\n", size, node->block_size);

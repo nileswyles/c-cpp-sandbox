@@ -39,19 +39,18 @@ extern void * emalloc(size_t size) {
     if (node == NULL) return NULL;
     loggerPrintf(LOGGER_DEBUG, "Node pointer: %p, Root pointer: %p\n", node, freed_root_node);
 
-    uint32_t used_index = node->index;
-    if (node->block_size < size || 0 > used_index || used_index >= DYNAMIC_MEMORY_SIZE) return NULL;
+    if (node->block_size < size || 0 > node->index || node->index >= DYNAMIC_MEMORY_SIZE) return NULL;
 
     memoryLogNodeContents(node);
 
-    void * extracted_ptr = (void *)(dynamic_memories + used_index);
+    void * extracted_ptr = (void *)(dynamic_memories + node->index);
     if (node->block_size == size) {
         loggerPrintf(LOGGER_DEBUG, "Pushing to used heap, same size.\n");
         memoryHeapPush(&used_root_node, node);
     } else { 
         // see check above...
         // if (node->block_size > size) {
-        uint32_t freed_index = used_index + size;
+        uint32_t freed_index = node->index + size;
         nodes[freed_index].index = freed_index;
         nodes[freed_index].block_size = node->block_size - size;
         nodes[freed_index].child = NULL;
@@ -61,13 +60,13 @@ extern void * emalloc(size_t size) {
         memoryLogNodeContents(nodes + freed_index);
         memoryHeapPush(&freed_root_node, nodes + freed_index);
 
-        nodes[used_index].index = used_index;
-        nodes[used_index].block_size = size;
-        nodes[used_index].child = NULL;
+        nodes[node->index].index = node->index;
+        nodes[node->index].block_size = size;
+        nodes[node->index].child = NULL;
 
         loggerPrintf(LOGGER_DEBUG, "Pushing to used heap.\n");
-        memoryLogNodeContents(nodes + used_index);
-        memoryHeapPush(&used_root_node, nodes + used_index);
+        memoryLogNodeContents(nodes + node->index);
+        memoryHeapPush(&used_root_node, nodes + node->index);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Returning pointer: %p, size: %lu\n", extracted_ptr, size);

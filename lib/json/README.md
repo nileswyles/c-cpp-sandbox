@@ -18,6 +18,8 @@ CPP DataTypes:
 
 so, array is basically Object without keys? Is it worth making distinction? or rather, is it worth combining types? LMAO, perspective.
 
+Depends on where you're at, I guess...
+
 like is JSONObject better defined as...
     JSONObject extends JSONValue
         x> array<string> keys

@@ -58,6 +58,74 @@ char hexToChar(char * buf) {
     return ret;
 }
 
+void parseDecimal(const char * buf, size_t& i, double& value) {
+    double decimal_divisor = 10;
+    char c = buf[i++];
+    while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
+        // 1.1234567
+        // 1 + .1
+        // 1.1 + .02
+        value += (c - 0x30) / decimal_divisor;
+        decimal_divisor *= 10;
+        c = buf[i++];
+    }
+}
+
+void parseNatural(const char * buf, size_t& i, double& value) {
+    char c = buf[i++];
+    while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
+        // 1
+        // 1 * 10 = 10 + 2;
+        // 12 * 10 = 120 + 3; 
+        value = (value * 10) + (c - 0x30); 
+        c = buf[i++];
+    }
+}
+
+void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
+    int8_t sign = buf[i] == '-' ? -1 : 1;
+
+    int8_t exponential_sign = 0;
+    double exponential_multiplier = 10;
+
+    double value = 0;
+    char c = buf[i++];
+
+    // TODO: this is ugly...
+    while (c != ',' && c != '}' && c != ' ' && c != '\r' && c != '\n' && c != '\t') {
+        if (!isDigit(c)) {
+            // throw exception/break, do something...?, move to while condition?
+        } else if (c == '.') {
+            parseDecimal(buf, value);
+        } else if (c == 'e' || c == 'E') {
+            c = buf[i++];
+            exponential_sign = c == '-' ? -1 : 1;
+
+            double exp = 0;
+            parseNatural(buf, i, exp);
+
+            // 1 = * 10
+            // 2 = * 100
+            // 3 = * 1000
+            for (size_t x = 0; x < exp; x++) {
+                exponential_multiplier *= 10;
+            }
+        } else { // parse number value...
+            parseNatural(buf, i, value);
+        }
+        c = buf[i++];
+    }
+
+    if (exponential_sign == -1) {
+        value = value / exponential_multiplier;
+    } else if (exponential_sign == 1) {
+        value = value * exponential_multiplier;
+    }
+
+    JsonNumber num(value * sign);
+    (obj->values).append(num);
+}
+
 void parseString(JsonObject * obj, const char * buf, size_t& i) {
     char c = buf[++i];
     std::string s()
@@ -116,44 +184,8 @@ void parseString(JsonObject * obj, const char * buf, size_t& i) {
     (obj->values).append(jsonString);
 }
 
-// TODO: this can also be reused...
-void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
-    double value = 0;
-    bool has_decimal = false;
-    double decimal_divisor = 10;
-
-    char c = buf[++i];
-    // TODO: sign.... and hex digit? and exponents? derp
-    while (c != ' ' && c != '\r' && c != '\n' && c != '\t') { // iterate until whitespace... 
-        // TODO: implement char helper functions?
-        //  is_digit, to_num (ord), to_char (chr)
-        if (!isDigit(c)) { // if not digit
-            // throw exception/break, do something...?, move to while condition?
-        } else if (c == '.') {
-            has_decimal = true;
-            continue;
-        }
-        if (has_decimal) {
-            // 1.1234567
-            // 1 + .1
-            // 1.1 + .02
-            value += (c - 0x30) / decimal_divisor;
-            decimal_divisor *= 10;
-        } else {
-            // 1
-            // 1 * 10 = 10 + 2;
-            // 12 * 10 = 120 + 3; 
-            value = (value * 10) + (c - 0x30); 
-        }
-        c = buf[++i];
-    }
-
-    // add new number value...
-    JsonNumber num(value);
-    (obj->values).append(num);
-}
-
 void parseArray(JsonObject * obj, const char * buf, size_t& i) {
+    char c = buf[++i];
     while(c != ']') {
         // TODO: check if malformed array... and do something... bubble it up!
         // can either copy string and null terminate or pass delimeter to parseValue...
@@ -169,7 +201,7 @@ void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) 
         if (c == '"') {
             parseString(obj, buf + i, i);
             break;
-        } else if (c >= 0x30 && c <= 0x39) { // if is digit
+        } else if (isDigit(c) || c == '+' || c = '-') {
             parseNumber(obj, buf + i, i);
             break;
         } else if (c == '[') {

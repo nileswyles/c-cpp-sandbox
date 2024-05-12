@@ -14,7 +14,6 @@ typedef enum JsonType {
     NULL_TYPE
 } JsonType;
 
-// TODO: fix names...
 class JsonValue {
     public:
         JsonType type;
@@ -56,7 +55,7 @@ class JsonString: public JsonValue {
         JsonString(std::string s): JsonValue(STRING), s(s) {}
 };
 
-JsonObject parse(const char * json);
+JsonObject parse(std::string * json);
 
 //  TODO:
 //      Function pointers a sin?

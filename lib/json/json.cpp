@@ -3,10 +3,10 @@
 
 using namespace WylesLibs::Json;
 
-size_t compareCString(const char * buf, const char * comp, size_t comp_length) {
+size_t compareCString(std::string * buf, std::string * comp, size_t comp_length) {
     size_t x = 0;
     while(x < comp_length) {
-        if (comp[x] != buf[x]) {
+        if (comp->at(x) != buf->at(x)) {
             break;
         }
         x++;
@@ -39,10 +39,10 @@ bool isHexDigit(char c) {
     return isDigit(c) || isLowerHex(c) || isUpperHex(c);
 }
 
-char hexToChar(const char * buf) {
+char hexToChar(std::string * buf) {
     char ret = 0x00;
     for (size_t i = 0; i < 2; i++) {
-        char c = buf[i];
+        char c = buf->at(i);
         if (isDigit(c)) {
             c = c - 0x30;
         } else if (isLowerHex(c)) {
@@ -58,9 +58,9 @@ char hexToChar(const char * buf) {
     return ret;
 }
 
-void parseDecimal(const char * buf, size_t& i, double& value) {
+void parseDecimal(std::string * buf, size_t& i, double& value) {
     double decimal_divisor = 10;
-    char c = buf[i];
+    char c = buf->at(i);
     while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
         // 1.1234567
         // 1 + .1
@@ -68,41 +68,45 @@ void parseDecimal(const char * buf, size_t& i, double& value) {
         value += (c - 0x30) / decimal_divisor;
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         decimal_divisor *= 10;
-        c = buf[++i];
+        c = buf->at(++i);
     }
     // make sure we point at last digit
     i--;
 }
 
-void parseNatural(const char * buf, size_t& i, double& value) {
-    char c = buf[i];
+void parseNatural(std::string * buf, size_t& i, double& value) {
+    char c = buf->at(i);
     while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
         // 1
         // 1 * 10 = 10 + 2;
         // 12 * 10 = 120 + 3; 
         value = (value * 10) + (c - 0x30); 
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
-        c = buf[++i];
+        c = buf->at(++i);
     }
     // make sure we point at last digit
     i--;
 }
 
-void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
+void parseNumber(JsonObject * obj, std::string * buf, size_t& i) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
+
     int8_t sign = 1;
 
     int8_t exponential_sign = 0;
     double exponential_multiplier = 10;
 
     double value = 0;
-    char c = buf[i];
-    while (c != ',' && c != '}' && c != ' ' && c != '\r' && c != '\n' && c != '\t') {
+    char c = buf->at(i);
+
+    std::string comp(" ,}\r\n\t");
+    while (comp.find(c) != std::string::npos) {
         if (isDigit(c)) {
             parseNatural(buf, i, value);
         } else if (c == '.') {
             parseDecimal(buf, ++i, value);
         } else if (c == 'e' || c == 'E') {
-            c = buf[++i];
+            c = buf->at(++i);
             if (c == '-') { 
                 exponential_sign = -1;
                 i++;
@@ -121,13 +125,13 @@ void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
                 exponential_multiplier *= 10;
             }
             loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
-        } else if (buf[i] == '-') {
+        } else if (buf->at(i) == '-') {
             sign = -1;
-        } else if (buf[i] == '+') {
+        } else if (buf->at(i) == '+') {
         } else { // parse number value...
             // throw exception/break, do something...?, move to while condition?
         }
-        c = buf[++i];
+        c = buf->at(++i);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Number before applying exponential: %f\n", value);
@@ -142,10 +146,14 @@ void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
 
     JsonValue * num = (JsonValue *) new JsonNumber(value * sign);
     (obj->values).append(num);
+
+    loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
 }
 
-void parseString(JsonObject * obj, const char * buf, size_t& i) {
-    char c = buf[i];
+void parseString(JsonObject * obj, std::string * buf, size_t& i) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
+
+    char c = buf->at(i);
     std::string s;
     char prev_c = (char)0x00;
     while (c != '"') {
@@ -193,85 +201,77 @@ void parseString(JsonObject * obj, const char * buf, size_t& i) {
             s += c;
         }
         prev_c = c;
-        c = buf[++i];
+        c = buf->at(++i);
     }
 
     // lol... not the best but
     //  who cares rn ... value value value value
-    loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
     JsonValue * jsonString = (JsonValue *) new JsonString(s);
     (obj->values).append(jsonString);
+
+    loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
+    loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
 }
 
 // TODO: LMAO
-void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop);
+void parseValue(JsonObject * obj, std::string * buf, size_t& i, const char stop);
 
-void parseArray(JsonObject * obj, const char * buf, size_t& i) {
-    char c = buf[i];
+void parseArray(JsonObject * obj, std::string * buf, size_t& i) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
+
+    char c = buf->at(i);
     while(c != ']') {
         // TODO: check if malformed array... and do something... bubble it up!
         // can either copy string and null terminate or pass delimeter to parseValue...
         parseValue(obj, buf, i, ',');
     }
+
+    loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
 }
 
-void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) {
-    char c = buf[i];
+void parseImmediate(JsonObject * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing %s @ %lu\n", comp->c_str(), i);
+
+    std::string buf_i = buf->substr(i, comp->size());
+    size_t consumed = compareCString(&buf_i, comp, comp->size());
+    if (consumed == comp->size()) {
+        (obj->values).append(value);
+    }
+    i += consumed - 1; // point at last index of token
+
+    loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu\n", comp->c_str(), i);
+}
+
+void parseValue(JsonObject * obj, std::string * buf, size_t& i, const char stop) {
+    char c = buf->at(i);
     while (c != stop) {
         // loggerPrintf(LOGGER_DEBUG, "index: %lu\n", i);
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         // TODO:
         //  if's vs switches...?
         if (c == '"') {
-            loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
             parseString(obj, buf, ++i);
-            loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
             break;
         } else if (isDigit(c) || c == '+' || c == '-') {
-            loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
             parseNumber(obj, buf, i);
-            loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
             break;
         } else if (c == '[') {
-            loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
             parseArray(obj, buf, ++i);
-            loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
             break;
         } else if (c == 't') {
-            loggerPrintf(LOGGER_DEBUG, "Parsing True @ %lu\n", i);
-            const char * comp = "true";
-            const size_t size = 4;
-            size_t consumed = compareCString(buf + i, comp, size);
-            if (consumed == size) {
-                JsonValue * boolean = (JsonValue *) new JsonBoolean(true);
-                (obj->values).append(boolean);
-            }
-            i += consumed - 1; // point at last index of token
-            loggerPrintf(LOGGER_DEBUG, "Parsed True @ %lu\n", i);
+            std::string comp("true");
+            JsonValue * boolean = (JsonValue *) new JsonBoolean(true);
+            parseImmediate(obj, buf, i, &comp, boolean);
             break;
         } else if (c == 'f') {
-            loggerPrintf(LOGGER_DEBUG, "Parsing False @ %lu\n", i);
-            const char * comp = "false";
-            const size_t size = 5;
-            size_t consumed = compareCString(buf + i, comp, size);
-            if (consumed == size) {
-                JsonValue * boolean = (JsonValue *) new JsonBoolean(false);
-                (obj->values).append(boolean);
-            }
-            i += consumed - 1; // point at last index of token
-            loggerPrintf(LOGGER_DEBUG, "Parsed False @ %lu\n", i);
+            std::string comp("false");
+            JsonValue * boolean = (JsonValue *) new JsonBoolean(false);
+            parseImmediate(obj, buf, i, &comp, boolean);
             break;
         } else if (c == 'n') {
-            loggerPrintf(LOGGER_DEBUG, "Parsing NULL @ %lu\n", i);
-            const char * comp = "null";
-            const size_t size = 4;
-            size_t consumed = compareCString(buf + i, comp, size);
-            if (consumed == size) {
-                JsonValue * nullValue = new JsonValue();
-                (obj->values).append(nullValue);
-            }
-            i += consumed - 1; // point at last index of token
-            loggerPrintf(LOGGER_DEBUG, "Parsed NULL @ %lu\n", i);
+            std::string comp("null");
+            JsonValue * nullValue = new JsonValue();
+            parseImmediate(obj, buf, i, &comp, nullValue);
             break;
             // TODO:
             // hmm... this works but think about whether we want to just ignore malformed...
@@ -279,11 +279,11 @@ void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) 
         } else if (c == '}') {
             break; // don't increment pointer and break;
         }
-        c = buf[++i];
+        c = buf->at(++i);
     }
 }
 
-void parseKey(JsonObject * obj, const char * buf, size_t& i) {
+void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
     // find start and end index of key string
     // TODO:
     //  if empty string...
@@ -292,22 +292,22 @@ void parseKey(JsonObject * obj, const char * buf, size_t& i) {
     //  maybe allow empty string but enforce uniqueness...
 
     // might be worth implementing a map structure eventually.
-    char c = buf[i];
+    char c = buf->at(i);
     while (c != '"') {
-        c = buf[++i];
+        c = buf->at(++i);
     } // found quote
     size_t start_i = ++i;
 
-    c = buf[i];
+    c = buf->at(i);
     while (c != '"') {
-        c = buf[++i];
+        c = buf->at(++i);
     } // found quote
     size_t size = i - start_i;
     if (size == 0) {
         // TODO:
     }
 
-    std::string s(buf + start_i, size);
+    std::string s = buf->substr(start_i, size);
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s @ %lu\n", s.c_str(), i);
     if ((obj->keys).uniqueAppend(s) != OPERATION_SUCCESS) {
         // TODO:
@@ -315,20 +315,23 @@ void parseKey(JsonObject * obj, const char * buf, size_t& i) {
 
     // value needs to be preceded by key
     while (c != ':') {
-        c = buf[++i];
+        c = buf->at(++i);
     }
     loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
     parseValue(obj, buf, ++i, (char)0x00);
 }
 
-// TODO: need to validate input? make sure full json before this is called?
-
 // Let's define that parse functions start index is first index of token and end index is last index of token.
-JsonObject WylesLibs::Json::parse(const char * json) {
+//  Okay, I'm convinced to switch to string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
+//      also, sizeof(pointers) < sizeof(std::string)
+//      and .at() bounds checks (exceptions), [] doesn't
+
+JsonObject WylesLibs::Json::parse(std::string * json) {
+    // if (json == nullptr) // TODO: throw exception
     JsonObject root;
     JsonObject * obj = nullptr;
     size_t i = 0;
-    char c = json[i];
+    char c = json->at(i);
     while(c != 0x00) {
         if (c == '{') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
@@ -349,7 +352,7 @@ JsonObject WylesLibs::Json::parse(const char * json) {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             parseKey(obj, json, ++i);
         }
-        c = json[++i];
+        c = json->at(++i);
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         // printf("%c\n", c);
     }

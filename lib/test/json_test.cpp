@@ -30,13 +30,13 @@ void printProcessFunc(std::string key, WylesLibs::Json::JsonValue * value) {
 
 int main() {
 
-    const char * s = "{\"test\":false, \"test2\":\"value\"}";
+    std::string s("{\"test\":false, \"test2\":\"value\"}");
 
     // const char * s = "{\"test\":null, \"test2\":17272.2727}";
 
-    loggerPrintf(LOGGER_TEST, "JSON STRING: %s\n", s);
+    loggerPrintf(LOGGER_TEST, "JSON STRING: %s\n", s.c_str());
 
-    JsonObject obj = parse(s);
+    JsonObject obj = parse(&s);
 
     loggerPrintf(LOGGER_TEST, "Num Keys: %lu\n", obj.keys.getSize());
     loggerPrintf(LOGGER_TEST, "Num Values: %lu\n", obj.values.getSize());

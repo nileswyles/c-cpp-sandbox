@@ -58,13 +58,16 @@ class JsonString: public JsonValue {
 
 JsonObject parse(const char * json);
 
-typedef void(ProcessValueFunc)(JsonValue * ptr);
+//  TODO:
+//      Function pointers a sin?
+typedef void(ProcessValueFunc)(std::string key, JsonValue * value);
 
-void processValue(JsonValue * ptr, ProcessValueFunc processor) {
-    processor(ptr);
+// TODO: abstract iterating too? iterators?... might be an array thing...
+void processKeyValue(std::string key, JsonValue * value, ProcessValueFunc processor) {
+    processor(key, value);
     // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-    loggerPrintf(LOGGER_DEBUF, "MAKING SURE TO FREE POINTER! @ %p\n", ptr);
-    delete ptr;
+    loggerPrintf(LOGGER_DEBUG, "MAKING SURE TO FREE POINTER! @ %p\n", value);
+    delete value;
 }
 
 }

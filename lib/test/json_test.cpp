@@ -3,31 +3,36 @@
 using namespace WylesLibs::Json;
 
 // lol
-void printProcessValueFunc(WylesLibs::Json::JsonValue * ptr) {
-    WylesLibs::Json::JsonType type = ptr->type;
+void printProcessFunc(std::string key, WylesLibs::Json::JsonValue * value) {
+    WylesLibs::Json::JsonType type = value->type;
     loggerPrintf(LOGGER_TEST, "value type: %lu\n", type);
 
     if (type == WylesLibs::Json::BOOLEAN) {
-        WylesLibs::Json::JsonBoolean * booleanValue = (JsonBoolean *)ptr;
+        WylesLibs::Json::JsonBoolean * booleanValue = (JsonBoolean *)value;
         loggerPrintf(LOGGER_TEST, "boolean value: %u\n", booleanValue->boolean);
     } else if (type == WylesLibs::Json::STRING) {
         // when created, sizeof(JsonString) on stack? or sizeof(JsonValue)? lol 
         loggerPrintf(LOGGER_TEST, "lol?\n");
-        WylesLibs::Json::JsonString * stringValue = (JsonString *)ptr;
+        WylesLibs::Json::JsonString * stringValue = (JsonString *)value;
         loggerPrintf(LOGGER_TEST, "string value: %s\n", stringValue->s.c_str());
     } else if (type == WylesLibs::Json::NUMBER) {
         // when created, sizeof(JsonString) on stack? or sizeof(JsonValue)? lol 
         loggerPrintf(LOGGER_TEST, "lol....\n");
-        WylesLibs::Json::JsonNumber * numberValue = (JsonNumber *)ptr;
+        WylesLibs::Json::JsonNumber * numberValue = (JsonNumber *)value;
         loggerPrintf(LOGGER_TEST, "number value: %f\n", numberValue->number);
+
+        if (key == "test2") {
+            // blah blah blah, add populate class membh
+            // this->test2 = (cast_type)numberValue->value;
+        }
     }
 }
 
 int main() {
 
-    // const char * s = "{\"test\":false, \"test2\":\"value\"}";
+    const char * s = "{\"test\":false, \"test2\":\"value\"}";
 
-    const char * s = "{\"test\":null, \"test2\":17272.2727}";
+    // const char * s = "{\"test\":null, \"test2\":17272.2727}";
 
     loggerPrintf(LOGGER_TEST, "JSON STRING: %s\n", s);
 
@@ -39,13 +44,13 @@ int main() {
         loggerPrintf(LOGGER_TEST, "key: %s\n", obj.keys.buf[i].c_str());
 
         // lol?
-        WylesLibs::Json::JsonValue * value_ptr = obj.values.buf[i];
+        WylesLibs::Json::JsonValue * value = obj.values.buf[i];
         // TODO:
         // this means every class has to explicitly delete values...
         //  LAMEEEEEEEEEEEEEEEEEEEEEEEEEEEEE, I was hoping lmao
 
         // better?
-        processValue(value_ptr, printProcessValueFunc);
+        processKeyValue(obj.keys.buf[i], value, printProcessFunc);
     }
 
     // if already freed, then do nothing? lol is that not how free works?

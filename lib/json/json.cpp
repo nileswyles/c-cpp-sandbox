@@ -200,7 +200,7 @@ void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) 
     char c = buf[++i];
     while (c != stop) {
         // loggerPrintf(LOGGER_DEBUG, "index: %lu\n", i);
-        loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+        // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         // TODO:
         //  if's vs switches...?
         if (c == '"') {
@@ -294,6 +294,13 @@ void parseKey(JsonObject * obj, const char * buf, size_t& i) {
     if ((obj->keys).uniqueAppend(s) != OPERATION_SUCCESS) {
         // TODO:
     }
+
+    // value needs to be preceded by key
+    while (c != ':') {
+        c = buf[++i];
+    }
+    loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+    parseValue(obj, buf, i, (char)0x00);
 }
 
 // TODO: need to validate input? make sure full json before this is called?
@@ -323,12 +330,9 @@ JsonObject WylesLibs::Json::parse(const char * json) {
         } else if (c == ',') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             parseKey(obj, json, i);
-        } else if (c == ':') {
-            loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-            parseValue(obj, json, i, (char)0x00);
         }
         c = json[i++];
-        loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+        // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         // printf("%c\n", c);
     }
 

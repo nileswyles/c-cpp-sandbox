@@ -6,6 +6,8 @@ int main() {
 
     const char * s = "{\"test\":false, \"test2\":\"value\"}";
 
+    loggerPrintf(LOGGER_TEST, "JSON STRING: %s\n", s);
+
     JsonObject obj = parse(s);
 
     WylesLibs::Array<std::string> arr = obj.keys;

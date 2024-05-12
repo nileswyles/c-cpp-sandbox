@@ -6,16 +6,12 @@ using namespace WylesLibs::Json;
 size_t compareCString(const char * buf, const char * comp, size_t comp_length) {
     size_t x = 0;
     while(x < comp_length) {
-        if (comp[x] != buf[i + x]) {
+        if (comp[x] != buf[x]) {
             break;
         }
         x++;
     }
     return x;
-}
-
-bool isHexDigit(char c) {
-    return isDigit(c) || isLowerHex(c) || isUpperHex(c);
 }
 
 bool isDigit(char c) {
@@ -39,7 +35,11 @@ bool isUpperHex(char c) {
     return false;
 }
 
-char hexToChar(char * buf) {
+bool isHexDigit(char c) {
+    return isDigit(c) || isLowerHex(c) || isUpperHex(c);
+}
+
+char hexToChar(const char * buf) {
     char ret = 0x00;
     for (size_t i = 0; i < 2; i++) {
         char c = buf[i];
@@ -96,7 +96,7 @@ void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
         if (!isDigit(c)) {
             // throw exception/break, do something...?, move to while condition?
         } else if (c == '.') {
-            parseDecimal(buf, value);
+            parseDecimal(buf, i, value);
         } else if (c == 'e' || c == 'E') {
             c = buf[i++];
             exponential_sign = c == '-' ? -1 : 1;
@@ -128,7 +128,7 @@ void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
 
 void parseString(JsonObject * obj, const char * buf, size_t& i) {
     char c = buf[++i];
-    std::string s()
+    std::string s;
     char prev_c = (char)0x00;
     while (c != '"') {
         // start of escape sequence...
@@ -150,29 +150,29 @@ void parseString(JsonObject * obj, const char * buf, size_t& i) {
 
             // lib doesn't handle this right? only for literals? lmao
             if (c == 'b') { // backspace
-                s.append('\b');
+                s += '\b';
             } else if (c == 'f') { // form feed
-                s.append('\f');
+                s += '\f';
             } else if (c == 'n') { // newline
-                s.append('\n');
+                s += '\n';
             } else if (c == 'r') { // carraige return
-                s.append('\r');
+                s += '\r';
             } else if (c == 't') { // tab
-                s.append('\t')
+                s += '\t';
             } else if (c == 'u') { // unicode
                 for (size_t x = 0; x < 4; x = x + 2) {
                     // so, this takes a hex string and converts to it's binary value.
                     //  i.e. "0F" -> 0x0F;
-                    s.append(hexToChar(buf + i + x));
+                    s += hexToChar(buf + i + x);
                 }
                 // because indexing starts at 0 and x < 4 lol...
-                i += 3
+                i += 3;
             } else {
                 // actual characters can just be appended.
-                s.append(c);
+                s += c;
             }
         } else {
-            s.append(c);
+            s += c;
         }
         prev_c = c;
         c = buf[++i];
@@ -184,60 +184,80 @@ void parseString(JsonObject * obj, const char * buf, size_t& i) {
     (obj->values).append(jsonString);
 }
 
+// TODO: LMAO
+void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop);
+
 void parseArray(JsonObject * obj, const char * buf, size_t& i) {
     char c = buf[++i];
     while(c != ']') {
         // TODO: check if malformed array... and do something... bubble it up!
         // can either copy string and null terminate or pass delimeter to parseValue...
-        parseValue(obj, buf + i, i, ',');
+        parseValue(obj, buf, i, ',');
     }
 }
 
 void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) {
     char c = buf[++i];
     while (c != stop) {
+        // loggerPrintf(LOGGER_DEBUG, "index: %lu\n", i);
+        loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         // TODO:
         //  if's vs switches...?
         if (c == '"') {
-            parseString(obj, buf + i, i);
+            loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
+            parseString(obj, buf, i);
+            loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
             break;
-        } else if (isDigit(c) || c == '+' || c = '-') {
-            parseNumber(obj, buf + i, i);
+        } else if (isDigit(c) || c == '+' || c == '-') {
+            loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
+            parseNumber(obj, buf, i);
+            loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
             break;
         } else if (c == '[') {
-            parseArray(obj, buf + i, i);
+            loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
+            parseArray(obj, buf, i);
+            loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
             break;
         } else if (c == 't') {
+            loggerPrintf(LOGGER_DEBUG, "Parsing True @ %lu\n", i);
             const char * comp = "true";
-            size_t consumed = compareCString(buf + i, comp, 4);
-            if (consumed == 4) {
+            const size_t size = 4;
+            size_t consumed = compareCString(buf + i, comp, size);
+            if (consumed == size) {
                 JsonBoolean boolean(true);
                 (obj->values).append(boolean);
             }
             i += consumed;
+            loggerPrintf(LOGGER_DEBUG, "Parsed True @ %lu\n", i);
             break;
         } else if (c == 'f') {
+            loggerPrintf(LOGGER_DEBUG, "Parsing False @ %lu\n", i);
             const char * comp = "false";
-            size_t consumed = compareCString(buf + i, comp, 5);
-            if (consumed == 5) {
+            const size_t size = 5;
+            size_t consumed = compareCString(buf + i, comp, size);
+            if (consumed == size) {
                 JsonBoolean boolean(false);
                 (obj->values).append(boolean);
             }
             i += consumed;
+            loggerPrintf(LOGGER_DEBUG, "Parsed False @ %lu\n", i);
             break;
         } else if (c == 'n') {
+            loggerPrintf(LOGGER_DEBUG, "Parsing NULL @ %lu\n", i);
             const char * comp = "null";
-            size_t consumed = compareCString(buf + i, comp, 4);
-            if (consumed == 5) {
-                JsonValue nullValue();
+            const size_t size = 4;
+            size_t consumed = compareCString(buf + i, comp, size);
+            if (consumed == size) {
+                JsonValue nullValue;
                 (obj->values).append(nullValue);
             }
             i += consumed;
+            loggerPrintf(LOGGER_DEBUG, "Parsed NULL @ %lu\n", i);
             break;
             // TODO:
             // hmm... this works but think about whether we want to just ignore malformed...
             //  when I think about validating input, ensureing full json, etc.
-        } else if (c == '{') {
+        } else if (c == '}') {
             break; // don't increment pointer and break;
         }
         // lol, completely ignored, true false and null... TODO:
@@ -254,34 +274,38 @@ void parseKey(JsonObject * obj, const char * buf, size_t& i) {
     //  maybe allow empty string but enforce uniqueness...
 
     // might be worth implementing a map structure eventually.
-
     char c = buf[++i];
     while (c != '"') {
         c = buf[++i];
     } // found quote
     size_t start_i = ++i;
 
-    char c = buf[i];
+    c = buf[i];
     while (c != '"') {
         c = buf[++i];
     } // found quote
     size_t size = i - start_i;
     if (size == 0) {
-
+        // TODO:
     }
-    // implement array contains...
-    (obj->keys).append(std::string(buf + start_i, size));
+
+    std::string s(buf + start_i, size);
+    loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s @ %lu\n", s.c_str(), i);
+    if ((obj->keys).uniqueAppend(s) != OPERATION_SUCCESS) {
+        // TODO:
+    }
 }
 
 // TODO: need to validate input? make sure full json before this is called?
 //  also, cleanup, be more consistent about how I increment the buffer (consume)
-JsonObject parse(const char * json) {
+JsonObject WylesLibs::Json::parse(const char * json) {
     JsonObject root;
     JsonObject * obj = nullptr;
     size_t i = 0;
     char c = json[i];
-    while(c != NULL) {
+    while(c != 0x00) {
         if (c == '{') {
+            loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // create new object... and update cursor/pointer to object.
             if (obj == nullptr) {
                 obj = &root;
@@ -290,17 +314,22 @@ JsonObject parse(const char * json) {
                 (obj->values).append(new_obj);
 
                 // get pointer to newly appended obj...
-                obj = (obj->values).buf + (obj->values).size-1;
+
+                // TODO: dynamic_cast? hmm....
+                obj = (JsonObject *) ((obj->values).buf + (obj->values).getSize() - 1);
             }
-            parseKey(obj, json + i, i);
-            // NULL check?
+            parseKey(obj, json, i);
+            loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
+        } else if (c == ',') {
+            loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+            parseKey(obj, json, i);
         } else if (c == ':') {
-            // TODO: ws required? lmao
-            parseValue(obj, json + i, i, (char)0x00);
-            // NULL check?
-        } else {
-            c = json[i++];
+            loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+            parseValue(obj, json, i, (char)0x00);
         }
+        c = json[i++];
+        loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+        // printf("%c\n", c);
     }
 
     return root; // and so, when this is out of scope, deconstructors are called and things are cleaned up?

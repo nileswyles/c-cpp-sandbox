@@ -43,6 +43,13 @@ class Array {
             // this is really only useful for testing.
             return this->cap;
         }
+        operation_result uniqueAppend(T& el) {
+            if (this->contains(el)) { 
+                return OPERATION_ERROR;
+            } else {
+                return this->append(&el, 1);
+            }
+        }
         operation_result append(T& el) {
             return this->append(&el, 1);
         }
@@ -124,6 +131,22 @@ class Array {
             this->size -= num_els;
 
             return OPERATION_SUCCESS;
+        }
+        bool contains(const T& el) {
+            for (size_t i = 0; i < this->size; i++) {
+                if (this->buf[i] == el) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        size_t find(const T& el) {
+            for (size_t i = 0; i < this->size; i++) {
+                if (this->buf[i] == el) {
+                    return i;
+                }
+            }
+            return -1;
         }
         std::string toString() {
             T nul = {0};
@@ -249,6 +272,14 @@ class Array<const char *> {
             this->size -= num_els;
 
             return OPERATION_SUCCESS;
+        }
+        bool contains(const char * el) {
+            for (size_t i = 0; i < this->size; i++) {
+                if (strcmp(this->buf[i], el) == 0) {
+                    return true;
+                }
+            }
+            return false;
         }
         std::string toString() {
             char * nul = {0};

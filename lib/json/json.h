@@ -12,50 +12,47 @@ typedef enum JsonType {
     OBJECT,
     STRING,
     NULL_TYPE
-}
+} JsonType;
 
 class JsonValue {
-    protected:
-        JsonType type;
     public:
+        JsonType type;
         JsonValue(): type(NULL_TYPE) {}
-}
+        JsonValue(JsonType derived_type): type(derived_type) {}
+};
 
-class JsonBoolean: JsonValue {
+class JsonBoolean: public JsonValue {
     public:
         bool boolean;
-        JsonBoolean(bool boolean): boolean(boolean), type(BOOLEAN){}
-}
+        JsonBoolean(bool boolean): boolean(boolean), JsonValue(BOOLEAN) {}
+};
 
-class JsonNumber: JsonValue {
+class JsonNumber: public JsonValue {
     public:
         double number;
-        JsonNumber(double number): number(number), type(NUMBER){}
-}
+        JsonNumber(double number): number(number), JsonValue(NUMBER) {}
+};
 
-class JsonArray: JsonValue {
+class JsonArray: public JsonValue {
     public:
         WylesLibs::Array<JsonValue> values;
-        JsonArray(WylesLibs::Array<JsonValue> values): values(values), type(ARRAY) {}
-}
+        JsonArray(WylesLibs::Array<JsonValue> values): values(values), JsonValue(ARRAY) {}
+};
 
-class JsonObject: JsonValue {
+class JsonObject: public JsonValue {
     public:
         WylesLibs::Array<std::string> keys;
         WylesLibs::Array<JsonValue> values;
-        JsonObject(WylesLibs::Array<std::string> keys, WylesLibs::Array<JsonValue> values): type(OBJECT), keys(keys), values(values) {}
-}
+        JsonObject(): JsonValue(OBJECT) {} // lmao?
+        JsonObject(WylesLibs::Array<std::string> keys, WylesLibs::Array<JsonValue> values): JsonValue(OBJECT), keys(keys), values(values) {}
+};
 
-class JsonString: JsonValue {
+class JsonString: public JsonValue {
     public:
         std::string s;
-        JsonString(std::string s): type(STRING), s(s) {}
-}
+        JsonString(std::string s): JsonValue(STRING), s(s) {}
+};
 
-void parseString(JsonObject * obj, const char * buf, size_t& i);
-void parseNumber(JsonObject * obj, const char * buf, size_t& i);
-void parseArray(JsonObject * obj, const char * buf, size_t& i);
-void parseValue(JsonObject * obj, const char * buf, size_t& i);
 JsonObject parse(const char * json);
 
 }

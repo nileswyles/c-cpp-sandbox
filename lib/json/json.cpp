@@ -97,7 +97,8 @@ void parseString(JsonObject * obj, const char * buf, size_t& i) {
                     //  i.e. "0F" -> 0x0F;
                     s.append(hexToChar(buf + i + x));
                 }
-                i += 4
+                // because indexing starts at 0 and x < 4 lol...
+                i += 3
             } else {
                 // actual characters can just be appended.
                 s.append(c);

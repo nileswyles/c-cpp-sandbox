@@ -265,8 +265,7 @@ void parseKey(JsonObject * obj, const char * buf, size_t& i) {
     while (c != '"') {
         c = buf[++i];
     } // found quote
-    size_t end_i = --i;
-    size_t size = end_i - start_i + 1; // inclusive
+    size_t size = i - start_i;
     if (size == 0) {
 
     }

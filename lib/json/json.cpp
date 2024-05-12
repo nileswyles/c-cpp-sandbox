@@ -19,21 +19,21 @@ bool isHexDigit(char c) {
 }
 
 bool isDigit(char c) {
-    if (c >= 0x30 && c <= 0x39) { // if is digit
+    if (c >= 0x30 && c <= 0x39) {
         return true;
     }
     return false;
 }
 
 bool isLowerHex(char c) {
-    if (c >= 0x61 && c <= 0x66) { // if is digit
+    if (c >= 0x61 && c <= 0x66) {
         return true;
     }
     return false;
 }
 
 bool isUpperHex(char c) {
-    if (c >= 0x41 && c <= 0x46) { // if is digit
+    if (c >= 0x41 && c <= 0x46) {
         return true;
     }
     return false;
@@ -245,7 +245,37 @@ void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) 
     }
 }
 
+void parseKey(JsonObject * obj, const char * buf, size_t& i) {
+    // find start and end index of key string
+    // TODO:
+    //  if empty string...
+    //  already contains,,
+
+    //  maybe allow empty string but enforce uniqueness...
+
+    // might be worth implementing a map structure eventually.
+
+    char c = buf[++i];
+    while (c != '"') {
+        c = buf[++i];
+    } // found quote
+    size_t start_i = ++i;
+
+    char c = buf[i];
+    while (c != '"') {
+        c = buf[++i];
+    } // found quote
+    size_t end_i = --i;
+    size_t size = end_i - start_i + 1; // inclusive
+    if (size == 0) {
+
+    }
+    // implement array contains...
+    (obj->keys).append(std::string(buf + start_i, size));
+}
+
 // TODO: need to validate input? make sure full json before this is called?
+//  also, cleanup, be more consistent about how I increment the buffer (consume)
 JsonObject parse(const char * json) {
     JsonObject root;
     JsonObject * obj = nullptr;

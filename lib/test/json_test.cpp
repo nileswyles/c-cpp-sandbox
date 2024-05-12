@@ -29,31 +29,36 @@ void printProcessFunc(std::string key, WylesLibs::Json::JsonValue * value) {
 }
 
 int main() {
-
     std::string s("{\"test\":false, \"test2\":\"value\"}");
 
     // const char * s = "{\"test\":null, \"test2\":17272.2727}";
 
     loggerPrintf(LOGGER_TEST, "JSON STRING: %s\n", s.c_str());
 
-    JsonObject obj = parse(&s);
-
-    loggerPrintf(LOGGER_TEST, "Num Keys: %lu\n", obj.keys.getSize());
-    loggerPrintf(LOGGER_TEST, "Num Values: %lu\n", obj.values.getSize());
-    for (size_t i = 0; i < obj.keys.getSize(); i++) {
-        loggerPrintf(LOGGER_TEST, "key: %s\n", obj.keys.buf[i].c_str());
-
-        // lol?
-        WylesLibs::Json::JsonValue * value = obj.values.buf[i];
-        // TODO:
-        // this means every class has to explicitly delete values...
-        //  LAMEEEEEEEEEEEEEEEEEEEEEEEEEEEEE, I was hoping lmao
-
-        // better?
-        processValue(obj.keys.buf[i], value, printProcessFunc);
+    try {
+        JsonObject obj = parse(&s);
+        loggerPrintf(LOGGER_TEST, "Num Keys: %lu\n", obj.keys.getSize());
+        loggerPrintf(LOGGER_TEST, "Num Values: %lu\n", obj.values.getSize());
+        for (size_t i = 0; i < obj.keys.getSize(); i++) {
+            loggerPrintf(LOGGER_TEST, "key: %s\n", obj.keys.buf[i].c_str());
+ 
+            // lol?
+            WylesLibs::Json::JsonValue * value = obj.values.buf[i];
+            // TODO:
+            // this means every class has to explicitly delete values...
+            //  LAMEEEEEEEEEEEEEEEEEEEEEEEEEEEEE, I was hoping lmao
+ 
+            // better?
+            processValue(obj.keys.buf[i], value, printProcessFunc);
+        }
+ 
+        // if already freed, then do nothing? lol is that not how free works?
+        loggerPrintf(LOGGER_TEST, "...\n");
+    } catch (const std::exception& e) {
+        std::cout << e.what() << '\n';
+        //  throw e; // copy-initializes a new exception object of type std::exception
+        // throw;   // rethrows the exception object of type std::out_of_range
     }
 
-    // if already freed, then do nothing? lol is that not how free works?
-    loggerPrintf(LOGGER_TEST, "...\n");
     return 0;
 }

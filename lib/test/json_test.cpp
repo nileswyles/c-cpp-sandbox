@@ -2,16 +2,6 @@
 
 using namespace WylesLibs::Json;
 
-typedef void(ProcessValueFunc)(WylesLibs::Json::JsonValue * ptr);
-
-void processValue(WylesLibs::Json::JsonValue * ptr, ProcessValueFunc processor) {
-    processor(ptr);
-    // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-    loggerPrintf(LOGGER_TEST, "FREEING POINTER @ %p\n", ptr);
-    delete ptr;
-}
-
-
 // lol
 void printProcessValueFunc(WylesLibs::Json::JsonValue * ptr) {
     WylesLibs::Json::JsonType type = ptr->type;

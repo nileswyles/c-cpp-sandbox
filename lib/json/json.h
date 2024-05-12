@@ -58,5 +58,14 @@ class JsonString: public JsonValue {
 
 JsonObject parse(const char * json);
 
+typedef void(ProcessValueFunc)(JsonValue * ptr);
+
+void processValue(JsonValue * ptr, ProcessValueFunc processor) {
+    processor(ptr);
+    // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+    loggerPrintf(LOGGER_DEBUF, "MAKING SURE TO FREE POINTER! @ %p\n", ptr);
+    delete ptr;
+}
+
 }
 #endif

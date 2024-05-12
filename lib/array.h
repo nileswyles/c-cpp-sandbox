@@ -29,6 +29,7 @@ class Array {
             buf[pos] = el;
         }
     public:
+        // hmm... need to think about this again... 
         T * buf;
         Array() : Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         Array(const size_t initial_cap) : cap(initial_cap), size(0), buf(newCArray<T>(initial_cap)) {}

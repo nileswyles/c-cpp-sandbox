@@ -5,6 +5,8 @@
 
 namespace WylesLibs::Json {
 
+typedef void(ProcessValueFunc)(std::string key, JsonValue * value);
+
 typedef enum JsonType {
     BOOLEAN = 0,
     NUMBER,
@@ -55,17 +57,11 @@ class JsonString: public JsonValue {
         JsonString(std::string s): JsonValue(STRING), s(s) {}
 };
 
-JsonObject parse(std::string * json);
-
-//  TODO:
-//      Function pointers a sin?
-typedef void(ProcessValueFunc)(std::string key, JsonValue * value);
-
+extern JsonObject parse(std::string * json);
 // TODO: abstract iterating too? iterators?... might be an array thing...
 //  then have multiple arrays/functions (one for each type...) then no casting required? and no type variable and no polymorphism required lmao
 //  that doesn't seem like the right way to do it though...
-
-void processValue(std::string key, JsonValue * value, ProcessValueFunc processor) {
+extern void processValue(std::string key, JsonValue * value, ProcessValueFunc processor) {
     processor(key, value);
     // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
     loggerPrintf(LOGGER_DEBUG, "MAKING SURE TO FREE POINTER! @ %p\n", value);

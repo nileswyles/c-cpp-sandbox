@@ -3,7 +3,18 @@
 
 using namespace WylesLibs::Json;
 
-size_t compareCString(std::string * buf, std::string * comp, size_t comp_length) {
+static size_t compareCString(std::string * buf, std::string * comp, size_t comp_length);
+
+static void parseDecimal(std::string * buf, size_t& i, double& value);
+static void parseNatural(std::string * buf, size_t& i, double& value);
+static void parseNumber(JsonObject * obj, std::string * buf, size_t& i);
+static void parseString(JsonObject * obj, std::string * buf, size_t& i);
+static void parseArray(JsonObject * obj, std::string * buf, size_t& i);
+static void parseImmediate(JsonObject * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value);
+static void parseValue(JsonObject * obj, std::string * buf, size_t& i, const char stop);
+static void parseKey(JsonObject * obj, std::string * buf, size_t& i);
+
+static size_t compareCString(std::string * buf, std::string * comp, size_t comp_length) {
     size_t x = 0;
     while(x < comp_length) {
         if (comp->at(x) != buf->at(x)) {
@@ -14,51 +25,7 @@ size_t compareCString(std::string * buf, std::string * comp, size_t comp_length)
     return x;
 }
 
-bool isDigit(char c) {
-    if (c >= 0x30 && c <= 0x39) {
-        return true;
-    }
-    return false;
-}
-
-bool isLowerHex(char c) {
-    if (c >= 0x61 && c <= 0x66) {
-        return true;
-    }
-    return false;
-}
-
-bool isUpperHex(char c) {
-    if (c >= 0x41 && c <= 0x46) {
-        return true;
-    }
-    return false;
-}
-
-bool isHexDigit(char c) {
-    return isDigit(c) || isLowerHex(c) || isUpperHex(c);
-}
-
-char hexToChar(std::string * buf) {
-    char ret = 0x00;
-    for (size_t i = 0; i < 2; i++) {
-        char c = buf->at(i);
-        if (isDigit(c)) {
-            c = c - 0x30;
-        } else if (isLowerHex(c)) {
-            c = c - 0x61;
-        } else if (isUpperHex(c)) {
-            c = c - 0x41;
-        } else {
-            // TODO:
-            //  freak out! exception... something...
-        }
-        ret = ret << 4 | c;
-    }
-    return ret;
-}
-
-void parseDecimal(std::string * buf, size_t& i, double& value) {
+static void parseDecimal(std::string * buf, size_t& i, double& value) {
     double decimal_divisor = 10;
     char c = buf->at(i);
     while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
@@ -74,7 +41,7 @@ void parseDecimal(std::string * buf, size_t& i, double& value) {
     i--;
 }
 
-void parseNatural(std::string * buf, size_t& i, double& value) {
+static void parseNatural(std::string * buf, size_t& i, double& value) {
     char c = buf->at(i);
     while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
         // 1
@@ -88,7 +55,7 @@ void parseNatural(std::string * buf, size_t& i, double& value) {
     i--;
 }
 
-void parseNumber(JsonObject * obj, std::string * buf, size_t& i) {
+static void parseNumber(JsonObject * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
 
     int8_t sign = 1;
@@ -150,7 +117,7 @@ void parseNumber(JsonObject * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
 }
 
-void parseString(JsonObject * obj, std::string * buf, size_t& i) {
+static void parseString(JsonObject * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
 
     char c = buf->at(i);
@@ -186,6 +153,9 @@ void parseString(JsonObject * obj, std::string * buf, size_t& i) {
             } else if (c == 't') { // tab
                 s += '\t';
             } else if (c == 'u') { // unicode
+
+                // TODO:
+                // this can be better
                 for (size_t x = 0; x < 4; x = x + 2) {
                     // so, this takes a hex string and converts to it's binary value.
                     //  i.e. "0F" -> 0x0F;
@@ -213,10 +183,7 @@ void parseString(JsonObject * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
 }
 
-// TODO: LMAO
-void parseValue(JsonObject * obj, std::string * buf, size_t& i, const char stop);
-
-void parseArray(JsonObject * obj, std::string * buf, size_t& i) {
+static void parseArray(JsonObject * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
 
     char c = buf->at(i);
@@ -229,7 +196,7 @@ void parseArray(JsonObject * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
 }
 
-void parseImmediate(JsonObject * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value) {
+static void parseImmediate(JsonObject * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value) {
     loggerPrintf(LOGGER_DEBUG, "Parsing %s @ %lu\n", comp->c_str(), i);
 
     std::string buf_i = buf->substr(i, comp->size());
@@ -242,7 +209,7 @@ void parseImmediate(JsonObject * obj, std::string * buf, size_t& i, std::string 
     loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu\n", comp->c_str(), i);
 }
 
-void parseValue(JsonObject * obj, std::string * buf, size_t& i, const char stop) {
+static void parseValue(JsonObject * obj, std::string * buf, size_t& i, const char stop) {
     char c = buf->at(i);
     while (c != stop) {
         // loggerPrintf(LOGGER_DEBUG, "index: %lu\n", i);
@@ -283,7 +250,7 @@ void parseValue(JsonObject * obj, std::string * buf, size_t& i, const char stop)
     }
 }
 
-void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
+static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
     // find start and end index of key string
     // TODO:
     //  if empty string...
@@ -325,9 +292,9 @@ void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
 //  Okay, I'm convinced to switch to string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
 //      also, sizeof(pointers) < sizeof(std::string)
 //      and .at() bounds checks (exceptions), [] doesn't
+extern JsonObject WylesLibs::Json::parse(std::string * json) {
+    if (json == nullptr) throw std::runtime_error("Invalid JSON string.");
 
-JsonObject WylesLibs::Json::parse(std::string * json) {
-    // if (json == nullptr) // TODO: throw exception
     JsonObject root;
     JsonObject * obj = nullptr;
     size_t i = 0;

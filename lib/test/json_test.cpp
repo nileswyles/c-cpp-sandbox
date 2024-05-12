@@ -5,7 +5,7 @@ using namespace WylesLibs::Json;
 // lol
 void printProcessFunc(std::string key, WylesLibs::Json::JsonValue * value) {
     WylesLibs::Json::JsonType type = value->type;
-    loggerPrintf(LOGGER_TEST, "value type: %lu\n", type);
+    loggerPrintf(LOGGER_TEST, "value type: %d\n", type);
 
     if (type == WylesLibs::Json::BOOLEAN) {
         WylesLibs::Json::JsonBoolean * booleanValue = (JsonBoolean *)value;
@@ -50,7 +50,7 @@ int main() {
         //  LAMEEEEEEEEEEEEEEEEEEEEEEEEEEEEE, I was hoping lmao
 
         // better?
-        processKeyValue(obj.keys.buf[i], value, printProcessFunc);
+        processValue(obj.keys.buf[i], value, printProcessFunc);
     }
 
     // if already freed, then do nothing? lol is that not how free works?

@@ -120,7 +120,7 @@ void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
             for (size_t x = 0; x < exp; x++) {
                 exponential_multiplier *= 10;
             }
-            loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %d\n", exponential_sign, exponential_multiplier);
+            loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
         } else if (buf[i] == '-') {
             sign = -1;
         } else if (buf[i] == '+') {
@@ -130,7 +130,7 @@ void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
         c = buf[++i];
     }
 
-    loggerPrintf(LOGGER_DEBUG, "Number before applying exponential: %f\n", value, exponential_sign, exponential_multiplier);
+    loggerPrintf(LOGGER_DEBUG, "Number before applying exponential: %f\n", value);
 
     if (exponential_sign == -1) {
         value = value / exponential_multiplier;

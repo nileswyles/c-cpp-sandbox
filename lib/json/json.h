@@ -63,7 +63,10 @@ JsonObject parse(const char * json);
 typedef void(ProcessValueFunc)(std::string key, JsonValue * value);
 
 // TODO: abstract iterating too? iterators?... might be an array thing...
-void processKeyValue(std::string key, JsonValue * value, ProcessValueFunc processor) {
+//  then have multiple arrays/functions (one for each type...) then no casting required? and no type variable and no polymorphism required lmao
+//  that doesn't seem like the right way to do it though...
+
+void processValue(std::string key, JsonValue * value, ProcessValueFunc processor) {
     processor(key, value);
     // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
     loggerPrintf(LOGGER_DEBUG, "MAKING SURE TO FREE POINTER! @ %p\n", value);

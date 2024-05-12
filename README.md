@@ -3,6 +3,10 @@
     - On second thought, how explicit do we want to be? Specifically regarding CPP class defintions, don't think I want to explicitly define all operators, constructors, etc... (YOU ARE THE ONLY EXCEPTION ---_ YOUUUUUUU ARE THE ONLY EXCEPTION LMAO)
     - Definitely still explicitly use extern and static in C.  
 - remember to extern, const (i.e, string literals), static, inline and ?restrict?
+    - functions extern by default.
+    - variables static by default.
+        - It appears in C++ context those keywords only apply to "naked" functions and variables? 
+    - Global variables are generally bad lol, but static functions are common?, especially when implemented in header files? (another code smell?, seems useful to me.)
 - declare static functions at top of file, define at bottom - because order matters, so if static function calls another static function it can get annoying.
 - define static variables at top of file...
 - explicitly cast/convert types, because g++ (among other things)...

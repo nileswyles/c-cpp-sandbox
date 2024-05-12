@@ -10,6 +10,8 @@
 #define LOGGER_LEVEL 0
 #endif
 
+// TODO: per module logging settings...
+
 // TODO: portability? what other interesting things can we do with macros?
 // NOTE: ## removes trailing comma when args is empty.
 

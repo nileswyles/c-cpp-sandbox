@@ -28,10 +28,7 @@ static size_t compareCString(std::string * buf, std::string * comp, size_t comp_
 static void parseDecimal(std::string * buf, size_t& i, double& value) {
     double decimal_divisor = 10;
     char c = buf->at(i);
-    while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
-        // 1.1234567
-        // 1 + .1
-        // 1.1 + .02
+    while (isDigit(c)) {
         value += (c - 0x30) / decimal_divisor;
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         decimal_divisor *= 10;
@@ -43,10 +40,7 @@ static void parseDecimal(std::string * buf, size_t& i, double& value) {
 
 static void parseNatural(std::string * buf, size_t& i, double& value) {
     char c = buf->at(i);
-    while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
-        // 1
-        // 1 * 10 = 10 + 2;
-        // 12 * 10 = 120 + 3; 
+    while (isDigit(c)) {
         value = (value * 10) + (c - 0x30); 
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         c = buf->at(++i);
@@ -59,13 +53,11 @@ static void parseNumber(JsonObject * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
 
     int8_t sign = 1;
-
     int8_t exponential_sign = 0;
     double exponential_multiplier = 10;
-
     double value = 0;
-    char c = buf->at(i);
 
+    char c = buf->at(i);
     std::string comp(" ,}\r\n\t");
     while (comp.find(c) != std::string::npos) {
         if (isDigit(c)) {
@@ -84,20 +76,16 @@ static void parseNumber(JsonObject * obj, std::string * buf, size_t& i) {
 
             double exp = 0;
             parseNatural(buf, i, exp);
-
-            // 1 = * 10
-            // 2 = * 100
-            // 3 = * 1000
             for (size_t x = 0; x < exp; x++) {
                 exponential_multiplier *= 10;
             }
             loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
         } else if (buf->at(i) == '-') {
             sign = -1;
-        } else if (buf->at(i) == '+') {
-        } else { // parse number value...
-            // throw exception/break, do something...?, move to while condition?
-        }
+        } 
+        // Consume invalid data in-between tokens...
+        // else if (buf->at(i) == '+') {} 
+        // else {} 
         c = buf->at(++i);
     }
 
@@ -124,8 +112,6 @@ static void parseString(JsonObject * obj, std::string * buf, size_t& i) {
     std::string s;
     char prev_c = (char)0x00;
     while (c != '"') {
-        // start of escape sequence...
-
         /*
             '"'
             '\'
@@ -138,10 +124,6 @@ static void parseString(JsonObject * obj, std::string * buf, size_t& i) {
             'u' hex hex hex hex    
         */
         if (prev_c == '\\') {
-            // \ gets thrown out but let's process some unicode...
-            // convert and append...
-
-            // lib doesn't handle this right? only for literals? lmao
             if (c == 'b') { // backspace
                 s += '\b';
             } else if (c == 'f') { // form feed
@@ -153,7 +135,6 @@ static void parseString(JsonObject * obj, std::string * buf, size_t& i) {
             } else if (c == 't') { // tab
                 s += '\t';
             } else if (c == 'u') { // unicode
-
                 // TODO:
                 // this can be better
                 for (size_t x = 0; x < 4; x = x + 2) {
@@ -188,8 +169,6 @@ static void parseArray(JsonObject * obj, std::string * buf, size_t& i) {
 
     char c = buf->at(i);
     while(c != ']') {
-        // TODO: check if malformed array... and do something... bubble it up!
-        // can either copy string and null terminate or pass delimeter to parseValue...
         parseValue(obj, buf, i, ',');
     }
 
@@ -271,13 +250,13 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
     } // found quote
     size_t size = i - start_i;
     if (size == 0) {
-        // TODO:
+        throw std::runtime_error("Empty key string found.");
     }
 
     std::string s = buf->substr(start_i, size);
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s @ %lu\n", s.c_str(), i);
     if ((obj->keys).uniqueAppend(s) != OPERATION_SUCCESS) {
-        // TODO:
+        throw std::runtime_error("Failed to store object key.");
     }
 
     // value needs to be preceded by key
@@ -288,8 +267,8 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
     parseValue(obj, buf, ++i, (char)0x00);
 }
 
-// Let's define that parse functions start index is first index of token and end index is last index of token.
-//  Okay, I'm convinced to switch to string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
+// Let's define that parse function's start index is first index of token and end index is last index of token.
+//  Okay, I was convinced to use the string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
 //      also, sizeof(pointers) < sizeof(std::string)
 //      and .at() bounds checks (exceptions), [] doesn't
 extern JsonObject WylesLibs::Json::parse(std::string * json) {

@@ -62,7 +62,6 @@ void parseDecimal(const char * buf, size_t& i, double& value) {
     double decimal_divisor = 10;
     char c = buf[i];
     while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
-        i++;
         // 1.1234567
         // 1 + .1
         // 1.1 + .02

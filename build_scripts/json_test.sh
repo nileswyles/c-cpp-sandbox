@@ -13,6 +13,8 @@ DEFINES="
 
 TEST_PATH=$ROOT_DIR/out/json_test.out
 
+rm $TEST_PATH
+
 g++ $SRC_FILES -iquote $ROOT_DIR/lib -iquote $ROOT_DIR/lib/json $DEFINES -std=c++23 -o $TEST_PATH
 
 exec $TEST_PATH

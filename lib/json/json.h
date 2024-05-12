@@ -14,6 +14,7 @@ typedef enum JsonType {
     NULL_TYPE
 } JsonType;
 
+// TODO: fix names...
 class JsonValue {
     public:
         JsonType type;
@@ -35,16 +36,18 @@ class JsonNumber: public JsonValue {
 
 class JsonArray: public JsonValue {
     public:
-        WylesLibs::Array<JsonValue> values;
-        JsonArray(WylesLibs::Array<JsonValue> values): values(values), JsonValue(ARRAY) {}
+        WylesLibs::Array<JsonValue *> values;
+        JsonArray(WylesLibs::Array<JsonValue *> values): values(values), JsonValue(ARRAY) {}
 };
 
 class JsonObject: public JsonValue {
     public:
         WylesLibs::Array<std::string> keys;
-        WylesLibs::Array<JsonValue> values;
+        // this is hella lame...
+        //  then destructor bs...
+        //  whatever, onward...
+        WylesLibs::Array<JsonValue *> values;
         JsonObject(): JsonValue(OBJECT) {} // lmao?
-        JsonObject(WylesLibs::Array<std::string> keys, WylesLibs::Array<JsonValue> values): JsonValue(OBJECT), keys(keys), values(values) {}
 };
 
 class JsonString: public JsonValue {

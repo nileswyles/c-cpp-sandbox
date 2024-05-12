@@ -60,46 +60,57 @@ char hexToChar(const char * buf) {
 
 void parseDecimal(const char * buf, size_t& i, double& value) {
     double decimal_divisor = 10;
-    char c = buf[i++];
+    char c = buf[i];
     while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
+        i++;
         // 1.1234567
         // 1 + .1
         // 1.1 + .02
         value += (c - 0x30) / decimal_divisor;
+        loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         decimal_divisor *= 10;
-        c = buf[i++];
+        c = buf[++i];
     }
+    // make sure we point at last digit
+    i--;
 }
 
 void parseNatural(const char * buf, size_t& i, double& value) {
-    char c = buf[i++];
+    char c = buf[i];
     while (isDigit(c)) { // iterate non-digit. likely until comma, whitespace or exponential
         // 1
         // 1 * 10 = 10 + 2;
         // 12 * 10 = 120 + 3; 
         value = (value * 10) + (c - 0x30); 
-        c = buf[i++];
+        loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
+        c = buf[++i];
     }
+    // make sure we point at last digit
+    i--;
 }
 
 void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
-    int8_t sign = buf[i] == '-' ? -1 : 1;
+    int8_t sign = 1;
 
     int8_t exponential_sign = 0;
     double exponential_multiplier = 10;
 
     double value = 0;
-    char c = buf[i++];
-
-    // TODO: this is ugly...
+    char c = buf[i];
     while (c != ',' && c != '}' && c != ' ' && c != '\r' && c != '\n' && c != '\t') {
-        if (!isDigit(c)) {
-            // throw exception/break, do something...?, move to while condition?
+        if (isDigit(c)) {
+            parseNatural(buf, i, value);
         } else if (c == '.') {
-            parseDecimal(buf, i, value);
+            parseDecimal(buf, ++i, value);
         } else if (c == 'e' || c == 'E') {
-            c = buf[i++];
-            exponential_sign = c == '-' ? -1 : 1;
+            c = buf[++i];
+            if (c == '-') { 
+                exponential_sign = -1;
+                i++;
+            } else if (c == '+') {
+                exponential_sign = 1;
+                i++;
+            }
 
             double exp = 0;
             parseNatural(buf, i, exp);
@@ -110,11 +121,17 @@ void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
             for (size_t x = 0; x < exp; x++) {
                 exponential_multiplier *= 10;
             }
+            loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %d\n", exponential_sign, exponential_multiplier);
+        } else if (buf[i] == '-') {
+            sign = -1;
+        } else if (buf[i] == '+') {
         } else { // parse number value...
-            parseNatural(buf, i, value);
+            // throw exception/break, do something...?, move to while condition?
         }
-        c = buf[i++];
+        c = buf[++i];
     }
+
+    loggerPrintf(LOGGER_DEBUG, "Number before applying exponential: %f\n", value, exponential_sign, exponential_multiplier);
 
     if (exponential_sign == -1) {
         value = value / exponential_multiplier;
@@ -122,12 +139,14 @@ void parseNumber(JsonObject * obj, const char * buf, size_t& i) {
         value = value * exponential_multiplier;
     }
 
-    JsonNumber num(value * sign);
+    loggerPrintf(LOGGER_DEBUG, "Number after exponential: %f\n", value);
+
+    JsonValue * num = (JsonValue *) new JsonNumber(value * sign);
     (obj->values).append(num);
 }
 
 void parseString(JsonObject * obj, const char * buf, size_t& i) {
-    char c = buf[++i];
+    char c = buf[i];
     std::string s;
     char prev_c = (char)0x00;
     while (c != '"') {
@@ -180,7 +199,8 @@ void parseString(JsonObject * obj, const char * buf, size_t& i) {
 
     // lol... not the best but
     //  who cares rn ... value value value value
-    JsonString jsonString(s);
+    loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
+    JsonValue * jsonString = (JsonValue *) new JsonString(s);
     (obj->values).append(jsonString);
 }
 
@@ -188,7 +208,7 @@ void parseString(JsonObject * obj, const char * buf, size_t& i) {
 void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop);
 
 void parseArray(JsonObject * obj, const char * buf, size_t& i) {
-    char c = buf[++i];
+    char c = buf[i];
     while(c != ']') {
         // TODO: check if malformed array... and do something... bubble it up!
         // can either copy string and null terminate or pass delimeter to parseValue...
@@ -197,7 +217,7 @@ void parseArray(JsonObject * obj, const char * buf, size_t& i) {
 }
 
 void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) {
-    char c = buf[++i];
+    char c = buf[i];
     while (c != stop) {
         // loggerPrintf(LOGGER_DEBUG, "index: %lu\n", i);
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
@@ -205,7 +225,7 @@ void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) 
         //  if's vs switches...?
         if (c == '"') {
             loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
-            parseString(obj, buf, i);
+            parseString(obj, buf, ++i);
             loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
             break;
         } else if (isDigit(c) || c == '+' || c == '-') {
@@ -215,7 +235,7 @@ void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) 
             break;
         } else if (c == '[') {
             loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
-            parseArray(obj, buf, i);
+            parseArray(obj, buf, ++i);
             loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
             break;
         } else if (c == 't') {
@@ -224,10 +244,10 @@ void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) 
             const size_t size = 4;
             size_t consumed = compareCString(buf + i, comp, size);
             if (consumed == size) {
-                JsonBoolean boolean(true);
+                JsonValue * boolean = (JsonValue *) new JsonBoolean(true);
                 (obj->values).append(boolean);
             }
-            i += consumed;
+            i += consumed - 1; // point at last index of token
             loggerPrintf(LOGGER_DEBUG, "Parsed True @ %lu\n", i);
             break;
         } else if (c == 'f') {
@@ -236,10 +256,10 @@ void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) 
             const size_t size = 5;
             size_t consumed = compareCString(buf + i, comp, size);
             if (consumed == size) {
-                JsonBoolean boolean(false);
+                JsonValue * boolean = (JsonValue *) new JsonBoolean(false);
                 (obj->values).append(boolean);
             }
-            i += consumed;
+            i += consumed - 1; // point at last index of token
             loggerPrintf(LOGGER_DEBUG, "Parsed False @ %lu\n", i);
             break;
         } else if (c == 'n') {
@@ -248,10 +268,10 @@ void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) 
             const size_t size = 4;
             size_t consumed = compareCString(buf + i, comp, size);
             if (consumed == size) {
-                JsonValue nullValue;
+                JsonValue * nullValue = new JsonValue();
                 (obj->values).append(nullValue);
             }
-            i += consumed;
+            i += consumed - 1; // point at last index of token
             loggerPrintf(LOGGER_DEBUG, "Parsed NULL @ %lu\n", i);
             break;
             // TODO:
@@ -260,7 +280,6 @@ void parseValue(JsonObject * obj, const char * buf, size_t& i, const char stop) 
         } else if (c == '}') {
             break; // don't increment pointer and break;
         }
-        // lol, completely ignored, true false and null... TODO:
         c = buf[++i];
     }
 }
@@ -274,7 +293,7 @@ void parseKey(JsonObject * obj, const char * buf, size_t& i) {
     //  maybe allow empty string but enforce uniqueness...
 
     // might be worth implementing a map structure eventually.
-    char c = buf[++i];
+    char c = buf[i];
     while (c != '"') {
         c = buf[++i];
     } // found quote
@@ -300,11 +319,12 @@ void parseKey(JsonObject * obj, const char * buf, size_t& i) {
         c = buf[++i];
     }
     loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-    parseValue(obj, buf, i, (char)0x00);
+    parseValue(obj, buf, ++i, (char)0x00);
 }
 
 // TODO: need to validate input? make sure full json before this is called?
-//  also, cleanup, be more consistent about how I increment the buffer (consume)
+
+// Let's define that parse functions start index is first index of token and end index is last index of token.
 JsonObject WylesLibs::Json::parse(const char * json) {
     JsonObject root;
     JsonObject * obj = nullptr;
@@ -317,21 +337,20 @@ JsonObject WylesLibs::Json::parse(const char * json) {
             if (obj == nullptr) {
                 obj = &root;
             } else {
-                JsonObject new_obj;
+                // lol?
+                JsonValue * new_obj = (JsonValue *) new JsonObject();
                 (obj->values).append(new_obj);
 
-                // get pointer to newly appended obj...
-
-                // TODO: dynamic_cast? hmm....
-                obj = (JsonObject *) ((obj->values).buf + (obj->values).getSize() - 1);
+                // lol?
+                obj = (JsonObject *) new_obj;
             }
-            parseKey(obj, json, i);
+            parseKey(obj, json, ++i);
             loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
         } else if (c == ',') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-            parseKey(obj, json, i);
+            parseKey(obj, json, ++i);
         }
-        c = json[i++];
+        c = json[++i];
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         // printf("%c\n", c);
     }

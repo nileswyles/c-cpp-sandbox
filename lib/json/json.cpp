@@ -113,6 +113,7 @@ static void parseString(JsonArray * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
 
     char c = buf->at(++i);
+    loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string s;
     char prev_c = (char)0x00;
     while (c != '"') {
@@ -172,10 +173,12 @@ static void parseArray(JsonArray * obj, std::string * buf, size_t& i) {
     obj->addValue(arr);
 
     char c = buf->at(i);
+    loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     while(c != ']') {
-        if (c == '[' || c == ',') { 
+        if (c == '[' || c == ',') { // only parseValue after start of new token... so shouldn't really matter where cursor as long as past previous.
             // TODO:
             //  nested arrays might be an issue. like too much recursion? curious what happens
+            //  whitespace shouldn't though? lol
             parseValue(arr, buf, ++i);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
@@ -223,7 +226,7 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
             // hmm... this works but think about whether we want to just ignore malformed...
             //  when I think about validating input, ensureing full json, etc.
         } else if (c == '{' || c == '}') { 
-            loggerPrintf(LOGGER_DEBUG, "Found object delimeter %c @ %lu\n", c, i);
+            loggerPrintf(LOGGER_DEBUG, "Found object delimeter '%c' @ %lu\n", c, i);
             // TODO:
             // be explicit, decrement and return? 
             break;
@@ -231,7 +234,7 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
         c = buf->at(++i);
     }
     i--;
-    loggerPrintf(LOGGER_DEBUG, "Broke out of loop and decremented index %c @ %lu\n", c, i);
+    loggerPrintf(LOGGER_DEBUG, "Broke out of loop and decremented index '%c' @ %lu\n", c, i);
 }
 
 static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
@@ -275,17 +278,16 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
 //  Okay, I was convinced to use the string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
 //      also, sizeof(pointers) < sizeof(std::string)
 //      and .at() bounds checks (exceptions), [] doesn't
-extern JsonObject * WylesLibs::Json::parse(std::string * json) {
+extern JsonValue * WylesLibs::Json::parse(std::string * json) {
     if (json == nullptr) throw std::runtime_error("Invalid JSON string.");
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "  %s\n", json->c_str());
 
-    std::vector<JsonObject *> created_objs;
+    std::vector<JsonValue *> created_objs;
     JsonObject * obj = nullptr;
     size_t i = 0;
     char c;
     while(i < json->size()) {
-        loggerPrintf(LOGGER_DEBUG, "blahblahblahblahablhFound %c @ %lu\n", c, i);
         c = json->at(i);
         loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         if (c == '{') {
@@ -302,15 +304,19 @@ extern JsonObject * WylesLibs::Json::parse(std::string * json) {
         } else if (c == ',') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             parseKey(obj, json, ++i);
-        // } else if (c == '[') {
-        //     // [1, 2, 3, 4] is valid JSON lol...
-        //     parseArray(&(root->values), json, ++i);
+        } else if (c == '[') {
+            JsonArray * new_obj = new JsonArray();
+            loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
+            created_objs.push_back(new_obj);
+            // [1, 2, 3, 4] is valid JSON lol...
+            parseArray(new_obj, json, i);
+            break;
         } else if (c == '}') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // only one json document lol?
             if (created_objs.size() > 1) { // keep root in list for return value.
                 created_objs.pop_back();
-                obj = created_objs.at(created_objs.size() - 1);
+                obj = (JsonObject *)created_objs.at(created_objs.size() - 1);
             }
         }
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
@@ -330,7 +336,7 @@ extern JsonObject * WylesLibs::Json::parse(std::string * json) {
 //      for instance, don't need '}' and non-whitespace between tokens are valid... not among other things?
 
 //  now, do I enforce whitespace?
-//      to do this, parseKey and parseValue need refactoring...
+//      to do this, parseKey and parseValue and mainloop need refactoring...
 //      
 //      require } before {?
 //      this means, main loop needs refactoring...

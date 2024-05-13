@@ -90,7 +90,7 @@ class JsonObject: public JsonValue {
         }
 };
 
-extern JsonObject * parse(std::string * json);
+extern JsonValue * parse(std::string * json);
 
 }
 #endif

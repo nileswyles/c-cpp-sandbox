@@ -73,13 +73,64 @@ class User {
         }
 };
 
+void testJsonArray(void * tester) {
+    std::string s("[false, true, false, false]");
+    try {
+        // TODO:
+        //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
+        JsonValue * obj = parse(&s);
+        if (obj->type == WylesLibs::Json::ARRAY) {
+            loggerPrintf(LOGGER_TEST, "JSON: \n");
+            loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
+            WylesLibs::Json::JsonArray * values = (WylesLibs::Json::JsonArray *)obj;
+            for (size_t i = 0; i < values->size(); i++) {
+                loggerPrintf(LOGGER_TEST, "User Class: \n");
+                loggerPrintf(LOGGER_TEST, "%u\n", ((WylesLibs::Json::JsonBoolean *)values->at(i))->getValue());
+            }
+        } else {
+            // something went terribly wrong
+        }
+        delete obj;
+    } catch (const std::exception& e) {
+        std::cout << "Exception: \n" << e.what() << '\n';
+        //  throw e; // copy-initializes a new exception object of type std::exception
+        // throw;   // rethrows the exception object of type std::out_of_range
+    }
+}
+
+void testJsonObjectWithArray(void * tester) {
+    std::string s("{ \n");
+    s += "\"arr\": [false, true, false, false], \n";
+    s += "}\n";
+
+    try {
+        // TODO:
+        //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
+        JsonValue * obj = parse(&s);
+        if (obj->type == WylesLibs::Json::OBJECT) {
+            User user((WylesLibs::Json::JsonObject *)obj);
+            loggerPrintf(LOGGER_TEST, "JSON: \n");
+            loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
+            loggerPrintf(LOGGER_TEST, "User Class: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", user.toJsonString().c_str());
+        } else {
+            // something went terribly wrong
+        }
+        delete obj;
+    } catch (const std::exception& e) {
+        std::cout << "Exception: \n" << e.what() << '\n';
+        //  throw e; // copy-initializes a new exception object of type std::exception
+        // throw;   // rethrows the exception object of type std::out_of_range
+    }
+}
+
 void testJson(void * tester) {
     Tester * t = (Tester *)tester;
     // lol
     std::string s("{ \n");
     s += "\"name\":\"username\", \n";
     s += "\"attributes\":\"attributes for user\", \n";
-    s += "\"arr\": [false, true, false, false], \n";
+    // s += "\"arr\": [false, true, false, false], \n";
     s += "\"dec\": 272727.1111, \n";
     s += "\"nested_obj\": { \"nested_name\": \"nested_value\" }, \n";
     s += "\"null_value\": null \n";
@@ -88,14 +139,16 @@ void testJson(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        JsonObject * obj = parse(&s);
-
-        User user(obj);
-        loggerPrintf(LOGGER_TEST, "JSON: \n");
-        loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
-        loggerPrintf(LOGGER_TEST, "User Class: \n");
-        loggerPrintf(LOGGER_TEST, "%s\n", user.toJsonString().c_str());
-
+        JsonValue * obj = parse(&s);
+        if (obj->type == WylesLibs::Json::OBJECT) {
+            User user((WylesLibs::Json::JsonObject *)obj);
+            loggerPrintf(LOGGER_TEST, "JSON: \n");
+            loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
+            loggerPrintf(LOGGER_TEST, "User Class: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", user.toJsonString().c_str());
+        } else {
+            // something went terribly wrong
+        }
         delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
@@ -110,6 +163,8 @@ int main() {
     Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
 
     tester_add_test(t, testJson);
+    tester_add_test(t, testJsonObjectWithArray);
+    tester_add_test(t, testJsonArray);
     tester_run(t);
 
     tester_destructor(t);

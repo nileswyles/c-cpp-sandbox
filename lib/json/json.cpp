@@ -177,6 +177,7 @@ static void parseArray(JsonArray * obj, std::string * buf, size_t& i) {
             // TODO:
             //  nested arrays might be an issue. like too much recursion? curious what happens
             parseValue(arr, buf, ++i);
+            loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
         c = buf->at(++i);
     }
@@ -230,6 +231,7 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
         c = buf->at(++i);
     }
     i--;
+    loggerPrintf(LOGGER_DEBUG, "Broke out of loop and decremented index %c @ %lu\n", c, i);
 }
 
 static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
@@ -266,6 +268,7 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
     }
     loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
     parseValue(&(obj->values), buf, ++i);
+    loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
@@ -274,13 +277,17 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
 //      and .at() bounds checks (exceptions), [] doesn't
 extern JsonObject * WylesLibs::Json::parse(std::string * json) {
     if (json == nullptr) throw std::runtime_error("Invalid JSON string.");
+    loggerPrintf(LOGGER_DEBUG, "JSON: \n");
+    loggerPrintf(LOGGER_DEBUG, "  %s\n", json->c_str());
 
     std::vector<JsonObject *> created_objs;
     JsonObject * obj = nullptr;
     size_t i = 0;
     char c;
     while(i < json->size()) {
+        loggerPrintf(LOGGER_DEBUG, "blahblahblahblahablhFound %c @ %lu\n", c, i);
         c = json->at(i);
+        loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         if (c == '{') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // create new object... and update cursor/pointer to object.

@@ -112,7 +112,7 @@ static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
 static void parseString(JsonArray * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
 
-    char c = buf->at(i);
+    char c = buf->at(++i);
     std::string s;
     char prev_c = (char)0x00;
     while (c != '"') {
@@ -168,15 +168,15 @@ static void parseString(JsonArray * obj, std::string * buf, size_t& i) {
 static void parseArray(JsonArray * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
 
-    JsonArray * arr = nullptr; 
+    JsonArray * arr = new JsonArray(); 
+    obj->addValue(arr);
+
     char c = buf->at(i);
     while(c != ']') {
-        if (c == '[') { 
-            arr = new JsonArray();
-            obj->addValue(arr);
-            parseValue(arr, buf, i);
-        } else if (arr != nullptr && c == ',') {
-            parseValue(arr, buf, i);
+        if (c == '[' || c == ',') { 
+            // TODO:
+            //  nested arrays might be an issue. like too much recursion? curious what happens
+            parseValue(arr, buf, ++i);
         }
         c = buf->at(++i);
     }
@@ -201,11 +201,11 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
     char c = buf->at(i);
     while (c != ',') { 
         if (c == '"') {
-            parseString(obj, buf, ++i);
+            parseString(obj, buf, i);
         } else if (isDigit(c) || c == '+' || c == '-') {
             parseNumber(obj, buf, i);
         } else if (c == '[') {
-            parseArray(obj, buf, ++i);
+            parseArray(obj, buf, i);
         } else if (c == 't') {
             std::string comp("true");
             JsonValue * boolean = (JsonValue *) new JsonBoolean(true);
@@ -220,8 +220,11 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
             parseImmediate(obj, buf, i, &comp, nullValue);
             // hmm... this works but think about whether we want to just ignore malformed...
             //  when I think about validating input, ensureing full json, etc.
-        } else if (c == '{' || c == '}') {
-            break; // don't increment pointer and break;
+        } else if (c == '{' || c == '}') { 
+            loggerPrintf(LOGGER_DEBUG, "Found object delimeter %c @ %lu\n", c, i);
+            // TODO:
+            // be explicit, decrement and return? 
+            break;
         }
         c = buf->at(++i);
     }
@@ -271,7 +274,7 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
 extern JsonObject * WylesLibs::Json::parse(std::string * json) {
     if (json == nullptr) throw std::runtime_error("Invalid JSON string.");
 
-    JsonObject * root = nullptr;
+    std::vector<JsonObject *> created_objs;
     JsonObject * obj = nullptr;
     size_t i = 0;
     char c;
@@ -280,30 +283,34 @@ extern JsonObject * WylesLibs::Json::parse(std::string * json) {
         if (c == '{') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // create new object... and update cursor/pointer to object.
-            if (root == nullptr) {
-                obj = new JsonObject();
-                root = obj;
-            } else {
-                JsonValue * new_obj = (JsonValue *) new JsonObject();
-                obj->values.addValue(new_obj);
-                obj = (JsonObject *) new_obj;
+            JsonObject * new_obj = new JsonObject();
+            if (obj != nullptr) {
+                obj->values.addValue((JsonValue *)new_obj);
             }
-            parseKey(obj, json, ++i);
+            obj = (JsonObject *) new_obj;
             loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
+            created_objs.push_back(obj);
+            parseKey(obj, json, ++i);
         } else if (c == ',') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             parseKey(obj, json, ++i);
-        } else if (c == '[') {
-            // [1, 2, 3, 4] is valid JSON lol...
-            parseArray(&(root->values), json, ++i);
+        // } else if (c == '[') {
+        //     // [1, 2, 3, 4] is valid JSON lol...
+        //     parseArray(&(root->values), json, ++i);
+        } else if (c == '}') {
+            loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+            // only one json document lol
+            if (created_objs.size() > 1) { // keep root in list...
+                created_objs.pop_back();
+                obj = created_objs.at(created_objs.size() - 1);
+            }
         }
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         // printf("%c\n", c);
         i++;
     }
 
-    return root; // and so, when this is out of scope, deconstructors are called and things are cleaned up?
-                    // or do I need to new/malloc?
+    return created_objs.at(0);
 }
 
 // TODO: Once finished, think about how this can be implemented differently? ("take a step back", birds eye view, for better planning, better cache?)

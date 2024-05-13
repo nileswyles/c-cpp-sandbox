@@ -9,29 +9,30 @@ class User {
         std::string attributes;
 
         User(JsonObject * obj) {
-            throw std::runtime_error("Test exception");
-            loggerPrintf(LOGGER_TEST, "TEST\n");
+            size_t values_set = 0;
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 WylesLibs::Json::JsonValue * value = obj->values.at(i);
                 WylesLibs::Json::JsonType type = value->type;
-                loggerPrintf(LOGGER_TEST, "value type: %d\n", type);
+                loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
 
                 if(key == "name") {
                     // TODO:
                     //  better type conversion?
                     if (type == WylesLibs::Json::STRING) {
                         name = ((WylesLibs::Json::JsonString *)value)->getValue();
+                        values_set++;
                     }
                 } else if (key == "attributes") {
                     if (type == WylesLibs::Json::STRING) {
                         attributes = ((WylesLibs::Json::JsonString *)value)->getValue();
+                        values_set++;
                     }
                 }
             }
-
-            // Okay, now incomplete values or of invalid type, what to do? throw exception? Constructor exceptions a thing?
-            throw std::runtime_error("Test exception");
+            if (values_set != 2) {
+                throw std::runtime_error("Failed to create User from json object.");
+            }
         }
 };
 
@@ -68,15 +69,16 @@ int main() {
     // const char * s = "{\"test\":null, \"test2\":17272.2727}";
 
     std::string s("{\"name\":\"username\", \"attributes\":\"attributes for user\"}");
-    loggerPrintf(LOGGER_TEST, "JSON STRING: %s\n", s.c_str());
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
         JsonObject * obj = parse(&s);
 
         User user(obj);
-        loggerPrintf(LOGGER_TEST, "%s\n", s.c_str());
-        loggerPrintf(LOGGER_TEST, "%s, %s\n", user.name.c_str(), user.attributes.c_str());
+        loggerPrintf(LOGGER_TEST, "JSON: \n");
+        loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
+        loggerPrintf(LOGGER_TEST, "User Class: \n");
+        loggerPrintf(LOGGER_TEST, "  %s, %s\n", user.name.c_str(), user.attributes.c_str());
 
         delete obj;
     } catch (const std::exception& e) {

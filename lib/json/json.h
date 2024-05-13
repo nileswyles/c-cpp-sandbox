@@ -63,16 +63,17 @@ class JsonString: public JsonValue {
 class JsonArray: public JsonValue, public std::vector<JsonValue *> {
     public:
         JsonArray(): JsonValue(ARRAY), std::vector<JsonValue *>() {}
+        ~JsonArray() {
+            for (size_t i = 0; i < this->size(); i++) {
+                loggerPrintf(LOGGER_DEBUG, "Making sure to free pointer! @ %p\n", this->at(i));
+                // because this->[] isn't valid :)
+                delete this->at(i);
+            }
+        }
 
         void addValue(JsonValue * value) {
             this->push_back(value);
             loggerPrintf(LOGGER_DEBUG, "Added json value object! @ %p\n", value);
-        }
-
-        static void processValue(JsonValue * value, ProcessValueFunc processor) {
-            processor(value);
-            loggerPrintf(LOGGER_DEBUG, "Making sure to free pointer! @ %p\n", value);
-            delete value;
         }
 };
 
@@ -85,12 +86,6 @@ class JsonObject: public JsonValue {
 
         void addKey(std::string key) {
             this->keys.push_back(key);
-        }
-
-        static void processValue(std::string key, JsonValue * value, ProcessObjectFunc processor) {
-            processor(key, value);
-            loggerPrintf(LOGGER_DEBUG, "Making sure to free pointer! @ %p\n", value);
-            delete value;
         }
 };
 

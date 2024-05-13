@@ -5,15 +5,16 @@
 
 namespace WylesLibs::Json {
 
-typedef void(ProcessValueFunc)(std::string key, JsonValue * value);
+typedef void(ProcessObjectFunc)(std::string key, JsonValue * value);
+typedef void(ProcessValueFunc)(JsonValue * value);
 
 typedef enum JsonType {
-    BOOLEAN = 0,
+    NULL_TYPE = 0,
+    BOOLEAN,
     NUMBER,
+    STRING,
     ARRAY,
     OBJECT,
-    STRING,
-    NULL_TYPE
 } JsonType;
 
 class JsonValue {
@@ -24,49 +25,79 @@ class JsonValue {
 };
 
 class JsonBoolean: public JsonValue {
-    public:
+    private:
         bool boolean;
+    public:
         JsonBoolean(bool boolean): boolean(boolean), JsonValue(BOOLEAN) {}
+
+        bool getValue() {
+            return this->boolean;
+        }
 };
 
 class JsonNumber: public JsonValue {
-    public:
+    private:
         double number;
+    public:
         JsonNumber(double number): number(number), JsonValue(NUMBER) {}
-};
 
-class JsonArray: public JsonValue {
-    public:
-        WylesLibs::Array<JsonValue *> values;
-        JsonArray(WylesLibs::Array<JsonValue *> values): values(values), JsonValue(ARRAY) {}
-};
-
-class JsonObject: public JsonValue {
-    public:
-        WylesLibs::Array<std::string> keys;
-        // this is hella lame...
-        //  then destructor bs...
-        //  whatever, onward...
-        WylesLibs::Array<JsonValue *> values;
-        JsonObject(): JsonValue(OBJECT) {} // lmao?
+        double getValue() {
+            return this->number;
+        }
 };
 
 class JsonString: public JsonValue {
-    public:
+    private:
         std::string s;
-        JsonString(std::string s): JsonValue(STRING), s(s) {}
+    public:
+        JsonString(std::string s): s(s), JsonValue(STRING) {}
+        
+        std::string getValue() {
+            return this->s;
+        }
+};
+
+// TODO: move JsonArray and JsonObject defintion/implementation to their own .h and .cpp files...
+class JsonArray: public JsonValue, public std::vector<JsonValue *> {
+    public:
+        JsonArray(): JsonValue(ARRAY), std::vector<JsonValue *>() {}
+
+        static void processValue(JsonValue * value, ProcessValueFunc processor) {
+            processor(value);
+            // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+            loggerPrintf(LOGGER_DEBUG, "MAKING SURE TO FREE POINTER! @ %p\n", value);
+            delete value;
+        }
+};
+
+// yeah, definetly use associative arrays over regular arrays when technically useful.
+//  but in this case, might not be technially useful lol....
+class JsonObjectEntry {
+    public:
+        std::string key;
+        JsonValue * value;
+}
+
+class JsonObject: public JsonValue, public std::vector<JsonObjectEntry> {
+    public:
+        JsonObject(): JsonValue(OBJECT), std::vector<JsonObjectEntry>() {}
+
+        void addKey(std::string key) {
+            JsonObjectEntry e(key, nullptr);
+            this->push_back(e);
+        }
+        void addValue(JsonValue * value) {
+            this->back().value = value;
+        }
+        static void processValue(std::string key, JsonValue * value, ProcessObjectFunc processor) {
+            processor(key, value);
+            // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+            loggerPrintf(LOGGER_DEBUG, "MAKING SURE TO FREE POINTER! @ %p\n", value);
+            delete value;
+        }
 };
 
 extern JsonObject parse(std::string * json);
-// TODO: abstract iterating too? iterators?... might be an array thing...
-//  then have multiple arrays/functions (one for each type...) then no casting required? and no type variable and no polymorphism required lmao
-//  that doesn't seem like the right way to do it though...
-extern void processValue(std::string key, JsonValue * value, ProcessValueFunc processor) {
-    processor(key, value);
-    // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-    loggerPrintf(LOGGER_DEBUG, "MAKING SURE TO FREE POINTER! @ %p\n", value);
-    delete value;
-}
 
 }
 #endif

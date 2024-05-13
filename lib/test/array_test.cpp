@@ -138,7 +138,7 @@ bool test_array_append_cstrings() {
 
     // printf("WTF?, %d, %x\n", arr.getSize(), arr.buf[0]);
    for (size_t i = 0; i < arr.getSize(); i++) {
-        loggerPrintf(LOGGER_TEST, "%s\n", arr.buf[i]);
+        loggerPrintf(LOGGER_TEST, "%s, %p, %p\n", arr[i], &(arr[i]), &(arr.buf[i]));
    }
 
     printf("\n#######################################\n");

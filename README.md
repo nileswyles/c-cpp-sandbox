@@ -56,3 +56,36 @@ https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
 
         Global replacements
         The versions (1-4) are implicitly declared in each translation unit even if the <new> header is not included. Versions (1-8) are replaceable: a user-provided non-member function with the same signature defined anywhere in the program, in any source file, replaces the default version. Its declaration does not need to be visible.
+
+
+# Plan for data structures? At least for now...
+Let's think about this some more before proceeding? Is iterator abstraction really necessary?
+     What "Collection" types do I plan to implement? 
+         - Array
+         - Linked List
+         - Priority List (Heap)
+         - Map
+         - Static Array (RingBuffer/Index), can also share interface...?
+
+     Now let's explore how you would invoke each of the afformentioned types? 
+
+     LMAO, yeah... not necessary to go further... definetly want to abstract (generalize) here ;)... because DRY.
+
+     
+     So we typically iterate want to:
+         hmm.... so this basically takes any data structure and makes it an array... dun dun dun.... because sequential lol... 
+         and so, we might want to iterate forwards, backwards and starting from any index in the abstracted array...
+
+     So, if that's the case, then can we just encode the structures directly in the array type I already implemented?
+     no... because pointer maths allow for faster algo's... okay... yeah... abstraction it is...
+
+     right? because making sure contigious is more computation... yeah... 
+
+     additionally, Array is really only structure where you might want to expose the underlying data.
+
+     Let's copy CPP's STL interface because why not?
+
+In conclusion... good exercises... Let's prioritize statically sized datastructures for when we don't want or cannot use malloc/new...
+     Static Array/Ring buffer, FIFO, STACK, SORTED LIST... then build priority lists 
+
+Let's implement JSON using STL for now... lol

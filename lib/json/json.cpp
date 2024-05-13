@@ -5,6 +5,8 @@ using namespace WylesLibs::Json;
 
 static size_t compareCString(std::string * buf, std::string * comp, size_t comp_length);
 
+// TODO: arrays aren't being processed properly... need to select between object and array... implement common interface...
+
 static void parseDecimal(std::string * buf, size_t& i, double& value);
 static void parseNatural(std::string * buf, size_t& i, double& value);
 static void parseNumber(JsonObject * obj, std::string * buf, size_t& i);
@@ -99,8 +101,7 @@ static void parseNumber(JsonObject * obj, std::string * buf, size_t& i) {
 
     loggerPrintf(LOGGER_DEBUG, "Number after exponential: %f\n", value);
 
-    JsonValue * num = (JsonValue *) new JsonNumber(value * sign);
-    (obj->values).append(num);
+    obj->addValue((JsonValue *) new JsonNumber(value * sign));
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
 }
@@ -155,10 +156,7 @@ static void parseString(JsonObject * obj, std::string * buf, size_t& i) {
         c = buf->at(++i);
     }
 
-    // lol... not the best but
-    //  who cares rn ... value value value value
-    JsonValue * jsonString = (JsonValue *) new JsonString(s);
-    (obj->values).append(jsonString);
+    obj->addValue((JsonValue *) new JsonString(s));
 
     loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
     loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
@@ -181,7 +179,7 @@ static void parseImmediate(JsonObject * obj, std::string * buf, size_t& i, std::
     std::string buf_i = buf->substr(i, comp->size());
     size_t consumed = compareCString(&buf_i, comp, comp->size());
     if (consumed == comp->size()) {
-        (obj->values).append(value);
+        obj->addValue(value);
     }
     i += consumed - 1; // point at last index of token
 
@@ -254,10 +252,8 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
     }
 
     std::string s = buf->substr(start_i, size);
+    obj->addKey(s);
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s @ %lu\n", s.c_str(), i);
-    if ((obj->keys).uniqueAppend(s) != OPERATION_SUCCESS) {
-        throw std::runtime_error("Failed to store object key.");
-    }
 
     // value needs to be preceded by key
     while (c != ':') {
@@ -285,11 +281,8 @@ extern JsonObject WylesLibs::Json::parse(std::string * json) {
             if (obj == nullptr) {
                 obj = &root;
             } else {
-                // lol?
                 JsonValue * new_obj = (JsonValue *) new JsonObject();
-                (obj->values).append(new_obj);
-
-                // lol?
+                obj->addValue(new_obj);
                 obj = (JsonObject *) new_obj;
             }
             parseKey(obj, json, ++i);

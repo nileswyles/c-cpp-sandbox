@@ -270,8 +270,9 @@ extern JsonObject * WylesLibs::Json::parse(std::string * json) {
     JsonObject * root = nullptr;
     JsonObject * obj = nullptr;
     size_t i = 0;
-    char c = json->at(i);
+    char c;
     while(i < json->size()) {
+        c = json->at(i);
         if (c == '{') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // create new object... and update cursor/pointer to object.
@@ -292,9 +293,9 @@ extern JsonObject * WylesLibs::Json::parse(std::string * json) {
             // [1, 2, 3, 4] is valid JSON lol...
             parseArray(&(root->values), json, ++i);
         }
-        c = json->at(++i);
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         // printf("%c\n", c);
+        i++;
     }
 
     return root; // and so, when this is out of scope, deconstructors are called and things are cleaned up?

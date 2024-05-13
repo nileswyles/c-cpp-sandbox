@@ -64,10 +64,14 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
     public:
         JsonArray(): JsonValue(ARRAY), std::vector<JsonValue *>() {}
 
+        void addValue(JsonValue * value) {
+            this->push_back(value);
+            loggerPrintf(LOGGER_DEBUG, "Added json value object! @ %p\n", value);
+        }
+
         static void processValue(JsonValue * value, ProcessValueFunc processor) {
             processor(value);
-            // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-            loggerPrintf(LOGGER_DEBUG, "MAKING SURE TO FREE POINTER! @ %p\n", value);
+            loggerPrintf(LOGGER_DEBUG, "Making sure to free pointer! @ %p\n", value);
             delete value;
         }
 };
@@ -85,8 +89,7 @@ class JsonObject: public JsonValue {
 
         static void processValue(std::string key, JsonValue * value, ProcessObjectFunc processor) {
             processor(key, value);
-            // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-            loggerPrintf(LOGGER_DEBUG, "MAKING SURE TO FREE POINTER! @ %p\n", value);
+            loggerPrintf(LOGGER_DEBUG, "Making sure to free pointer! @ %p\n", value);
             delete value;
         }
 };

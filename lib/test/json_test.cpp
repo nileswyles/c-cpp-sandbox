@@ -26,6 +26,9 @@ void printProcessFunc(std::string key, WylesLibs::Json::JsonValue * value) {
             // blah blah blah, add populate class membh
             // this->test2 = (cast_type)numberValue->value;
         }
+    } else if (type == WylesLibs::Json::ARRAY) {
+
+
     }
 }
 

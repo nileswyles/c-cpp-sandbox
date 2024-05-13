@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include "cstring.h"
 #include "json.h"
 
 using namespace WylesLibs::Json;
@@ -101,7 +102,7 @@ static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
 
     loggerPrintf(LOGGER_DEBUG, "Number after exponential: %f\n", value);
 
-    obj->addValue((JsonValue *) new JsonNumber(value * sign));
+    obj->push_back((JsonValue *) new JsonNumber(value * sign));
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
 }
@@ -156,7 +157,7 @@ static void parseString(JsonArray * obj, std::string * buf, size_t& i) {
         c = buf->at(++i);
     }
 
-    obj->addValue((JsonValue *) new JsonString(s));
+    obj->push_back((JsonValue *) new JsonString(s));
 
     loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
     loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
@@ -169,7 +170,7 @@ static void parseArray(JsonArray * obj, std::string * buf, size_t& i) {
     while(c != ']') {
         JsonArray * arr = (JsonArray *) new JsonArray();
         parseValue(arr, buf, i, ',');
-        obj->addValue(arr);
+        obj->push_back(arr);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
@@ -181,7 +182,7 @@ static void parseImmediate(JsonArray * obj, std::string * buf, size_t& i, std::s
     std::string buf_i = buf->substr(i, comp->size());
     size_t consumed = compareCString(&buf_i, comp, comp->size());
     if (consumed == comp->size()) {
-        obj->addValue(value);
+        obj->push_back(value);
     }
     i += consumed - 1; // point at last index of token
 
@@ -284,7 +285,7 @@ extern JsonObject WylesLibs::Json::parse(std::string * json) {
                 obj = &root;
             } else {
                 JsonValue * new_obj = (JsonValue *) new JsonObject();
-                obj->addValue(new_obj);
+                obj->values.push_back(new_obj);
                 obj = (JsonObject *) new_obj;
             }
             parseKey(obj, json, ++i);

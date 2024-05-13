@@ -1,6 +1,9 @@
 #ifndef WYLESLIBS_JSON_H
 #define WYLESLIBS_JSON_H
 
+#include <stdexcept>
+#include <string>
+#include <vector>
 #include "array.h"
 
 namespace WylesLibs::Json {
@@ -61,10 +64,6 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
     public:
         JsonArray(): JsonValue(ARRAY), std::vector<JsonValue *>() {}
 
-        void addValue(JsonValue * value) {
-            this->back().value = value;
-        }
-
         static void processValue(JsonValue * value, ProcessValueFunc processor) {
             processor(value);
             // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
@@ -73,18 +72,15 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
         }
 };
 
-class JsonObject: public JsonValue, public std::vector<std::string> {
-    private:
-        JsonArray values;
+class JsonObject: public JsonValue {
     public:
-        JsonObject(): JsonValue(OBJECT), std::vector<std::string>() {}
+        // TODO: hide this? make interface better...
+        std::vector<std::string> keys; 
+        JsonArray values;
+        JsonObject(): JsonValue(OBJECT) {}
 
         void addKey(std::string key) {
-            this->push_back(e);
-        }
-
-        void addValue(JsonValue * value) {
-            this->values.push_back(value);
+            this->keys.push_back(key);
         }
 
         static void processValue(std::string key, JsonValue * value, ProcessObjectFunc processor) {

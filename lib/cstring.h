@@ -1,34 +1,36 @@
 #ifndef WYLESLIBS_CSTRING_H
 #define WYLESLIBS_CSTRING_H
 
+// TODO:
+#include <string>
 #include <stdbool.h>
 
-bool isDigit(char c) {
+static bool isDigit(char c) {
     if (c >= 0x30 && c <= 0x39) {
         return true;
     }
     return false;
 }
 
-bool isLowerHex(char c) {
+static bool isLowerHex(char c) {
     if (c >= 0x61 && c <= 0x66) {
         return true;
     }
     return false;
 }
 
-bool isUpperHex(char c) {
+static bool isUpperHex(char c) {
     if (c >= 0x41 && c <= 0x46) {
         return true;
     }
     return false;
 }
 
-bool isHexDigit(char c) {
+static bool isHexDigit(char c) {
     return isDigit(c) || isLowerHex(c) || isUpperHex(c);
 }
 
-char hexToChar(std::string * buf) {
+static char hexToChar(std::string * buf) {
     char ret = 0x00;
     for (size_t i = 0; i < 2; i++) {
         char c = buf->at(i);

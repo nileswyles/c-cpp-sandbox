@@ -39,8 +39,8 @@ int main() {
     try {
         JsonObject obj = parse(&s);
         // CPP is beautiful! might not be the most performant though... lol
-        for (auto i: obj) {
-            JsonObject::processValue(i.key, i.value, printProcessFunc);
+        for (auto i: obj.keys) {
+            JsonObject::processValue(i, obj.values.at(i), printProcessFunc);
         }
         // if already freed, then do nothing? lol is that not how free works?
         loggerPrintf(LOGGER_TEST, "...\n");

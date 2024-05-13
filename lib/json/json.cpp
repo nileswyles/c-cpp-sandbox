@@ -270,10 +270,10 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
 //  Okay, I was convinced to use the string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
 //      also, sizeof(pointers) < sizeof(std::string)
 //      and .at() bounds checks (exceptions), [] doesn't
-extern JsonObject WylesLibs::Json::parse(std::string * json) {
+extern JsonObject * WylesLibs::Json::parse(std::string * json) {
     if (json == nullptr) throw std::runtime_error("Invalid JSON string.");
 
-    JsonObject root;
+    JsonObject * root = nullptr;
     JsonObject * obj = nullptr;
     size_t i = 0;
     char c = json->at(i);
@@ -281,8 +281,9 @@ extern JsonObject WylesLibs::Json::parse(std::string * json) {
         if (c == '{') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // create new object... and update cursor/pointer to object.
-            if (obj == nullptr) {
-                obj = &root;
+            if (root == nullptr) {
+                obj = new JsonObject();
+                root = obj;
             } else {
                 JsonValue * new_obj = (JsonValue *) new JsonObject();
                 obj->values.addValue(new_obj);
@@ -295,7 +296,7 @@ extern JsonObject WylesLibs::Json::parse(std::string * json) {
             parseKey(obj, json, ++i);
         } else if (c == '[') {
             // [1, 2, 3, 4] is valid JSON lol...
-            parseArray(&(root.values), json, ++i);
+            parseArray(&(root->values), json, ++i);
         }
         c = json->at(++i);
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);

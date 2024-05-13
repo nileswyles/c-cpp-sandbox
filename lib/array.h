@@ -20,6 +20,7 @@ static inline T * newCArray(size_t size) {
     return (T *) new T[size];
 }
 
+// TODO: exceptions...
 template<typename T>
 class Array {
     private:

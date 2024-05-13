@@ -6,7 +6,7 @@ extern "C"
 {
 #endif
 
-#include "array.h"
+#include "c/array.h"
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -15,6 +15,8 @@ extern "C"
 #endif
 
 #include "logger.h"
+
+typedef void (test_function)(void *);
 
 typedef struct Test {
     const char * name;
@@ -35,8 +37,6 @@ typedef struct Tester {
 
 // test suite
 // -> tests
-
-typedef void test_function(Tester *);
 
 #define tester_add_test(t, func)\
     tester_add_test_with_name(t, #func, func);

@@ -1,12 +1,22 @@
 #include "json.h"
 #include <iostream>
 
+#include "test/tester.h"
+
 using namespace WylesLibs::Json;
+
+class Nested {
+    public:
+        std::string nested_name;
+};
 
 class User {
     public:
         std::string name;
         std::string attributes;
+        double dec;
+        std::vector<bool> arr;
+        Nested nested;
 
         User(JsonObject * obj) {
             size_t values_set = 0;
@@ -36,39 +46,18 @@ class User {
         }
 };
 
-void printProcessFunc(std::string key, WylesLibs::Json::JsonValue * value) {
-    WylesLibs::Json::JsonType type = value->type;
-    loggerPrintf(LOGGER_TEST, "value type: %d\n", type);
+void testJson(void * tester) {
+    Tester * t = (Tester *)tester;
+    // lol
+    std::string s("{ ");
+    s += "\"name\":\"username\", ";
+    s += "\"attributes\":\"attributes for user\", ";
+    s += "\"arr\": [false, true, false, false], ";
+    s += "\"dec\": 272727.1111, ";
+    s += "\"nested_obj\": { \"nested_name\": \"nested_value\" }, ";
+    s += "\"null_value\": null ";
+    s += "}";
 
-    if (type == WylesLibs::Json::BOOLEAN) {
-        WylesLibs::Json::JsonBoolean * booleanValue = (JsonBoolean *)value;
-        loggerPrintf(LOGGER_TEST, "boolean value: %u\n", booleanValue->getValue());
-    } else if (type == WylesLibs::Json::STRING) {
-        // when created, sizeof(JsonString) on stack? or sizeof(JsonValue)? lol 
-        loggerPrintf(LOGGER_TEST, "lol?\n");
-        WylesLibs::Json::JsonString * stringValue = (JsonString *)value;
-        loggerPrintf(LOGGER_TEST, "string value: %s\n", stringValue->getValue().c_str());
-    } else if (type == WylesLibs::Json::NUMBER) {
-        // when created, sizeof(JsonString) on stack? or sizeof(JsonValue)? lol 
-        loggerPrintf(LOGGER_TEST, "lol....\n");
-        WylesLibs::Json::JsonNumber * numberValue = (JsonNumber *)value;
-        loggerPrintf(LOGGER_TEST, "number value: %f\n", numberValue->getValue());
-
-        if (key == "test2") {
-            // blah blah blah, add populate class membh
-            // this->test2 = (cast_type)numberValue->value;
-        }
-    } else if (type == WylesLibs::Json::ARRAY) {
-
-
-    }
-}
-
-int main() {
-    // std::string s("{\"test\":false, \"test2\":\"value\"}");
-    // const char * s = "{\"test\":null, \"test2\":17272.2727}";
-
-    std::string s("{\"name\":\"username\", \"attributes\":\"attributes for user\"}");
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
@@ -86,5 +75,17 @@ int main() {
         //  throw e; // copy-initializes a new exception object of type std::exception
         // throw;   // rethrows the exception object of type std::out_of_range
     }
+}
+
+int main() {
+    // std::string s("{\"test\":false, \"test2\":\"value\"}");
+    // const char * s = "{\"test\":null, \"test2\":17272.2727}";
+    Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
+
+    tester_add_test(t, testJson);
+    tester_run(t);
+
+    tester_destructor(t);
+
     return 0;
 }

@@ -1,10 +1,11 @@
 #ifndef WYLESLIBS_JSON_H
 #define WYLESLIBS_JSON_H
 
+#include "logger.h"
+
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "array.h"
 
 namespace WylesLibs::Json {
 

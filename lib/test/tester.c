@@ -1,4 +1,5 @@
 #include "tester.h"
+#include <stdlib.h>
 
 static void run(Tester * tester, Test * test);
 
@@ -46,7 +47,7 @@ static void run(Tester * tester, Test * test) {
     if (tester->beforeEach != NULL) {
         tester->beforeEach(tester);
     }
-    func(tester);
+    test->func((void *)tester);
     if (test->fail) {
         printf("\nTest Failed!\n");
         tester->num_failed++;

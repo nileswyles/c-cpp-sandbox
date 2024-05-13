@@ -301,4 +301,19 @@ extern JsonObject * WylesLibs::Json::parse(std::string * json) {
                     // or do I need to new/malloc?
 }
 
-// TODO: think about how this can be implemented differently?
+// TODO: Once finished, think about how this can be implemented differently? ("take a step back", birds eye view, for better planning, better cache?)
+
+//  what are we doing now... consume until start of object, 
+//      then consume until end of key (:), then consume <value> and until (,) repeat until no more data...
+//      so, not really strict json..., as in, some non-valid json will work...
+
+//      for instance, don't need '}' and non-whitespace between tokens are valid... not among other things?
+
+//  now, do I enforce whitespace?
+//      to do this, parseKey and parseValue need refactoring...
+//      
+//      require } before {?
+//      this means, main loop needs refactoring...
+
+// then I think that's it...
+//  this is what the validation function was going to do... but let's just do it :)

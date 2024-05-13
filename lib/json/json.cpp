@@ -9,11 +9,11 @@ static size_t compareCString(std::string * buf, std::string * comp, size_t comp_
 
 static void parseDecimal(std::string * buf, size_t& i, double& value);
 static void parseNatural(std::string * buf, size_t& i, double& value);
-static void parseNumber(JsonObject * obj, std::string * buf, size_t& i);
-static void parseString(JsonObject * obj, std::string * buf, size_t& i);
-static void parseArray(JsonObject * obj, std::string * buf, size_t& i);
-static void parseImmediate(JsonObject * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value);
-static void parseValue(JsonObject * obj, std::string * buf, size_t& i, const char stop);
+static void parseNumber(JsonArray * obj, std::string * buf, size_t& i);
+static void parseString(JsonArray * obj, std::string * buf, size_t& i);
+static void parseArray(JsonArray * obj, std::string * buf, size_t& i);
+static void parseImmediate(JsonArray * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value);
+static void parseValue(JsonArray * obj, std::string * buf, size_t& i, const char stop);
 static void parseKey(JsonObject * obj, std::string * buf, size_t& i);
 
 static size_t compareCString(std::string * buf, std::string * comp, size_t comp_length) {
@@ -51,7 +51,7 @@ static void parseNatural(std::string * buf, size_t& i, double& value) {
     i--;
 }
 
-static void parseNumber(JsonObject * obj, std::string * buf, size_t& i) {
+static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
 
     int8_t sign = 1;
@@ -106,7 +106,7 @@ static void parseNumber(JsonObject * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
 }
 
-static void parseString(JsonObject * obj, std::string * buf, size_t& i) {
+static void parseString(JsonArray * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
 
     char c = buf->at(i);
@@ -162,18 +162,20 @@ static void parseString(JsonObject * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
 }
 
-static void parseArray(JsonObject * obj, std::string * buf, size_t& i) {
+static void parseArray(JsonArray * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
 
     char c = buf->at(i);
     while(c != ']') {
-        parseValue(obj, buf, i, ',');
+        JsonArray * arr = (JsonArray *) new JsonArray();
+        parseValue(arr, buf, i, ',');
+        obj->addValue(arr);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
 }
 
-static void parseImmediate(JsonObject * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value) {
+static void parseImmediate(JsonArray * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value) {
     loggerPrintf(LOGGER_DEBUG, "Parsing %s @ %lu\n", comp->c_str(), i);
 
     std::string buf_i = buf->substr(i, comp->size());
@@ -186,7 +188,7 @@ static void parseImmediate(JsonObject * obj, std::string * buf, size_t& i, std::
     loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu\n", comp->c_str(), i);
 }
 
-static void parseValue(JsonObject * obj, std::string * buf, size_t& i, const char stop) {
+static void parseValue(JsonArray * obj, std::string * buf, size_t& i, const char stop) {
     char c = buf->at(i);
     while (c != stop) {
         // loggerPrintf(LOGGER_DEBUG, "index: %lu\n", i);
@@ -260,7 +262,7 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
         c = buf->at(++i);
     }
     loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-    parseValue(obj, buf, ++i, (char)0x00);
+    parseValue(&(obj->values), buf, ++i, (char)0x00);
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
@@ -290,6 +292,9 @@ extern JsonObject WylesLibs::Json::parse(std::string * json) {
         } else if (c == ',') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             parseKey(obj, json, ++i);
+        } else if (c == '[') {
+            // [1, 2, 3, 4] is valid JSON lol...
+            parseArray(&(root.values), buf, ++i);
         }
         c = json->at(++i);
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);

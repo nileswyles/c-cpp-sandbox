@@ -57,10 +57,13 @@ class JsonString: public JsonValue {
         }
 };
 
-// TODO: move JsonArray and JsonObject defintion/implementation to their own .h and .cpp files...
 class JsonArray: public JsonValue, public std::vector<JsonValue *> {
     public:
         JsonArray(): JsonValue(ARRAY), std::vector<JsonValue *>() {}
+
+        void addValue(JsonValue * value) {
+            this->back().value = value;
+        }
 
         static void processValue(JsonValue * value, ProcessValueFunc processor) {
             processor(value);
@@ -70,25 +73,16 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
         }
 };
 
-// yeah, definetly use associative arrays over regular arrays when technically useful.
-//  but in this case, might not be technially useful lol....
-class JsonObjectEntry {
+class JsonObject: public JsonValue, public std::vector<std::string> {
+    private:
+        JsonArray values;
     public:
-        std::string key;
-        JsonValue * value;
-}
-
-class JsonObject: public JsonValue, public std::vector<JsonObjectEntry> {
-    public:
-        JsonObject(): JsonValue(OBJECT), std::vector<JsonObjectEntry>() {}
+        JsonObject(): JsonValue(OBJECT), std::vector<std::string>() {}
 
         void addKey(std::string key) {
-            JsonObjectEntry e(key, nullptr);
-            this->push_back(e);
+            this->keys->push_back(e);
         }
-        void addValue(JsonValue * value) {
-            this->back().value = value;
-        }
+
         static void processValue(std::string key, JsonValue * value, ProcessObjectFunc processor) {
             processor(key, value);
             // lmao, so lameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee

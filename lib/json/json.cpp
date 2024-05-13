@@ -168,9 +168,12 @@ static void parseArray(JsonArray * obj, std::string * buf, size_t& i) {
 
     char c = buf->at(i);
     while(c != ']') {
-        JsonArray * arr = (JsonArray *) new JsonArray();
-        parseValue(arr, buf, i);
-        obj->addValue(arr);
+        if (c == '[' || c == ',') {
+            JsonArray * arr = (JsonArray *) new JsonArray();
+            parseValue(arr, buf, i);
+            obj->addValue(arr);
+        }
+        c = buf->at(++i);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
@@ -191,7 +194,7 @@ static void parseImmediate(JsonArray * obj, std::string * buf, size_t& i, std::s
 
 static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
     char c = buf->at(i);
-    while (c != ',') {
+    while (c != ',') { 
         if (c == '"') {
             parseString(obj, buf, ++i);
         } else if (isDigit(c) || c == '+' || c == '-') {
@@ -215,8 +218,10 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
         } else if (c == '}') {
             break; // don't increment pointer and break;
         }
+        loggerPrintf(LOGGER_TEST, "%c\n", c);
         c = buf->at(++i);
     }
+    i--;
 }
 
 static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
@@ -296,3 +301,4 @@ extern JsonObject * WylesLibs::Json::parse(std::string * json) {
                     // or do I need to new/malloc?
 }
 
+// TODO: think about how this can be implemented differently?

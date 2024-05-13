@@ -14,7 +14,7 @@ static void parseNumber(JsonArray * obj, std::string * buf, size_t& i);
 static void parseString(JsonArray * obj, std::string * buf, size_t& i);
 static void parseArray(JsonArray * obj, std::string * buf, size_t& i);
 static void parseImmediate(JsonArray * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value);
-static void parseValue(JsonArray * obj, std::string * buf, size_t& i, const char stop);
+static void parseValue(JsonArray * obj, std::string * buf, size_t& i);
 static void parseKey(JsonObject * obj, std::string * buf, size_t& i);
 
 static size_t compareCString(std::string * buf, std::string * comp, size_t comp_length) {
@@ -169,7 +169,7 @@ static void parseArray(JsonArray * obj, std::string * buf, size_t& i) {
     char c = buf->at(i);
     while(c != ']') {
         JsonArray * arr = (JsonArray *) new JsonArray();
-        parseValue(arr, buf, i, ',');
+        parseValue(arr, buf, i);
         obj->addValue(arr);
     }
 
@@ -189,38 +189,27 @@ static void parseImmediate(JsonArray * obj, std::string * buf, size_t& i, std::s
     loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu\n", comp->c_str(), i);
 }
 
-static void parseValue(JsonArray * obj, std::string * buf, size_t& i, const char stop) {
+static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
     char c = buf->at(i);
-    while (c != stop) {
-        // loggerPrintf(LOGGER_DEBUG, "index: %lu\n", i);
-        // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-        // TODO:
-        //  if's vs switches...?
+    while (c != ',') {
         if (c == '"') {
             parseString(obj, buf, ++i);
-            break;
         } else if (isDigit(c) || c == '+' || c == '-') {
             parseNumber(obj, buf, i);
-            break;
         } else if (c == '[') {
             parseArray(obj, buf, ++i);
-            break;
         } else if (c == 't') {
             std::string comp("true");
             JsonValue * boolean = (JsonValue *) new JsonBoolean(true);
             parseImmediate(obj, buf, i, &comp, boolean);
-            break;
         } else if (c == 'f') {
             std::string comp("false");
             JsonValue * boolean = (JsonValue *) new JsonBoolean(false);
             parseImmediate(obj, buf, i, &comp, boolean);
-            break;
         } else if (c == 'n') {
             std::string comp("null");
             JsonValue * nullValue = new JsonValue();
             parseImmediate(obj, buf, i, &comp, nullValue);
-            break;
-            // TODO:
             // hmm... this works but think about whether we want to just ignore malformed...
             //  when I think about validating input, ensureing full json, etc.
         } else if (c == '}') {
@@ -263,7 +252,7 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
         c = buf->at(++i);
     }
     loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-    parseValue(&(obj->values), buf, ++i, (char)0x00);
+    parseValue(&(obj->values), buf, ++i);
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
@@ -277,7 +266,7 @@ extern JsonObject * WylesLibs::Json::parse(std::string * json) {
     JsonObject * obj = nullptr;
     size_t i = 0;
     char c = json->at(i);
-    while(c != 0x00) {
+    while(i < json->size()) {
         if (c == '{') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // create new object... and update cursor/pointer to object.

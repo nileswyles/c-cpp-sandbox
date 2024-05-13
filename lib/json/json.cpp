@@ -54,15 +54,15 @@ static void parseNatural(std::string * buf, size_t& i, double& value) {
 
 static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
-
     int8_t sign = 1;
     int8_t exponential_sign = 0;
     double exponential_multiplier = 10;
     double value = 0;
 
     char c = buf->at(i);
+    loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string comp(" ,}\r\n\t");
-    while (comp.find(c) != std::string::npos) {
+    while (comp.find(c) == std::string::npos) {
         if (isDigit(c)) {
             parseNatural(buf, i, value);
         } else if (c == '.') {
@@ -218,7 +218,7 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
             parseImmediate(obj, buf, i, &comp, nullValue);
             // hmm... this works but think about whether we want to just ignore malformed...
             //  when I think about validating input, ensureing full json, etc.
-        } else if (c == '}') {
+        } else if (c == '{' || c == '}') {
             break; // don't increment pointer and break;
         }
         c = buf->at(++i);

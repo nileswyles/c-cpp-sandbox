@@ -20,7 +20,8 @@ extern void tester_destructor(Tester * t) {
 }
 
 extern void tester_add_test_with_name(Tester *t, const char * name, test_function * func) {
-    if (OPERATION_SUCCESS == array_append(t->tests, (void *)&(Test){.name = name, .func = func, .fail = true}, 1)) {
+    Test test = {.name = name, .func = func, .fail = true};
+    if (OPERATION_SUCCESS == array_append(t->tests, (void *)&test, 1)) {
         // only increment if successful 
         t->num_tests++;
     }

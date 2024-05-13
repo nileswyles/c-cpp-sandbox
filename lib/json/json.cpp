@@ -300,8 +300,8 @@ extern JsonObject * WylesLibs::Json::parse(std::string * json) {
         //     parseArray(&(root->values), json, ++i);
         } else if (c == '}') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-            // only one json document lol
-            if (created_objs.size() > 1) { // keep root in list...
+            // only one json document lol?
+            if (created_objs.size() > 1) { // keep root in list for return value.
                 created_objs.pop_back();
                 obj = created_objs.at(created_objs.size() - 1);
             }

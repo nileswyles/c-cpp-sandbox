@@ -91,6 +91,8 @@ static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
         // else {} 
         c = buf->at(++i);
     }
+    // make sure we point at last digit
+    i--;
 
     loggerPrintf(LOGGER_DEBUG, "Number before applying exponential: %f\n", value);
 

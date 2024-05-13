@@ -294,7 +294,7 @@ extern JsonObject WylesLibs::Json::parse(std::string * json) {
             parseKey(obj, json, ++i);
         } else if (c == '[') {
             // [1, 2, 3, 4] is valid JSON lol...
-            parseArray(&(root.values), buf, ++i);
+            parseArray(&(root.values), json, ++i);
         }
         c = json->at(++i);
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);

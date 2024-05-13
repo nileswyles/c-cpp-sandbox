@@ -5,9 +5,6 @@
 
 namespace WylesLibs::Json {
 
-typedef void(ProcessObjectFunc)(std::string key, JsonValue * value);
-typedef void(ProcessValueFunc)(JsonValue * value);
-
 typedef enum JsonType {
     NULL_TYPE = 0,
     BOOLEAN,
@@ -23,6 +20,9 @@ class JsonValue {
         JsonValue(): type(NULL_TYPE) {}
         JsonValue(JsonType derived_type): type(derived_type) {}
 };
+
+typedef void(ProcessObjectFunc)(std::string key, JsonValue * value);
+typedef void(ProcessValueFunc)(JsonValue * value);
 
 class JsonBoolean: public JsonValue {
     private:
@@ -80,7 +80,11 @@ class JsonObject: public JsonValue, public std::vector<std::string> {
         JsonObject(): JsonValue(OBJECT), std::vector<std::string>() {}
 
         void addKey(std::string key) {
-            this->keys->push_back(e);
+            this->push_back(e);
+        }
+
+        void addValue(JsonValue * value) {
+            this->values.push_back(value);
         }
 
         static void processValue(std::string key, JsonValue * value, ProcessObjectFunc processor) {

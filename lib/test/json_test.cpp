@@ -1,4 +1,5 @@
 #include "json.h"
+#include <iostream>
 
 using namespace WylesLibs::Json;
 
@@ -9,17 +10,17 @@ void printProcessFunc(std::string key, WylesLibs::Json::JsonValue * value) {
 
     if (type == WylesLibs::Json::BOOLEAN) {
         WylesLibs::Json::JsonBoolean * booleanValue = (JsonBoolean *)value;
-        loggerPrintf(LOGGER_TEST, "boolean value: %u\n", booleanValue->boolean);
+        loggerPrintf(LOGGER_TEST, "boolean value: %u\n", booleanValue->getValue());
     } else if (type == WylesLibs::Json::STRING) {
         // when created, sizeof(JsonString) on stack? or sizeof(JsonValue)? lol 
         loggerPrintf(LOGGER_TEST, "lol?\n");
         WylesLibs::Json::JsonString * stringValue = (JsonString *)value;
-        loggerPrintf(LOGGER_TEST, "string value: %s\n", stringValue->s.c_str());
+        loggerPrintf(LOGGER_TEST, "string value: %s\n", stringValue->getValue().c_str());
     } else if (type == WylesLibs::Json::NUMBER) {
         // when created, sizeof(JsonString) on stack? or sizeof(JsonValue)? lol 
         loggerPrintf(LOGGER_TEST, "lol....\n");
         WylesLibs::Json::JsonNumber * numberValue = (JsonNumber *)value;
-        loggerPrintf(LOGGER_TEST, "number value: %f\n", numberValue->number);
+        loggerPrintf(LOGGER_TEST, "number value: %f\n", numberValue->getValue());
 
         if (key == "test2") {
             // blah blah blah, add populate class membh

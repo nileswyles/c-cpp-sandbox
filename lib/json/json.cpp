@@ -197,6 +197,7 @@ static void parseImmediate(JsonArray * obj, std::string * buf, size_t& i, std::s
     loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu\n", comp->c_str(), i);
 }
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
     char c = buf->at(i);
     while (c != ',') { 

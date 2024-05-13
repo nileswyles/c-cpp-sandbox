@@ -38,25 +38,52 @@ class User {
                         attributes = ((WylesLibs::Json::JsonString *)value)->getValue();
                         values_set++;
                     }
+                } else if (key == "dec") {
+                    if (type == WylesLibs::Json::NUMBER) {
+                        dec = ((WylesLibs::Json::JsonNumber *)value)->getValue();
+                        values_set++;
+                    }
                 }
             }
-            if (values_set != 2) {
+            if (values_set != 3) {
                 throw std::runtime_error("Failed to create User from json object.");
             }
+        }
+
+        std::string toJsonString() {
+            char dec_arr[16];
+            sprintf(dec_arr, "%f", this->dec);
+            std::string dec_string(dec_arr);
+
+            std::string s("{ \n");
+            s += "\"name\": \"";
+            s += this->name;
+            s += "\", \n";
+
+            s += "\"attributes\": \"";
+            s += this->attributes;
+            s += "\", \n";
+
+            s += "\"dec\": \"";
+            s += dec_string;
+            s += "\", \n";
+            s += "}\n";
+
+            return s;
         }
 };
 
 void testJson(void * tester) {
     Tester * t = (Tester *)tester;
     // lol
-    std::string s("{ ");
-    s += "\"name\":\"username\", ";
-    s += "\"attributes\":\"attributes for user\", ";
-    s += "\"arr\": [false, true, false, false], ";
-    s += "\"dec\": 272727.1111, ";
-    s += "\"nested_obj\": { \"nested_name\": \"nested_value\" }, ";
-    s += "\"null_value\": null ";
-    s += "}";
+    std::string s("{ \n");
+    s += "\"name\":\"username\", \n";
+    s += "\"attributes\":\"attributes for user\", \n";
+    s += "\"arr\": [false, true, false, false], \n";
+    s += "\"dec\": 272727.1111, \n";
+    s += "\"nested_obj\": { \"nested_name\": \"nested_value\" }, \n";
+    s += "\"null_value\": null \n";
+    s += "}\n";
 
     try {
         // TODO:
@@ -67,7 +94,7 @@ void testJson(void * tester) {
         loggerPrintf(LOGGER_TEST, "JSON: \n");
         loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
         loggerPrintf(LOGGER_TEST, "User Class: \n");
-        loggerPrintf(LOGGER_TEST, "  %s, %s\n", user.name.c_str(), user.attributes.c_str());
+        loggerPrintf(LOGGER_TEST, "%s\n", user.toJsonString().c_str());
 
         delete obj;
     } catch (const std::exception& e) {

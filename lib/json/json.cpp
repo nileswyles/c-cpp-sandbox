@@ -221,7 +221,6 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
         } else if (c == '}') {
             break; // don't increment pointer and break;
         }
-        loggerPrintf(LOGGER_DEBUG, "WHERE ARE YOU STUCK? lmao\n");
         c = buf->at(++i);
     }
     i--;

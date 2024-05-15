@@ -103,7 +103,7 @@ class JsonObject: public JsonValue {
 };
 
 extern JsonValue * parse(std::string json);
-extern std::string prettyJson(std::string json);
+extern std::string pretty(std::string json);
 
 }
 #endif

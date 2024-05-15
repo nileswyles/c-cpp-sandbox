@@ -36,7 +36,7 @@ class Nested: public Json::JsonBase {
             s += "\"";
             s += "}";
 
-            return Json::prettyJson(s);
+            return Json::pretty(s);
         }
 };
 
@@ -107,7 +107,7 @@ class User: public Json::JsonBase {
 
             // TODO:
             //  default to this?
-            return Json::prettyJson(s);
+            return Json::pretty(s);
         }
 };
 
@@ -119,7 +119,7 @@ void testJsonArray(void * tester) {
         Json::JsonValue * obj = Json::parse(s);
         if (obj->type == Json::ARRAY) {
             loggerPrintf(LOGGER_TEST, "JSON: \n");
-            loggerPrintf(LOGGER_TEST, "  %s\n", Json::prettyJson(s).c_str());
+            loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
             Json::JsonArray * values = (Json::JsonArray *)obj;
             for (size_t i = 0; i < values->size(); i++) {
                 loggerPrintf(LOGGER_TEST, "User Class: \n");
@@ -148,7 +148,7 @@ void testJsonObjectWithArray(void * tester) {
         if (obj->type == Json::OBJECT) {
             User user((Json::JsonObject *)obj);
             loggerPrintf(LOGGER_TEST, "JSON: \n");
-            loggerPrintf(LOGGER_TEST, "  %s\n", Json::prettyJson(s).c_str());
+            loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
             loggerPrintf(LOGGER_TEST, "User Class: \n");
             loggerPrintf(LOGGER_TEST, "%s\n", user.toJsonString().c_str());
         } else {
@@ -181,7 +181,7 @@ void testJson(void * tester) {
         if (obj->type == Json::OBJECT) {
             User user((Json::JsonObject *)obj);
             loggerPrintf(LOGGER_TEST, "JSON: \n");
-            loggerPrintf(LOGGER_TEST, "  %s\n", Json::prettyJson(s).c_str());
+            loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
             loggerPrintf(LOGGER_TEST, "User Class: \n");
             loggerPrintf(LOGGER_TEST, "%s\n", user.toJsonString().c_str());
         } else {

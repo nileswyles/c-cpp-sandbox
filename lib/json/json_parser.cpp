@@ -331,7 +331,7 @@ extern JsonValue * WylesLibs::Json::parse(std::string s) {
     return created_objs.at(0);
 }
 
-extern std::string WylesLibs::Json::prettyJson(std::string json) {
+extern std::string WylesLibs::Json::pretty(std::string json) {
     std::string pretty;
     size_t depth = 0;
 

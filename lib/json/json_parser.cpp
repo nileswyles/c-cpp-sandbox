@@ -338,14 +338,14 @@ extern std::string WylesLibs::Json::pretty(std::string json) {
     // LOL... allow spaces in between quotes!
     bool allow_spaces = false;
     for (auto c: json) {
-        if (c == '{') {
+        if (c == '{' || c == '[') {
             pretty += c;
             pretty += '\n';
             depth++;
             for (size_t i = 0; i < depth; i++) {
                 pretty += '\t';
             }
-        } else if (c == '}') {
+        } else if (c == '}' || c == ']') {
             pretty += '\n';
             depth--;
             for (size_t i = 0; i < depth; i++) {

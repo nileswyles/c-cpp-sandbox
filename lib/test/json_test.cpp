@@ -49,7 +49,7 @@ class User: public Json::JsonBase {
         User(Json::JsonObject * obj) {
             // TODO: nullptr
             size_t validation_count = 0;
-            loggerPrintf(LOGGER_DEBUG, "Num Keys: %u\n", obj->keys.size());
+            loggerPrintf(LOGGER_DEBUG, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 loggerPrintf(LOGGER_DEBUG, "Key: %s\n", key.c_str());
@@ -166,7 +166,7 @@ void testJson(void * tester) {
     std::string s("{ \n");
     s += "\"name\":\"username\", \n";
     s += "\"attributes\":\"attributes for user\", \n";
-    // s += "\"arr\": [false, true, false, false], \n";
+    s += "\"arr\": [false, true, false, false], \n";
     s += "\"dec\": 272727.1111, \n";
     s += "\"nested_obj\": { \"nested_name\": \"nested_value\" }, \n";
     s += "\"null_value\": null \n";

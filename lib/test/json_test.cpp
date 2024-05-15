@@ -29,13 +29,12 @@ class Nested: public Json::JsonBase {
         }
 
         std::string toJsonString() {
-            std::string s("{ \n");
+            std::string s("{");
             s += "\"nested_name\": \"";
             s += this->nested_name;
-            s += "\", \n";
-            s += "}\n";
+            s += "}";
 
-            return s;
+            return Json::prettyJson(s);
         }
 };
 
@@ -81,25 +80,25 @@ class User: public Json::JsonBase {
             sprintf(dec_arr, "%f", this->dec);
             std::string dec_string(dec_arr);
 
-            std::string s("{ \n");
+            std::string s("{");
             s += "\"name\": \"";
             s += this->name;
-            s += "\", \n";
+            s += "\",";
 
             s += "\"attributes\": \"";
             s += this->attributes;
-            s += "\", \n";
+            s += "\",";
 
             s += "\"dec\": \"";
             s += dec_string;
-            s += "\", \n";
-            s += "}\n";
+            s += "\",";
 
             s += "\"nested\": \"";
             s += nested.toJsonString();
-            s += "\", \n";
-            s += "}\n";
-            return s;
+            s += "\",";
+            s += "}";
+
+            return Json::prettyJson(s);
         }
 };
 

@@ -18,17 +18,35 @@ typedef enum JsonType {
     OBJECT,
 } JsonType;
 
+std::string prettyJson(std::string json) {
+    std::string pretty;
+    size_t depth = 0;
+    for (auto c: json) {
+        if (c == '{') { // new json obj...
+            depth++;
+        } else if (c == '}') {
+            depth--;
+        }
+        for (size_t i = 0; i < depth; i++) {
+            pretty += ' ';
+        }
+        pretty += c;
+        if (c == ',') {
+            pretty += '\n';
+        }
+    }
+    return pretty;
+}
+
 class JsonBase {
     public:
-        // JsonClass() {};
-        // JsonClass(JsonObject * obj) {};
-        // virtual ~JsonClass() {};
+        // JsonBase(size_t depth) {};
+        // JsonBase(JsonObject * obj) {};
+        virtual ~JsonBase() {};
 
         // virtual JsonClass() {};
         // virtual JsonClass(JsonObject * obj) {};
-
-        // we want a compiler error, if this function isn't implemented in derived classes..
-        virtual std::string toJsonString();
+        virtual std::string toJsonString(size_t depth);
 };
 
 class JsonValue {

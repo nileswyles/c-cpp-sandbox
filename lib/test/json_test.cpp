@@ -15,8 +15,6 @@ class Nested: public Json::JsonBase {
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 Json::JsonValue * value = obj->values.at(i);
-                Json::JsonType type = value->type;
-                loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
                 if(key == "nested_name") {
                     Json::setVariableFromJsonValue(value, nested_name, validation_count);
                 }
@@ -51,8 +49,10 @@ class User: public Json::JsonBase {
         User(Json::JsonObject * obj) {
             // TODO: nullptr
             size_t validation_count = 0;
+            loggerPrintf(LOGGER_DEBUG, "Num Keys: %u\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
+                loggerPrintf(LOGGER_DEBUG, "Key: %s\n", key.c_str());
                 Json::JsonValue * value = obj->values.at(i);
                 if(key == "name") {
                     Json::setVariableFromJsonValue(value, name, validation_count);
@@ -62,15 +62,15 @@ class User: public Json::JsonBase {
                     Json::setVariableFromJsonValue(value, dec, validation_count);
                 } else if (key == "arr") {
                     Json::setArrayVariablesFromJsonValue(value, arr, validation_count);
-                } else if (key == "nested") {
+                } else if (key == "nested_obj") { // lol
+                    loggerPrintf(LOGGER_DEBUG, "Nested type.\n");
                     nested = Json::setVariableFromJsonValue<Nested>(value, validation_count);
                     // TODO: object constructors not called yet?
                     //  reference of not yet consructed items? 
                 }
             }
-            size_t expected_values = 3;
             loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
-            if (validation_count != expected_values) {
+            if (validation_count != 4) {
                 throw std::runtime_error("Failed to create User from json object.");
             }
         }

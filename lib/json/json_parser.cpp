@@ -285,7 +285,7 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
 extern JsonValue * WylesLibs::Json::parse(std::string s) {
     std::string * json = &s;
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
-    loggerPrintf(LOGGER_DEBUG, "  %s\n", json->c_str());
+    loggerPrintf(LOGGER_DEBUG, "  %s\n", pretty(s).c_str());
 
     std::vector<JsonValue *> created_objs;
     JsonObject * obj = nullptr;

@@ -18,7 +18,7 @@ class Nested: public Json::JsonBase {
                 Json::JsonType type = value->type;
                 loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
                 if(key == "nested_name") {
-                    Json::setVariableFromJsonValue(type, value, nested_name, validation_count);
+                    Json::setVariableFromJsonValue(value, nested_name, validation_count);
                 }
             }
             size_t expected_values = 1;
@@ -54,18 +54,16 @@ class User: public Json::JsonBase {
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 Json::JsonValue * value = obj->values.at(i);
-                Json::JsonType type = value->type;
-                loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
                 if(key == "name") {
-                    Json::setVariableFromJsonValue(type, value, name, validation_count);
+                    Json::setVariableFromJsonValue(value, name, validation_count);
                 } else if (key == "attributes") {
-                    Json::setVariableFromJsonValue(type, value, attributes, validation_count);
+                    Json::setVariableFromJsonValue(value, attributes, validation_count);
                 } else if (key == "dec") {
-                    Json::setVariableFromJsonValue(type, value, dec, validation_count);
+                    Json::setVariableFromJsonValue(value, dec, validation_count);
                 } else if (key == "arr") {
-                    Json::setArrayVariablesFromJsonValue(type, value, arr, validation_count);
+                    Json::setArrayVariablesFromJsonValue(value, arr, validation_count);
                 } else if (key == "nested") {
-                    nested = Json::setVariableFromJsonValue<Nested>(type, value, validation_count);
+                    nested = Json::setVariableFromJsonValue<Nested>(value, validation_count);
                     // TODO: object constructors not called yet?
                     //  reference of not yet consructed items? 
                 }

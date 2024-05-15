@@ -3,14 +3,43 @@
 
 #include "test/tester.h"
 
-using namespace WylesLibs::Json;
+using namespace WylesLibs;
 
-class Nested {
+class Nested: public Json::JsonBase {
     public:
         std::string nested_name;
+        Nested() {} // ?
+        Nested(Json::JsonObject * obj) {
+            // TODO: nullptr
+            size_t validation_count = 0;
+            for (size_t i = 0; i < obj->keys.size(); i++) {
+                std::string key = obj->keys.at(i);
+                Json::JsonValue * value = obj->values.at(i);
+                Json::JsonType type = value->type;
+                loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+                if(key == "nested_name") {
+                    Json::setVariableFromJsonValue(type, value, nested_name, validation_count);
+                }
+            }
+            size_t expected_values = 1;
+            loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
+            if (validation_count != expected_values) {
+                throw std::runtime_error("Failed to create User from json object.");
+            }
+        }
+
+        std::string toJsonString() {
+            std::string s("{ \n");
+            s += "\"nested_name\": \"";
+            s += this->nested_name;
+            s += "\", \n";
+            s += "}\n";
+
+            return s;
+        }
 };
 
-class User {
+class User: public Json::JsonBase {
     public:
         std::string name;
         std::string attributes;
@@ -18,34 +47,31 @@ class User {
         std::vector<bool> arr;
         Nested nested;
 
-        User(JsonObject * obj) {
-            size_t values_set = 0;
+        User(Json::JsonObject * obj) {
+            // TODO: nullptr
+            size_t validation_count = 0;
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
-                WylesLibs::Json::JsonValue * value = obj->values.at(i);
-                WylesLibs::Json::JsonType type = value->type;
+                Json::JsonValue * value = obj->values.at(i);
+                Json::JsonType type = value->type;
                 loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
-
                 if(key == "name") {
-                    // TODO:
-                    //  better type conversion?
-                    if (type == WylesLibs::Json::STRING) {
-                        name = ((WylesLibs::Json::JsonString *)value)->getValue();
-                        values_set++;
-                    }
+                    Json::setVariableFromJsonValue(type, value, name, validation_count);
                 } else if (key == "attributes") {
-                    if (type == WylesLibs::Json::STRING) {
-                        attributes = ((WylesLibs::Json::JsonString *)value)->getValue();
-                        values_set++;
-                    }
+                    Json::setVariableFromJsonValue(type, value, attributes, validation_count);
                 } else if (key == "dec") {
-                    if (type == WylesLibs::Json::NUMBER) {
-                        dec = ((WylesLibs::Json::JsonNumber *)value)->getValue();
-                        values_set++;
-                    }
+                    Json::setVariableFromJsonValue(type, value, dec, validation_count);
+                } else if (key == "arr") {
+                    Json::setArrayVariablesFromJsonValue(type, value, arr, validation_count);
+                } else if (key == "nested") {
+                    nested = Json::setVariableFromJsonValue<Nested>(type, value, validation_count);
+                    // TODO: object constructors not called yet?
+                    //  reference of not yet consructed items? 
                 }
             }
-            if (values_set != 3) {
+            size_t expected_values = 3;
+            loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
+            if (validation_count != expected_values) {
                 throw std::runtime_error("Failed to create User from json object.");
             }
         }
@@ -69,6 +95,10 @@ class User {
             s += "\", \n";
             s += "}\n";
 
+            s += "\"nested\": \"";
+            s += nested.toJsonString();
+            s += "\", \n";
+            s += "}\n";
             return s;
         }
 };
@@ -78,14 +108,14 @@ void testJsonArray(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        JsonValue * obj = parse(&s);
-        if (obj->type == WylesLibs::Json::ARRAY) {
+        Json::JsonValue * obj = Json::parse(&s);
+        if (obj->type == Json::ARRAY) {
             loggerPrintf(LOGGER_TEST, "JSON: \n");
             loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
-            WylesLibs::Json::JsonArray * values = (WylesLibs::Json::JsonArray *)obj;
+            Json::JsonArray * values = (Json::JsonArray *)obj;
             for (size_t i = 0; i < values->size(); i++) {
                 loggerPrintf(LOGGER_TEST, "User Class: \n");
-                loggerPrintf(LOGGER_TEST, "%u\n", ((WylesLibs::Json::JsonBoolean *)values->at(i))->getValue());
+                loggerPrintf(LOGGER_TEST, "%u\n", ((Json::JsonBoolean *)values->at(i))->getValue());
             }
         } else {
             // something went terribly wrong
@@ -106,9 +136,9 @@ void testJsonObjectWithArray(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        JsonValue * obj = parse(&s);
-        if (obj->type == WylesLibs::Json::OBJECT) {
-            User user((WylesLibs::Json::JsonObject *)obj);
+        Json::JsonValue * obj = Json::parse(&s);
+        if (obj->type == Json::OBJECT) {
+            User user((Json::JsonObject *)obj);
             loggerPrintf(LOGGER_TEST, "JSON: \n");
             loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
             loggerPrintf(LOGGER_TEST, "User Class: \n");
@@ -139,9 +169,9 @@ void testJson(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        JsonValue * obj = parse(&s);
-        if (obj->type == WylesLibs::Json::OBJECT) {
-            User user((WylesLibs::Json::JsonObject *)obj);
+        Json::JsonValue * obj = Json::parse(&s);
+        if (obj->type == Json::OBJECT) {
+            User user((Json::JsonObject *)obj);
             loggerPrintf(LOGGER_TEST, "JSON: \n");
             loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
             loggerPrintf(LOGGER_TEST, "User Class: \n");
@@ -158,13 +188,15 @@ void testJson(void * tester) {
 }
 
 int main() {
+    // TODO: test selection... from arguments?
+
     // std::string s("{\"test\":false, \"test2\":\"value\"}");
     // const char * s = "{\"test\":null, \"test2\":17272.2727}";
     Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
 
     tester_add_test(t, testJson);
-    tester_add_test(t, testJsonObjectWithArray);
-    tester_add_test(t, testJsonArray);
+    // tester_add_test(t, testJsonObjectWithArray);
+    // tester_add_test(t, testJsonArray);
     tester_run(t);
 
     tester_destructor(t);

@@ -59,6 +59,8 @@ static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
     double exponential_multiplier = 10;
     double value = 0;
 
+    // TODO: impose limit...
+
     char c = buf->at(i);
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string comp(" ,}\r\n\t");
@@ -278,6 +280,8 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
 //  Okay, I was convinced to use the string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
 //      also, sizeof(pointers) < sizeof(std::string)
 //      and .at() bounds checks (exceptions), [] doesn't
+
+// TODO: variables whos storage is created by this function can't be returned as reference right?
 extern JsonValue * WylesLibs::Json::parse(std::string * json) {
     if (json == nullptr) throw std::runtime_error("Invalid JSON string.");
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");

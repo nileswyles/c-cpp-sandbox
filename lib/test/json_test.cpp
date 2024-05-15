@@ -19,9 +19,8 @@ class Nested: public Json::JsonBase {
                     Json::setVariableFromJsonValue(value, nested_name, validation_count);
                 }
             }
-            size_t expected_values = 1;
             loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
-            if (validation_count != expected_values) {
+            if (validation_count != obj->keys.size()) {
                 throw std::runtime_error("Failed to create User from json object.");
             }
         }
@@ -29,9 +28,7 @@ class Nested: public Json::JsonBase {
         std::string toJsonString() {
             std::string s("{");
             s += "\"nested_name\": ";
-            s += "\"";
-            s += this->nested_name;
-            s += "\"";
+            s += Json::JsonString(this->nested_name).toJsonString();
             s += "}";
 
             return Json::pretty(s);
@@ -70,33 +67,30 @@ class User: public Json::JsonBase {
                 }
             }
             loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
-            if (validation_count != 4) {
+            if (validation_count != obj->keys.size()) {
                 throw std::runtime_error("Failed to create User from json object.");
             }
         }
 
         std::string toJsonString() {
-            char dec_arr[16];
-            sprintf(dec_arr, "%f", this->dec);
-            std::string dec_string(dec_arr);
-
             std::string s("{");
             s += "\"name\": ";
-            s += "\"";
-            s += this->name;
-            s += "\"";
+            s += Json::JsonString(this->name).toJsonString();
             s += ",";
 
             s += "\"attributes\": ";
-            s += "\"";
-            s += this->attributes;
-            s += "\"";
+            s += Json::JsonString(this->attributes).toJsonString();
             s += ",";
 
             s += "\"dec\": ";
-            s += "\"";
-            s += dec_string;
-            s += "\"";
+            s += Json::JsonNumber(this->dec).toJsonString();
+            s += ",";
+
+            // Json::JsonArray arr = Json::JsonArray();
+            // arr.push_back(Json::JsonBoolen());
+            s += "\"arr\": [";
+            // s += .toJsonString();
+            s += "]";
             s += ",";
 
             s += "\"nested\": ";
@@ -201,8 +195,8 @@ int main() {
     Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
 
     tester_add_test(t, testJson);
-    // tester_add_test(t, testJsonObjectWithArray);
-    // tester_add_test(t, testJsonArray);
+    tester_add_test(t, testJsonObjectWithArray);
+    tester_add_test(t, testJsonArray);
     tester_run(t);
 
     tester_destructor(t);

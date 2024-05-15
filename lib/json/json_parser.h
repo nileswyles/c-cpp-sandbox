@@ -27,12 +27,13 @@ class JsonBase {
         virtual std::string toJsonString() = 0;
 };
 
-class JsonValue {
+class JsonValue: public JsonBase {
     public:
         JsonType type;
         JsonValue(): type(NULL_TYPE) {}
         JsonValue(JsonType derived_type): type(derived_type) {}
         virtual ~JsonValue() {}
+        virtual std::string toJsonString() = 0;
 };
 
 typedef void(ProcessObjectFunc)(std::string key, JsonValue * value);
@@ -47,6 +48,14 @@ class JsonBoolean: public JsonValue {
         bool getValue() {
             return this->boolean;
         }
+
+        std::string toJsonString() {
+            if (boolean) {
+                return std::string("true");
+            } else {
+                return std::string("false");
+            }
+        }
 };
 
 class JsonNumber: public JsonValue {
@@ -58,6 +67,13 @@ class JsonNumber: public JsonValue {
         double getValue() {
             return this->number;
         }
+
+        std::string toJsonString() {
+            // TODO: when figure out limits (precision), adjust this...
+            char number_arr[16];
+            sprintf(number_arr, "%f", this->number);
+            return std::string(number_arr);
+        }
 };
 
 class JsonString: public JsonValue {
@@ -68,6 +84,14 @@ class JsonString: public JsonValue {
         
         std::string getValue() {
             return this->s;
+        }
+
+        std::string toJsonString() {
+            std::string ret("\"");
+            ret += this->getValue();
+            ret += "\"";
+
+            return ret;
         }
 };
 
@@ -88,6 +112,8 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
             this->push_back(value);
             loggerPrintf(LOGGER_DEBUG, "Added json value object! @ %p\n", value);
         }
+
+        virtual std::string toJsonString() = 0;
 };
 
 class JsonObject: public JsonValue {
@@ -100,6 +126,8 @@ class JsonObject: public JsonValue {
         void addKey(std::string key) {
             this->keys.push_back(key);
         }
+
+        virtual std::string toJsonString() = 0;
 };
 
 extern JsonValue * parse(std::string json);

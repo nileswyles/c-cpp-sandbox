@@ -200,13 +200,13 @@ static void parseImmediate(JsonArray * obj, std::string * buf, size_t& i, std::s
     }
     i += consumed - 1; // point at last index of token
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu\n", comp->c_str(), i);
+    loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu, %c\n", comp->c_str(), i, buf->at(i));
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
     char c = buf->at(i);
-    while (c != ',') { 
+    while (c != ',' && c != ']') { 
         if (c == '"') {
             parseString(obj, buf, i);
         } else if (isDigit(c) || c == '+' || c == '-') {
@@ -222,9 +222,11 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
             JsonValue * boolean = (JsonValue *) new JsonBoolean(false);
             parseImmediate(obj, buf, i, &comp, boolean);
         } else if (c == 'n') {
-            std::string comp("null");
-            JsonValue * nullValue = new JsonValue();
-            parseImmediate(obj, buf, i, &comp, nullValue);
+            i += 3; // just consume null string... point to last character...
+            // std::string comp("null");
+            // JsonValue * nullValue = new JsonValue();
+            // parseImmediate(obj, buf, i, &comp, nullValue);
+
             // hmm... this works but think about whether we want to just ignore malformed...
             //  when I think about validating input, ensureing full json, etc.
         } else if (c == '{' || c == '}') { 
@@ -285,7 +287,7 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
 extern JsonValue * WylesLibs::Json::parse(std::string s) {
     std::string * json = &s;
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
-    loggerPrintf(LOGGER_DEBUG, "  %s\n", pretty(s).c_str());
+    loggerPrintf(LOGGER_DEBUG, "%s\n", pretty(s).c_str());
 
     std::vector<JsonValue *> created_objs;
     JsonObject * obj = nullptr;

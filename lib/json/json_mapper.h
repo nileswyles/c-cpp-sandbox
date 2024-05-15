@@ -69,7 +69,9 @@ static void setArrayVariablesFromJsonValue(JsonValue * value, std::vector<bool>&
             // } else {
             if (array_type == BOOLEAN) {
                 // T& = arr[i]
-                bool element = arr[i]; // hmmm.....
+                // because then templating issues? LMAO... reference!
+                arr.push_back(false);
+                bool element = arr[i];
                 setVariableFromJsonValue(array_value, element, array_validation_count);
             }
         }
@@ -91,6 +93,7 @@ static void setArrayVariablesFromJsonValue(JsonValue * value, std::vector<double
             JsonValue * array_value = array->at(i);
             JsonType array_type = array_value->type;
             if (array_type == NUMBER) {
+                arr.push_back(0);
                 // T& = arr[i]
                 double element = arr[i]; // hmmm.....
                 setVariableFromJsonValue(array_value, element, array_validation_count);
@@ -114,6 +117,7 @@ static void setArrayVariablesFromJsonValue(JsonValue * value, std::vector<std::s
             JsonValue * array_value = array->at(i);
             JsonType array_type = array_value->type;
             if (array_type == STRING) {
+                arr.push_back("");
                 // T& = arr[i] - 
                 std::string element = arr[i]; // hmmm.....
                 setVariableFromJsonValue(array_value, element, array_validation_count);
@@ -134,11 +138,14 @@ static void setArrayVariablesFromJsonValue(JsonValue * value, std::vector<T>& ar
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;
+        loggerPrintf(LOGGER_DEBUG, "cast?\n");
         JsonArray * array = (JsonArray *)value;
+        loggerPrintf(LOGGER_DEBUG, "Before loop\n");
         for (int i = 0; i < array->size(); i++) {
             JsonValue * array_value = array->at(i);
             JsonType array_type = array_value->type;
             if (array_type == OBJECT) {
+                loggerPrintf(LOGGER_DEBUG, "Adding object to array...\n");
                 arr->push_back(setVariableFromJsonValue<T>(array_value, array_validation_count));
             }
         }

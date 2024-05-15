@@ -355,15 +355,12 @@ extern std::string WylesLibs::Json::prettyJson(std::string json) {
         } else if (c == ',') {
             pretty += c;
             pretty += '\n';
-
-            // 
             for (size_t i = 0; i < depth; i++) {
                 pretty += '\t';
             }
         } else if (c == ':') {
             pretty += c;
             pretty += ' ';
-        
         } else if (c == '\"') {
             allow_spaces = !allow_spaces;
             pretty += c;

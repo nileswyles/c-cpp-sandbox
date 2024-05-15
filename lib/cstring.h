@@ -5,6 +5,13 @@
 #include <string>
 #include <stdbool.h>
 
+static bool isAlpha(char c) {
+    if ((c >= 0x41 && c <= 0x5A) || (c >=0x61 && c <= 0x7A)) {
+        return true;
+    }
+    return false;
+}
+
 static bool isDigit(char c) {
     if (c >= 0x30 && c <= 0x39) {
         return true;

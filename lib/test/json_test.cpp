@@ -30,8 +30,10 @@ class Nested: public Json::JsonBase {
 
         std::string toJsonString() {
             std::string s("{");
-            s += "\"nested_name\": \"";
+            s += "\"nested_name\": ";
+            s += "\"";
             s += this->nested_name;
+            s += "\"";
             s += "}";
 
             return Json::prettyJson(s);
@@ -81,23 +83,30 @@ class User: public Json::JsonBase {
             std::string dec_string(dec_arr);
 
             std::string s("{");
-            s += "\"name\": \"";
+            s += "\"name\": ";
+            s += "\"";
             s += this->name;
-            s += "\",";
+            s += "\"";
+            s += ",";
 
-            s += "\"attributes\": \"";
+            s += "\"attributes\": ";
+            s += "\"";
             s += this->attributes;
-            s += "\",";
+            s += "\"";
+            s += ",";
 
-            s += "\"dec\": \"";
+            s += "\"dec\": ";
+            s += "\"";
             s += dec_string;
-            s += "\",";
+            s += "\"";
+            s += ",";
 
-            s += "\"nested\": \"";
+            s += "\"nested\": ";
             s += nested.toJsonString();
-            s += "\",";
             s += "}";
 
+            // TODO:
+            //  default to this?
             return Json::prettyJson(s);
         }
 };
@@ -107,10 +116,10 @@ void testJsonArray(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        Json::JsonValue * obj = Json::parse(&s);
+        Json::JsonValue * obj = Json::parse(s);
         if (obj->type == Json::ARRAY) {
             loggerPrintf(LOGGER_TEST, "JSON: \n");
-            loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
+            loggerPrintf(LOGGER_TEST, "  %s\n", Json::prettyJson(s).c_str());
             Json::JsonArray * values = (Json::JsonArray *)obj;
             for (size_t i = 0; i < values->size(); i++) {
                 loggerPrintf(LOGGER_TEST, "User Class: \n");
@@ -135,11 +144,11 @@ void testJsonObjectWithArray(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        Json::JsonValue * obj = Json::parse(&s);
+        Json::JsonValue * obj = Json::parse(s);
         if (obj->type == Json::OBJECT) {
             User user((Json::JsonObject *)obj);
             loggerPrintf(LOGGER_TEST, "JSON: \n");
-            loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
+            loggerPrintf(LOGGER_TEST, "  %s\n", Json::prettyJson(s).c_str());
             loggerPrintf(LOGGER_TEST, "User Class: \n");
             loggerPrintf(LOGGER_TEST, "%s\n", user.toJsonString().c_str());
         } else {
@@ -168,11 +177,11 @@ void testJson(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        Json::JsonValue * obj = Json::parse(&s);
+        Json::JsonValue * obj = Json::parse(s);
         if (obj->type == Json::OBJECT) {
             User user((Json::JsonObject *)obj);
             loggerPrintf(LOGGER_TEST, "JSON: \n");
-            loggerPrintf(LOGGER_TEST, "  %s\n", s.c_str());
+            loggerPrintf(LOGGER_TEST, "  %s\n", Json::prettyJson(s).c_str());
             loggerPrintf(LOGGER_TEST, "User Class: \n");
             loggerPrintf(LOGGER_TEST, "%s\n", user.toJsonString().c_str());
         } else {

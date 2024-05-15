@@ -282,8 +282,8 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
 //      and .at() bounds checks (exceptions), [] doesn't
 
 // TODO: variables whos storage is created by this function can't be returned as reference right?
-extern JsonValue * WylesLibs::Json::parse(std::string * json) {
-    if (json == nullptr) throw std::runtime_error("Invalid JSON string.");
+extern JsonValue * WylesLibs::Json::parse(std::string s) {
+    std::string * json = &s;
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "  %s\n", json->c_str());
 
@@ -330,6 +330,50 @@ extern JsonValue * WylesLibs::Json::parse(std::string * json) {
 
     return created_objs.at(0);
 }
+
+extern std::string WylesLibs::Json::prettyJson(std::string json) {
+    std::string pretty;
+    size_t depth = 0;
+
+    // LOL... allow spaces in between quotes!
+    bool allow_spaces = false;
+    for (auto c: json) {
+        if (c == '{') {
+            pretty += c;
+            pretty += '\n';
+            depth++;
+            for (size_t i = 0; i < depth; i++) {
+                pretty += '\t';
+            }
+        } else if (c == '}') {
+            pretty += '\n';
+            depth--;
+            for (size_t i = 0; i < depth; i++) {
+                pretty += '\t';
+            }
+            pretty += c;
+        } else if (c == ',') {
+            pretty += c;
+            pretty += '\n';
+
+            // 
+            for (size_t i = 0; i < depth; i++) {
+                pretty += '\t';
+            }
+        } else if (c == ':') {
+            pretty += c;
+            pretty += ' ';
+        
+        } else if (c == '\"') {
+            allow_spaces = !allow_spaces;
+            pretty += c;
+        } else if (isAlpha(c) || isDigit(c) || c == '.' || (allow_spaces && c == ' ')) {
+            pretty += c;
+        }
+    }
+    return pretty;
+}
+
 
 // TODO: Once finished, think about how this can be implemented differently? ("take a step back", birds eye view, for better planning, better cache?)
 

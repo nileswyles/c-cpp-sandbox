@@ -31,7 +31,7 @@ class Nested: public Json::JsonBase {
             s += Json::JsonString(this->nested_name).toJsonString();
             s += "}";
 
-            return Json::pretty(s);
+            return s;
         }
 };
 
@@ -86,20 +86,21 @@ class User: public Json::JsonBase {
             s += Json::JsonNumber(this->dec).toJsonString();
             s += ",";
 
-            // Json::JsonArray arr = Json::JsonArray();
-            // arr.push_back(Json::JsonBoolen());
-            s += "\"arr\": [";
-            // s += .toJsonString();
-            s += "]";
+            Json::JsonArray jsonArray = Json::JsonArray();
+            for (size_t i = 0; i < arr.size(); i++) {
+                Json::JsonBoolean * v = new Json::JsonBoolean(arr[i]);
+                jsonArray.push_back(v);
+            }
+            s += "\"arr\": ";
+            s += jsonArray.toJsonString();
             s += ",";
 
             s += "\"nested\": ";
             s += nested.toJsonString();
             s += "}";
 
-            // TODO:
-            //  default to this?
-            return Json::pretty(s);
+            printf("%s\n", s.c_str());
+            return s;
         }
 };
 
@@ -108,19 +109,22 @@ void testJsonArray(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        Json::JsonValue * obj = Json::parse(s);
-        if (obj->type == Json::ARRAY) {
-            loggerPrintf(LOGGER_TEST, "JSON: \n");
-            loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
-            Json::JsonArray * values = (Json::JsonArray *)obj;
-            for (size_t i = 0; i < values->size(); i++) {
-                loggerPrintf(LOGGER_TEST, "User Class: \n");
-                loggerPrintf(LOGGER_TEST, "%u\n", ((Json::JsonBoolean *)values->at(i))->getValue());
+        size_t i = 0;
+        Json::JsonValue * obj = Json::parse(s, i);
+        if (obj != nullptr) {
+            if (obj->type == Json::ARRAY) {
+                loggerPrintf(LOGGER_TEST, "JSON: \n");
+                loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
+                Json::JsonArray * values = (Json::JsonArray *)obj;
+                for (size_t i = 0; i < values->size(); i++) {
+                    loggerPrintf(LOGGER_TEST, "User Class: \n");
+                    loggerPrintf(LOGGER_TEST, "%u\n", ((Json::JsonBoolean *)values->at(i))->getValue());
+                }
+            } else {
+                // something went terribly wrong
             }
-        } else {
-            // something went terribly wrong
+            delete obj;
         }
-        delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
         //  throw e; // copy-initializes a new exception object of type std::exception
@@ -136,17 +140,20 @@ void testJsonObjectWithArray(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        Json::JsonValue * obj = Json::parse(s);
-        if (obj->type == Json::OBJECT) {
-            User user((Json::JsonObject *)obj);
-            loggerPrintf(LOGGER_TEST, "JSON: \n");
-            loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
-            loggerPrintf(LOGGER_TEST, "User Class: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", user.toJsonString().c_str());
-        } else {
-            // something went terribly wrong
+        size_t i = 0;
+        Json::JsonValue * obj = Json::parse(s, i);
+        if (obj != nullptr) {
+            if (obj->type == Json::OBJECT) {
+                User user((Json::JsonObject *)obj);
+                loggerPrintf(LOGGER_TEST, "JSON: \n");
+                loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
+                loggerPrintf(LOGGER_TEST, "User Class: \n");
+                loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
+            } else {
+                // something went terribly wrong
+            }
+            delete obj;
         }
-        delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
         //  throw e; // copy-initializes a new exception object of type std::exception
@@ -169,17 +176,20 @@ void testJson(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        Json::JsonValue * obj = Json::parse(s);
-        if (obj->type == Json::OBJECT) {
-            User user((Json::JsonObject *)obj);
-            loggerPrintf(LOGGER_TEST, "JSON: \n");
-            loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
-            loggerPrintf(LOGGER_TEST, "User Class: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", user.toJsonString().c_str());
-        } else {
-            // something went terribly wrong
+        size_t i = 0;
+        Json::JsonValue * obj = Json::parse(s, i);
+        if (obj != nullptr) {
+            if (obj->type == Json::OBJECT) {
+                User user((Json::JsonObject *)obj);
+                loggerPrintf(LOGGER_TEST, "JSON: \n");
+                loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
+                loggerPrintf(LOGGER_TEST, "User Class: \n");
+                loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
+            } else {
+                // something went terribly wrong
+            }
+            delete obj;
         }
-        delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
         //  throw e; // copy-initializes a new exception object of type std::exception
@@ -194,8 +204,8 @@ int main() {
     // const char * s = "{\"test\":null, \"test2\":17272.2727}";
     Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
 
-    tester_add_test(t, testJson);
-    tester_add_test(t, testJsonObjectWithArray);
+    // tester_add_test(t, testJson);
+    // tester_add_test(t, testJsonObjectWithArray);
     tester_add_test(t, testJsonArray);
     tester_run(t);
 

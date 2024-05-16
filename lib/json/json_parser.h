@@ -113,7 +113,28 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
             loggerPrintf(LOGGER_DEBUG, "Added json value object! @ %p\n", value);
         }
 
-        virtual std::string toJsonString() = 0;
+        std::string toJsonString() {
+            std::string s("[");
+            for (size_t i = 0; i < this->size(); i++) {
+                JsonValue * value = this->at(i);
+                JsonType type = value->type;
+                if (type == BOOLEAN) {
+                    s += ((JsonBoolean *)value)->toJsonString();
+                } else if (type == NUMBER) {
+                    s += ((JsonNumber *)value)->toJsonString();
+                } else if (type == STRING) {
+                    s += ((JsonString *)value)->toJsonString();
+                } else if (type == OBJECT) {
+                    // s += ((JsonObject *)value)->toJsonString();
+                }
+                if (i == this->size() - 1) {
+                    s += ']';
+                } else {
+                    s += ", ";
+                } 
+            }
+            return s;
+        }
 };
 
 class JsonObject: public JsonValue {
@@ -127,10 +148,36 @@ class JsonObject: public JsonValue {
             this->keys.push_back(key);
         }
 
-        virtual std::string toJsonString() = 0;
+        std::string toJsonString() {
+            std::string s("{");
+            for (size_t i = 0; i < this->keys.size(); i++) {
+                s += "\"";
+                s += this->keys[i];
+                s += "\": ";
+
+                JsonValue * value = this->values.at(i);
+                JsonType type = value->type;
+                if (type == BOOLEAN) {
+                    s += ((JsonBoolean *)value)->toJsonString();
+                } else if (type == NUMBER) {
+                    s += ((JsonNumber *)value)->toJsonString();
+                } else if (type == STRING) {
+                    s += ((JsonString *)value)->toJsonString();
+                } else if (type == OBJECT) {
+                    s += ((JsonObject *)value)->toJsonString();
+                }
+                if (i == this->keys.size() - 1) {
+                    s += '}';
+                } else {
+                    s += ", ";
+                } 
+            }
+
+            return s;
+        }
 };
 
-extern JsonValue * parse(std::string json);
+extern JsonValue * parse(std::string json, size_t& i);
 extern std::string pretty(std::string json);
 
 }

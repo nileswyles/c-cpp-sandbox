@@ -9,6 +9,12 @@ namespace WylesLibs::Json {
 
 // LOL... cpp*?
 
+// TODO: remember to maybe support mixed type arrays? lol
+//  also, zero values? Didn't really think about that... I think implementation supports it...
+
+//  "There is no requirement that the values in an array be of the same type." - unknown source lol...
+//  I think it might be implied?, so maybe check for that explicitly lol
+
 static void setVariableFromJsonValue(JsonValue * value, bool& obj_value, size_t& validation_count) {
     Json::JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);

@@ -125,7 +125,9 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
                 } else if (type == STRING) {
                     s += ((JsonString *)value)->toJsonString();
                 } else if (type == OBJECT) {
-                    // s += ((JsonObject *)value)->toJsonString();
+                    // s += ((JsonString *)value)->toJsonString();
+                } else if (type == ARRAY) {
+                    s += ((JsonArray *)value)->toJsonString();
                 }
                 if (i != this->size() - 1) {
                     s += ", ";
@@ -164,6 +166,8 @@ class JsonObject: public JsonValue {
                     s += ((JsonString *)value)->toJsonString();
                 } else if (type == OBJECT) {
                     s += ((JsonObject *)value)->toJsonString();
+                } else if (type == ARRAY) {
+                    s += ((JsonArray *)value)->toJsonString();
                 }
                 if (i != this->keys.size() - 1) {
                     s += ", ";

@@ -19,7 +19,7 @@
 #define loggerPrintf(min, fmt, ...) \
     if (LOGGER_LEVEL >= min) {\
         FILE * file = stderr;\
-        if (LOGGER_LEVEL >= LOGGER_DEBUG) {\
+        if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
         fprintf(file, "%s:%d (%s) " fmt, __FILE__, __LINE__, __func__, ##__VA_ARGS__);\
@@ -28,7 +28,7 @@
 #define loggerPrintByteArray(min, arr, size) \
     if (LOGGER_LEVEL >= min) {\
         FILE * file = stderr;\
-        if (LOGGER_LEVEL >= LOGGER_DEBUG) {\
+        if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
         fprintf(file, "%s:%d (%s) ", __FILE__, __LINE__, __func__);\

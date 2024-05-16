@@ -7,6 +7,7 @@
 
 using namespace WylesLibs::Json;
 
+static void readWhiteSpaceUntil(std::string buf, size_t& i, std::string until);
 static size_t compareCString(std::string buf, std::string comp, size_t comp_length);
 
 // tree base
@@ -26,6 +27,19 @@ static void parseKey(JsonObject * obj, std::string buf, size_t& i);
 
 // 1
 static void parseObject(JsonObject * obj, std::string buf, size_t& i);
+
+static std::string whitespace(" \r\n\t");
+static void readWhiteSpaceUntil(std::string buf, size_t& i, std::string until) {
+    char c = buf.at(i);
+    while (whitespace.find(c) == std::string::npos) {
+        c = buf.at(++i);
+    } // found quote
+
+    if (!until.contains(c)) {
+        // found unexpected non-whitespace
+        throw std::runtime_error("Only allow whitespace between tokens...");
+    }
+}
 
 static size_t compareCString(std::string buf, std::string comp, size_t comp_length) {
     size_t x = 0;
@@ -248,6 +262,7 @@ static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
 static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
     char c = buf.at(i);
     bool parsed = false;
+    // read until , or } or parsed token...
     while (c != ',' && c != '}') { 
         if (!parsed) {
             if (c == '"') {
@@ -274,7 +289,7 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
                 // std::string comp("null");
                 // JsonValue * nullValue = new JsonValue();
                 // parseImmediate(obj, buf, i, &comp, nullValue);
-     
+      
                 // hmm... this works but think about whether we want to just ignore malformed...
                 //  when I think about validating input, ensureing full json, etc.
                 parsed = true;
@@ -282,7 +297,11 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
                 loggerPrintf(LOGGER_DEBUG, "Found object delimeter '%c' @ %lu\n", c, i);
                 parseNestedObject(obj, buf, i);
                 parsed = true;
+            } else if (whitespace.find(c) == std::string::npos) {
+                throw std::runtime_error("Non-whitespace found in parseValue");
             }
+        } else if (whitespace.find(c) == std::string::npos) {
+            throw std::runtime_error("Non-whitespace found in parseValue");
         }
         c = buf.at(++i);
     }
@@ -290,15 +309,13 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
 }
 
 static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
+    readWhiteSpaceUntil(buf, i, "\"");
+    size_t start_i = ++i;
+
     char c = buf.at(i);
     while (c != '"') {
         c = buf.at(++i);
-    } // found quote
-    size_t start_i = ++i;
-    c = buf.at(i);
-    while (c != '"') {
-        c = buf.at(++i);
-    } // found quote
+    } // found trailing quote...
     size_t size = i - start_i;
     if (size == 0) {
         throw std::runtime_error("Empty key string found.");
@@ -306,10 +323,8 @@ static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
     std::string s = buf.substr(start_i, size);
     obj->addKey(s);
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s @ %lu\n", s.c_str(), i);
-    // value needs to be preceded by key
-    while (c != ':') {
-        c = buf.at(++i);
-    }
+
+    readWhiteSpaceUntil(buf, i, ":");
 
     i--;
 }
@@ -320,25 +335,34 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
     //  if empty string...
     //  already contains,,
     //  maybe allow empty string but enforce uniqueness...
-    char c = '\0';
+    char c = buf.at(i);
     while (c != '}') {
+        if (c == '{' || c == ',') {
             parseKey(obj, buf, i);
-
-            while (c != ':') {
-                c = buf.at(++i);
-            } 
      
-            loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+            // make sure we point to ':'
+            readWhiteSpaceUntil(buf, i, ":");
+
+            // i @ :
             parseValue(&(obj->values), buf, ++i);
-            loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
+            loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function. @ %lu, %c\n", i, buf.at(i));
+            // should point to char before , or }
 
-            c = buf.at(i);
-     
-            while (c != ',' && c != '}') {
-                printf("%c\n", c);
-                c = buf.at(++i);
+            // support {key:value,} - this is lame but a common thing? so let's support it.
+            // peek to see if last element...
+            size_t x = i;
+            c = buf.at(++x); // points to , or }
+            if (c == ',') {
+                while (whitespace.find(c) != std::string::npos) {
+                    if (c == '}') {
+                        i = x;
+                        break;
+                    }
+                    c = buf.at(++x);
+                } // found non whitespace character...
+            }
         }
-        // break if end of object... else loop back to parse next key...
+        c = buf.at(++i);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");

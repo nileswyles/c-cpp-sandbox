@@ -6,19 +6,23 @@ using namespace WylesLibs::Json;
 
 static size_t compareCString(std::string buf, std::string comp, size_t comp_length);
 
-// TODO: arrays aren't being processed properly... need to select between object and array... implement common interface...
-
+// tree base
 static void parseDecimal(std::string buf, size_t& i, double& value);
 static void parseNatural(std::string buf, size_t& i, double& value);
 static void parseNumber(JsonArray * obj, std::string buf, size_t& i);
 static void parseString(JsonArray * obj, std::string buf, size_t& i);
-static void parseArray(JsonArray * obj, std::string buf, size_t& i);
 static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::string comp, JsonValue * value);
+
+// base-ish (base and 1 at same time)...
+static void parseNestedObject(JsonArray * obj, std::string buf, size_t& i);
+static void parseArray(JsonArray * obj, std::string buf, size_t& i);
+
+// 2 
 static void parseValue(JsonArray * obj, std::string buf, size_t& i);
 static void parseKey(JsonObject * obj, std::string buf, size_t& i);
-static void parseObject(JsonObject * obj, std::string buf, size_t& i);
 
-static void parseNestedObject(JsonArray * obj, std::string buf, size_t& i);
+// 1
+static void parseObject(JsonObject * obj, std::string buf, size_t& i);
 
 static size_t compareCString(std::string buf, std::string comp, size_t comp_length) {
     size_t x = 0;
@@ -171,6 +175,41 @@ static void parseString(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
 }
 
+static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::string comp, JsonValue * value) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing %s @ %lu\n", comp.c_str(), i);
+
+    std::string buf_i = buf.substr(i, comp.size());
+    size_t consumed = compareCString(buf_i, comp, comp.size());
+    i += consumed - 1; // point at last index of token
+
+    if (consumed == comp.size()) {
+        loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu, %c\n", comp.c_str(), i, buf.at(i));
+        obj->addValue(value);
+    }
+}
+
+static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
+    char c = '\0';
+    while (c != '}') { 
+        c = buf.at(i);
+        // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+        if (c == '{') {
+            loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+            // create new object... and update cursor/pointer to object.
+            JsonObject * new_obj = new JsonObject();
+            if (arr != nullptr) {
+                arr->addValue((JsonValue *)new_obj);
+            }
+            loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
+            parseObject((JsonObject *) new_obj, buf, ++i);
+        }
+        i++;
+    }
+
+    i--;
+    loggerPrintf(LOGGER_DEBUG, "Returning object, found %c @ %lu\n", c, i);
+}
+
 static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
     
@@ -200,19 +239,6 @@ static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
-}
-
-static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::string comp, JsonValue * value) {
-    loggerPrintf(LOGGER_DEBUG, "Parsing %s @ %lu\n", comp.c_str(), i);
-
-    std::string buf_i = buf.substr(i, comp.size());
-    size_t consumed = compareCString(buf_i, comp, comp.size());
-    i += consumed - 1; // point at last index of token
-
-    if (consumed == comp.size()) {
-        loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu, %c\n", comp.c_str(), i, buf.at(i));
-        obj->addValue(value);
-    }
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
@@ -307,28 +333,6 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
 
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");
     i--;
-}
-
-static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
-    char c = '\0';
-    while (c != '}') { 
-        c = buf.at(i);
-        // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-        if (c == '{') {
-            loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-            // create new object... and update cursor/pointer to object.
-            JsonObject * new_obj = new JsonObject();
-            if (arr != nullptr) {
-                arr->addValue((JsonValue *)new_obj);
-            }
-            loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
-            parseObject((JsonObject *) new_obj, buf, ++i);
-        }
-        i++;
-    }
-
-    i--;
-    loggerPrintf(LOGGER_DEBUG, "Returning object, found %c @ %lu\n", c, i);
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token (one before delimeter).

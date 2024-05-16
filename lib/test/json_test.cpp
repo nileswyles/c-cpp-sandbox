@@ -9,18 +9,18 @@ class Nested: public Json::JsonBase {
     public:
         std::string nested_name;
         Nested() {} // ?
-        Nested(Json::JsonObject * obj) {
+        Nested(Json::JsonObject obj) {
             // TODO: nullptr
             size_t validation_count = 0;
-            for (size_t i = 0; i < obj->keys.size(); i++) {
-                std::string key = obj->keys.at(i);
-                Json::JsonValue * value = obj->values.at(i);
+            for (size_t i = 0; i < obj.keys.size(); i++) {
+                std::string key = obj.keys.at(i);
+                Json::JsonValue * value = obj.values.at(i);
                 if(key == "nested_name") {
                     Json::setVariableFromJsonValue(value, nested_name, validation_count);
                 }
             }
             loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
-            if (validation_count != obj->keys.size()) {
+            if (validation_count != obj.keys.size()) {
                 throw std::runtime_error("Failed to create User from json object.");
             }
         }
@@ -43,14 +43,14 @@ class User: public Json::JsonBase {
         std::vector<bool> arr;
         Nested nested;
 
-        User(Json::JsonObject * obj) {
+        User(Json::JsonObject obj) {
             // TODO: nullptr
             size_t validation_count = 0;
-            loggerPrintf(LOGGER_DEBUG, "Num Keys: %lu\n", obj->keys.size());
-            for (size_t i = 0; i < obj->keys.size(); i++) {
-                std::string key = obj->keys.at(i);
+            loggerPrintf(LOGGER_DEBUG, "Num Keys: %lu\n", obj.keys.size());
+            for (size_t i = 0; i < obj.keys.size(); i++) {
+                std::string key = obj.keys.at(i);
                 loggerPrintf(LOGGER_DEBUG, "Key: %s\n", key.c_str());
-                Json::JsonValue * value = obj->values.at(i);
+                Json::JsonValue * value = obj.values.at(i);
                 if(key == "name") {
                     Json::setVariableFromJsonValue(value, name, validation_count);
                 } else if (key == "attributes") {
@@ -67,7 +67,7 @@ class User: public Json::JsonBase {
                 }
             }
             loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
-            if (validation_count != obj->keys.size()) {
+            if (validation_count != obj.keys.size()) {
                 throw std::runtime_error("Failed to create User from json object.");
             }
         }
@@ -108,14 +108,14 @@ void testJsonArray(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        Json::JsonValue * obj = Json::parse(s);
-        if (obj->type == Json::ARRAY) {
+        Json::JsonValue obj = Json::parse(s);
+        if (obj.type == Json::ARRAY) {
             loggerPrintf(LOGGER_TEST, "JSON: \n");
             loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
-            Json::JsonArray * values = (Json::JsonArray *)obj;
-            for (size_t i = 0; i < values->size(); i++) {
+            Json::JsonArray values = (Json::JsonArray)obj;
+            for (size_t i = 0; i < values.size(); i++) {
                 loggerPrintf(LOGGER_TEST, "User Class: \n");
-                loggerPrintf(LOGGER_TEST, "%u\n", ((Json::JsonBoolean *)values->at(i))->getValue());
+                loggerPrintf(LOGGER_TEST, "%u\n", ((Json::JsonBoolean)values.at(i)).getValue());
             }
         } else {
             // something went terribly wrong
@@ -136,9 +136,9 @@ void testJsonObjectWithArray(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        Json::JsonValue * obj = Json::parse(s);
-        if (obj->type == Json::OBJECT) {
-            User user((Json::JsonObject *)obj);
+        Json::JsonValue obj = Json::parse(s);
+        if (obj.type == Json::OBJECT) {
+            User user((Json::JsonObject)obj);
             loggerPrintf(LOGGER_TEST, "JSON: \n");
             loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
             loggerPrintf(LOGGER_TEST, "User Class: \n");
@@ -169,9 +169,9 @@ void testJson(void * tester) {
     try {
         // TODO:
         //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        Json::JsonValue * obj = Json::parse(s);
-        if (obj->type == Json::OBJECT) {
-            User user((Json::JsonObject *)obj);
+        Json::JsonValue obj = Json::parse(s);
+        if (obj.type == Json::OBJECT) {
+            User user((Json::JsonObject)obj);
             loggerPrintf(LOGGER_TEST, "JSON: \n");
             loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
             loggerPrintf(LOGGER_TEST, "User Class: \n");

@@ -4,23 +4,23 @@
 
 using namespace WylesLibs::Json;
 
-static size_t compareCString(std::string * buf, std::string * comp, size_t comp_length);
+static size_t compareCString(std::string buf, std::string * comp, size_t comp_length);
 
 // TODO: arrays aren't being processed properly... need to select between object and array... implement common interface...
 
-static void parseDecimal(std::string * buf, size_t& i, double& value);
-static void parseNatural(std::string * buf, size_t& i, double& value);
-static void parseNumber(JsonArray * obj, std::string * buf, size_t& i);
-static void parseString(JsonArray * obj, std::string * buf, size_t& i);
-static void parseArray(JsonArray * obj, std::string * buf, size_t& i);
-static void parseImmediate(JsonArray * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value);
-static void parseValue(JsonArray * obj, std::string * buf, size_t& i);
-static void parseKey(JsonObject * obj, std::string * buf, size_t& i);
+static void parseDecimal(std::string buf, size_t& i, double& value);
+static void parseNatural(std::string buf, size_t& i, double& value);
+static void parseNumber(JsonArray obj, std::string buf, size_t& i);
+static void parseString(JsonArray obj, std::string buf, size_t& i);
+static void parseArray(JsonArray obj, std::string buf, size_t& i);
+static void parseImmediate(JsonArray obj, std::string buf, size_t& i, std::string * comp);
+static void parseValue(JsonArray obj, std::string buf, size_t& i);
+static void parseKey(JsonObject obj, std::string buf, size_t& i);
 
-static size_t compareCString(std::string * buf, std::string * comp, size_t comp_length) {
+static size_t compareCString(std::string buf, std::string * comp, size_t comp_length) {
     size_t x = 0;
     while(x < comp_length) {
-        if (comp->at(x) != buf->at(x)) {
+        if (comp->at(x) != buf.at(x)) {
             break;
         }
         x++;
@@ -28,31 +28,31 @@ static size_t compareCString(std::string * buf, std::string * comp, size_t comp_
     return x;
 }
 
-static void parseDecimal(std::string * buf, size_t& i, double& value) {
+static void parseDecimal(std::string buf, size_t& i, double& value) {
     double decimal_divisor = 10;
-    char c = buf->at(i);
+    char c = buf.at(i);
     while (isDigit(c)) {
         value += (c - 0x30) / decimal_divisor;
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         decimal_divisor *= 10;
-        c = buf->at(++i);
+        c = buf.at(++i);
     }
     // make sure we point at last digit
     i--;
 }
 
-static void parseNatural(std::string * buf, size_t& i, double& value) {
-    char c = buf->at(i);
+static void parseNatural(std::string buf, size_t& i, double& value) {
+    char c = buf.at(i);
     while (isDigit(c)) {
         value = (value * 10) + (c - 0x30); 
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
-        c = buf->at(++i);
+        c = buf.at(++i);
     }
     // make sure we point at last digit
     i--;
 }
 
-static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
+static void parseNumber(JsonArray obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
     int8_t sign = 1;
     int8_t exponential_sign = 0;
@@ -61,7 +61,7 @@ static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
 
     // TODO: impose limit...
 
-    char c = buf->at(i);
+    char c = buf.at(i);
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string comp(" ,}\r\n\t");
     while (comp.find(c) == std::string::npos) {
@@ -70,7 +70,7 @@ static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
         } else if (c == '.') {
             parseDecimal(buf, ++i, value);
         } else if (c == 'e' || c == 'E') {
-            c = buf->at(++i);
+            c = buf.at(++i);
             if (c == '-') { 
                 exponential_sign = -1;
                 i++;
@@ -85,13 +85,13 @@ static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
                 exponential_multiplier *= 10;
             }
             loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
-        } else if (buf->at(i) == '-') {
+        } else if (buf.at(i) == '-') {
             sign = -1;
         } 
         // Consume invalid data in-between tokens...
-        // else if (buf->at(i) == '+') {} 
+        // else if (buf.at(i) == '+') {} 
         // else {} 
-        c = buf->at(++i);
+        c = buf.at(++i);
     }
     // make sure we point at last digit
     i--;
@@ -106,15 +106,16 @@ static void parseNumber(JsonArray * obj, std::string * buf, size_t& i) {
 
     loggerPrintf(LOGGER_DEBUG, "Number after exponential: %f\n", value);
 
-    obj->addValue((JsonValue *) new JsonNumber(value * sign));
+    JsonNumber v(value * sign);
+    obj.addValue((JsonNumber)v);
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
 }
 
-static void parseString(JsonArray * obj, std::string * buf, size_t& i) {
+static void parseString(JsonArray obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
 
-    char c = buf->at(++i);
+    char c = buf.at(++i);
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string s;
     char prev_c = (char)0x00;
@@ -159,53 +160,60 @@ static void parseString(JsonArray * obj, std::string * buf, size_t& i) {
             s += c;
         }
         prev_c = c;
-        c = buf->at(++i);
+        c = buf.at(++i);
     }
 
-    obj->addValue((JsonValue *) new JsonString(s));
+    JsonString v(s);
+    obj.addValue((JsonValue)v);
 
     loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
     loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
 }
 
-static void parseArray(JsonArray * obj, std::string * buf, size_t& i) {
+static void parseArray(JsonArray obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
 
-    JsonArray * arr = new JsonArray(); 
-    obj->addValue(arr);
+    JsonArray arr; 
+    obj.addValue(arr);
 
-    char c = buf->at(i);
+    char c = buf.at(i);
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     while(c != ']') {
         if (c == '[' || c == ',') { // only parseValue after start of new token... so shouldn't really matter where cursor as long as past previous.
             // TODO:
             //  nested arrays might be an issue. like too much recursion? curious what happens
             //  whitespace shouldn't though? lol
-            parseValue(arr, buf, ++i);
+            parseValue(&arr, buf, ++i);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
-        c = buf->at(++i);
+        c = buf.at(++i);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
 }
 
-static void parseImmediate(JsonArray * obj, std::string * buf, size_t& i, std::string * comp, JsonValue * value) {
-    loggerPrintf(LOGGER_DEBUG, "Parsing %s @ %lu\n", comp->c_str(), i);
+static void parseImmediate(JsonArray obj, std::string buf, size_t& i, std::string comp) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing %s @ %lu\n", comp.c_str(), i);
 
-    std::string buf_i = buf->substr(i, comp->size());
-    size_t consumed = compareCString(&buf_i, comp, comp->size());
-    if (consumed == comp->size()) {
-        obj->addValue(value);
+    std::string buf_i = buf.substr(i, comp.size());
+    size_t consumed = compareCString(&buf_i, comp, comp.size());
+    if (consumed == comp.size()) {
+        if (comp == "true") {
+            JsonBoolean s(true);
+            obj.addValue((JsonValue)s);
+        } else if (comp == "false") { 
+            JsonBoolean s(false);
+            obj.addValue((JsonValue)s);
+        }
     }
     i += consumed - 1; // point at last index of token
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu, %c\n", comp->c_str(), i, buf->at(i));
+    loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu, %c\n", comp.c_str(), i, buf.at(i));
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
-    char c = buf->at(i);
+static void parseValue(JsonArray obj, std::string buf, size_t& i) {
+    char c = buf.at(i);
     while (c != ',' && c != ']') { 
         if (c == '"') {
             parseString(obj, buf, i);
@@ -215,12 +223,10 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
             parseArray(obj, buf, i);
         } else if (c == 't') {
             std::string comp("true");
-            JsonValue * boolean = (JsonValue *) new JsonBoolean(true);
-            parseImmediate(obj, buf, i, &comp, boolean);
+            parseImmediate(obj, buf, i, comp);
         } else if (c == 'f') {
             std::string comp("false");
-            JsonValue * boolean = (JsonValue *) new JsonBoolean(false);
-            parseImmediate(obj, buf, i, &comp, boolean);
+            parseImmediate(obj, buf, i, comp);
         } else if (c == 'n') {
             i += 3; // just consume null string... point to last character...
             // std::string comp("null");
@@ -235,13 +241,13 @@ static void parseValue(JsonArray * obj, std::string * buf, size_t& i) {
             // be explicit, decrement and return? 
             break;
         }
-        c = buf->at(++i);
+        c = buf.at(++i);
     }
     i--;
     loggerPrintf(LOGGER_DEBUG, "Broke out of loop and decremented index '%c' @ %lu\n", c, i);
 }
 
-static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
+static void parseKey(JsonObject obj, std::string buf, size_t& i) {
     // find start and end index of key string
     // TODO:
     //  if empty string...
@@ -250,31 +256,31 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
     //  maybe allow empty string but enforce uniqueness...
 
     // might be worth implementing a map structure eventually.
-    char c = buf->at(i);
+    char c = buf.at(i);
     while (c != '"') {
-        c = buf->at(++i);
+        c = buf.at(++i);
     } // found quote
     size_t start_i = ++i;
 
-    c = buf->at(i);
+    c = buf.at(i);
     while (c != '"') {
-        c = buf->at(++i);
+        c = buf.at(++i);
     } // found quote
     size_t size = i - start_i;
     if (size == 0) {
         throw std::runtime_error("Empty key string found.");
     }
 
-    std::string s = buf->substr(start_i, size);
-    obj->addKey(s);
+    std::string s = buf.substr(start_i, size);
+    obj.addKey(s);
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s @ %lu\n", s.c_str(), i);
 
     // value needs to be preceded by key
     while (c != ':') {
-        c = buf->at(++i);
+        c = buf.at(++i);
     }
     loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-    parseValue(&(obj->values), buf, ++i);
+    parseValue(&(obj.values), buf, ++i);
     loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
 }
 
@@ -284,13 +290,13 @@ static void parseKey(JsonObject * obj, std::string * buf, size_t& i) {
 //      and .at() bounds checks (exceptions), [] doesn't
 
 // TODO: variables whos storage is created by this function can't be returned as reference right?
-extern JsonValue * WylesLibs::Json::parse(std::string s) {
+extern JsonValue WylesLibs::Json::parse(std::string s) {
     std::string * json = &s;
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", pretty(s).c_str());
 
-    std::vector<JsonValue *> created_objs;
-    JsonObject * obj = nullptr;
+    std::vector<JsonValue> created_objs;
+    JsonObject obj = nullptr;
     size_t i = 0;
     char c;
     while(i < json->size()) {
@@ -299,30 +305,31 @@ extern JsonValue * WylesLibs::Json::parse(std::string s) {
         if (c == '{') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // create new object... and update cursor/pointer to object.
-            JsonObject * new_obj = new JsonObject();
+            JsonObject new_obj;
             if (obj != nullptr) {
-                obj->values.addValue((JsonValue *)new_obj);
+                obj.values.addValue((JsonValue)new_obj);
             }
-            obj = (JsonObject *) new_obj;
+            obj = &new_obj;
+                // obj = &(created_objs.at(created_objs.size() - 1));
             loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
-            created_objs.push_back(obj);
+            created_objs.push_back((JsonValue)new_obj);
             parseKey(obj, json, ++i);
         } else if (c == ',') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             parseKey(obj, json, ++i);
         } else if (c == '[') {
-            JsonArray * new_obj = new JsonArray();
+            JsonArray new_obj;
             loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
-            created_objs.push_back(new_obj);
+            created_objs.push_back((JsonValue)new_obj);
             // [1, 2, 3, 4] is valid JSON lol...
-            parseArray(new_obj, json, i);
+            parseArray(&new_obj, json, i);
             break;
         } else if (c == '}') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // only one json document lol?
             if (created_objs.size() > 1) { // keep root in list for return value.
                 created_objs.pop_back();
-                obj = (JsonObject *)created_objs.at(created_objs.size() - 1);
+                obj = &((JsonObject)created_objs.at(created_objs.size() - 1));
             }
         }
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);

@@ -95,25 +95,34 @@ class JsonString: public JsonValue {
         }
 };
 
-class JsonArray: public JsonValue, public std::vector<JsonValue *> {
+class JsonArray: public JsonValue, public std::vector<JsonValue> {
     public:
-        JsonArray(): JsonValue(ARRAY), std::vector<JsonValue *>() {}
-        ~JsonArray() {
-            // TODO. let cpp do it's magic... and don't use pointers here?.... 
-            //  Is that okay? think about limits... and how they actually work. 
-            for (size_t i = 0; i < this->size(); i++) {
-                loggerPrintf(LOGGER_DEBUG, "Making sure to free pointer! @ %p\n", this->at(i));
-                // because this->[] isn't valid :)
-                delete this->at(i);
-            }
-        }
+        JsonArray(): JsonValue(ARRAY), std::vector<JsonValue>() {}
 
-        void addValue(JsonValue * value) {
+        void addValue(JsonValue value) {
             this->push_back(value);
-            loggerPrintf(LOGGER_DEBUG, "Added json value object! @ %p\n", value);
         }
 
-        virtual std::string toJsonString() = 0;
+        std::string toJsonString() {
+            std::string s("[");
+            for (size_t i = 0; i < this->size(); i++) {
+                JsonValue value = this->at(i);
+                JsonType type = value.type;
+                if (type == BOOLEAN) {
+                    s += ((JsonBoolean)value).toJsonString();
+                } else if (type == NUMBER) {
+                    s += ((JsonNumber)value).toJsonString();
+                } else if (type == STRING) {
+                    s += ((JsonString)value).toJsonString();
+                } else if (type == OBJECT) {
+                    // This is interesting...
+                }
+                if (i != this->size() - 1) {
+                    s += ", ";
+                }
+            }
+            return s;
+        }
 };
 
 class JsonObject: public JsonValue {
@@ -130,7 +139,7 @@ class JsonObject: public JsonValue {
         virtual std::string toJsonString() = 0;
 };
 
-extern JsonValue * parse(std::string json);
+extern JsonValue parse(std::string json);
 extern std::string pretty(std::string json);
 
 }

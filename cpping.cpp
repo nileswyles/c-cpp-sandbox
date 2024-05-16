@@ -35,9 +35,9 @@ int main() {
     // so...
 
     // you can call constructor directly? 
-    //      Test()
+    //      <type-name>()
     // but also via other type of expresions... 
-    //      <type-name> <type-name>[()]; 
+    //      <type-name> <variable-name>[()]; 
     //      new <type-name>;
 
     // hmm....

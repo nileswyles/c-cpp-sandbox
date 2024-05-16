@@ -15,7 +15,7 @@ static void setVariableFromJsonValue(JsonValue value, bool& obj_value, size_t& v
     Json::JsonType type = value.type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == BOOLEAN) {
-        obj_value = ((JsonBoolean)value).getValue();
+        obj_value = (dynamic_cast<JsonBoolean>(value).getValue());
         validation_count++;
     }
 }
@@ -24,7 +24,7 @@ static void setVariableFromJsonValue(JsonValue value, double& obj_value, size_t&
     Json::JsonType type = value.type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == NUMBER) {
-        obj_value = ((JsonNumber)value).getValue();
+        obj_value = (dynamic_cast<JsonNumber>(value).getValue());
         validation_count++;
     }
 }
@@ -33,7 +33,8 @@ static void setVariableFromJsonValue(JsonValue value, std::string& obj_value, si
     Json::JsonType type = value.type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == STRING) {
-        obj_value = ((JsonString)value).getValue();
+        JsonString jsonString = dynamic_cast<JsonString>(value);
+        obj_value = jsonString.getValue();
         validation_count++;
     }
 }
@@ -57,7 +58,7 @@ static void setArrayVariablesFromJsonValue(JsonValue value, std::vector<bool>& a
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;
-        JsonArray array = (JsonArray)value;
+        JsonArray array = dynamic_cast<JsonArray>(value);
         // TODO: can this be abstracted out? yeah, basically, this for all boolean, number ans string arrays...
     
         //  object types, can we template?
@@ -90,7 +91,7 @@ static void setArrayVariablesFromJsonValue(JsonValue value, std::vector<double>&
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;
-        JsonArray array = (JsonArray)value;
+        JsonArray array = dynamic_cast<JsonArray>(value);
         for (int i = 0; i < array.size(); i++) {
             JsonValue array_value = array.at(i);
             JsonType array_type = array_value.type;
@@ -114,7 +115,7 @@ static void setArrayVariablesFromJsonValue(JsonValue value, std::vector<std::str
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;
-        JsonArray array = (JsonArray)value;
+        JsonArray array = dynamic_cast<JsonArray>(value);
         for (int i = 0; i < array.size(); i++) {
             JsonValue array_value = array.at(i);
             JsonType array_type = array_value.type;
@@ -141,7 +142,7 @@ static void setArrayVariablesFromJsonValue(JsonValue value, std::vector<T>& arr,
     if (type == ARRAY) {
         size_t array_validation_count = 0;
         loggerPrintf(LOGGER_DEBUG, "cast?\n");
-        JsonArray array = (JsonArray)value;
+        JsonArray array = dynamic_cast<JsonArray>(value);
         loggerPrintf(LOGGER_DEBUG, "Before loop\n");
         for (int i = 0; i < array.size(); i++) {
             JsonValue array_value = array.at(i);

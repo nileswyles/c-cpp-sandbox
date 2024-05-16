@@ -32,8 +32,11 @@ class JsonValue: public JsonBase {
         JsonType type;
         JsonValue(): type(NULL_TYPE) {}
         JsonValue(JsonType derived_type): type(derived_type) {}
-        virtual ~JsonValue() {}
-        virtual std::string toJsonString() = 0;
+        // virtual ~JsonValue() {}
+        // virtual std::string toJsonString() = 0;
+        std::string toJsonString() {
+            return std::string("");
+        };
 };
 
 typedef void(ProcessObjectFunc)(std::string key, JsonValue * value);
@@ -109,11 +112,11 @@ class JsonArray: public JsonValue, public std::vector<JsonValue> {
                 JsonValue value = this->at(i);
                 JsonType type = value.type;
                 if (type == BOOLEAN) {
-                    s += ((JsonBoolean)value).toJsonString();
+                    s += (dynamic_cast<JsonBoolean>(value).toJsonString());
                 } else if (type == NUMBER) {
-                    s += ((JsonNumber)value).toJsonString();
+                    s += (dynamic_cast<JsonNumber>(value).toJsonString());
                 } else if (type == STRING) {
-                    s += ((JsonString)value).toJsonString();
+                    s += (dynamic_cast<JsonString>(value).toJsonString());
                 } else if (type == OBJECT) {
                     // This is interesting...
                 }
@@ -136,7 +139,11 @@ class JsonObject: public JsonValue {
             this->keys.push_back(key);
         }
 
-        virtual std::string toJsonString() = 0;
+        // wtf?
+        std::string toJsonString() {
+            return std::string("");
+        };
+        // virtual std::string toJsonString() = 0;
 };
 
 extern JsonValue parse(std::string json);

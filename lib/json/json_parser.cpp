@@ -107,7 +107,7 @@ static void parseNumber(JsonArray obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Number after exponential: %f\n", value);
 
     JsonNumber v(value * sign);
-    obj.addValue((JsonNumber)v);
+    obj.addValue(dynamic_cast<JsonNumber>(v));
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
 }
@@ -164,7 +164,7 @@ static void parseString(JsonArray obj, std::string buf, size_t& i) {
     }
 
     JsonString v(s);
-    obj.addValue((JsonValue)v);
+    obj.addValue(dynamic_cast<JsonValue>(v));
 
     loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
     loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
@@ -183,7 +183,7 @@ static void parseArray(JsonArray obj, std::string buf, size_t& i) {
             // TODO:
             //  nested arrays might be an issue. like too much recursion? curious what happens
             //  whitespace shouldn't though? lol
-            parseValue(&arr, buf, ++i);
+            parseValue(arr, buf, ++i);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
         c = buf.at(++i);
@@ -196,14 +196,14 @@ static void parseImmediate(JsonArray obj, std::string buf, size_t& i, std::strin
     loggerPrintf(LOGGER_DEBUG, "Parsing %s @ %lu\n", comp.c_str(), i);
 
     std::string buf_i = buf.substr(i, comp.size());
-    size_t consumed = compareCString(&buf_i, comp, comp.size());
+    size_t consumed = compareCString(buf_i, comp, comp.size());
     if (consumed == comp.size()) {
         if (comp == "true") {
             JsonBoolean s(true);
-            obj.addValue((JsonValue)s);
+            obj.addValue(dynamic_cast<JsonValue>(s));
         } else if (comp == "false") { 
             JsonBoolean s(false);
-            obj.addValue((JsonValue)s);
+            obj.addValue(dynamic_cast<JsonValue>(s));
         }
     }
     i += consumed - 1; // point at last index of token
@@ -290,29 +290,28 @@ static void parseKey(JsonObject obj, std::string buf, size_t& i) {
 //      and .at() bounds checks (exceptions), [] doesn't
 
 // TODO: variables whos storage is created by this function can't be returned as reference right?
-extern JsonValue WylesLibs::Json::parse(std::string s) {
-    std::string * json = &s;
+extern JsonValue WylesLibs::Json::parse(std::string json) {
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
-    loggerPrintf(LOGGER_DEBUG, "%s\n", pretty(s).c_str());
+    loggerPrintf(LOGGER_DEBUG, "%s\n", pretty(json).c_str());
 
     JsonObject obj;
     std::vector<JsonValue> created_objs;
     size_t i = 0;
     char c;
-    while(i < json->size()) {
-        c = json->at(i);
+    while(i < json.size()) {
+        c = json.at(i);
         loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         if (c == '{') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // create new object... and update cursor/pointer to object.
             JsonObject new_obj;
             if (created_objs.size() > 0) {
-                obj.values.addValue((JsonValue)new_obj);
+                obj.values.addValue(dynamic_cast<JsonValue>(new_obj));
             }
             obj = new_obj;
                 // obj = &(created_objs.at(created_objs.size() - 1));
             loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
-            created_objs.push_back((JsonValue)new_obj);
+            created_objs.push_back(dynamic_cast<JsonValue>(new_obj));
             parseKey(obj, json, ++i);
         } else if (c == ',') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
@@ -320,7 +319,7 @@ extern JsonValue WylesLibs::Json::parse(std::string s) {
         } else if (c == '[') {
             JsonArray new_obj;
             loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
-            created_objs.push_back((JsonValue)new_obj);
+            created_objs.push_back(dynamic_cast<JsonValue>(new_obj));
             // [1, 2, 3, 4] is valid JSON lol...
             parseArray(new_obj, json, i);
             break;
@@ -329,7 +328,7 @@ extern JsonValue WylesLibs::Json::parse(std::string s) {
             // only one json document lol?
             if (created_objs.size() > 1) { // keep root in list for return value.
                 created_objs.pop_back();
-                obj = &((JsonObject)created_objs.at(created_objs.size() - 1));
+                obj = (JsonObject)created_objs.at(created_objs.size() - 1);
             }
         }
         // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);

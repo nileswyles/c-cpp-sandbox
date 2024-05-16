@@ -5,6 +5,8 @@
 #include <string>
 #include <stdbool.h>
 
+// #ord
+
 static bool isAlpha(char c) {
     if ((c >= 0x41 && c <= 0x5A) || (c >=0x61 && c <= 0x7A)) {
         return true;
@@ -37,10 +39,10 @@ static bool isHexDigit(char c) {
     return isDigit(c) || isLowerHex(c) || isUpperHex(c);
 }
 
-static char hexToChar(std::string * buf) {
+static char hexToChar(std::string buf) {
     char ret = 0x00;
     for (size_t i = 0; i < 2; i++) {
-        char c = buf->at(i);
+        char c = buf.at(i);
         if (isDigit(c)) {
             c = c - 0x30;
         } else if (isLowerHex(c)) {

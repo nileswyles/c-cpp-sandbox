@@ -14,7 +14,7 @@ class Nested: public Json::JsonBase {
             size_t validation_count = 0;
             for (size_t i = 0; i < obj.keys.size(); i++) {
                 std::string key = obj.keys.at(i);
-                Json::JsonValue * value = obj.values.at(i);
+                Json::JsonValue value = obj.values.at(i);
                 if(key == "nested_name") {
                     Json::setVariableFromJsonValue(value, nested_name, validation_count);
                 }
@@ -50,7 +50,7 @@ class User: public Json::JsonBase {
             for (size_t i = 0; i < obj.keys.size(); i++) {
                 std::string key = obj.keys.at(i);
                 loggerPrintf(LOGGER_DEBUG, "Key: %s\n", key.c_str());
-                Json::JsonValue * value = obj.values.at(i);
+                Json::JsonValue value = obj.values.at(i);
                 if(key == "name") {
                     Json::setVariableFromJsonValue(value, name, validation_count);
                 } else if (key == "attributes") {
@@ -106,8 +106,6 @@ class User: public Json::JsonBase {
 void testJsonArray(void * tester) {
     std::string s("[false, true, false, false]");
     try {
-        // TODO:
-        //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
         Json::JsonValue obj = Json::parse(s);
         if (obj.type == Json::ARRAY) {
             loggerPrintf(LOGGER_TEST, "JSON: \n");
@@ -120,7 +118,6 @@ void testJsonArray(void * tester) {
         } else {
             // something went terribly wrong
         }
-        delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
         //  throw e; // copy-initializes a new exception object of type std::exception
@@ -146,7 +143,6 @@ void testJsonObjectWithArray(void * tester) {
         } else {
             // something went terribly wrong
         }
-        delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
         //  throw e; // copy-initializes a new exception object of type std::exception
@@ -179,7 +175,6 @@ void testJson(void * tester) {
         } else {
             // something went terribly wrong
         }
-        delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
         //  throw e; // copy-initializes a new exception object of type std::exception

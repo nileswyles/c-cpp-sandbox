@@ -20,7 +20,7 @@ static void parseKey(JsonObject obj, std::string buf, size_t& i);
 static size_t compareCString(std::string buf, std::string comp, size_t comp_length) {
     size_t x = 0;
     while(x < comp_length) {
-        if (comp->at(x) != buf.at(x)) {
+        if (comp.at(x) != buf.at(x)) {
             break;
         }
         x++;
@@ -148,7 +148,7 @@ static void parseString(JsonArray obj, std::string buf, size_t& i) {
                 for (size_t x = 0; x < 4; x = x + 2) {
                     // so, this takes a hex string and converts to it's binary value.
                     //  i.e. "0F" -> 0x0F;
-                    s += hexToChar(buf + i + x);
+                    s += hexToChar(buf.at(i + x));
                 }
                 // because indexing starts at 0 and x < 4 lol...
                 i += 3;
@@ -280,7 +280,7 @@ static void parseKey(JsonObject obj, std::string buf, size_t& i) {
         c = buf.at(++i);
     }
     loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-    parseValue(&(obj.values), buf, ++i);
+    parseValue(obj.values, buf, ++i);
     loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
 }
 
@@ -295,8 +295,8 @@ extern JsonValue WylesLibs::Json::parse(std::string s) {
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", pretty(s).c_str());
 
+    JsonObject obj;
     std::vector<JsonValue> created_objs;
-    JsonObject obj = nullptr;
     size_t i = 0;
     char c;
     while(i < json->size()) {
@@ -306,10 +306,10 @@ extern JsonValue WylesLibs::Json::parse(std::string s) {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // create new object... and update cursor/pointer to object.
             JsonObject new_obj;
-            if (obj != nullptr) {
+            if (created_objs.size() > 0) {
                 obj.values.addValue((JsonValue)new_obj);
             }
-            obj = &new_obj;
+            obj = new_obj;
                 // obj = &(created_objs.at(created_objs.size() - 1));
             loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
             created_objs.push_back((JsonValue)new_obj);
@@ -322,7 +322,7 @@ extern JsonValue WylesLibs::Json::parse(std::string s) {
             loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
             created_objs.push_back((JsonValue)new_obj);
             // [1, 2, 3, 4] is valid JSON lol...
-            parseArray(&new_obj, json, i);
+            parseArray(new_obj, json, i);
             break;
         } else if (c == '}') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);

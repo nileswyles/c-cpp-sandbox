@@ -119,8 +119,8 @@ static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
             double exp = 0;
             size_t dummy_digit_count = 0;
             parseNatural(buf, i, exp, dummy_digit_count);
-
-            if (exp > FLT_MAX_EXP) {
+            
+            if (exp > FLT_MAX_EXP_ABS) {
                 throw std::runtime_error("parseNumber: exponential to large.");
             }
             for (size_t x = 0; x < exp; x++) {

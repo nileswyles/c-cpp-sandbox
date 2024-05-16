@@ -14,8 +14,9 @@ static constexpr size_t MAX_LENGTH_OF_JSON_STRING = 2<<27;
 static constexpr size_t MAX_LENGTH_OF_JSON_STRING_KEYS = 2<<7;
 static constexpr size_t MAX_LENGTH_OF_JSON_STRING_VALUES = 2<<19;
 
-// really just arbitrarily chose this because we don't want to loop forever or near forever lol...
-static constexpr size_t FLT_MAX_EXP = 27;
+// single precision == exp is 8-bits... [-126, 127] (255, but centered around zero because decimal point can move in both directions.)
+static constexpr size_t FLT_MAX_EXP_ABS = 127;
+// this is still an arbitrary limit chosen based on number of digits of 2**32.
 static constexpr size_t FLT_MAX_MIN_DIGITS = 10;
 
 typedef enum JsonType {

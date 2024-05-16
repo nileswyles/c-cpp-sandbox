@@ -18,6 +18,7 @@ static constexpr size_t MAX_LENGTH_OF_JSON_STRING_VALUES = 2<<19;
 //  I am using double precision types (double) throughout the program so this shouldn't be an issue.
 static constexpr size_t FLT_MAX_EXP_ABS = 127;
 // this is still an arbitrary limit chosen based on number of digits of 2**32.
+//  it also satisfies requirement of single precision significand size (2**24) which is well within 10 digits (10**10 - 1).
 static constexpr size_t FLT_MAX_MIN_DIGITS = 10;
 
 typedef enum JsonType {

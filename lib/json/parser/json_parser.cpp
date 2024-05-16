@@ -93,7 +93,7 @@ static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
     int8_t sign = 1;
     int8_t exponential_sign = 0;
-    double exponential_multiplier = 10;
+    double exponential_multiplier = 1;
     double value = 0;
 
     size_t natural_digits = 1;

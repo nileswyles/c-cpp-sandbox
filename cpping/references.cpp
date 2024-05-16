@@ -35,6 +35,9 @@ int main() {
     // that said, you probably will never want to do this...
     int arg_ref_2 = 7;
     printf("return_ref_arg_ref: %d\n", return_ref_arg_ref(arg_ref_2));
+    // but can use that function to test this...
+    int& ret_ref = return_ref_arg_ref(arg_ref_2);
+    printf("reference bridge?: %d, %p, %p\n", ret_ref, &ret_ref, &arg_ref_2);
 
     // these segfault...
     printf("return_ref_arg_val: %d\n", return_ref_arg_val(7));

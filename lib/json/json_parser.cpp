@@ -249,18 +249,23 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
         if (!parsed) {
             if (c == '"') {
                 parseString(obj, buf, i);
+                parsed = true;
             } else if (isDigit(c) || c == '+' || c == '-') {
                 parseNumber(obj, buf, i);
+                parsed = true;
             } else if (c == '[') {
                 parseArray(obj, buf, i);
+                parsed = true;
             } else if (c == 't') {
                 std::string comp("true");
                 JsonValue * boolean = (JsonValue *) new JsonBoolean(true);
                 parseImmediate(obj, buf, i, comp, boolean);
+                parsed = true;
             } else if (c == 'f') {
                 std::string comp("false");
                 JsonValue * boolean = (JsonValue *) new JsonBoolean(false);
                 parseImmediate(obj, buf, i, comp, boolean);
+                parsed = true;
             } else if (c == 'n') {
                 i += 3; // just consume null string... point to last character...
                 // std::string comp("null");
@@ -269,9 +274,11 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
      
                 // hmm... this works but think about whether we want to just ignore malformed...
                 //  when I think about validating input, ensureing full json, etc.
+                parsed = true;
             } else if (c == '{') { 
                 loggerPrintf(LOGGER_DEBUG, "Found object delimeter '%c' @ %lu\n", c, i);
                 parseNestedObject(obj, buf, i);
+                parsed = true;
             }
         }
         c = buf.at(++i);

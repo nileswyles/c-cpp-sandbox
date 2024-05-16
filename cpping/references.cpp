@@ -37,15 +37,19 @@ int main() {
     printf("return_ref_arg_ref: %d\n", return_ref_arg_ref(arg_ref_2));
     // but can use that function to test this...
     int& ret_ref = return_ref_arg_ref(arg_ref_2);
-    printf("reference bridge?: %d, %p, %p\n", ret_ref, &ret_ref, &arg_ref_2);
+    printf("reference bridge 1?: %d, %p, %p\n", ret_ref, &ret_ref, &arg_ref_2);
     // and so, that begs the question... do you need the & designator?
     int ret_ref_2 = return_ref_arg_ref(arg_ref_2);
-    printf("reference bridge?: %d, %p, %p\n", ret_ref_2, &ret_ref_2, &arg_ref_2);
+    printf("reference bridge 2?: %d, %p, %p\n", ret_ref_2, &ret_ref_2, &arg_ref_2);
     // and cpp book says initialization (of primitive? ref) is not same as assignment? 
 
     // l v r _value?
     int& ret_ref_3 { return_ref_arg_ref(arg_ref_2) };
-    printf("reference bridge?: %d, %p, %p\n", ret_ref_3, &ret_ref_3, &arg_ref_2);
+    printf("reference bridge 3?: %d, %p, %p\n", ret_ref_3, &ret_ref_3, &arg_ref_2);
+
+    // lol, did I interpret incorrectly?? 
+    int& ret_ref_4 { arg_ref_2 };
+    printf("reference bridge 4?: %d, %p, %p\n", ret_ref_4, &ret_ref_4, &arg_ref_2);
 
     // now is this defined in the spec? or undefined/impl based? lol...
 

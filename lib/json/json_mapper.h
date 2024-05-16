@@ -80,7 +80,8 @@ static void setArrayVariablesFromJsonValue(JsonValue * value, std::vector<bool>&
                 // T& = arr[i]
                 // because then templating issues? LMAO... reference!
                 arr.push_back(false);
-                bool& element { arr[i] };
+                // bool& element { arr[i] };
+                bool element = false;
                 // TODO:
                 // if it turns out this is undefined by CPP... then need to get template specialization working...
                 setVariableFromJsonValue(array_value, element, array_validation_count);
@@ -130,7 +131,7 @@ static void setArrayVariablesFromJsonValue(JsonValue * value, std::vector<std::s
             if (array_type == STRING) {
                 arr.push_back("");
                 // T& = arr[i]
-                std::string& { arr[i] };
+                std::string& element { arr[i] };
                 setVariableFromJsonValue(array_value, element, array_validation_count);
             }
         }

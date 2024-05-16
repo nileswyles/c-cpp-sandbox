@@ -31,12 +31,14 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i);
 static std::string whitespace(" \r\n\t");
 static void readWhiteSpaceUntil(std::string buf, size_t& i, std::string until) {
     char c = buf.at(i);
-    while (whitespace.find(c) == std::string::npos) {
+    loggerPrintf(LOGGER_DEBUG, "Reading Whitespace Until: %s, @ %lu, %c\n", until.c_str(), i, c);
+    if (until.contains(c)) {
+        return;
+    }
+    while (whitespace.find(c) != std::string::npos) {
         c = buf.at(++i);
-    } // found quote
-
+    }
     if (!until.contains(c)) {
-        // found unexpected non-whitespace
         throw std::runtime_error("Only allow whitespace between tokens...");
     }
 }
@@ -309,6 +311,7 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
 }
 
 static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing Key. @ %lu, %c\n", i, buf.at(i));
     readWhiteSpaceUntil(buf, i, "\"");
     size_t start_i = ++i;
 
@@ -324,7 +327,7 @@ static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
     obj->addKey(s);
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s @ %lu\n", s.c_str(), i);
 
-    readWhiteSpaceUntil(buf, i, ":");
+    readWhiteSpaceUntil(buf, ++i, ":");
 
     i--;
 }
@@ -338,10 +341,10 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
     char c = buf.at(i);
     while (c != '}') {
         if (c == '{' || c == ',') {
-            parseKey(obj, buf, i);
+            parseKey(obj, buf, ++i);
      
             // make sure we point to ':'
-            readWhiteSpaceUntil(buf, i, ":");
+            readWhiteSpaceUntil(buf, ++i, ":");
 
             // i @ :
             parseValue(&(obj->values), buf, ++i);

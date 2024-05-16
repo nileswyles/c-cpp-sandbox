@@ -191,8 +191,9 @@ static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
             //  nested arrays might be an issue. like too much recursion? curious what happens
             //  whitespace shouldn't though? lol
             parseArrayValue(arr, buf, ++i);
-            loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
+            loggerPrintf(LOGGER_DEBUG, "Returned from parseArrayValue function.\n");
         }
+        loggerPrintf(LOGGER_DEBUG, "%c\n", c);
         c = buf.at(++i);
     }
 
@@ -243,7 +244,9 @@ static void parseArrayValue(JsonArray * obj, std::string buf, size_t& i) {
             parseNestedObject(obj, buf, i);
         }
         c = buf.at(++i);
-    }
+    } 
+    
+    i--;
 }
 
 static void parseValue(JsonObject * obj, std::string buf, size_t& i) {

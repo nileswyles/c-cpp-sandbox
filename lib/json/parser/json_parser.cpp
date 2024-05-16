@@ -378,8 +378,11 @@ extern JsonValue * WylesLibs::Json::parse(std::string s, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
 
+    readWhiteSpaceUntil(s, i, "{[");
+
     JsonValue * obj = nullptr;
     char c = s.at(i);
+    loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {
         JsonObject * new_obj = new JsonObject();
         parseObject(new_obj, s, ++i);

@@ -90,6 +90,8 @@ static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
     double value = 0;
 
     // TODO: impose limit...
+    // https://cplusplus.com/reference/cfloat/
+    // 
 
     char c = buf.at(i);
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
@@ -219,9 +221,13 @@ static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
     if (c == '{') {
         loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         // create new object... and update cursor/pointer to object.
-        JsonObject * new_obj = new JsonObject();
+        JsonObject * new_obj = new JsonObject(arr->depth + 1);
         if (arr != nullptr) {
+            // this should never be null.. but lets
             arr->addValue((JsonValue *)new_obj);
+        } else {
+            // TODO: better exception messages...
+            throw std::runtime_error("parseNestedObject: parent array null");
         }
         loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
         parseObject((JsonObject *) new_obj, buf, i);
@@ -237,20 +243,14 @@ static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
     if (i == 0) {
         arr = obj;
     } else {
-        arr = new JsonArray(); 
+        arr = new JsonArray(obj->depth + 1); 
         obj->addValue(arr);
     }
 
     char c = buf.at(i);
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     while(c != ']') {
-        if (c == '[' || c == ',') { // only parseValue after start of new token... so shouldn't really matter where cursor as long as past previous.
-            // TODO:
-            //  nested arrays might be an issue. like too much recursion? curious what happens
-            //  whitespace shouldn't though? lol
-            //  nested object limit too..
-
-            //  yeah might require some global state object... which means we can simplify parse value functions? and nested?
+        if (c == '[' || c == ',') { 
             parseValue(arr, buf, ++i);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
@@ -364,11 +364,6 @@ static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
-    // find start and end index of key string
-    // TODO:
-    //  if empty string...
-    //  already contains,,
-    //  maybe allow empty string but enforce uniqueness...
     char c = buf.at(i);
     while (c != '}') {
         if (c == '{' || c == ',') {
@@ -398,11 +393,11 @@ extern JsonValue * WylesLibs::Json::parse(std::string s, size_t& i) {
     char c = s.at(i);
     loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {
-        JsonObject * new_obj = new JsonObject();
+        JsonObject * new_obj = new JsonObject(0);
         parseObject(new_obj, s, i);
         obj = (JsonValue *) new_obj;
     } else if (c == '[') {
-        JsonArray * new_obj = new JsonArray();
+        JsonArray * new_obj = new JsonArray(0);
         // [1, 2, 3, 4] is valid JSON lol...
         parseArray(new_obj, s, i);
         obj = (JsonValue *) new_obj;
@@ -450,21 +445,3 @@ extern std::string WylesLibs::Json::pretty(std::string json) {
     }
     return pretty;
 }
-
-
-// TODO: Once finished, think about how this can be implemented differently? ("take a step back", birds eye view, for better planning, better cache?)
-
-//  what are we doing now... consume until start of object, 
-//      then consume until end of key (:), then consume <value> and until (,) repeat until no more data...
-//      so, not really strict json..., as in, some non-valid json will work...
-
-//      for instance, don't need '}' and non-whitespace between tokens are valid... not among other things?
-
-//  now, do I enforce whitespace?
-//      to do this, parseObject and parseValue and mainloop need refactoring...
-//      
-//      require } before {?
-//      this means, main loop needs refactoring...
-
-// then I think that's it...
-//  this is what the validation function was going to do... but let's just do it :)

@@ -15,7 +15,14 @@ class JsonObject: public JsonValue {
         // TODO: hide this? make interface better...
         std::vector<std::string> keys; 
         JsonArray values;
-        JsonObject(): JsonValue(OBJECT) {}
+        size_t depth;
+        JsonObject(): JsonObject(0) {}
+        JsonObject(size_t depth): depth(depth), JsonValue(OBJECT) {
+            if (depth > MAX_DEPTH) {
+                throw std::runtime_error("JsonObject creation error... TOO MUCH DEPTH!");
+            }
+            values.depth = depth;
+        }
 
         void addKey(std::string key) {
             this->keys.push_back(key);

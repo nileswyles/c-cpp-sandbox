@@ -9,6 +9,8 @@
 
 namespace WylesLibs::Json {
 
+static constexpr size_t MAX_DEPTH = 7;
+
 typedef enum JsonType {
     NULL_TYPE = 0,
     BOOLEAN,

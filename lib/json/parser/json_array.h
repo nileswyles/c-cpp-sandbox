@@ -11,7 +11,15 @@
 namespace WylesLibs::Json {
 class JsonArray: public JsonValue, public std::vector<JsonValue *> {
     public:
-        JsonArray(): JsonValue(ARRAY), std::vector<JsonValue *>() {}
+        size_t depth;
+        // TODO: 
+        //  down side of this is no compiler check? so maybe that's why required to define default constructor?
+        JsonArray(): JsonArray(0) {}
+        JsonArray(size_t depth): depth(depth), JsonValue(ARRAY), std::vector<JsonValue *>() {
+            if (depth > MAX_DEPTH) {
+                throw std::runtime_error("JsonArray creation error... TOO MUCH DEPTH!");
+            }
+        }
         ~JsonArray() {
             // TODO. let cpp do it's magic... and don't use pointers here?.... 
             //  Is that okay? think about limits... and how they actually work. 

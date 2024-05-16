@@ -384,8 +384,8 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
     char c = buf.at(i);
     while (c != '}') {
         if (c == '{' || c == ',') {
-            loggerPrintf(LOGGER_DEBUG, "New Object Entry\n");
-            parseKey(obj, buf, ++i);
+           loggerPrintf(LOGGER_DEBUG, "New Object Entry\n");
+           parseKey(obj, buf, ++i);
             // i @ :
            parseValue(&(obj->values), buf, ++i);
            c = buf.at(i);
@@ -410,16 +410,6 @@ extern JsonValue * WylesLibs::Json::parse(std::string s, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
 
     readWhiteSpaceUntil(s, i, "{[");
-    // TODO: limit length of input string...
-    //      so, what exactly happens if there aren't any limits?
-    //      definetly need the depth limits because stack size is limited...
-    //      number/double limits too because that's how numbers work...
-    //      
-    //      string length limits? like for keys and string values...? 
-    //      
-    //      length of input string? yes for same reason as depth limit?
-
-    // so, yes to limits lmao...
 
     JsonValue * obj = nullptr;
     char c = s.at(i);
@@ -475,5 +465,6 @@ extern std::string WylesLibs::Json::pretty(std::string json) {
             pretty += c;
         }
     }
+
     return pretty;
 }

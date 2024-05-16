@@ -73,6 +73,12 @@ class User: public Json::JsonBase {
                 } else if (key == "dec") {
                     Json::setVariableFromJsonValue(value, dec, validation_count);
                 } else if (key == "arr") {
+                    // okay, so 
+                    //  classarr -> type
+                    //  classarr2 -> type2
+                    //  
+                    //  so "arr" of type -> classarr
+                    //     "arr" of type -> classarr2 
                     Json::setArrayVariablesFromJsonValue(value, arr, validation_count);
                 } else if (key == "nested_obj") {
                     loggerPrintf(LOGGER_DEBUG, "Nested type.\n");

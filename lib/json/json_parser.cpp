@@ -16,7 +16,7 @@ static void parseArray(JsonArray * obj, std::string buf, size_t& i);
 static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::string comp, JsonValue * value);
 static void parseValue(JsonArray * obj, std::string buf, size_t& i);
 static void parseKey(JsonObject * obj, std::string buf, size_t& i);
-static void loopItems(JsonObject * obj, std::string buf, size_t& i);
+static void parseObject(JsonObject * obj, std::string buf, size_t& i);
 
 static void parseNestedObject(JsonArray * obj, std::string buf, size_t& i);
 
@@ -275,7 +275,7 @@ static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
     i--;
 }
 
-static void loopItems(JsonObject * obj, std::string buf, size_t& i) {
+static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
     // find start and end index of key string
     // TODO:
     //  if empty string...
@@ -283,22 +283,22 @@ static void loopItems(JsonObject * obj, std::string buf, size_t& i) {
     //  maybe allow empty string but enforce uniqueness...
     char c = '\0';
     while (c != '}') {
-        parseKey(obj, buf, i);
+            parseKey(obj, buf, i);
 
-        while (c != ':') {
-            c = buf.at(++i);
-        } 
+            while (c != ':') {
+                c = buf.at(++i);
+            } 
+     
+            loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+            parseValue(&(obj->values), buf, ++i);
+            loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
 
-        loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-        parseValue(&(obj->values), buf, ++i);
-        loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
-
-        c = buf.at(i);
-
-        while (c != ',' && c != '}') {
-            printf("%c\n", c);
-            c = buf.at(++i);
-        } 
+            c = buf.at(i);
+     
+            while (c != ',' && c != '}') {
+                printf("%c\n", c);
+                c = buf.at(++i);
+        }
         // break if end of object... else loop back to parse next key...
     }
 
@@ -319,7 +319,7 @@ static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
                 arr->addValue((JsonValue *)new_obj);
             }
             loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
-            loopItems((JsonObject *) new_obj, buf, ++i);
+            parseObject((JsonObject *) new_obj, buf, ++i);
         }
         i++;
     }
@@ -340,7 +340,7 @@ extern JsonValue * WylesLibs::Json::parse(std::string s, size_t& i) {
     char c = s.at(i);
     if (c == '{') {
         JsonObject * new_obj = new JsonObject();
-        loopItems(new_obj, s, ++i);
+        parseObject(new_obj, s, ++i);
         obj = (JsonValue *) new_obj;
     } else if (c == '[') {
         JsonArray * new_obj = new JsonArray();
@@ -402,7 +402,7 @@ extern std::string WylesLibs::Json::pretty(std::string json) {
 //      for instance, don't need '}' and non-whitespace between tokens are valid... not among other things?
 
 //  now, do I enforce whitespace?
-//      to do this, loopItems and parseValue and mainloop need refactoring...
+//      to do this, parseObject and parseValue and mainloop need refactoring...
 //      
 //      require } before {?
 //      this means, main loop needs refactoring...

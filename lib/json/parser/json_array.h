@@ -12,12 +12,14 @@ namespace WylesLibs::Json {
 class JsonArray: public JsonValue, public std::vector<JsonValue *> {
     public:
         size_t depth;
+        JsonType value_type;
+        bool is_object_array;
         // TODO: 
         //  down side of this is no compiler check? so maybe that's why required to define default constructor?
         JsonArray(): JsonArray(0) {}
         JsonArray(size_t depth): depth(depth), JsonValue(ARRAY), std::vector<JsonValue *>() {
             if (depth > MAX_JSON_DEPTH) {
-                throw std::runtime_error("JsonArray creation error... TOO MUCH DEPTH!");
+                throw std::runtime_error("JsonArray: creation error... TOO MUCH DEPTH!");
             }
         }
         ~JsonArray() {
@@ -31,6 +33,13 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
         }
 
         void addValue(JsonValue * value) {
+            if (!is_object_array) {
+                if (this->size() == 0) {
+                    value_type = value->type;
+                } else if (value_type != value->type) {
+                    throw std::runtime_error("JsonArray: mixed types? nah bruh...");
+                }
+            }
             this->push_back(value);
             loggerPrintf(LOGGER_DEBUG, "Added json value object! @ %p\n", value);
         }

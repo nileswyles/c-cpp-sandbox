@@ -22,6 +22,7 @@ class JsonObject: public JsonValue {
                 throw std::runtime_error("JsonObject creation error... TOO MUCH DEPTH!");
             }
             values.depth = depth;
+            values.is_object_array = true;
         }
 
         void addKey(std::string key) {

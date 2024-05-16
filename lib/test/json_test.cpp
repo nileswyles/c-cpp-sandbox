@@ -158,7 +158,7 @@ void testJsonArray(void * test) {
                         }
                     }
                 }
-                if (validation_count == 4) {
+                if (validation_count == 4 && values->size() == 4) {
                     t->fail = false;
                 }
             }
@@ -169,19 +169,19 @@ void testJsonArray(void * test) {
     }
 }
 
-void parseObjectAndAssert(Test * t, std::string s, User expected) {
+void parseObjectAndAssert(Test * t, std::string s, User expected, size_t expected_size) {
     try {
         size_t i = 0;
-        Json::JsonValue * obj = Json::parse(s, i);
+        Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s, i);
         if (obj->type == Json::OBJECT) {
-            User user((Json::JsonObject *)obj);
+            User user(obj);
             loggerPrintf(LOGGER_TEST, "JSON To Parse: \n");
             loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
             loggerPrintf(LOGGER_TEST, "Parsed JSON - User Class: \n");
             loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
             loggerPrintf(LOGGER_TEST, "Expected JSON - User Class: \n");
             loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(expected.toJsonString()).c_str());
-            if (user == expected) {
+            if (user == expected && obj->keys.size() == expected_size && obj->values.size() == expected_size) {
                 t->fail = false;
             }
         }
@@ -194,25 +194,8 @@ void parseObjectAndAssert(Test * t, std::string s, User expected) {
 void testJsonEmptyObject(void * test) {
     std::string s("{}");
     User expected;
-    try {
-        size_t i = 0;
-        Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s, i);
-        if (obj->type == Json::OBJECT) {
-            User user(obj);
-            loggerPrintf(LOGGER_TEST, "JSON To Parse: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
-            loggerPrintf(LOGGER_TEST, "Parsed JSON - User Class: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
-            loggerPrintf(LOGGER_TEST, "Expected JSON - User Class: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(expected.toJsonString()).c_str());
-            if (user == expected && obj->keys.size() == 0) {
-                ((Test *)test)->fail = false;
-            }
-        }
-        delete obj;
-    } catch (const std::exception& e) {
-        std::cout << "Exception: \n" << e.what() << '\n';
-    }
+
+    parseObjectAndAssert((Test *)test, s, expected, 0);
 }
 
 void testJsonObjectWithArray(void * test) {
@@ -224,7 +207,7 @@ void testJsonObjectWithArray(void * test) {
     std::vector<bool> expected_arr{false, true, false, false};
     expected.arr = expected_arr;
 
-    parseObjectAndAssert((Test *)test, s, expected);
+    parseObjectAndAssert((Test *)test, s, expected, 1);
 }
 
 void testJson(void * test) {
@@ -249,7 +232,7 @@ void testJson(void * test) {
     expected.dec = 272727.1111;
     expected.nested = nested_obj;
 
-    parseObjectAndAssert((Test *)test, s, expected);
+    parseObjectAndAssert((Test *)test, s, expected, 5);
 }
 
 int main() {
@@ -262,8 +245,8 @@ int main() {
     // TODO: add {} test... lmao
     tester_add_test(t, testJson);
     tester_add_test(t, testJsonObjectWithArray);
-    // tester_add_test(t, testJsonArray);
-    // tester_add_test(t, testJsonEmptyObject);
+    tester_add_test(t, testJsonArray);
+    tester_add_test(t, testJsonEmptyObject);
     tester_run(t);
 
     tester_destructor(t);

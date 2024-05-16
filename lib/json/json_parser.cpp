@@ -191,6 +191,8 @@ static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
             //  nested arrays might be an issue. like too much recursion? curious what happens
             //  whitespace shouldn't though? lol
             //  nested object limit too..
+
+            //  yeah might require some global state object... which means we can simplify parse value functions? and nested?
             parseArrayValue(arr, buf, ++i);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseArrayValue function.\n");
         }

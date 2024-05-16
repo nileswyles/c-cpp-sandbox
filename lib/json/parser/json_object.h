@@ -18,7 +18,7 @@ class JsonObject: public JsonValue {
         size_t depth;
         JsonObject(): JsonObject(0) {}
         JsonObject(size_t depth): depth(depth), JsonValue(OBJECT) {
-            if (depth > MAX_DEPTH) {
+            if (depth > MAX_JSON_DEPTH) {
                 throw std::runtime_error("JsonObject creation error... TOO MUCH DEPTH!");
             }
             values.depth = depth;

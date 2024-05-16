@@ -151,6 +151,7 @@ static void parseString(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string s;
     char prev_c = (char)0x00;
+    // TODO: set limit... of strings...
     while (c != '"') {
         /*
             '"'
@@ -193,6 +194,10 @@ static void parseString(JsonArray * obj, std::string buf, size_t& i) {
         }
         prev_c = c;
         c = buf.at(++i);
+    }
+
+    if (s.size() > MAX_LENGTH_OF_JSON_STRING_VALUES) {
+        throw std::runtime_error("parseString: string value too looooooonnnng!");
     }
 
     obj->addValue((JsonValue *) new JsonString(s));
@@ -345,6 +350,8 @@ static void parseKeyString(JsonObject * obj, std::string buf, size_t& i) {
     size_t size = i - start_i;
     if (size == 0) {
         throw std::runtime_error("Empty key string found.");
+    } else if (size > MAX_LENGTH_OF_JSON_STRING_KEYS) {
+        throw std::runtime_error("parseKeyString: Key string to loooooonnng!");
     }
     std::string s = buf.substr(start_i, size);
     obj->addKey(s);
@@ -383,11 +390,26 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
 //  Okay, I was convinced to use the string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
 //      also, sizeof(pointers) < sizeof(std::string)
 //      and .at() bounds checks (exceptions), [] doesn't
+    // string construction? iterates over string to get length? that might be reason enough to change back to pointers lol... or maybe copy constructor is optimized? yeah
+    //  but still that initial creation... 
 extern JsonValue * WylesLibs::Json::parse(std::string s, size_t& i) {
+    if (s.size() > MAX_LENGTH_OF_JSON_STRING) {
+        throw std::runtime_error("WylesLibs::Json::parse: String to loooonnnng!");
+    }
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
 
     readWhiteSpaceUntil(s, i, "{[");
+    // TODO: limit length of input string...
+    //      so, what exactly happens if there aren't any limits?
+    //      definetly need the depth limits because stack size is limited...
+    //      number/double limits too because that's how numbers work...
+    //      
+    //      string length limits? like for keys and string values...? 
+    //      
+    //      length of input string? yes for same reason as depth limit?
+
+    // so, yes to limits lmao...
 
     JsonValue * obj = nullptr;
     char c = s.at(i);

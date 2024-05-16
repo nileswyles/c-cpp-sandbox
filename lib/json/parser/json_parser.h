@@ -9,7 +9,10 @@
 
 namespace WylesLibs::Json {
 
-static constexpr size_t MAX_DEPTH = 7;
+static constexpr size_t MAX_JSON_DEPTH = 7;
+static constexpr size_t MAX_LENGTH_OF_JSON_STRING = 2<<27;
+static constexpr size_t MAX_LENGTH_OF_JSON_STRING_KEYS = 2<<7;
+static constexpr size_t MAX_LENGTH_OF_JSON_STRING_VALUES = 2<<19;
 
 typedef enum JsonType {
     NULL_TYPE = 0,

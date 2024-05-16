@@ -27,8 +27,8 @@ class Nested: public Json::JsonBase {
 
         std::string toJsonString() {
             std::string s("{");
-            s += "\"nested_name\": ";
-            s += Json::JsonString(this->name).toJsonString();
+            // s += "\"nested_name\": ";
+            // s += Json::JsonString(this->name).toJsonString();
 
             if (nested != nullptr) {
                 s += ",\"nested\": ";
@@ -242,6 +242,18 @@ void testJsonEmptyObject(void * test) {
     parseObjectAndAssert((Test *)test, s, expected, 0);
 }
 
+void testJsonObjectWithName(void * test) {
+    std::string s("{ \n");
+    s += "\"name\": \"username\", \n";
+    s += "}\n";
+
+    // TODO: hmm... let's think about this... not testing toStrings, so should I just use that?
+    User expected;
+    expected.name = "username";
+
+    parseObjectAndAssert((Test *)test, s, expected, 1);
+}
+
 void testJsonObjectWithArray(void * test) {
     std::string s("{ \n");
     s += "\"arr\": [false, true, false, false], \n";
@@ -325,6 +337,7 @@ int main() {
     // TODO: add {} test... lmao
     // tester_add_test(t, testJson);
     // tester_add_test(t, testJsonObjectWithArray);
+    // tester_add_test(t, testJsonObjectWithName);
     // tester_add_test(t, testJsonArray);
     // tester_add_test(t, testJsonEmptyObject);
     tester_run(t);

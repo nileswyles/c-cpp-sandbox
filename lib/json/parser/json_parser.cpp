@@ -1,6 +1,9 @@
 #include <stdbool.h>
 #include "cstring.h"
-#include "json.h"
+
+#include "json_parser.h"
+#include "json_array.h"
+#include "json_object.h"
 
 using namespace WylesLibs::Json;
 

@@ -300,9 +300,9 @@ void testJsonNestedObject(void * test) {
             
 
             // printf("%s", actual.c_str());
-            printf("Expected\n%s\n", expected.c_str());
-            printf("Actual\n%s\n", actual.c_str());
-            if (actual == s) {
+            printf("Expected\n%s, %ld\n", expected.c_str(), expected.size());
+            printf("Actual\n%s, %ld\n", actual.c_str(), actual.size());
+            if (actual == expected) {
                 ((Test *) test)->fail = false;
             }
         }

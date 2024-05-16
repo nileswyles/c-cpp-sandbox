@@ -7,7 +7,9 @@ QUOTE_INCLUDE_ROOT=$ROOT_DIR/lib
 # $ROOT_DIR/lib/json/json_mapper.cpp
 SRC_FILES="
 $ROOT_DIR/lib/test/json_test.cpp
-$ROOT_DIR/lib/json/json_parser.cpp
+$ROOT_DIR/lib/json/parser/json_parser.cpp
+$ROOT_DIR/lib/json/parser/json_object.cpp
+$ROOT_DIR/lib/json/parser/json_array.cpp
 $ROOT_DIR/lib/c/array.c
 $ROOT_DIR/lib/test/tester.c
 "

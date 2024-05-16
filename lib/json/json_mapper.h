@@ -1,8 +1,11 @@
 #ifndef WYLESLIBS_JSON_MAPPER_H
 #define WYLESLIBS_JSON_MAPPER_H
 
+#include "parser/json_parser.h"
+#include "parser/json_object.h"
+#include "parser/json_array.h"
+
 #include "logger.h"
-#include "json_parser.h"
 #include <string>
 
 namespace WylesLibs::Json {

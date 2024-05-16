@@ -65,7 +65,7 @@ static void parseDecimal(std::string buf, size_t& i, double& value, size_t& digi
         decimal_divisor *= 10;
         c = buf.at(++i);
         if (++digit_count > FLT_MAX_MIN_DIGITS) {
-            throw std::runtime_error("parseNatural")
+            throw std::runtime_error("parseNatural");
         }
     }
     // make sure we point at last digit
@@ -80,7 +80,7 @@ static void parseNatural(std::string buf, size_t& i, double& value, size_t& digi
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         c = buf.at(++i);
         if (++digit_count > FLT_MAX_MIN_DIGITS) {
-            throw std::runtime_error("parseNatural")
+            throw std::runtime_error("parseNatural");
 
         }
     }

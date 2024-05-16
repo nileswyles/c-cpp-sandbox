@@ -120,20 +120,6 @@ static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
             size_t dummy_digit_count = 0;
             parseNatural(buf, i, exp, dummy_digit_count);
 
-            // hmm... exp max is function of where decimal point is, so digit_count of natural not decimal...
-            //  alright, so question is do I care about decimal? yes, if sign negative?  hmm....
-            // hmm... this works for now... might be too much... but as long as we don't go past MAX_DOUBLE.
-
-            // so what this is doing is capping value at 9999999999... seems very off from what I think JSON parsers do but 
-            //  well within limits of 64-bit float so we are good... 
-            
-            // current DIGIT max chosen because 32-bit integer... which I think is more than enough for pretty much everything?
-            //  just use strings (UUID) if not lol... hmm..... seems like a lame limitation...
-
-            // BILLIONAIRE!
-
-            // okay so that works for positive exp sign, need to confirm we are good if we move decimal point in other direction...
-            //  I think so... by a large margin lol... but let's be sure...
             if (exp > FLT_MAX_EXP) {
                 throw std::runtime_error("parseNumber: exponential to large.");
             }

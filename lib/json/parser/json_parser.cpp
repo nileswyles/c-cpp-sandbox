@@ -252,9 +252,10 @@ static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
 
             //  yeah might require some global state object... which means we can simplify parse value functions? and nested?
             parseValue(arr, buf, ++i);
-            loggerPrintf(LOGGER_DEBUG, "Returned from parseArrayValue function.\n");
+            loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
-        loggerPrintf(LOGGER_DEBUG, "%c\n", c);
+        loggerPrintf(LOGGER_DEBUG, "%c\n", buf.at(i));
+        c = buf.at(i);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
@@ -265,7 +266,7 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
     char c = buf.at(i);
     bool parsed = false;
     // read until , or } or parsed token...
-    while (c != ',' && c != '}') { 
+    while (c != ',' && c != '}' && c != ']') { 
         if (!parsed) {
             if (c == '"') {
                 parseString(obj, buf, i);
@@ -306,6 +307,31 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
             throw std::runtime_error("Non-whitespace found in parseValue");
         }
         c = buf.at(++i);
+    }
+
+    // support {key:value,} - this is lame but a common thing? so let's support it.
+    //  comma after last value...
+    // peek to see if last element...
+    size_t x = i;
+    c = buf.at(x); // points to , or }
+    if (c == ',') {
+        loggerPrintf(LOGGER_DEBUG, "Found comma after parsing value... Peeking! @ %lu\n", i);
+        c = buf.at(++x);
+        printf("%c\n", c);
+        if (c == '}' || c == ']') {
+            i = x;
+            loggerPrintf(LOGGER_DEBUG, "Found top level delimeter! @ %lu \n", i);
+            return;
+        }
+        while (whitespace.find(c) != std::string::npos) {
+            c = buf.at(++x);
+            printf("%c\n", c);
+        } // found non whitespace character...
+        if (c == '}' || c == ']') {
+            i = x;
+            loggerPrintf(LOGGER_DEBUG, "Found top level delimeter! @ %lu \n", i);
+            return;
+        }
     }
 }
 
@@ -349,22 +375,9 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
             loggerPrintf(LOGGER_DEBUG, "New Object Entry\n");
             parseKey(obj, buf, ++i);
             // i @ :
-            parseValue(&(obj->values), buf, ++i);
-            loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function. @ %lu, %c\n", i, buf.at(i));
-
-            // support {key:value,} - this is lame but a common thing? so let's support it.
-            // peek to see if last element...
-            size_t x = i;
-            c = buf.at(x); // points to , or }
-            if (c == ',') {
-                while (whitespace.find(c) != std::string::npos) {
-                    if (c == '}') {
-                        i = x;
-                        break;
-                    }
-                    c = buf.at(++x);
-                } // found non whitespace character...
-            }
+           parseValue(&(obj->values), buf, ++i);
+           c = buf.at(i);
+           loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function. @ %lu, %c\n", i, c);
         }
     }
 

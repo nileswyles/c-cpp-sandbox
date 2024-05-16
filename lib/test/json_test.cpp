@@ -114,12 +114,10 @@ void testJsonArray(void * tester) {
         if (obj != nullptr) {
             if (obj->type == Json::ARRAY) {
                 loggerPrintf(LOGGER_TEST, "JSON: \n");
-                loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
+                loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
                 Json::JsonArray * values = (Json::JsonArray *)obj;
-                for (size_t i = 0; i < values->size(); i++) {
-                    loggerPrintf(LOGGER_TEST, "User Class: \n");
-                    loggerPrintf(LOGGER_TEST, "%u\n", ((Json::JsonBoolean *)values->at(i))->getValue());
-                }
+                loggerPrintf(LOGGER_TEST, "Parsed JSON Array: \n");
+                loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(values->toJsonString()).c_str());
             } else {
                 // something went terribly wrong
             }

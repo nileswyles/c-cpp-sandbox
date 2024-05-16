@@ -174,9 +174,14 @@ static void parseString(JsonArray * obj, std::string buf, size_t& i) {
 
 static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
-
-    JsonArray * arr = new JsonArray(); 
-    obj->addValue(arr);
+    
+    JsonArray * arr;
+    if (i == 0) {
+        arr = obj;
+    } else {
+        arr = new JsonArray(); 
+        obj->addValue(arr);
+    }
 
     char c = buf.at(i);
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
@@ -199,12 +204,12 @@ static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::str
 
     std::string buf_i = buf.substr(i, comp.size());
     size_t consumed = compareCString(buf_i, comp, comp.size());
-    if (consumed == comp.size()) {
-        obj->addValue(value);
-    }
     i += consumed - 1; // point at last index of token
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu, %c\n", comp.c_str(), i, buf.at(i));
+    if (consumed == comp.size()) {
+        loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu, %c\n", comp.c_str(), i, buf.at(i));
+        obj->addValue(value);
+    }
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
@@ -341,9 +346,6 @@ static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
 //  Okay, I was convinced to use the string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
 //      also, sizeof(pointers) < sizeof(std::string)
 //      and .at() bounds checks (exceptions), [] doesn't
-
-// TODO: variables whos storage is created by this function can't be returned as reference right?
-//  this only parses one object...., so maybe return a pointer to index.... so that caller can loop
 extern JsonValue * WylesLibs::Json::parse(std::string s, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", pretty(s).c_str());
@@ -365,7 +367,6 @@ extern JsonValue * WylesLibs::Json::parse(std::string s, size_t& i) {
 }
 
 extern std::string WylesLibs::Json::pretty(std::string json) {
-    loggerPrintf(LOGGER_DEBUG, "Before pretty:\n %s\n", json.c_str());
     std::string pretty;
     size_t depth = 0;
 

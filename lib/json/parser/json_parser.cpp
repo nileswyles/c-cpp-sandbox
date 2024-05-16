@@ -346,6 +346,7 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
     char c = buf.at(i);
     while (c != '}') {
         if (c == '{' || c == ',') {
+            loggerPrintf(LOGGER_DEBUG, "New Object Entry\n");
             parseKey(obj, buf, ++i);
             // i @ :
             parseValue(&(obj->values), buf, ++i);
@@ -385,7 +386,7 @@ extern JsonValue * WylesLibs::Json::parse(std::string s, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {
         JsonObject * new_obj = new JsonObject();
-        parseObject(new_obj, s, ++i);
+        parseObject(new_obj, s, i);
         obj = (JsonValue *) new_obj;
     } else if (c == '[') {
         JsonArray * new_obj = new JsonArray();

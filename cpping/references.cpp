@@ -38,6 +38,11 @@ int main() {
     // but can use that function to test this...
     int& ret_ref = return_ref_arg_ref(arg_ref_2);
     printf("reference bridge?: %d, %p, %p\n", ret_ref, &ret_ref, &arg_ref_2);
+    // and so, that begs the question... do you need the & designator?
+    int ret_ref_2 = return_ref_arg_ref(arg_ref_2);
+    printf("reference bridge?: %d, %p, %p\n", ret_ref_2, &ret_ref_2, &arg_ref_2);
+
+    // now is this defined in the spec? or undefined/impl based? lol...
 
     // these segfault...
     printf("return_ref_arg_val: %d\n", return_ref_arg_val(7));

@@ -215,24 +215,17 @@ static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::str
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
-    char c = '\0';
-    while (c != '}') { 
-        c = buf.at(i);
-        // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-        if (c == '{') {
-            loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
-            // create new object... and update cursor/pointer to object.
-            JsonObject * new_obj = new JsonObject();
-            if (arr != nullptr) {
-                arr->addValue((JsonValue *)new_obj);
-            }
-            loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
-            parseObject((JsonObject *) new_obj, buf, ++i);
+    char c = buf.at(i);
+    if (c == '{') {
+        loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+        // create new object... and update cursor/pointer to object.
+        JsonObject * new_obj = new JsonObject();
+        if (arr != nullptr) {
+            arr->addValue((JsonValue *)new_obj);
         }
-        i++;
+        loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
+        parseObject((JsonObject *) new_obj, buf, ++i);
     }
-
-    i--;
     loggerPrintf(LOGGER_DEBUG, "Returning object, found %c @ %lu\n", c, i);
 }
 
@@ -375,7 +368,6 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
     }
 
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");
-    i--;
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token (one before delimeter).

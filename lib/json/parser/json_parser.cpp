@@ -16,6 +16,7 @@ static void parseNatural(std::string buf, size_t& i, double& value);
 static void parseNumber(JsonArray * obj, std::string buf, size_t& i);
 static void parseString(JsonArray * obj, std::string buf, size_t& i);
 static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::string comp, JsonValue * value);
+static void parseKeyString(JsonObject * obj, std::string buf, size_t& i);
 
 // base-ish (base and 1 at same time)...
 static void parseNestedObject(JsonArray * obj, std::string buf, size_t& i);
@@ -261,7 +262,6 @@ static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
             loggerPrintf(LOGGER_DEBUG, "Returned from parseArrayValue function.\n");
         }
         loggerPrintf(LOGGER_DEBUG, "%c\n", c);
-        c = buf.at(++i);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
@@ -314,15 +314,11 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
         }
         c = buf.at(++i);
     }
-    --i;
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
-    loggerPrintf(LOGGER_DEBUG, "Parsing Key. @ %lu, %c\n", i, buf.at(i));
-    readWhiteSpaceUntil(buf, i, "\"");
-    size_t start_i = ++i;
-
+static void parseKeyString(JsonObject * obj, std::string buf, size_t& i) {
+    size_t start_i = i;
     char c = buf.at(i);
     while (c != '"') {
         c = buf.at(++i);
@@ -334,10 +330,17 @@ static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
     std::string s = buf.substr(start_i, size);
     obj->addKey(s);
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s @ %lu\n", s.c_str(), i);
+}
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
+static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing Key. @ %lu, %c\n", i, buf.at(i));
+    readWhiteSpaceUntil(buf, i, "\"");
+    // i @ "
+    parseKeyString(obj, buf, ++i);
+    // i @ "
     readWhiteSpaceUntil(buf, ++i, ":");
-
-    i--;
+    // i @ :
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
@@ -351,19 +354,14 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
     while (c != '}') {
         if (c == '{' || c == ',') {
             parseKey(obj, buf, ++i);
-     
-            // make sure we point to ':'
-            readWhiteSpaceUntil(buf, ++i, ":");
-
             // i @ :
             parseValue(&(obj->values), buf, ++i);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function. @ %lu, %c\n", i, buf.at(i));
-            // should point to char before , or }
 
             // support {key:value,} - this is lame but a common thing? so let's support it.
             // peek to see if last element...
             size_t x = i;
-            c = buf.at(++x); // points to , or }
+            c = buf.at(x); // points to , or }
             if (c == ',') {
                 while (whitespace.find(c) != std::string::npos) {
                     if (c == '}') {
@@ -374,7 +372,6 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
                 } // found non whitespace character...
             }
         }
-        c = buf.at(++i);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");

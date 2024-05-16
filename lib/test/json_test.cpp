@@ -7,16 +7,15 @@ using namespace WylesLibs;
 
 class Nested: public Json::JsonBase {
     public:
-        std::string nested_name;
-        Nested() {} // ?
+        std::string name;
+        Nested() {}
         Nested(Json::JsonObject * obj) {
-            // TODO: nullptr
             size_t validation_count = 0;
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 Json::JsonValue * value = obj->values.at(i);
                 if(key == "nested_name") {
-                    Json::setVariableFromJsonValue(value, nested_name, validation_count);
+                    Json::setVariableFromJsonValue(value, name, validation_count);
                 }
             }
             loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
@@ -28,10 +27,17 @@ class Nested: public Json::JsonBase {
         std::string toJsonString() {
             std::string s("{");
             s += "\"nested_name\": ";
-            s += Json::JsonString(this->nested_name).toJsonString();
+            s += Json::JsonString(this->name).toJsonString();
             s += "}";
 
             return s;
+        }
+
+        bool operator == (const Nested other) {
+            if(this->name != other.name) {
+                return false;
+            }
+            return true;
         }
 };
 
@@ -43,8 +49,9 @@ class User: public Json::JsonBase {
         std::vector<bool> arr;
         Nested nested;
 
+        // TODO: ?
+        User() {}
         User(Json::JsonObject * obj) {
-            // TODO: nullptr
             size_t validation_count = 0;
             loggerPrintf(LOGGER_DEBUG, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
@@ -59,11 +66,9 @@ class User: public Json::JsonBase {
                     Json::setVariableFromJsonValue(value, dec, validation_count);
                 } else if (key == "arr") {
                     Json::setArrayVariablesFromJsonValue(value, arr, validation_count);
-                } else if (key == "nested_obj") { // lol
+                } else if (key == "nested_obj") {
                     loggerPrintf(LOGGER_DEBUG, "Nested type.\n");
                     nested = Json::setVariableFromJsonValue<Nested>(value, validation_count);
-                    // TODO: object constructors not called yet?
-                    //  reference of not yet consructed items? 
                 }
             }
             loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
@@ -101,10 +106,32 @@ class User: public Json::JsonBase {
 
             return s;
         }
+
+        bool operator == (const User other) {
+            if(this->name != other.name) {
+                return false;
+            }
+            if(this->attributes != other.attributes) {
+                return false;
+            }
+            // precision?
+            if(this->dec != other.dec) {
+                return false;
+            }
+            if(this->arr != other.arr) {
+                return false;
+            }
+            if(this->nested != other.nested) {
+                return false;
+            }
+            return true;
+        }
 };
 
-void testJsonArray(void * tester) {
+void testJsonArray(void * test) {
+    Test * t = (Test *)test;
     std::string s("[false, true, false, false]");
+    std::vector<bool> expected{false, true, false, false};
     try {
         size_t i = 0;
         Json::JsonValue * obj = Json::parse(s, i);
@@ -115,19 +142,28 @@ void testJsonArray(void * tester) {
                 Json::JsonArray * values = (Json::JsonArray *)obj;
                 loggerPrintf(LOGGER_TEST, "Parsed JSON Array: \n");
                 loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(values->toJsonString()).c_str());
-            } else {
-                // something went terribly wrong
+                size_t validation_count = 0;
+                for (size_t i = 0; i < values->size(); i++) {
+                    Json::JsonValue * value = values->at(i);
+                    if (value->type == Json::BOOLEAN) {
+                        bool actual = ((Json::JsonBoolean *)value)->getValue();
+                        if (expected[i] == actual) {
+                            validation_count++;
+                        }
+                    }
+                }
+                if (validation_count == 4) {
+                    t->fail = false;
+                }
             }
-            delete obj;
         }
+        delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
-        //  throw e; // copy-initializes a new exception object of type std::exception
-        // throw;   // rethrows the exception object of type std::out_of_range
     }
 }
 
-void parseObjectAndAssert(std::string s) {
+void parseObjectAndAssert(Test * t, std::string s, User expected) {
     try {
         size_t i = 0;
         Json::JsonValue * obj = Json::parse(s, i);
@@ -137,31 +173,55 @@ void parseObjectAndAssert(std::string s) {
             loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
             loggerPrintf(LOGGER_TEST, "Parsed JSON - User Class: \n");
             loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
-        } else {
-            // something went terribly wrong
+            loggerPrintf(LOGGER_TEST, "Expected JSON - User Class: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(expected.toJsonString()).c_str());
+            if (user == expected) {
+                t->fail = false;
+            }
         }
+        delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
-        //  throw e; // copy-initializes a new exception object of type std::exception
-        // throw;   // rethrows the exception object of type std::out_of_range
     }
 }
 
-void testJsonEmptyObject(void * tester) {
+void testJsonEmptyObject(void * test) {
     std::string s("{}");
-
-    parseObjectAndAssert(s);
+    User expected;
+    try {
+        size_t i = 0;
+        Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s, i);
+        if (obj->type == Json::OBJECT) {
+            User user(obj);
+            loggerPrintf(LOGGER_TEST, "JSON To Parse: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
+            loggerPrintf(LOGGER_TEST, "Parsed JSON - User Class: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
+            loggerPrintf(LOGGER_TEST, "Expected JSON - User Class: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(expected.toJsonString()).c_str());
+            if (user == expected && obj->keys.size() == 0) {
+                ((Test *)test)->fail = false;
+            }
+        }
+        delete obj;
+    } catch (const std::exception& e) {
+        std::cout << "Exception: \n" << e.what() << '\n';
+    }
 }
 
-void testJsonObjectWithArray(void * tester) {
+void testJsonObjectWithArray(void * test) {
     std::string s("{ \n");
     s += "\"arr\": [false, true, false, false], \n";
     s += "}\n";
 
-    parseObjectAndAssert(s);
+    User expected;
+    std::vector<bool> expected_arr{false, true, false, false};
+    expected.arr = expected_arr;
+
+    parseObjectAndAssert((Test *)test, s, expected);
 }
 
-void testJson(void * tester) {
+void testJson(void * test) {
     // Tester * t = (Tester *)tester;
     std::string s("{ \n");
     s += "\"name\":\"username\", \n";
@@ -172,7 +232,18 @@ void testJson(void * tester) {
     s += "\"null_value\": null \n";
     s += "}\n";
 
-    parseObjectAndAssert(s);
+    Nested nested_obj;
+    nested_obj.name = "nested_value";
+
+    User expected;
+    expected.name = "username";
+    expected.attributes = "attributes for user";
+    std::vector<bool> expected_arr{false, true, false, false};
+    expected.arr = expected_arr;
+    expected.dec = 272727.1111;
+    expected.nested = nested_obj;
+
+    parseObjectAndAssert((Test *)test, s, expected);
 }
 
 int main() {
@@ -184,9 +255,9 @@ int main() {
 
     // TODO: add {} test... lmao
     tester_add_test(t, testJson);
-    // tester_add_test(t, testJsonObjectWithArray);
-    // tester_add_test(t, testJsonArray);
-    // tester_add_test(t, testJsonEmptyObject);
+    tester_add_test(t, testJsonObjectWithArray);
+    tester_add_test(t, testJsonArray);
+    tester_add_test(t, testJsonEmptyObject);
     tester_run(t);
 
     tester_destructor(t);

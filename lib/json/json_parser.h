@@ -127,12 +127,11 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
                 } else if (type == OBJECT) {
                     // s += ((JsonObject *)value)->toJsonString();
                 }
-                if (i == this->size() - 1) {
-                    s += ']';
-                } else {
+                if (i != this->size() - 1) {
                     s += ", ";
                 } 
             }
+            s += ']';
             return s;
         }
 };
@@ -166,12 +165,12 @@ class JsonObject: public JsonValue {
                 } else if (type == OBJECT) {
                     s += ((JsonObject *)value)->toJsonString();
                 }
-                if (i == this->keys.size() - 1) {
-                    s += '}';
-                } else {
+                if (i != this->keys.size() - 1) {
                     s += ", ";
                 } 
             }
+
+            s += '}';
 
             return s;
         }

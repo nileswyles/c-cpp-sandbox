@@ -48,7 +48,7 @@ static void run(Tester * tester, Test * test) {
     if (tester->beforeEach != NULL) {
         tester->beforeEach(tester);
     }
-    test->func((void *)tester);
+    test->func((void *)test);
     if (test->fail) {
         printf("\nTest Failed!\n");
         tester->num_failed++;

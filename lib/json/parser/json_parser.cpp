@@ -56,7 +56,7 @@ static size_t compareCString(std::string buf, std::string comp, size_t comp_leng
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseDecimal(std::string buf, size_t& i, double& value) {
+static void parseDecimal(std::string buf, size_t& i, double& value, size_t& digit_count) {
     double decimal_divisor = 10;
     char c = buf.at(i);
     while (isDigit(c)) {
@@ -64,18 +64,25 @@ static void parseDecimal(std::string buf, size_t& i, double& value) {
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         decimal_divisor *= 10;
         c = buf.at(++i);
+        if (++digit_count > FLT_MAX_MIN_DIGITS) {
+            throw std::runtime_error("parseNatural")
+        }
     }
     // make sure we point at last digit
     i--;
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseNatural(std::string buf, size_t& i, double& value) {
+static void parseNatural(std::string buf, size_t& i, double& value, size_t& digit_count) {
     char c = buf.at(i);
     while (isDigit(c)) {
         value = (value * 10) + (c - 0x30); 
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         c = buf.at(++i);
+        if (++digit_count > FLT_MAX_MIN_DIGITS) {
+            throw std::runtime_error("parseNatural")
+
+        }
     }
     // make sure we point at last digit
     i--;
@@ -89,18 +96,16 @@ static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
     double exponential_multiplier = 10;
     double value = 0;
 
-    // TODO: impose limit...
-    // https://cplusplus.com/reference/cfloat/
-    // 
-
+    size_t natural_digits = 1;
+    size_t decimal_digits = 1;
     char c = buf.at(i);
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string comp(" ,}\r\n\t");
     while (comp.find(c) == std::string::npos) {
         if (isDigit(c)) {
-            parseNatural(buf, i, value);
+            parseNatural(buf, i, value, natural_digits);
         } else if (c == '.') {
-            parseDecimal(buf, ++i, value);
+            parseDecimal(buf, ++i, value, decimal_digits);
         } else if (c == 'e' || c == 'E') {
             c = buf.at(++i);
             if (c == '-') { 
@@ -112,7 +117,26 @@ static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
             }
 
             double exp = 0;
-            parseNatural(buf, i, exp);
+            size_t dummy_digit_count = 0;
+            parseNatural(buf, i, exp, dummy_digit_count);
+
+            // hmm... exp max is function of where decimal point is, so digit_count of natural not decimal...
+            //  alright, so question is do I care about decimal? yes, if sign negative?  hmm....
+            // hmm... this works for now... might be too much... but as long as we don't go past MAX_DOUBLE.
+
+            // so what this is doing is capping value at 9999999999... seems very off from what I think JSON parsers do but 
+            //  well within limits of 64-bit float so we are good... 
+            
+            // current DIGIT max chosen because 32-bit integer... which I think is more than enough for pretty much everything?
+            //  just use strings (UUID) if not lol... hmm..... seems like a lame limitation...
+
+            // BILLIONAIRE!
+
+            // okay so that works for positive exp sign, need to confirm we are good if we move decimal point in other direction...
+            //  I think so... by a large margin lol... but let's be sure...
+            if (exp > FLT_MAX_EXP) {
+                throw std::runtime_error("parseNumber: exponential to large.");
+            }
             for (size_t x = 0; x < exp; x++) {
                 exponential_multiplier *= 10;
             }

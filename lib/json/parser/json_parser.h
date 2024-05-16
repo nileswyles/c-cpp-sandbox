@@ -14,6 +14,10 @@ static constexpr size_t MAX_LENGTH_OF_JSON_STRING = 2<<27;
 static constexpr size_t MAX_LENGTH_OF_JSON_STRING_KEYS = 2<<7;
 static constexpr size_t MAX_LENGTH_OF_JSON_STRING_VALUES = 2<<19;
 
+// really just arbitrarily chose this because we don't want to loop forever or near forever lol...
+static constexpr size_t FLT_MAX_EXP = 27;
+static constexpr size_t FLT_MAX_MIN_DIGITS = 10;
+
 typedef enum JsonType {
     NULL_TYPE = 0,
     BOOLEAN,

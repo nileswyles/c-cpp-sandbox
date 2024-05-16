@@ -99,7 +99,6 @@ class User: public Json::JsonBase {
             s += nested.toJsonString();
             s += "}";
 
-            printf("%s\n", s.c_str());
             return s;
         }
 };
@@ -107,13 +106,11 @@ class User: public Json::JsonBase {
 void testJsonArray(void * tester) {
     std::string s("[false, true, false, false]");
     try {
-        // TODO:
-        //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
         size_t i = 0;
         Json::JsonValue * obj = Json::parse(s, i);
         if (obj != nullptr) {
             if (obj->type == Json::ARRAY) {
-                loggerPrintf(LOGGER_TEST, "JSON: \n");
+                loggerPrintf(LOGGER_TEST, "JSON to Parse: \n");
                 loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
                 Json::JsonArray * values = (Json::JsonArray *)obj;
                 loggerPrintf(LOGGER_TEST, "Parsed JSON Array: \n");
@@ -130,27 +127,18 @@ void testJsonArray(void * tester) {
     }
 }
 
-void testJsonObjectWithArray(void * tester) {
-    std::string s("{ \n");
-    s += "\"arr\": [false, true, false, false], \n";
-    s += "}\n";
-
+void parseObjectAndAssert(std::string s) {
     try {
-        // TODO:
-        //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
         size_t i = 0;
         Json::JsonValue * obj = Json::parse(s, i);
-        if (obj != nullptr) {
-            if (obj->type == Json::OBJECT) {
-                User user((Json::JsonObject *)obj);
-                loggerPrintf(LOGGER_TEST, "JSON: \n");
-                loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
-                loggerPrintf(LOGGER_TEST, "User Class: \n");
-                loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
-            } else {
-                // something went terribly wrong
-            }
-            delete obj;
+        if (obj->type == Json::OBJECT) {
+            User user((Json::JsonObject *)obj);
+            loggerPrintf(LOGGER_TEST, "JSON To Parse: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
+            loggerPrintf(LOGGER_TEST, "Parsed JSON - User Class: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
+        } else {
+            // something went terribly wrong
         }
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
@@ -159,9 +147,22 @@ void testJsonObjectWithArray(void * tester) {
     }
 }
 
+void testJsonEmptyObject(void * tester) {
+    std::string s("{}");
+
+    parseObjectAndAssert(s);
+}
+
+void testJsonObjectWithArray(void * tester) {
+    std::string s("{ \n");
+    s += "\"arr\": [false, true, false, false], \n";
+    s += "}\n";
+
+    parseObjectAndAssert(s);
+}
+
 void testJson(void * tester) {
-    Tester * t = (Tester *)tester;
-    // lol
+    // Tester * t = (Tester *)tester;
     std::string s("{ \n");
     s += "\"name\":\"username\", \n";
     s += "\"attributes\":\"attributes for user\", \n";
@@ -171,28 +172,7 @@ void testJson(void * tester) {
     s += "\"null_value\": null \n";
     s += "}\n";
 
-    try {
-        // TODO:
-        //  Think about this.... pass root as reference? parser class to manage new resources? or keep as is?
-        size_t i = 0;
-        Json::JsonValue * obj = Json::parse(s, i);
-        if (obj != nullptr) {
-            if (obj->type == Json::OBJECT) {
-                User user((Json::JsonObject *)obj);
-                loggerPrintf(LOGGER_TEST, "JSON: \n");
-                loggerPrintf(LOGGER_TEST, "  %s\n", Json::pretty(s).c_str());
-                loggerPrintf(LOGGER_TEST, "User Class: \n");
-                loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
-            } else {
-                // something went terribly wrong
-            }
-            delete obj;
-        }
-    } catch (const std::exception& e) {
-        std::cout << "Exception: \n" << e.what() << '\n';
-        //  throw e; // copy-initializes a new exception object of type std::exception
-        // throw;   // rethrows the exception object of type std::out_of_range
-    }
+    parseObjectAndAssert(s);
 }
 
 int main() {
@@ -202,9 +182,11 @@ int main() {
     // const char * s = "{\"test\":null, \"test2\":17272.2727}";
     Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
 
-    // tester_add_test(t, testJson);
+    // TODO: add {} test... lmao
+    tester_add_test(t, testJson);
     // tester_add_test(t, testJsonObjectWithArray);
-    tester_add_test(t, testJsonArray);
+    // tester_add_test(t, testJsonArray);
+    // tester_add_test(t, testJsonEmptyObject);
     tester_run(t);
 
     tester_destructor(t);

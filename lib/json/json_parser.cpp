@@ -190,6 +190,7 @@ static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
             // TODO:
             //  nested arrays might be an issue. like too much recursion? curious what happens
             //  whitespace shouldn't though? lol
+            //  nested object limit too..
             parseArrayValue(arr, buf, ++i);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseArrayValue function.\n");
         }
@@ -283,8 +284,9 @@ static void parseValue(JsonObject * obj, std::string buf, size_t& i) {
     }
 
     if (c == ',') {
-        loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         parseKey(obj, buf, ++i);
+    } else {
+        --i;
     }
 }
 
@@ -293,14 +295,17 @@ static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
     // TODO:
     //  if empty string...
     //  already contains,,
-
     //  maybe allow empty string but enforce uniqueness...
-
-    // might be worth implementing a map structure eventually.
     char c = buf.at(i);
-    while (c != '"') {
+    while (c != '"' && c != '}') {
         c = buf.at(++i);
     } // found quote
+
+    // break if end of object... to support comma after last element... which is quite common?
+    if (c == '}') {
+        return;
+    }
+
     size_t start_i = ++i;
 
     c = buf.at(i);
@@ -329,7 +334,7 @@ static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
     char c = '\0';
     while (c != '}') { 
         c = buf.at(i);
-        loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+        // loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         if (c == '{') {
             loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
             // create new object... and update cursor/pointer to object.

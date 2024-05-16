@@ -27,8 +27,8 @@ class Nested: public Json::JsonBase {
 
         std::string toJsonString() {
             std::string s("{");
-            // s += "\"nested_name\": ";
-            // s += Json::JsonString(this->name).toJsonString();
+            s += "\"nested_name\": ";
+            s += Json::JsonString(this->name).toJsonString();
 
             if (nested != nullptr) {
                 s += ",\"nested\": ";

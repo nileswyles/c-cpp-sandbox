@@ -54,6 +54,7 @@ static size_t compareCString(std::string buf, std::string comp, size_t comp_leng
     return x;
 }
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseDecimal(std::string buf, size_t& i, double& value) {
     double decimal_divisor = 10;
     char c = buf.at(i);
@@ -67,6 +68,7 @@ static void parseDecimal(std::string buf, size_t& i, double& value) {
     i--;
 }
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseNatural(std::string buf, size_t& i, double& value) {
     char c = buf.at(i);
     while (isDigit(c)) {
@@ -78,6 +80,7 @@ static void parseNatural(std::string buf, size_t& i, double& value) {
     i--;
 }
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
     int8_t sign = 1;
@@ -137,6 +140,7 @@ static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
 }
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseString(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
 
@@ -194,6 +198,7 @@ static void parseString(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
 }
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::string comp, JsonValue * value) {
     loggerPrintf(LOGGER_DEBUG, "Parsing %s @ %lu\n", comp.c_str(), i);
 
@@ -207,6 +212,7 @@ static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::str
     }
 }
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
     char c = '\0';
     while (c != '}') { 
@@ -229,6 +235,7 @@ static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Returning object, found %c @ %lu\n", c, i);
 }
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
     
@@ -310,6 +317,7 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
     --i;
 }
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Key. @ %lu, %c\n", i, buf.at(i));
     readWhiteSpaceUntil(buf, i, "\"");
@@ -332,6 +340,7 @@ static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
     i--;
 }
 
+// Let's define that parse function's start index is first index of token and end index is last index of token.
 static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
     // find start and end index of key string
     // TODO:

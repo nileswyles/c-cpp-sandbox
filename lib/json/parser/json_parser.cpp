@@ -224,7 +224,7 @@ static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
             arr->addValue((JsonValue *)new_obj);
         }
         loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
-        parseObject((JsonObject *) new_obj, buf, ++i);
+        parseObject((JsonObject *) new_obj, buf, i);
     }
     loggerPrintf(LOGGER_DEBUG, "Returning object, found %c @ %lu\n", c, i);
 }

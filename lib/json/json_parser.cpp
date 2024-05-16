@@ -4,7 +4,7 @@
 
 using namespace WylesLibs::Json;
 
-static size_t compareCString(std::string buf, std::string * comp, size_t comp_length);
+static size_t compareCString(std::string buf, std::string comp, size_t comp_length);
 
 // TODO: arrays aren't being processed properly... need to select between object and array... implement common interface...
 
@@ -13,11 +13,11 @@ static void parseNatural(std::string buf, size_t& i, double& value);
 static void parseNumber(JsonArray obj, std::string buf, size_t& i);
 static void parseString(JsonArray obj, std::string buf, size_t& i);
 static void parseArray(JsonArray obj, std::string buf, size_t& i);
-static void parseImmediate(JsonArray obj, std::string buf, size_t& i, std::string * comp);
+static void parseImmediate(JsonArray obj, std::string buf, size_t& i, std::string comp);
 static void parseValue(JsonArray obj, std::string buf, size_t& i);
 static void parseKey(JsonObject obj, std::string buf, size_t& i);
 
-static size_t compareCString(std::string buf, std::string * comp, size_t comp_length) {
+static size_t compareCString(std::string buf, std::string comp, size_t comp_length) {
     size_t x = 0;
     while(x < comp_length) {
         if (comp->at(x) != buf.at(x)) {

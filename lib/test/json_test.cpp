@@ -212,7 +212,9 @@ static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size
 static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
     try {
         size_t i = 0;
-        Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s, i);
+        Json::JsonValue * obj = Json::parse(s, i);
+
+        std::string actual;
         if (obj->type == Json::OBJECT) {
             // if (obj->toJsonString() == s 
             //     && obj->keys.size() == 77 * 2; 
@@ -223,17 +225,21 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
             // lol.... nah.
 
             // TODO: write tests for the pretty function... because this relies on it.
-            std::string actual = Json::pretty(obj->toJsonString());
-            // printf("size: %u", obj->keys.size());
-            std::string expected = Json::pretty(s.c_str());
-            
-            // printf("%s", actual.c_str());
-            loggerPrintf(LOGGER_TEST_VERBOSE, "Expected\n%s, %ld\n", expected.c_str(), expected.size());
-            loggerPrintf(LOGGER_TEST_VERBOSE, "Actual\n%s, %ld\n", actual.c_str(), actual.size());
-            if (actual == expected) {
-                t->fail = false;
-            }
+            actual = Json::pretty(((Json::JsonObject *)obj)->toJsonString());
+        } else if (obj->type == Json::ARRAY) {
+            actual = Json::pretty(((Json::JsonArray *)obj)->toJsonString());
         }
+
+        // printf("size: %u", obj->keys.size());
+        std::string expected = Json::pretty(s.c_str());
+        
+        // printf("%s", actual.c_str());
+        loggerPrintf(LOGGER_TEST_VERBOSE, "Expected\n%s, %ld\n", expected.c_str(), expected.size());
+        loggerPrintf(LOGGER_TEST_VERBOSE, "Actual\n%s, %ld\n", actual.c_str(), actual.size());
+        if (actual == expected) {
+            t->fail = false;
+        }
+
         delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
@@ -243,6 +249,7 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
 
 static void testJsonArray(TestArg * t);
 static void testJsonNestedObject(TestArg * t);
+static void testJsonNestedArray(TestArg * t);
 static void testJsonEmptyObject(TestArg * t);
 static void testJsonObjectWithName(TestArg * t);
 static void testJsonObjectWithArray(TestArg * t);
@@ -254,7 +261,7 @@ int main(int argc, char * argv[]) {
     Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
 
     tester_add_test(t, testJsonNestedObject);
-    // tester_add_test(t, testJsonNestedArray);
+    tester_add_test(t, testJsonNestedArray);
     tester_add_test(t, testJsonArray);
     tester_add_test(t, testJsonEmptyObject);
     tester_add_test(t, testJsonObjectWithName);
@@ -320,6 +327,11 @@ static void testJsonNestedObject(TestArg * t) {
     parseObjectAndAssertStringComparison(t, s);
 }
 
+static void testJsonNestedArray(TestArg * t) {
+    std::string s = createNestedArray(2);
+
+    parseObjectAndAssertStringComparison(t, s);
+}
 
 static void testJsonEmptyObject(TestArg * t) {
     std::string s("{}");

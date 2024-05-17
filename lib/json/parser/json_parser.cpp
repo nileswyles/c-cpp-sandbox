@@ -435,6 +435,8 @@ extern JsonValue * WylesLibs::Json::parse(std::string s, size_t& i) {
         obj = (JsonValue *) new_obj;
     }
 
+    loggerPrintf(LOGGER_DEBUG, "Parsed JSON object. Returning to caller.\n");
+
     return obj;
 }
 

@@ -207,18 +207,23 @@ static void testJsonObjectWithName(TestArg * t);
 static void testJsonObjectWithArray(TestArg * t);
 static void testJson(TestArg * t);
 
-int main() {
-    // TODO: test selection... from arguments?
+int main(int argc, char * argv[]) {
     Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
 
-    // tester_add_test(t, testJsonNestedObject);
+    tester_add_test(t, testJsonNestedObject);
     // tester_add_test(t, testJsonNestedArray);
-    // tester_add_test(t, testJsonArray);
-    // tester_add_test(t, testJsonEmptyObject);
+    tester_add_test(t, testJsonArray);
+    tester_add_test(t, testJsonEmptyObject);
     tester_add_test(t, testJsonObjectWithName);
-    // tester_add_test(t, testJsonObjectWithArray);
-    // tester_add_test(t, testJson);
-    tester_run(t);
+    tester_add_test(t, testJsonObjectWithArray);
+    tester_add_test(t, testJson);
+    
+    if (argc > 1) {
+        loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
+        tester_run(t, argv[1]);
+    } else {
+        tester_run(t, NULL);
+    }
 
     tester_destructor(t);
 

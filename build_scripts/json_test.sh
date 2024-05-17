@@ -20,4 +20,4 @@ DEFINES="
 TEST_PATH=$ROOT_DIR/out/json_test.out
 rm $TEST_PATH
 g++ $SRC_FILES $TEST_C_LIB_PATH -iquote $QUOTE_INCLUDE_ROOT -iquote $ROOT_DIR/lib/json $DEFINES -Wno-pointer-arith -std=c++23 -o $TEST_PATH
-exec $TEST_PATH
+exec $TEST_PATH $2

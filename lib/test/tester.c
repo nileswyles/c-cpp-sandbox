@@ -1,5 +1,6 @@
 #include "tester.h"
 #include <stdlib.h>
+#include <string.h>
 
 static void run(Tester * tester, Test * test);
 
@@ -27,14 +28,19 @@ extern void tester_add_test_with_name(Tester * t, const char * name, test_functi
     }
 }
 
-extern void tester_run(Tester * t) {
+extern void tester_run(Tester * t, const char * name) {
     if (t->before != NULL) {
         t->before();
     }
     t->num_failed = 0;
     t->num_passed = 0;
     for (size_t i = 0; i < t->num_tests; i++) {
-        run(t, (Test *)(t->tests->buf) + i);
+        Test * test = (Test *)(t->tests->buf) + i;
+        if (name == NULL) {
+            run(t, test);
+        } else if (strcmp(test->name, name) == 0) {
+            run(t, test);
+        }
     }
     printf("\n Results: %lu passed, %lu failed\n", t->num_passed, t->num_failed);
     if (t->after != NULL) {

@@ -49,7 +49,9 @@ typedef struct Tester {
 extern Tester * tester_constructor(suite_function * before, test_function * beforeEach, suite_function * after, test_function * afterEach);
 extern void tester_destructor(Tester * t);
 extern void tester_add_test_with_name(Tester *t, const char * name, test_function * func);
-extern void tester_run(Tester * t);
+
+// TODO: will I ever want to support a list of test names via CLI argument?
+extern void tester_run(Tester * t, const char * name);
 
 #if defined __cplusplus
 }

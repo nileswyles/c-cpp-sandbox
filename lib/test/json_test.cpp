@@ -3,6 +3,15 @@
 
 #include "test/tester.h"
 
+#ifndef LOGGER_JSON_TEST
+#define LOGGER_JSON_TEST 0
+#endif
+#if LOGGER_JSON_TEST
+    #include "logger.h"
+#else
+    #include "logger-disable.h"
+#endif
+
 using namespace WylesLibs;
 
 class Nested: public Json::JsonBase {

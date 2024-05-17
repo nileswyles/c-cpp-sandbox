@@ -99,9 +99,9 @@ static void run(Tester * tester, Test * test) {
     }
     test->func(&test->arg);
     if (test->arg.fail) {
-        printf("\nTest Failed!\n");
+        printf("\n\nTest Failed!\n");
     } else {
-        printf("\nTest Passed!\n");
+        printf("\n\nTest Passed!\n");
     }
     if (tester->afterEach != NULL) {
         tester->afterEach(&test->arg);

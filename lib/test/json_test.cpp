@@ -15,6 +15,7 @@ using namespace WylesLibs;
 
 class Nested: public Json::JsonBase {
     public:
+
         std::string name;
         Nested * nested;
         Nested(): nested(nullptr) {}
@@ -208,38 +209,7 @@ static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size
     }
 }
 
-static void testJsonNestedObject(TestArg * t);
-static void testJsonArray(TestArg * t);
-static void testJsonEmptyObject(TestArg * t);
-static void testJsonObjectWithName(TestArg * t);
-static void testJsonObjectWithArray(TestArg * t);
-static void testJson(TestArg * t);
-
-int main(int argc, char * argv[]) {
-    Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
-
-    tester_add_test(t, testJsonNestedObject);
-    // tester_add_test(t, testJsonNestedArray);
-    tester_add_test(t, testJsonArray);
-    tester_add_test(t, testJsonEmptyObject);
-    tester_add_test(t, testJsonObjectWithName);
-    tester_add_test(t, testJsonObjectWithArray);
-    tester_add_test(t, testJson);
-    
-    if (argc > 1) {
-        loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
-        tester_run(t, argv[1]);
-    } else {
-        tester_run(t, NULL);
-    }
-
-    tester_destructor(t);
-
-    return 0;
-}
-
-static void testJsonNestedObject(TestArg * t) {
-    std::string s = createNestedObject(2);
+static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
     try {
         size_t i = 0;
         Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s, i);
@@ -257,7 +227,6 @@ static void testJsonNestedObject(TestArg * t) {
             // printf("size: %u", obj->keys.size());
             std::string expected = Json::pretty(s.c_str());
             
-
             // printf("%s", actual.c_str());
             loggerPrintf(LOGGER_TEST_VERBOSE, "Expected\n%s, %ld\n", expected.c_str(), expected.size());
             loggerPrintf(LOGGER_TEST_VERBOSE, "Actual\n%s, %ld\n", actual.c_str(), actual.size());
@@ -269,6 +238,46 @@ static void testJsonNestedObject(TestArg * t) {
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
     }
+
+}
+
+static void testJsonArray(TestArg * t);
+static void testJsonNestedObject(TestArg * t);
+static void testJsonEmptyObject(TestArg * t);
+static void testJsonObjectWithName(TestArg * t);
+static void testJsonObjectWithArray(TestArg * t);
+static void testJson(TestArg * t);
+
+static void testPretty(TestArg * t);
+
+int main(int argc, char * argv[]) {
+    Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
+
+    tester_add_test(t, testJsonNestedObject);
+    // tester_add_test(t, testJsonNestedArray);
+    tester_add_test(t, testJsonArray);
+    tester_add_test(t, testJsonEmptyObject);
+    tester_add_test(t, testJsonObjectWithName);
+    tester_add_test(t, testJsonObjectWithArray);
+    tester_add_test(t, testJson);
+
+    tester_add_test(t, testPretty);
+
+    // testMalformedJson
+    //  -
+
+    // specifically test mapper stuff...
+    
+    if (argc > 1) {
+        loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
+        tester_run(t, argv[1]);
+    } else {
+        tester_run(t, NULL);
+    }
+
+    tester_destructor(t);
+
+    return 0;
 }
 
 static void testJsonArray(TestArg * t) {
@@ -304,6 +313,13 @@ static void testJsonArray(TestArg * t) {
         std::cout << "Exception: \n" << e.what() << '\n';
     }
 }
+
+static void testJsonNestedObject(TestArg * t) {
+    std::string s = createNestedObject(2);
+
+    parseObjectAndAssertStringComparison(t, s);
+}
+
 
 static void testJsonEmptyObject(TestArg * t) {
     std::string s("{}");
@@ -358,4 +374,68 @@ static void testJson(TestArg * t) {
     expected.nested = nested_obj;
 
     parseObjectAndAssert(t, expected.toJsonString(), expected, 5);
+}
+
+static void testPretty(TestArg * t) {
+    std::string s("{ ");
+    s += "\"name\":\"username\", ";
+    s += "\"attributes\":\"attributes for user\", ";
+    s += "\"arr\": [false, true, false, false], ";
+    s += "\"dec\": 272727.1111, ";
+    s += "\"nested\": { \"nested_name\": \"nested_value\" }, ";
+    s += "\"null_value\": null ";
+    s += "}";
+    std::string actual = Json::pretty(s);
+
+    /*
+        {
+            "name": "username",
+            "attributes": "attributes for user",
+            "arr": [
+                    false,
+                    true,
+                    false,
+                    false
+            ],
+            "dec": 272727.1111,
+            "nested": {
+                    "nestedname": "nestedvalue"
+            },
+            "nullvalue": null
+        }
+    */
+    std::string expected("{\n");
+    expected += "\t\"name\": \"username\",\n";
+    expected += "\t\"attributes\": \"attributes for user\",\n";
+    expected += "\t\"arr\": [\n";
+    expected += "\t\tfalse,\n";
+    expected += "\t\ttrue,\n";
+    expected += "\t\tfalse,\n";
+    expected += "\t\tfalse\n";
+    expected += "\t],\n";
+    expected += "\t\"dec\": 272727.1111,\n";
+    expected += "\t\"nested\": {\n";
+    expected += "\t\t\"nestedname\": \"nestedvalue\"\n";
+    expected += "\t},\n";
+    expected += "\t\"nullvalue\": null\n";
+    expected += "}";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected\n%s, %ld\n", expected.c_str(), expected.size());
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Actual\n%s, %ld\n", actual.c_str(), actual.size());
+
+    for (size_t i = 0; i < expected.size(); i++) {
+        if (actual.size() > i) {
+            if (expected[i] != actual[i]) {
+                loggerPrintf(LOGGER_TEST, "Mismatched character @ %lu: \n", i);
+                loggerPrintf(LOGGER_TEST, "Expected: '%c', Actual: '%c'\n", expected[i], actual[i]);
+            }
+        } else {
+            loggerPrintf(LOGGER_TEST, "Mismatched character @ %lu: \n", i);
+            loggerPrintf(LOGGER_TEST, "Expected: '%c', Actual: ''\n", expected[i]);
+        }
+    }
+
+    if (actual == expected) {
+        t->fail = false;
+    }
 }

@@ -73,25 +73,7 @@ class User: public Json::JsonBase {
                 } else if (key == "dec") {
                     Json::setVariableFromJsonValue(value, dec, validation_count);
                 } else if (key == "arr") {
-                    // mixed type array...
-                    std::vector<bool> * bool_arr = &arr;
-                    std::vector<double> * num_arr = nullptr;
-                    std::vector<std::string> * str_arr = nullptr;
-                    // std::vector<bool> * bool_arr = &arr;
-
-                    // womp womp womp....
-                    //
-                    Json::setArrayVariablesFromJsonValue<>(value, &arr, num_arr, str_arr, nullptr, validation_count);
-
-                    // could be better...........
-                    //  that said, object mappers for all strongly typed languages will have this limitation...
-                    //  
-                    //  good reason for nodejs? maybe web server using nodejs and implement IPC to do real work...?
-                    //  
-                    //      lol... downsides of IPC?
-
-                    // if you know, single type array
-                    // Json::setArrayVariablesFromJsonValue(value, arr, validation_count);
+                    Json::setArrayVariablesFromJsonValue(value, arr, validation_count);
                 } else if (key == "nested_obj") {
                     loggerPrintf(LOGGER_DEBUG, "Nested type.\n");
                     nested = Json::setVariableFromJsonValue<Nested>(value, validation_count);

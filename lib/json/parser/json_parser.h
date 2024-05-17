@@ -1,8 +1,6 @@
 #ifndef WYLESLIBS_JSON_PARSER_H
 #define WYLESLIBS_JSON_PARSER_H
 
-#include "logger.h"
-
 #include <stdexcept>
 #include <string>
 #include <vector>

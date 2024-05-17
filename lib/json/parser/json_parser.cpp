@@ -5,6 +5,15 @@
 #include "json_array.h"
 #include "json_object.h"
 
+#ifndef LOGGER_JSON_PARSER
+#define LOGGER_JSON_PARSER 1
+#endif
+#if LOGGER_JSON_PARSER
+    #include "logger.h"
+#else
+    #include "logger-disable.h"
+#endif
+
 using namespace WylesLibs::Json;
 
 static void readWhiteSpaceUntil(std::string buf, size_t& i, std::string until);

@@ -4,7 +4,7 @@
 #include "test/tester.h"
 
 #ifndef LOGGER_JSON_TEST
-#define LOGGER_JSON_TEST 0
+#define LOGGER_JSON_TEST 1
 #endif
 #if LOGGER_JSON_TEST
     #include "logger.h"

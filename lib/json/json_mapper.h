@@ -29,7 +29,8 @@ namespace WylesLibs::Json {
 
 // okay, so now how can I cleanly do that... this is not that...
 
-// We might not need to fail fast because object structure is likely negotiated ahead of time?
+// We might not need to fail fast because object structure is likely negotiated ahead of time?, 
+    // same argument applies for not supporting mixed type arrays...
 
 //  common ground, mapper drops types not supported by class... done....
 
@@ -42,18 +43,26 @@ namespace WylesLibs::Json {
 
 // multiplexing idea at class/object 
     // okay, following information gets passed to mapper function...
-    //  classarr -> type
-    //  classarr2 -> type2
+    //  type -> classarr
+    //  type2 -> classarr2
     //  
     //  and mapper function performs the following...
-    //  so "arr" of type -> classarr
-    //     "arr" of type -> classarr2 
+    //  so element of "arr" of type -> classarr
+    //     element of "arr" of type -> classarr2 
 
 // ........................................................
 
 // so key to multiplexing drop unsupported array types... like we do for variables not in json object... we just don't set them...
 
 // alot to unpack here... let's sleep on this...
+
+//  
+//
+//
+//
+//
+//
+//  more abstraction built on existing functions to support multiplexing...
 
 static void setVariableFromJsonValue(JsonValue * value, bool& obj_value, size_t& validation_count) {
     Json::JsonType type = value->type;
@@ -196,6 +205,47 @@ static void setArrayVariablesFromJsonValue(JsonValue * value, std::vector<T>& ar
             if (array_type == OBJECT) {
                 loggerPrintf(LOGGER_DEBUG, "Adding object to array...\n");
                 arr->push_back(setVariableFromJsonValue<T>(array_value, array_validation_count));
+            }
+        }
+        if (array_validation_count != array->size()) {
+            // ensures elements in array are correct type.
+            throw std::runtime_error("Failed to create User from json object.");
+        }
+        validation_count++;
+    }
+}
+
+template<class T>
+static void setArrayVariablesFromJsonValue(JsonValue * value, std::vector<bool> * bool_arr, 
+    std::vector<double> * num_arr, std::vector<std::string> * str_arr, 
+    std::vector<T> * t_arr, size_t& validation_count) {
+    // TODO: how does cout print? type needs to implement some function...
+    Json::JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+    if (type == ARRAY) {
+        size_t array_validation_count = 0;
+        JsonArray * array = (JsonArray *)value;
+        for (int i = 0; i < array->size(); i++) {
+            JsonValue * array_value = array->at(i);
+            JsonType array_type = array_value->type;
+            if (array_type == BOOLEAN && bool_arr != nullptr) {
+                bool_arr->push_back(false);
+                // T& = arr[i]
+                // bool& element { bool_arr->at(i) };
+                setVariableFromJsonValue(array_value, bool_arr->at(i), array_validation_count);
+            } else if (array_type == NUMBER && num_arr != nullptr) {
+                num_arr->push_back(0);
+                // T& = arr[i]
+                double& element { num_arr->at(i) };
+                setVariableFromJsonValue(array_value, element, array_validation_count);
+            } else if (array_type == STRING && str_arr != nullptr) {
+                str_arr->push_back("");
+                // T& = arr[i]
+                std::string& element { str_arr->at(i) };
+                setVariableFromJsonValue(array_value, element, array_validation_count);
+            } else if (array_type == OBJECT && t_arr != nullptr) {
+                loggerPrintf(LOGGER_DEBUG, "Adding object to array...\n");
+                t_arr->push_back(setVariableFromJsonValue<T>(array_value, array_validation_count));
             }
         }
         if (array_validation_count != array->size()) {

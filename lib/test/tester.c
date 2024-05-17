@@ -93,7 +93,7 @@ extern void tester_run(Tester * t, const char * name) {
 
 static void run(Tester * tester, Test * test) {
     printf("\n#######################################\n");
-    printf("\nTest Func: %s\n", test->name);
+    printf("\nTest Func: %s\n\n", test->name);
     if (tester->beforeEach != NULL) {
         tester->beforeEach(&test->arg);
     }

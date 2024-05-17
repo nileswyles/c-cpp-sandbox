@@ -36,8 +36,6 @@ typedef struct Tester {
     test_function * afterEach;
     Array * tests;
     size_t num_tests;
-    size_t num_passed;
-    size_t num_failed;
 } Tester;
 
 // test suite

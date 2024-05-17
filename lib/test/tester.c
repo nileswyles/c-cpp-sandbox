@@ -28,21 +28,60 @@ extern void tester_add_test_with_name(Tester * t, const char * name, test_functi
     }
 }
 
+// this should be more than enough... these are tests. just update if a test suite requires more...
+#define FAILED_NAMES_BUFFER_SIZE 27000
+
 extern void tester_run(Tester * t, const char * name) {
     if (t->before != NULL) {
         t->before();
     }
-    t->num_failed = 0;
-    t->num_passed = 0;
+    size_t num_failed = 0;
+    size_t num_passed = 0;
+
+    static char failed_names[FAILED_NAMES_BUFFER_SIZE] = {};
+    size_t failed_names_cursor = 0;
+
     for (size_t i = 0; i < t->num_tests; i++) {
+        bool ran_test = false;
         Test * test = (Test *)(t->tests->buf) + i;
         if (name == NULL) {
             run(t, test);
+            ran_test = true;
         } else if (strcmp(test->name, name) == 0) {
             run(t, test);
+            ran_test = true;
+        }
+        if (ran_test) {
+            if (test->arg.fail) {
+                strcpy(failed_names + failed_names_cursor, test->name);
+                failed_names_cursor += strlen(test->name) + 1;
+                num_failed++;
+            } else {
+                num_passed++;
+            }
         }
     }
-    printf("\n Results: %lu passed, %lu failed\n", t->num_passed, t->num_failed);
+
+    // TODO: CPP classes and strings... might complicate build scripts?
+    if (num_failed > 0) {
+        printf("\n Failed Tests: \n\n");
+        for (size_t i = 0; i < failed_names_cursor; i++) {
+            char c = failed_names[i];
+            bool start_of_line = true;
+            if (c == 0x00) {
+                printf("\n");
+                start_of_line = true;
+            } else {
+                if (start_of_line) {
+                    printf("\t");
+                    start_of_line = false;
+                }
+                printf("%c", failed_names[i]);
+            }
+        }
+    }
+
+    printf("\n Results: %lu passed, %lu failed\n", num_passed, num_failed);
     if (t->after != NULL) {
         t->after();
     }
@@ -57,10 +96,8 @@ static void run(Tester * tester, Test * test) {
     test->func(&test->arg);
     if (test->arg.fail) {
         printf("\nTest Failed!\n");
-        tester->num_failed++;
     } else {
         printf("\nTest Passed!\n");
-        tester->num_passed++;
     }
     if (tester->afterEach != NULL) {
         tester->afterEach(&test->arg);

@@ -5,8 +5,15 @@
 #include "parser/json_object.h"
 #include "parser/json_array.h"
 
-#include "logger.h"
 #include <string>
+
+#ifndef LOGGER_JSON_MAPPER
+#define LOGGER_JSON_MAPPER 1
+#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_JSON_MAPPER
+#include "logger.h"
 
 namespace WylesLibs::Json {
 

@@ -8,11 +8,10 @@
 #ifndef LOGGER_JSON_PARSER
 #define LOGGER_JSON_PARSER 1
 #endif
-#if LOGGER_JSON_PARSER
-    #include "logger.h"
-#else
-    #include "logger-disable.h"
-#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_JSON_PARSER
+#include "logger.h"
 
 using namespace WylesLibs::Json;
 

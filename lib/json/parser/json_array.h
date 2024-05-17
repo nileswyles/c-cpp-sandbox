@@ -3,10 +3,16 @@
 
 #include "json_parser.h"
 
-#include "logger.h"
-
 #include <vector>
 #include <string>
+
+#ifndef LOGGER_JSON_ARRAY
+#define LOGGER_JSON_ARRAY 1
+#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_JSON_ARRAY
+#include "logger.h"
 
 namespace WylesLibs::Json {
 class JsonArray: public JsonValue, public std::vector<JsonValue *> {

@@ -1,6 +1,3 @@
-#ifndef LOGGER_H
-#define LOGGER_H
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -10,12 +7,18 @@
 #define LOGGER_LEVEL 0
 #endif
 
+#ifndef LOGGER_MODULE_ENABLED
+// default to "LOGGER_ERROR"
+#define LOGGER_MODULE_ENABLED 1
+#endif
+
 // TODO: portability? what other interesting things can we do with macros?
 // NOTE: ## removes trailing comma when args is empty.
 
 // Been meaning to document this... Not sure how __LINE__ evaluates to the correct line number, but it's working for now?
+#undef loggerPrintf
 #define loggerPrintf(min, fmt, ...) \
-    if (LOGGER_LEVEL >= min) {\
+    if (LOGGER_MODULE_ENABLED && LOGGER_LEVEL >= min) {\
         FILE * file = stderr;\
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
@@ -23,8 +26,9 @@
         fprintf(file, "%s:%d (%s) " fmt, __FILE__, __LINE__, __func__, ##__VA_ARGS__);\
     }
 
+#undef loggerPrintByteArray
 #define loggerPrintByteArray(min, arr, size) \
-    if (LOGGER_LEVEL >= min) {\
+    if (LOGGER_MODULE_ENABLED && LOGGER_LEVEL >= min) {\
         FILE * file = stderr;\
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
@@ -41,6 +45,8 @@
         fprintf(file, "\n");\
     }
 
+#ifndef LOGGER_H
+#define LOGGER_H
 typedef enum log_level {
     LOGGER_ERROR, // 0
     LOGGER_TEST,
@@ -48,5 +54,4 @@ typedef enum log_level {
     LOGGER_DEBUG,
     LOGGER_DEBUG_VERBOSE,
 } log_level;
-
 #endif

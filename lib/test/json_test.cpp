@@ -251,8 +251,8 @@ static void testJsonNestedObject(TestArg * t) {
             
 
             // printf("%s", actual.c_str());
-            printf("Expected\n%s, %ld\n", expected.c_str(), expected.size());
-            printf("Actual\n%s, %ld\n", actual.c_str(), actual.size());
+            loggerPrintf(LOGGER_TEST_VERBOSE, "Expected\n%s, %ld\n", expected.c_str(), expected.size());
+            loggerPrintf(LOGGER_TEST_VERBOSE, "Actual\n%s, %ld\n", actual.c_str(), actual.size());
             if (actual == expected) {
                 t->fail = false;
             }

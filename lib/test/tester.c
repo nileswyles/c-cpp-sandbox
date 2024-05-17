@@ -62,6 +62,8 @@ extern void tester_run(Tester * t, const char * name) {
         }
     }
 
+    printf("\n#######################################\n");
+
     // TODO: CPP classes and strings... might complicate build scripts?
     if (num_failed > 0) {
         printf("\n Failed Tests: \n\n");
@@ -85,6 +87,8 @@ extern void tester_run(Tester * t, const char * name) {
     if (t->after != NULL) {
         t->after();
     }
+
+    printf("\n---------------------------------------\n");
 }
 
 static void run(Tester * tester, Test * test) {
@@ -102,5 +106,5 @@ static void run(Tester * tester, Test * test) {
     if (tester->afterEach != NULL) {
         tester->afterEach(&test->arg);
     }
-    printf("\n#######################################\n");
+    // printf("\n#######################################\n");
 }

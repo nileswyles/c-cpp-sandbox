@@ -42,8 +42,9 @@ class JsonValue: public JsonBase {
         JsonType type;
         JsonValue(): type(NULL_TYPE) {}
         JsonValue(JsonType derived_type): type(derived_type) {}
-        virtual ~JsonValue() {}
-        virtual std::string toJsonString() = 0;
+        std::string toJsonString() {
+            return "";
+        }
 };
 
 typedef void(ProcessObjectFunc)(std::string key, JsonValue * value);

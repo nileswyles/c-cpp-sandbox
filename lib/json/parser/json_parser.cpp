@@ -254,7 +254,13 @@ static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::str
 
     if (consumed == comp.size()) {
         loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu, %c\n", comp.c_str(), i, buf.at(i));
-        obj->addValue(value);
+
+        // kind of annoying but we want to parse null and not include it in intermediate structure...
+        if (value->type != NULL_TYPE) {
+            obj->addValue(value);
+        }
+    } else {
+        throw std::runtime_error("parseImmediate: invalid immediate value. Throw away the whole object lol.");
     }
 }
 
@@ -334,13 +340,9 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
                 parseImmediate(obj, buf, i, comp, boolean);
                 parsed = true;
             } else if (c == 'n') {
-                i += 3; // just consume null string... point to last character...
-                // std::string comp("null");
-                // JsonValue * nullValue = new JsonValue();
-                // parseImmediate(obj, buf, i, &comp, nullValue);
-      
-                // hmm... this works but think about whether we want to just ignore malformed...
-                //  when I think about validating input, ensureing full json, etc.
+                std::string comp("null");
+                JsonValue * nullValue = new JsonValue();
+                parseImmediate(obj, buf, i, comp, nullValue);
                 parsed = true;
             } else if (c == '{') { 
                 loggerPrintf(LOGGER_DEBUG, "Found object delimeter '%c' @ %lu\n", c, i);

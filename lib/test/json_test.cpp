@@ -244,7 +244,17 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
     }
+}
 
+static void parseObjectAndAssertMalformedJson(TestArg * t, std::string s) {
+    try {
+        size_t i = 0;
+        Json::JsonValue * obj = Json::parse(s, i);
+        delete obj;
+    } catch (const std::exception& e) {
+        std::cout << "Exception: \n" << e.what() << '\n';
+        t->fail = false;
+    }
 }
 
 static void testJsonArray(TestArg * t);
@@ -254,6 +264,19 @@ static void testJsonEmptyObject(TestArg * t);
 static void testJsonObjectWithName(TestArg * t);
 static void testJsonObjectWithArray(TestArg * t);
 static void testJson(TestArg * t);
+
+// negative test cases, these should all cause the parser to through an exception...
+static void testJsonMalformedOpenObject(TestArg * t);
+static void testJsonMalformedOpenArray(TestArg * t);
+static void testJsonMalformedOpenNestedObject(TestArg * t);
+static void testJsonMalformedOpenNestedArray(TestArg * t);
+static void testJsonMalformedOpenEndKeyString(TestArg * t);
+static void testJsonMalformedOpenEndValueString(TestArg * t);
+static void testJsonMalformedOpenStartKeyString(TestArg * t);
+static void testJsonMalformedOpenStartValueString(TestArg * t);
+static void testJsonMalformedIncompleteBoolean(TestArg * t);
+static void testJsonMalformedIncompleteNull(TestArg * t);
+static void testJsonMalformedNonWhitespaceInBetweenTokens(TestArg * t);
 
 static void testPretty(TestArg * t);
 
@@ -268,13 +291,20 @@ int main(int argc, char * argv[]) {
     tester_add_test(t, testJsonObjectWithArray);
     tester_add_test(t, testJson);
 
+    tester_add_test(t, testJsonMalformedOpenObject);
+    tester_add_test(t, testJsonMalformedOpenArray);
+    tester_add_test(t, testJsonMalformedOpenNestedObject);
+    tester_add_test(t, testJsonMalformedOpenNestedArray);
+    tester_add_test(t, testJsonMalformedOpenEndKeyString);
+    tester_add_test(t, testJsonMalformedOpenEndValueString);
+    tester_add_test(t, testJsonMalformedOpenStartKeyString);
+    tester_add_test(t, testJsonMalformedOpenStartValueString);
+    tester_add_test(t, testJsonMalformedIncompleteBoolean);
+    tester_add_test(t, testJsonMalformedIncompleteNull);
+    tester_add_test(t, testJsonMalformedNonWhitespaceInBetweenTokens);
+
     tester_add_test(t, testPretty);
 
-    // testMalformedJson
-    //  -
-
-    // specifically test mapper stuff...
-    
     if (argc > 1) {
         loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
         tester_run(t, argv[1]);
@@ -386,6 +416,84 @@ static void testJson(TestArg * t) {
     expected.nested = nested_obj;
 
     parseObjectAndAssert(t, expected.toJsonString(), expected, 5);
+}
+
+
+static void testJsonMalformedOpenObject(TestArg * t) {
+    std::string s("{");
+    parseObjectAndAssertMalformedJson(t, s);
+}
+
+static void testJsonMalformedOpenArray(TestArg * t) {
+    std::string s("[");
+    parseObjectAndAssertMalformedJson(t, s);
+}
+
+static void testJsonMalformedOpenNestedObject(TestArg * t) {
+    std::string s("{ \n");
+    s += "\"nested\": {, \n";
+    s += "}\n";
+    parseObjectAndAssertMalformedJson(t, s);
+}
+
+static void testJsonMalformedOpenNestedArray(TestArg * t) {
+    std::string s("[ \n");
+    s += "[, \n";
+    s += "]\n";
+    parseObjectAndAssertMalformedJson(t, s);
+}
+
+static void testJsonMalformedOpenEndKeyString(TestArg * t) {
+    std::string s("{ \n");
+    s += "\"name: \"username\", \n";
+    s += "}\n";
+
+    parseObjectAndAssertMalformedJson(t, s);
+}
+
+static void testJsonMalformedOpenEndValueString(TestArg * t) {
+    std::string s("{ \n");
+    s += "\"name\": \"username, \n";
+    s += "}\n";
+    parseObjectAndAssertMalformedJson(t, s);
+}
+
+static void testJsonMalformedOpenStartKeyString(TestArg * t) {
+    std::string s("{ \n");
+    s += "name\": \"username\", \n";
+    s += "}\n";
+    parseObjectAndAssertMalformedJson(t, s);
+}
+
+static void testJsonMalformedOpenStartValueString(TestArg * t) {
+    std::string s("{ \n");
+    s += "\"name\": username\", \n";
+    s += "}\n";
+    parseObjectAndAssertMalformedJson(t, s);
+}
+
+static void testJsonMalformedIncompleteBoolean(TestArg * t) {
+    std::string s("{ \n");
+    s += "\"name\": fals, \n";
+    s += "}\n";
+
+    parseObjectAndAssertMalformedJson(t, s);
+}
+
+static void testJsonMalformedIncompleteNull(TestArg * t) {
+    std::string s("{ \n");
+    s += "\"name\": nu, \n";
+    s += "}\n";
+
+    parseObjectAndAssertMalformedJson(t, s);
+}
+
+static void testJsonMalformedNonWhitespaceInBetweenTokens(TestArg * t) {
+    std::string s("{ \n");
+    s += "\"name\":dnlanksal\"test\", \n";
+    s += "}\n";
+
+    parseObjectAndAssertMalformedJson(t, s);
 }
 
 static void testPretty(TestArg * t) {

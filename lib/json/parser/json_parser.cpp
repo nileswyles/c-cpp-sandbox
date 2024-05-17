@@ -8,6 +8,8 @@
 using namespace WylesLibs::Json;
 
 static void readWhiteSpaceUntil(std::string buf, size_t& i, std::string until);
+static bool peekWhiteSpaceUntil(std::string buf, size_t& i, char until);
+
 static size_t compareCString(std::string buf, std::string comp, size_t comp_length);
 
 // tree base
@@ -33,15 +35,33 @@ static std::string whitespace(" \r\n\t");
 static void readWhiteSpaceUntil(std::string buf, size_t& i, std::string until) {
     char c = buf.at(i);
     loggerPrintf(LOGGER_DEBUG, "Reading Whitespace Until: %s, @ %lu, %c\n", until.c_str(), i, c);
-    if (until.contains(c)) {
+    if (until.find(c) != std::string::npos) {
         return;
     }
     while (whitespace.find(c) != std::string::npos) {
         c = buf.at(++i);
     }
-    if (!until.contains(c)) {
+    if (until.find(c) == std::string::npos) {
         throw std::runtime_error("Only allow whitespace between tokens...");
     }
+}
+
+static bool peekWhiteSpaceUntil(std::string buf, size_t& i, char until) {
+    size_t x = i;
+    char c = buf.at(++x);
+    if (c == until) {
+        i = x;
+        return true;
+    }
+    while (whitespace.find(c) != std::string::npos) {
+        c = buf.at(++x);
+    } // found non whitespace character...
+    if (c == until) {
+        i = x;
+        return true;
+    }
+
+    return false;
 }
 
 static size_t compareCString(std::string buf, std::string comp, size_t comp_length) {
@@ -266,6 +286,9 @@ static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     while(c != ']') {
         if (c == '[' || c == ',') { 
+            // peek for at end of object...
+            if (peekWhiteSpaceUntil(buf, i, ']')) break;
+
             parseValue(arr, buf, ++i);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
@@ -323,29 +346,6 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
         }
         c = buf.at(++i);
     }
-
-    // support {key:value,} - this is lame but a common thing? so let's support it.
-    //  comma after last value...
-    // peek to see if last element...
-    size_t x = i;
-    c = buf.at(x); // points to , or }
-    if (c == ',') {
-        loggerPrintf(LOGGER_DEBUG, "Found comma after parsing value... Peeking! @ %lu\n", i);
-        c = buf.at(++x);
-        if (c == '}' || c == ']') {
-            i = x;
-            loggerPrintf(LOGGER_DEBUG, "Found top level delimeter! @ %lu \n", i);
-            return;
-        }
-        while (whitespace.find(c) != std::string::npos) {
-            c = buf.at(++x);
-        } // found non whitespace character...
-        if (c == '}' || c == ']') {
-            i = x;
-            loggerPrintf(LOGGER_DEBUG, "Found top level delimeter! @ %lu \n", i);
-            return;
-        }
-    }
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token.
@@ -382,12 +382,16 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
     char c = buf.at(i);
     while (c != '}') {
         if (c == '{' || c == ',') {
-           loggerPrintf(LOGGER_DEBUG, "New Object Entry\n");
-           parseKey(obj, buf, ++i);
+            loggerPrintf(LOGGER_DEBUG, "New Object Entry\n");
+
+            // peek for at end of object...
+            if (peekWhiteSpaceUntil(buf, i, '}')) break;
+
+            parseKey(obj, buf, ++i);
             // i @ :
-           parseValue(&(obj->values), buf, ++i);
-           c = buf.at(i);
-           loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function. @ %lu, %c\n", i, c);
+            parseValue(&(obj->values), buf, ++i);
+            c = buf.at(i);
+            loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function. @ %lu, %c\n", i, c);
         }
     }
 

@@ -332,7 +332,6 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
     if (c == ',') {
         loggerPrintf(LOGGER_DEBUG, "Found comma after parsing value... Peeking! @ %lu\n", i);
         c = buf.at(++x);
-        printf("%c\n", c);
         if (c == '}' || c == ']') {
             i = x;
             loggerPrintf(LOGGER_DEBUG, "Found top level delimeter! @ %lu \n", i);
@@ -340,7 +339,6 @@ static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
         }
         while (whitespace.find(c) != std::string::npos) {
             c = buf.at(++x);
-            printf("%c\n", c);
         } // found non whitespace character...
         if (c == '}' || c == ']') {
             i = x;

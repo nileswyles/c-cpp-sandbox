@@ -9,8 +9,8 @@ class Nested: public Json::JsonBase {
     public:
         std::string name;
         Nested * nested;
-        Nested() {}
-        Nested(Json::JsonObject * obj) {
+        Nested(): nested(nullptr) {}
+        Nested(Json::JsonObject * obj): nested(nullptr) {
             size_t validation_count = 0;
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
@@ -74,7 +74,7 @@ class User: public Json::JsonBase {
                     Json::setVariableFromJsonValue(value, dec, validation_count);
                 } else if (key == "arr") {
                     Json::setArrayVariablesFromJsonValue(value, arr, validation_count);
-                } else if (key == "nested_obj") {
+                } else if (key == "nested") {
                     loggerPrintf(LOGGER_DEBUG, "Nested type.\n");
                     nested = Json::setVariableFromJsonValue<Nested>(value, validation_count);
                 }
@@ -141,8 +141,124 @@ class User: public Json::JsonBase {
         }
 };
 
-void testJsonArray(void * test) {
-    Test * t = (Test *)test;
+static std::string createNestedObject(size_t length) {
+    Nested * root = new Nested();
+    root->name = "username";
+    Nested * prev = root;
+    for (size_t i = 0; i < length; i++) {
+        Nested * current = new Nested();
+        current->name = "username";
+
+        prev->nested = current; 
+        prev = current;
+    }
+    // std::string s = Json::pretty(root->toJsonString());
+    // loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
+    // return s;
+    return root->toJsonString();
+}
+
+static std::string createNestedArray(size_t length) {
+    Json::JsonArray * root = new Json::JsonArray();
+    root->addValue((Json::JsonValue *)new Json::JsonBoolean(true));
+    Json::JsonArray * prev = root;
+    for (size_t i = 0; i < length; i++) {
+        Json::JsonArray * current = new Json::JsonArray();
+        current->addValue((Json::JsonValue *)new Json::JsonBoolean(true));
+
+        prev->addValue(current);
+        prev = current;
+    }
+    // std::string s = Json::pretty(root->toJsonString());
+    // loggerPrintf(LOGGER_TEST, "%s\n", s.c_str());
+    // return s;
+    return root->toJsonString();
+}
+
+static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size_t expected_size) {
+    try {
+        size_t i = 0;
+        Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s, i);
+        if (obj->type == Json::OBJECT) {
+            User user(obj);
+            loggerPrintf(LOGGER_TEST, "JSON To Parse: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
+            loggerPrintf(LOGGER_TEST, "Parsed JSON - User Class: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
+            loggerPrintf(LOGGER_TEST, "Expected JSON - User Class: \n");
+            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(expected.toJsonString()).c_str());
+
+            if (user == expected 
+                && obj->keys.size() == expected_size 
+                && obj->values.size() == expected_size) {
+                t->fail = false;
+            }
+        }
+        delete obj;
+    } catch (const std::exception& e) {
+        std::cout << "Exception: \n" << e.what() << '\n';
+    }
+}
+
+static void testJsonNestedObject(TestArg * t);
+static void testJsonArray(TestArg * t);
+static void testJsonEmptyObject(TestArg * t);
+static void testJsonObjectWithName(TestArg * t);
+static void testJsonObjectWithArray(TestArg * t);
+static void testJson(TestArg * t);
+
+int main() {
+    // TODO: test selection... from arguments?
+    Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
+
+    tester_add_test(t, testJsonNestedObject);
+    // tester_add_test(t, testJsonNestedArray);
+    tester_add_test(t, testJsonArray);
+    tester_add_test(t, testJsonEmptyObject);
+    tester_add_test(t, testJsonObjectWithName);
+    tester_add_test(t, testJsonObjectWithArray);
+    tester_add_test(t, testJson);
+    tester_run(t);
+
+    tester_destructor(t);
+
+    return 0;
+}
+
+static void testJsonNestedObject(TestArg * t) {
+    std::string s = createNestedObject(2);
+    try {
+        size_t i = 0;
+        Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s, i);
+        if (obj->type == Json::OBJECT) {
+            // if (obj->toJsonString() == s 
+            //     && obj->keys.size() == 77 * 2; 
+            //     && obj->values.size() == 77 * 2) {
+
+            // fprintf(obj->toJsonString() == s) {
+
+            // lol.... nah.
+
+            // TODO: write tests for the pretty function... because this relies on it.
+            std::string actual = Json::pretty(obj->toJsonString());
+            // printf("size: %u", obj->keys.size());
+            std::string expected = Json::pretty(s.c_str());
+            
+
+            // printf("%s", actual.c_str());
+            printf("Expected\n%s, %ld\n", expected.c_str(), expected.size());
+            printf("Actual\n%s, %ld\n", actual.c_str(), actual.size());
+            if (actual == expected) {
+                t->fail = false;
+            }
+        }
+        delete obj;
+    } catch (const std::exception& e) {
+        std::cout << "Exception: \n" << e.what() << '\n';
+    }
+}
+
+static void testJsonArray(TestArg * t) {
     std::string s("[false, true, false, false]");
     std::vector<bool> expected{false, true, false, false};
     try {
@@ -176,73 +292,14 @@ void testJsonArray(void * test) {
     }
 }
 
-std::string createNestedObject(size_t length) {
-    Nested * root = new Nested();
-    root->name = "username";
-    Nested * prev = root;
-    for (size_t i = 0; i < length; i++) {
-        Nested * current = new Nested();
-        current->name = "username";
-
-        prev->nested = current; 
-        prev = current;
-    }
-    // std::string s = Json::pretty(root->toJsonString());
-    // loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
-    // return s;
-    return root->toJsonString();
-}
-
-std::string createNestedArray(size_t length) {
-    Json::JsonArray * root = new Json::JsonArray();
-    root->addValue((Json::JsonValue *)new Json::JsonBoolean(true));
-    Json::JsonArray * prev = root;
-    for (size_t i = 0; i < length; i++) {
-        Json::JsonArray * current = new Json::JsonArray();
-        current->addValue((Json::JsonValue *)new Json::JsonBoolean(true));
-
-        prev->addValue(current);
-        prev = current;
-    }
-    // std::string s = Json::pretty(root->toJsonString());
-    // loggerPrintf(LOGGER_TEST, "%s\n", s.c_str());
-    // return s;
-    return root->toJsonString();
-}
-
-void parseObjectAndAssert(Test * t, std::string s, User expected, size_t expected_size) {
-    try {
-        size_t i = 0;
-        Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s, i);
-        if (obj->type == Json::OBJECT) {
-            User user(obj);
-            loggerPrintf(LOGGER_TEST, "JSON To Parse: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
-            loggerPrintf(LOGGER_TEST, "Parsed JSON - User Class: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
-            loggerPrintf(LOGGER_TEST, "Expected JSON - User Class: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(expected.toJsonString()).c_str());
-
-            if (user == expected 
-                && obj->keys.size() == expected_size 
-                && obj->values.size() == expected_size) {
-                t->fail = false;
-            }
-        }
-        delete obj;
-    } catch (const std::exception& e) {
-        std::cout << "Exception: \n" << e.what() << '\n';
-    }
-}
-
-void testJsonEmptyObject(void * test) {
+static void testJsonEmptyObject(TestArg * t) {
     std::string s("{}");
     User expected;
 
-    parseObjectAndAssert((Test *)test, s, expected, 0);
+    parseObjectAndAssert(t, s, expected, 0);
 }
 
-void testJsonObjectWithName(void * test) {
+static void testJsonObjectWithName(TestArg * t) {
     std::string s("{ \n");
     s += "\"name\": \"username\", \n";
     s += "}\n";
@@ -251,10 +308,10 @@ void testJsonObjectWithName(void * test) {
     User expected;
     expected.name = "username";
 
-    parseObjectAndAssert((Test *)test, s, expected, 1);
+    parseObjectAndAssert(t, s, expected, 1);
 }
 
-void testJsonObjectWithArray(void * test) {
+static void testJsonObjectWithArray(TestArg * t) {
     std::string s("{ \n");
     s += "\"arr\": [false, true, false, false], \n";
     s += "}\n";
@@ -263,19 +320,18 @@ void testJsonObjectWithArray(void * test) {
     std::vector<bool> expected_arr{false, true, false, false};
     expected.arr = expected_arr;
 
-    parseObjectAndAssert((Test *)test, s, expected, 1);
+    parseObjectAndAssert(t, s, expected, 1);
 }
 
-void testJson(void * test) {
-    // Tester * t = (Tester *)tester;
-    // std::string s("{ \n");
-    // s += "\"name\":\"username\", \n";
-    // s += "\"attributes\":\"attributes for user\", \n";
-    // s += "\"arr\": [false, true, false, false], \n";
-    // s += "\"dec\": 272727.1111, \n";
-    // s += "\"nested_obj\": { \"nested_name\": \"nested_value\" }, \n";
-    // s += "\"null_value\": null \n";
-    // s += "}\n";
+static void testJson(TestArg * t) {
+    std::string s("{ \n");
+    s += "\"name\":\"username\", \n";
+    s += "\"attributes\":\"attributes for user\", \n";
+    s += "\"arr\": [false, true, false, false], \n";
+    s += "\"dec\": 272727.1111, \n";
+    s += "\"nested\": { \"nested_name\": \"nested_value\" }, \n";
+    s += "\"null_value\": null \n";
+    s += "}\n";
 
     Nested nested_obj;
     nested_obj.name = "nested_value";
@@ -288,61 +344,5 @@ void testJson(void * test) {
     expected.dec = 272727.1111;
     expected.nested = nested_obj;
 
-    parseObjectAndAssert((Test *)test, expected.toJsonString(), expected, 5);
-}
-
-void testJsonNestedObject(void * test) {
-    std::string s = createNestedObject(2);
-    try {
-        size_t i = 0;
-        Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s, i);
-        if (obj->type == Json::OBJECT) {
-            // if (obj->toJsonString() == s 
-            //     && obj->keys.size() == 77 * 2; 
-            //     && obj->values.size() == 77 * 2) {
-
-            // fprintf(obj->toJsonString() == s) {
-
-            // lol.... nah.
-
-            // TODO: write tests for the pretty function... because this relies on it.
-            std::string actual = Json::pretty(obj->toJsonString());
-            // printf("size: %u", obj->keys.size());
-            std::string expected = Json::pretty(s.c_str());
-            
-
-            // printf("%s", actual.c_str());
-            printf("Expected\n%s, %ld\n", expected.c_str(), expected.size());
-            printf("Actual\n%s, %ld\n", actual.c_str(), actual.size());
-            if (actual == expected) {
-                ((Test *) test)->fail = false;
-            }
-        }
-        delete obj;
-    } catch (const std::exception& e) {
-        std::cout << "Exception: \n" << e.what() << '\n';
-    }
-}
-
-int main() {
-    // TODO: test selection... from arguments?
-
-    // std::string s("{\"test\":false, \"test2\":\"value\"}");
-    // const char * s = "{\"test\":null, \"test2\":17272.2727}";
-    Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
-
-    // tester_add_test(t, testJsonNestedArray);
-    tester_add_test(t, testJsonNestedObject);
-
-    // TODO: add {} test... lmao
-    // tester_add_test(t, testJson);
-    // tester_add_test(t, testJsonObjectWithArray);
-    // tester_add_test(t, testJsonObjectWithName);
-    // tester_add_test(t, testJsonArray);
-    // tester_add_test(t, testJsonEmptyObject);
-    tester_run(t);
-
-    tester_destructor(t);
-
-    return 0;
+    parseObjectAndAssert(t, expected.toJsonString(), expected, 5);
 }

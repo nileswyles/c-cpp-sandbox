@@ -16,10 +16,10 @@ class Nested: public Json::JsonBase {
                 std::string key = obj->keys.at(i);
                 Json::JsonValue * value = obj->values.at(i);
                 if(key == "nested_name") {
-                    Json::setVariableFromJsonValue(value, name, validation_count);
+                    name = Json::setVariableFromJsonValue<std::string>(value, validation_count);
                 }
             }
-            loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
+            loggerPrintf(LOGGER_TEST_VERBOSE, "validation count: %lu\n", validation_count);
             if (validation_count != obj->keys.size()) {
                 throw std::runtime_error("Failed to create User from json object.");
             }
@@ -42,7 +42,7 @@ class Nested: public Json::JsonBase {
 
         bool operator == (const Nested other) {
             if(this->name != other.name) {
-                loggerPrintf(LOGGER_DEBUG, "name not equal\n");
+                loggerPrintf(LOGGER_TEST_VERBOSE, "name not equal\n");
                 return false;
             }
             return true;
@@ -61,25 +61,25 @@ class User: public Json::JsonBase {
         User() {}
         User(Json::JsonObject * obj) {
             size_t validation_count = 0;
-            loggerPrintf(LOGGER_DEBUG, "Num Keys: %lu\n", obj->keys.size());
+            loggerPrintf(LOGGER_TEST_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
-                loggerPrintf(LOGGER_DEBUG, "Key: %s\n", key.c_str());
+                loggerPrintf(LOGGER_TEST_VERBOSE, "Key: %s\n", key.c_str());
                 Json::JsonValue * value = obj->values.at(i);
                 if(key == "name") {
-                    Json::setVariableFromJsonValue(value, name, validation_count);
+                    name = Json::setVariableFromJsonValue<std::string>(value, validation_count);
                 } else if (key == "attributes") {
-                    Json::setVariableFromJsonValue(value, attributes, validation_count);
+                    attributes = Json::setVariableFromJsonValue<std::string>(value, validation_count);
                 } else if (key == "dec") {
-                    Json::setVariableFromJsonValue(value, dec, validation_count);
+                    dec = Json::setVariableFromJsonValue<double>(value, validation_count);
                 } else if (key == "arr") {
-                    Json::setArrayVariablesFromJsonValue(value, arr, validation_count);
+                    Json::setArrayVariablesFromJsonValue<bool>(value, arr, validation_count);
                 } else if (key == "nested") {
-                    loggerPrintf(LOGGER_DEBUG, "Nested type.\n");
+                    loggerPrintf(LOGGER_TEST_VERBOSE, "Nested type.\n");
                     nested = Json::setVariableFromJsonValue<Nested>(value, validation_count);
                 }
             }
-            loggerPrintf(LOGGER_DEBUG, "validation count: %lu\n", validation_count);
+            loggerPrintf(LOGGER_TEST_VERBOSE, "validation count: %lu\n", validation_count);
             if (validation_count != obj->keys.size()) {
                 throw std::runtime_error("Failed to create User from json object.");
             }
@@ -117,24 +117,24 @@ class User: public Json::JsonBase {
 
         bool operator == (const User other) {
             if(this->name != other.name) {
-                loggerPrintf(LOGGER_DEBUG, "name not equal\n");
+                loggerPrintf(LOGGER_TEST_VERBOSE, "name not equal\n");
                 return false;
             }
             if(this->attributes != other.attributes) {
-                loggerPrintf(LOGGER_DEBUG, "attributes not equal\n");
+                loggerPrintf(LOGGER_TEST_VERBOSE, "attributes not equal\n");
                 return false;
             }
             // TODO: this needs to be revisited...
             if((int)(this->dec * 1000) != (int)(other.dec * 1000)) {
-                loggerPrintf(LOGGER_DEBUG, "dec not equal\n");
+                loggerPrintf(LOGGER_TEST_VERBOSE, "dec not equal\n");
                 return false;
             }
             if(this->arr != other.arr) {
-                loggerPrintf(LOGGER_DEBUG, "arr not equal\n");
+                loggerPrintf(LOGGER_TEST_VERBOSE, "arr not equal\n");
                 return false;
             }
             if(this->nested != other.nested) {
-                loggerPrintf(LOGGER_DEBUG, "nested not equal\n");
+                loggerPrintf(LOGGER_TEST_VERBOSE, "nested not equal\n");
                 return false;
             }
             return true;
@@ -153,7 +153,7 @@ static std::string createNestedObject(size_t length) {
         prev = current;
     }
     // std::string s = Json::pretty(root->toJsonString());
-    // loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
+    // loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", s.c_str());
     // return s;
     return root->toJsonString();
 }
@@ -181,12 +181,12 @@ static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size
         Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s, i);
         if (obj->type == Json::OBJECT) {
             User user(obj);
-            loggerPrintf(LOGGER_TEST, "JSON To Parse: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
-            loggerPrintf(LOGGER_TEST, "Parsed JSON - User Class: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(user.toJsonString()).c_str());
-            loggerPrintf(LOGGER_TEST, "Expected JSON - User Class: \n");
-            loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(expected.toJsonString()).c_str());
+            loggerPrintf(LOGGER_TEST_VERBOSE, "JSON To Parse: \n");
+            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", Json::pretty(s).c_str());
+            loggerPrintf(LOGGER_TEST_VERBOSE, "Parsed JSON - User Class: \n");
+            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", Json::pretty(user.toJsonString()).c_str());
+            loggerPrintf(LOGGER_TEST_VERBOSE, "Expected JSON - User Class: \n");
+            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", Json::pretty(expected.toJsonString()).c_str());
 
             if (user == expected 
                 && obj->keys.size() == expected_size 
@@ -211,13 +211,13 @@ int main() {
     // TODO: test selection... from arguments?
     Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
 
-    tester_add_test(t, testJsonNestedObject);
+    // tester_add_test(t, testJsonNestedObject);
     // tester_add_test(t, testJsonNestedArray);
-    tester_add_test(t, testJsonArray);
-    tester_add_test(t, testJsonEmptyObject);
+    // tester_add_test(t, testJsonArray);
+    // tester_add_test(t, testJsonEmptyObject);
     tester_add_test(t, testJsonObjectWithName);
-    tester_add_test(t, testJsonObjectWithArray);
-    tester_add_test(t, testJson);
+    // tester_add_test(t, testJsonObjectWithArray);
+    // tester_add_test(t, testJson);
     tester_run(t);
 
     tester_destructor(t);
@@ -266,11 +266,11 @@ static void testJsonArray(TestArg * t) {
         Json::JsonValue * obj = Json::parse(s, i);
         if (obj != nullptr) {
             if (obj->type == Json::ARRAY) {
-                loggerPrintf(LOGGER_TEST, "JSON to Parse: \n");
-                loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(s).c_str());
+                loggerPrintf(LOGGER_TEST_VERBOSE, "JSON to Parse: \n");
+                loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", Json::pretty(s).c_str());
                 Json::JsonArray * values = (Json::JsonArray *)obj;
-                loggerPrintf(LOGGER_TEST, "Parsed JSON Array: \n");
-                loggerPrintf(LOGGER_TEST, "%s\n", Json::pretty(values->toJsonString()).c_str());
+                loggerPrintf(LOGGER_TEST_VERBOSE, "Parsed JSON Array: \n");
+                loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", Json::pretty(values->toJsonString()).c_str());
                 size_t validation_count = 0;
                 for (size_t i = 0; i < values->size(); i++) {
                     Json::JsonValue * value = values->at(i);

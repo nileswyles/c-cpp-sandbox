@@ -46,7 +46,9 @@
 typedef enum log_level {
     LOGGER_ERROR, // 0
     LOGGER_TEST,
+    LOGGER_TEST_VERBOSE,
     LOGGER_DEBUG,
+    LOGGER_DEBUG_VERBOSE,
 } log_level;
 
 #endif

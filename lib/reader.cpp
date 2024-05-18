@@ -50,10 +50,14 @@ int Reader::peekForEmptyLine() {
 Array<uint8_t> * Reader::readBytes(const size_t n) {
     if (!cursorCheck()) {
         // if read error..
-        return NULL; 
+        // TODO: again... better messages... akin to logger stuff.
+        throw std::runtime_error("Read error...");
     }
 
     Array<uint8_t> * data = new Array<uint8_t>(n+1);
+    if (data == nullptr) {
+        throw std::runtime_error("Null data pointer");
+    }
     size_t bytes_read = 0;
     // TODO: limit size of this->buffer?
     while (bytes_read < n) {
@@ -71,7 +75,7 @@ Array<uint8_t> * Reader::readBytes(const size_t n) {
                 // TODO:
                 // If an input or output function blocks for this->period of time, and data has been sent or received, the return value of that function will be the amount of data transferred; if no data has been transferred and the timeout has been reached then -1 is returned with errno set to EAGAIN or EWOULDBLOCK, or EINPROGRESS
                 delete data;
-                return NULL;
+                throw std::runtime_error("Read error...");
             }
         } else {
             // else enough data in buffer
@@ -90,9 +94,9 @@ Array<uint8_t> * Reader::readBytes(const size_t n) {
 }
 
 // if return == NULL, check errno for read error.
-Array<uint8_t> * Reader::readUntil(const char until) {
+Array<uint8_t> * readUntil(std::string until, ByteOperation * operation) {
     if (!cursorCheck()) {
-        return NULL; 
+        throw std::runtime_error("Read error...");
     }
 
     size_t start_cursor = this->cursor;
@@ -100,7 +104,13 @@ Array<uint8_t> * Reader::readUntil(const char until) {
     uint8_t c = this->buf[start_cursor];
 
     Array<uint8_t> * data = new Array<uint8_t>();
-    while(c != until) {
+    if (data == nullptr) {
+        throw std::runtime_error("Null data pointer");
+    }
+    while (until.find(c) == std::string::npos) {
+        if (operation != nullptr) {
+            operation(c);
+        }
         if (this->cursor == this->bytes_in_buffer) { // if cursor pointing past data...
             // copy all data in buffer to string and read more
             size_t bytes_left_in_buffer = this->bytes_in_buffer - start_cursor;
@@ -112,7 +122,7 @@ Array<uint8_t> * Reader::readUntil(const char until) {
             int ret = fillBuffer();
             if (ret == -1) {
                 delete data;
-                return NULL;
+                throw std::runtime_error("Read error...");
             }
             start_cursor = this->cursor; // == 0
         }

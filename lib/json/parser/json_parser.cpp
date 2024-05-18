@@ -93,7 +93,7 @@ static void parseDecimal(std::string buf, size_t& i, double& value, size_t& digi
         decimal_divisor *= 10;
         c = buf.at(++i);
         if (++digit_count > FLT_MAX_MIN_DIGITS) {
-            throw std::runtime_error("parseNatural");
+            throw std::runtime_error("parseDecimal: Exceeded decimal digit limit.");
         }
     }
     // make sure we point at last digit
@@ -108,8 +108,7 @@ static void parseNatural(std::string buf, size_t& i, double& value, size_t& digi
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         c = buf.at(++i);
         if (++digit_count > FLT_MAX_MIN_DIGITS) {
-            throw std::runtime_error("parseNatural");
-
+            throw std::runtime_error("parseNatural: Exceeded natural digit limit.");
         }
     }
     // make sure we point at last digit
@@ -271,6 +270,7 @@ static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
         loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
         // create new object... and update cursor/pointer to object.
         JsonObject * new_obj = new JsonObject(arr->depth + 1);
+        // TODO: this 
         if (arr != nullptr) {
             // this should never be null.. but lets
             arr->addValue((JsonValue *)new_obj);

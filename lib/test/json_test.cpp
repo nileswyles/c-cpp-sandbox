@@ -15,7 +15,6 @@ using namespace WylesLibs;
 
 class Nested: public Json::JsonBase {
     public:
-
         std::string name;
         Nested * nested;
         Nested(): nested(nullptr) {}
@@ -49,7 +48,7 @@ class Nested: public Json::JsonBase {
             return s;
         }
 
-        bool operator == (const Nested other) {
+        bool operator == (const Nested& other) {
             if(this->name != other.name) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "name not equal\n");
                 return false;
@@ -124,7 +123,7 @@ class User: public Json::JsonBase {
             return s;
         }
 
-        bool operator == (const User other) {
+        bool operator == (const User& other) {
             if(this->name != other.name) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "name not equal\n");
                 return false;

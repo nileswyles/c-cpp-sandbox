@@ -134,12 +134,7 @@ class Array {
             return OPERATION_SUCCESS;
         }
         bool contains(const T& el) {
-            for (size_t i = 0; i < this->size; i++) {
-                if (this->buf[i] == el) {
-                    return true;
-                }
-            }
-            return false;
+            return find(el) != -1;
         }
         size_t find(const T& el) {
             for (size_t i = 0; i < this->size; i++) {
@@ -149,6 +144,27 @@ class Array {
             }
             return -1;
         }
+        T& at(const size_t pos) {
+            if (pos > 0 && pos < this->size) {
+                return this->buf[pos];
+            } else {
+                throw runtime_error("Invalid pos...");
+            }
+        }
+        T& front() {
+            if (this->size == 0) {
+                T nul = {0};
+                this->append(nul);
+            }
+            return this->buf[0];
+        }
+        T& back() {
+            if (this->size == 0) {
+                T nul = {0};
+                this->append(nul);
+            }
+            return this->buf[this->size()-1];
+        }
         std::string toString() {
             T nul = {0};
             this->append(nul);
@@ -156,6 +172,15 @@ class Array {
         }
         T& operator [] (const size_t pos) {
             return this->buf[pos];
+        }
+        T& operator [] (const T& el) {
+            size_t i = this->find(el);
+            if (i == -1) {
+                this->append(el); 
+                this->buf[this->size-1];
+            } else {
+                return this->buf[i];
+            }
         }
 };
 

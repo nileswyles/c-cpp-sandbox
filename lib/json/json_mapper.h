@@ -18,7 +18,7 @@
 namespace WylesLibs::Json {
 
 // verdict on supporting multiple types in json arrrays...
-//  the parser will restrict to single types... that said, I don't plan on providing an abstraction for the multiplexing.
+//  the parser will not restrict to single types... that said, I don't plan on providing an abstraction for the multiplexing.
 //  it's up to the developer to process the parsed intermediate on a case-by-case basis.  
 
 template<class T>

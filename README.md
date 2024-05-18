@@ -89,3 +89,19 @@ In conclusion... good exercises... Let's prioritize statically sized datastructu
      Static Array/Ring buffer, FIFO, STACK, SORTED LIST... then build priority lists 
 
 Let's implement JSON using STL for now... lol
+
+    alright, to justify/solidify/(and so I don't forget) my reasoning... abstractions generally incur overhead... 
+         The goal here is to minimize that overhead when necessary (when optimizing for performance). That was the journey I embarked on originally and lost my way? lol
+
+    and so, instead of running straight to some higher-level abstraction... Let's only generalize only as much as it doesn't affect performance.
+        or rather specialize as much as possible... 
+
+    Even if it's a backwards way of thinking?
+
+    i.e. Containers copy/assignment incurs overhead? (bad example? maybe...)
+         a = b	C&	Destroys or copy-assigns all elements of a from elements of b
+
+So there are definitely situations where I might want to use my Array class over vector, for example. But might not make sense to reimplement the higher level abstractions.
+
+To expand further... minimum overhead for "node"-based data structures is size of pointer... And I am not sure but there might be more... like the iterator stuff?
+    or does the compiler work it's magic?

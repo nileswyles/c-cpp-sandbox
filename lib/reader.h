@@ -8,7 +8,27 @@
 
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
-namespace WylesLibs {
+namespace WylesLibs::IO {
+
+typedef void(ByteOperation)(uint8_t&);
+
+void byteOperationToLowerCase(uint8_t& c) {
+    if (c >= 0x41 && c <= 0x5A) { // lowercase flag set and is upper case
+		c += 0x20; // lower case the char
+	}
+}
+
+void byteOperationIgnoreWhiteSpace(uint8_t& c) {
+    if (c == '\t' || c == ' ') { 
+        c = '';
+    }
+}
+
+void byteOperationToLowerCaseAndIgnoreWhiteSpace(uint8_t& c) {
+    byteOperationToLowerCase(c);
+    byteOperationIgnoreWhiteSpace(c);
+}
+
 class Reader {
     private:
         int fd;
@@ -36,7 +56,16 @@ class Reader {
         }
         int peekForEmptyLine();
         Array<uint8_t> * readBytes(const size_t n);
-        Array<uint8_t> * readUntil(const char until);
+        Array<uint8_t> * readUntil(const char until) {
+            return readUntil(until, nullptr);
+        }
+        Array<uint8_t> * readUntil(std::string until) {
+            return readUntil(until, nullptr);
+        }
+        Array<uint8_t> * readUntil(const char until, ByteOperation * operation) {
+            return readUntil(std::string(until), operation)
+        }
+        Array<uint8_t> * readUntil(std::string until, ByteOperation * operation);
         int read_chunk_non_blocking_fd(int fd, uint8_t ** p);
 };
 }

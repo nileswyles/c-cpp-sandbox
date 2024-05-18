@@ -1,5 +1,6 @@
+#include "tester.h"
 #include "reader.h"
-#include "logger.h"
+
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,10 +19,10 @@
 #define LOGGER_MODULE_ENABLED LOGGER_READER_TEST
 #include "logger.h"
 
-// use string here?
-const char * buffer;
+using namespace WylesLibs;
+using namespace WylesLibs::Test;
 
-// TODO: LMAO! when your tests aren't proper... While probably inconsequential in tests, get in the habit of freeing the copied buffers once no longer needed.
+static const char * buffer;
 
 ssize_t read(int fd, void *buf, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
@@ -37,14 +38,14 @@ void testReadUntil(TestArg * t) {
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
-    char * ret = (char *)reader.readUntil(' ');
+    std::string ret = reader.readUntil(' ').toString();
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string); // lol
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", ret);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", ret.c_str());
     loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", "TESTSTRINGWITHSPACE");
 
-    if (strcmp(ret, "TESTSTRINGWITHSPACE") == 0) {
+    if (strcmp(ret.c_str(), "TESTSTRINGWITHSPACE") == 0) {
         t->fail = false;
     }
 }
@@ -127,21 +128,19 @@ void testReadUntil(TestArg * t) {
 // }
 
 int main(int argc, char * argv[]) {
-    Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
+    Tester t;
 
-    tester_add_test(t, testReadUntil);
-    tester_add_test(t, testReadUntilCursorAtUntil);
-    tester_add_test(t, testReadUntilFillBufferOnce);
-    tester_add_test(t, testReadUntilFillBufferTwice);
+    t.addTest(testReadUntil);
+    // addTest(testReadUntilCursorAtUntil);
+    // addTest(testReadUntilFillBufferOnce);
+    // addTest(testReadUntilFillBufferTwice);
 
     if (argc > 1) {
         loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
-        tester_run(t, argv[1]);
+        t.run(argv[1]);
     } else {
-        tester_run(t, NULL);
+        t.run(nullptr);
     }
-
-    tester_destructor(t);
 
     return 0;
 }

@@ -132,7 +132,7 @@ class HttpConnection {
     private:
         RequestProcessor processor;
         Array<ConnectionUpgrader> upgraders;
-        void parseRequest(HttpRequest * request, IO:Reader * reader);
+        void parseRequest(HttpRequest * request, Reader * reader);
     public:
         HttpConnection(RequestProcessor processor, Array<ConnectionUpgrader> upgraders): processor(processor), upgraders(upgraders) {}
         uint8_t onConnection(int conn_fd);

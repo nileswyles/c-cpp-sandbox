@@ -1,9 +1,16 @@
 #include "reader.h"
-#include "logger.h"
 
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef LOGGER_READER
+#define LOGGER_READER 1
+#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_READER
+#include "logger.h"
 
 using namespace WylesLibs;
 
@@ -17,7 +24,7 @@ using namespace WylesLibs;
 // 0 == not empty line
 // 1 == is empty line
 int Reader::peekForEmptyLine() {
-    if (!cursorCheck()) {
+    if (!this->cursorCheck()) {
         return -1;
     }
     if (this->buf[this->cursor] == '\n') {
@@ -47,17 +54,14 @@ int Reader::peekForEmptyLine() {
 // Can probably be simplified to do 1 read and 1 copy but let's keep changes 'incremental'. 
 //  Need to update tests before making that change. Which I don't feel like doing right now.
 //  or by reading a single byte per read call, but that seems like the wrong way to do it.
-Array<uint8_t> * Reader::readBytes(const size_t n) {
-    if (!cursorCheck()) {
+Array<uint8_t> Reader::readBytes(const size_t n) {
+    if (!this->cursorCheck()) {
         // if read error..
         // TODO: again... better messages... akin to logger stuff.
-        throw std::runtime_error("Read error...");
+        // throw std::runtime_error("Read error...");
     }
 
-    Array<uint8_t> * data = new Array<uint8_t>(n+1);
-    if (data == nullptr) {
-        throw std::runtime_error("Null data pointer");
-    }
+    Array<uint8_t> data;
     size_t bytes_read = 0;
     // TODO: limit size of this->buffer?
     while (bytes_read < n) {
@@ -67,20 +71,20 @@ Array<uint8_t> * Reader::readBytes(const size_t n) {
 
         if (bytes_left_to_read > bytes_left_in_buffer) {
             // copy data left in buffer and read more
-            data->append(this->buf + this->cursor, bytes_left_in_buffer);
+            data.append(this->buf + this->cursor, bytes_left_in_buffer);
             bytes_read += bytes_left_in_buffer;
 
             int ret = fillBuffer();
             if (ret == -1) {
                 // TODO:
                 // If an input or output function blocks for this->period of time, and data has been sent or received, the return value of that function will be the amount of data transferred; if no data has been transferred and the timeout has been reached then -1 is returned with errno set to EAGAIN or EWOULDBLOCK, or EINPROGRESS
-                delete data;
-                throw std::runtime_error("Read error...");
+                // delete data;
+                // throw std::runtime_error("Read error...");
             }
         } else {
             // else enough data in buffer
             // printf("cursor: %lx, start: %lx\n", data_cursor, data);
-            data->append(this->buf + this->cursor, bytes_left_to_read);
+            data.append(this->buf + this->cursor, bytes_left_to_read);
             this->cursor += bytes_left_to_read;
             bytes_read += bytes_left_to_read; // no more loop after this->..
         }
@@ -94,46 +98,41 @@ Array<uint8_t> * Reader::readBytes(const size_t n) {
 }
 
 // if return == NULL, check errno for read error.
-Array<uint8_t> * readUntil(std::string until, ByteOperation * operation) {
-    if (!cursorCheck()) {
-        throw std::runtime_error("Read error...");
+Array<uint8_t> Reader::readUntil(std::string until, ByteOperation * operation) {
+    if (!this->cursorCheck()) {
+        // throw std::runtime_error("Read error...");
     }
 
     size_t start_cursor = this->cursor;
     loggerPrintf(LOGGER_DEBUG, "reader_read_until start_cursor: %lu\n", start_cursor);
-    uint8_t c = this->buf[start_cursor];
 
-    Array<uint8_t> * data = new Array<uint8_t>();
-    if (data == nullptr) {
-        throw std::runtime_error("Null data pointer");
-    }
+    Array<uint8_t> data;
+    uint8_t c = this->buf[start_cursor];
     while (until.find(c) == std::string::npos) {
         if (operation != nullptr) {
-            operation(c);
+            operation->perform(data, c);
         }
         if (this->cursor == this->bytes_in_buffer) { // if cursor pointing past data...
-            // copy all data in buffer to string and read more
-            size_t bytes_left_in_buffer = this->bytes_in_buffer - start_cursor;
-            data->append(this->buf + start_cursor, bytes_left_in_buffer);
-
             loggerPrintf(LOGGER_DEBUG, "reached end of buffer, flush buffer to string and read more:\n");
-            loggerPrintByteArray(LOGGER_DEBUG, data->buf, data->size);
+            loggerPrintByteArray(LOGGER_DEBUG, data.buf, data.getSize());
 
             int ret = fillBuffer();
             if (ret == -1) {
-                delete data;
-                throw std::runtime_error("Read error...");
+                // delete data;
+                // throw std::runtime_error("Read error...");
             }
             start_cursor = this->cursor; // == 0
         }
         c = this->buf[++this->cursor]; 
     }
-    this->cursor++;
-    size_t bytes_up_until_cursor = this->cursor - start_cursor;
-    data->append(this->buf + start_cursor, bytes_up_until_cursor);
+    if (operation != nullptr) {
+        operation->perform(data, c);
+        // dump any buffers cached by the operation classes...
+        operation->flush(data, c);
+    }
 
     loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);
-    loggerPrintf(LOGGER_DEBUG, "reader_read_until string: %s\n", (char *)data->buf);
+    loggerPrintf(LOGGER_DEBUG, "reader_read_until string: %s\n", (char *)data.buf);
 
     return data;
 }

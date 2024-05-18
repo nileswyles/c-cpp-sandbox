@@ -3,7 +3,7 @@
 using namespace WylesLibs;
 using namespace WylesLibs::Http;
 
-static Url parseUrl(IO::Reader) {
+static Url parseUrl(Reader) {
     Url url;
     // path = /aklmdla/aslmlamk
     // query = ?key=value&key2=value2
@@ -34,15 +34,23 @@ void HttpConnection::parseRequest(HttpRequest * request, IO::Reader * reader) {
     // also, we don't want to include until character in HttpRequest vars
     request->method = reader->readUntil(' ').toString(); // TODO: error check... if NULL, then read error
 
-    std::string field_name = reader->readUntil(':', IO::byteOperationToLowerCaseAndIgnoreWhiteSpace).toString();
+
+    // hmm.....
+    ByteOperationIgnore ignore_and_lowercase("\r\n\t ");
+    ByteOperationLC lowercase();
+    ignore_and_lowercase.next(&lowercase);
+
+    std::string field_name = reader->readUntil(':', &ignore_and_lowercase).toString();
     request->url = Url(request->path);
     request->version = reader->readUntil('\n').toString();
 
     request->content_length = -1;
     int field_idx = 0; 
-    int peek = reader->peekForEmptyLine();
-    while (field_idx < FIELD_MAX && peek == 0) {
-        std::string field_name = reader->readUntil(':', IO::byteOperationToLowerCaseAndIgnoreWhiteSpace).toString();
+    while (field_idx < FIELD_MAX) {
+        std::string field_name = reader->readUntil(":\n", IO::byteOperationToLowerCaseAndIgnoreWhiteSpace).toString();
+        if (field_name.back() == '\n') {
+            break;
+        }
         // hmmm... need to trim too... lol
         //  is it ignore all whitespace or just that before and after first and last character? 
         
@@ -69,10 +77,6 @@ void HttpConnection::parseRequest(HttpRequest * request, IO::Reader * reader) {
             // TODO: negatives? use strtoul instead?
             request->content_length = atoi(value);
         }
-        peek = reader->peekForEmptyLine();
-    }
-    if (peek == -1) {
-        throw std::runtime_error("Reader Peek error.");
     }
     if (field_idx == FIELD_MAX) {
         throw std::runtime_error("Too many fields in request.");

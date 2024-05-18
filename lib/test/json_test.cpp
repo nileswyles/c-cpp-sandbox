@@ -1,7 +1,8 @@
 #include "json.h"
 #include <iostream>
 
-#include "test/tester.h"
+// #include "test/tester.h"
+#include "tester.h"
 
 #ifndef LOGGER_JSON_TEST
 #define LOGGER_JSON_TEST 1
@@ -12,6 +13,7 @@
 #include "logger.h"
 
 using namespace WylesLibs;
+using namespace WylesLibs::Test;
 
 class Nested: public Json::JsonBase {
     public:
@@ -280,38 +282,36 @@ static void testJsonMalformedNonWhitespaceInBetweenTokens(TestArg * t);
 static void testPretty(TestArg * t);
 
 int main(int argc, char * argv[]) {
-    Tester * t = tester_constructor(nullptr, nullptr, nullptr, nullptr);
+    Tester t;
 
-    tester_add_test(t, testJsonNestedObject);
-    tester_add_test(t, testJsonNestedArray);
-    tester_add_test(t, testJsonArray);
-    tester_add_test(t, testJsonEmptyObject);
-    tester_add_test(t, testJsonObjectWithName);
-    tester_add_test(t, testJsonObjectWithArray);
-    tester_add_test(t, testJson);
+    t.addTest(testJsonNestedObject);
+    t.addTest(testJsonNestedArray);
+    t.addTest(testJsonArray);
+    t.addTest(testJsonEmptyObject);
+    t.addTest(testJsonObjectWithName);
+    t.addTest(testJsonObjectWithArray);
+    t.addTest(testJson);
 
-    tester_add_test(t, testJsonMalformedOpenObject);
-    tester_add_test(t, testJsonMalformedOpenArray);
-    tester_add_test(t, testJsonMalformedOpenNestedObject);
-    tester_add_test(t, testJsonMalformedOpenNestedArray);
-    tester_add_test(t, testJsonMalformedOpenEndKeyString);
-    tester_add_test(t, testJsonMalformedOpenEndValueString);
-    tester_add_test(t, testJsonMalformedOpenStartKeyString);
-    tester_add_test(t, testJsonMalformedOpenStartValueString);
-    tester_add_test(t, testJsonMalformedIncompleteBoolean);
-    tester_add_test(t, testJsonMalformedIncompleteNull);
-    tester_add_test(t, testJsonMalformedNonWhitespaceInBetweenTokens);
+    t.addTest(testJsonMalformedOpenObject);
+    t.addTest(testJsonMalformedOpenArray);
+    t.addTest(testJsonMalformedOpenNestedObject);
+    t.addTest(testJsonMalformedOpenNestedArray);
+    t.addTest(testJsonMalformedOpenEndKeyString);
+    t.addTest(testJsonMalformedOpenEndValueString);
+    t.addTest(testJsonMalformedOpenStartKeyString);
+    t.addTest(testJsonMalformedOpenStartValueString);
+    t.addTest(testJsonMalformedIncompleteBoolean);
+    t.addTest(testJsonMalformedIncompleteNull);
+    t.addTest(testJsonMalformedNonWhitespaceInBetweenTokens);
 
-    tester_add_test(t, testPretty);
+    t.addTest(testPretty);
 
     if (argc > 1) {
         loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
-        tester_run(t, argv[1]);
+        t.run(argv[1]);
     } else {
-        tester_run(t, NULL);
+        t.run(nullptr);
     }
-
-    tester_destructor(t);
 
     return 0;
 }

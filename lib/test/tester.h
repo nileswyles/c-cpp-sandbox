@@ -1,58 +1,55 @@
-#ifndef TESTER_H
-#define TESTER_H
+#ifndef WYLESLIBS_TESTER_H
+#define WYLESLIBS_TESTER_H
 
-#if defined __cplusplus
-extern "C"
-{
-#endif
+#include "result.h"
 
-#include "c/array.h"
+#include <string>
+#include <vector>
 #include <stddef.h>
 #include <stdbool.h>
 
-#ifndef LOGGER_LEVEL 
-#define LOGGER_LEVEL LOGGER_TEST
-#endif
+#define addTest(func)\
+    addTestWithName(#func, func);
 
-#include "logger.h"
+namespace WylesLibs::Test {
 
 typedef struct TestArg {
     bool fail;
 } TestArg;
 
-typedef void (suite_function)();
-typedef void (test_function)(TestArg *);
+typedef void (SuiteFunction)();
+typedef void (TestFunction)(TestArg *);
 
 typedef struct Test {
-    const char * name;
-    test_function * func;
+    std::string name;
+    TestFunction * func;
     TestArg arg;
 } Test;
 
-typedef struct Tester {
-    suite_function * before;
-    test_function * beforeEach;
-    suite_function * after;
-    test_function * afterEach;
-    Array * tests;
-    size_t num_tests;
-} Tester;
+class Tester {
+    private:
+        void runTest(Test * test);
+    public:
+        SuiteFunction * before;
+        TestFunction * before_each;
+        SuiteFunction * after;
+        TestFunction * after_each;
+        std::vector<Test> tests;
+        size_t num_tests;
 
-// test suite
-// -> tests
+        Tester() {}
+        Tester(SuiteFunction * before, TestFunction * before_each, SuiteFunction * after, TestFunction * after_each): 
+            before(before), before_each(before_each), after(after), after_each(after_each), num_tests(0) {}
 
-#define tester_add_test(t, func)\
-    tester_add_test_with_name(t, #func, func);
+        void addTestWithName(const char * name, TestFunction * func) {
+            std::string s(name);
+            Test test = {.name = s, .func = func, .arg = { .fail = true }};
+            this->tests.push_back(test);
+            this->num_tests++;
+        }
+        void run(const char * name);
+};
 
-extern Tester * tester_constructor(suite_function * before, test_function * beforeEach, suite_function * after, test_function * afterEach);
-extern void tester_destructor(Tester * t);
-extern void tester_add_test_with_name(Tester *t, const char * name, test_function * func);
-
-// TODO: will I ever want to support a list of test names via CLI argument?
-extern void tester_run(Tester * t, const char * name);
-
-#if defined __cplusplus
 }
-#endif
 
 #endif

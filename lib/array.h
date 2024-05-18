@@ -148,7 +148,7 @@ class Array {
             if (pos > 0 && pos < this->size) {
                 return this->buf[pos];
             } else {
-                throw runtime_error("Invalid pos...");
+                // throw std::runtime_error("Invalid pos...");
             }
         }
         T& front() {

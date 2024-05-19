@@ -127,7 +127,7 @@ Array<uint8_t> Reader::readUntil(std::string until, ByteOperation * operation) {
     }
     if (operation != nullptr) {
         operation->perform(data, c);
-        // dump any buffers cached by the operation classes...
+        // dump any buffers cached (by the operation classes in the operation objects/instances)...
         operation->flush(data, c);
     }
 

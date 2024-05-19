@@ -16,6 +16,11 @@ namespace WylesLibs {
 class ByteOperation {
     public:
         ByteOperation() {}
+        // good example of "dynamic dispatch"?
+        //  As I understand it, calls to ByteOperation->flush (not virtual) will call this function regardless of how it's defined in sub-classes?
+        //  By contrast, calls to perform call the function defined by the class-type at creation. Regardless of any casting along the way lol.
+        //  Also, the compiler throws an error if perform isn't defined in sub-classes. 
+        //     *** Then there's {} vs. = 0, which is effectively the same thing? At least when return type == void? ***
         void flush(Array<uint8_t> buffer, uint8_t c) {}
         virtual void perform(Array<uint8_t> buffer, uint8_t c) = 0;
 };
@@ -77,27 +82,48 @@ class ByteOperationTrim: public ByteOperation {
     public:
         Array<uint8_t> data;
         Array<uint8_t> r_trim;
-        bool l_trim_ignore;
+        bool l_trimming;
+        bool r_trimming;
 
-        ByteOperationTrim(): l_trim_ignore(true) {}
+        std::string l_trim_match;
+        std::string r_trim_match;
 
-        void flush(Array<uint8_t> buffer, uint8_t c) {
+        ByteOperationTrim(): l_trimming(true), r_trimming(false), l_trim_match("\r\n\t "), r_trim_match("\r\n\t ") {}
+
+        // then can use this for extracting things like json keystring and valuestring...
+        //      hmm... might be worth refactoring json parser to use this.  
+        //      or, is reader.getBytes() then to string faster?
+        //      might be worth supporting non-fd reads regardless... lol...
+
+        // What I have works just fine for now... I guess...
+
+        // resulting trim does not include these characters...
+        ByteOperationTrim(char left_most_char, char right_most_char): 
+            l_trimming(true), r_trimming(false), l_trim_match(&left_most_char), r_trim_match(&right_most_char) {}
+
+        void rTrimFlush(Array<uint8_t> buffer, uint8_t c) {
             if (this->r_trim.getSize() > 0) {
                 buffer.append(this->r_trim.buf, this->r_trim.getSize());
             }
+            r_trimming = false;
         }
-        // must be only... lol
+
         void perform(Array<uint8_t> buffer, uint8_t c) {
-            if (!this->l_trim_ignore) {
-                if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
-                    this->r_trim.append(c);
-                } else if (this->r_trim.getSize() > 0) {
-                    flush(buffer, c);
+            if (!this->l_trimming) {
+                if (this->r_trim_match.find(c) != std::string::npos) {
+                    this->r_trimming = true;
+                } else if (this->r_trimming) {
+                    if (this->r_trim_match.find(c) == std::string::npos) {
+                        this->r_trim.append(c);
+                    } else {
+                        // r_trimming and see r_trim_match... flush buffer and reset trim...
+                        rTrimFlush(buffer, c);
+                    }
                 } else {
                     buffer.append(c);
                 }
-            } else if (!(c == ' ' || c == '\t' || c == '\n' || c == '\r')) {
-                this->l_trim_ignore = false;
+            } else if (this->l_trim_match.find(c) == std::string::npos) {
+                this->l_trimming = false;
             }
         }
 };

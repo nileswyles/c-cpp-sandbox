@@ -50,7 +50,7 @@ void testReadUntil() {
     buffer = test_string;
 
     std::string ret = reader.readUntil(' ').toString();
-    std::string expected = "TESTINGWITHSPACE";
+    std::string expected = "TESTSTRINGWITHSPACE";
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
@@ -65,7 +65,7 @@ void testReadUntilUpperCase() {
 
     ByteOperationUC uppercase;
     std::string ret = reader.readUntil(' ', (ByteOperation *)&uppercase).toString();
-    std::string expected = "TESTINGWITHSPACE";
+    std::string expected = "TESTSTRINGWITHSPACE";
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
@@ -80,7 +80,7 @@ void testReadUntilLowerCase() {
 
     ByteOperationLC lowercase;
     std::string ret = reader.readUntil(' ', (ByteOperation *)&lowercase).toString();
-    std::string expected = "testingwithspace";
+    std::string expected = "teststringwithspace";
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');

@@ -165,6 +165,10 @@ class Array {
             }
             return this->buf[this->size()-1];
         }
+        Array& popBack() {
+            remove(this->size()-1);
+            return *this; // lmaooo...
+        }
         std::string toString() {
             T nul = {0};
             this->append(nul);

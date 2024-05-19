@@ -96,7 +96,12 @@ Let's implement JSON using STL for now... lol
     and so, instead of running straight to some higher-level abstraction... Let's only generalize only as much as it doesn't affect performance.
         or rather specialize as much as possible... 
 
-    Even if it's a backwards way of thinking?
+    Even if it's a backwards way of thinking? 
+
+    More brain dump, retrospective, reflection, reminder, affermation:
+        In other words, let's fully understand the problem, to the very finest detail (at least as much as possible). Then make optimizations/generalize where possible. Or have the foresight (executive planning?), (which also might be the same thing?), just a faster way of arriving there? Yeah, I think that's the right way of going about it. 
+
+        more generally, "bring your whole set", consider all possible applications of what you're implementing. Idk, maybe I'm wrong... 
 
     i.e. Containers copy/assignment incurs overhead? (bad example? maybe...)
          a = b	C&	Destroys or copy-assigns all elements of a from elements of b

@@ -21,12 +21,6 @@ namespace WylesLibs::Http {
 // 
 typedef void(RequestProcessor)(HttpRequest&);
 
-static Array<std::string> FIELD_VALUES_TO_SPLIT{
-    "connection",
-	"sec-websocket-protocol",
-	"accept-encoding"
-};
-
 static Array<std::string> FIELD_VALUES_TO_LOWER_CASE{
     "connection",
     "upgrade"
@@ -133,8 +127,10 @@ class HttpConnection {
         RequestProcessor processor;
         Array<ConnectionUpgrader> upgraders;
         void parseRequest(HttpRequest * request, Reader * reader);
+        bool handleWebsocketRequest(int conn_fd, HttpRequest request);
     public:
         HttpConnection(RequestProcessor processor, Array<ConnectionUpgrader> upgraders): processor(processor), upgraders(upgraders) {}
+        HttpConnection(Map processor, Array<ConnectionUpgrader> upgraders): processor(processor), upgraders(upgraders) {}
         uint8_t onConnection(int conn_fd);
 };
 

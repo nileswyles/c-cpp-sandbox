@@ -56,7 +56,7 @@ typedef struct ArrayAssert {
 // bool assert(Array * arr, Array * expected_arr) {
 bool assert(Array<uint8_t> * arr, void * expected, size_t expected_size, size_t expected_cap, size_t expected_size_of_el) {
     bool memory_match = memcmp(expected, (uint8_t *)arr->buf, expected_size) == 0;
-    bool size_match = arr->getSize() == expected_size;
+    bool size_match = arr->size() == expected_size;
     // make sure cap grows at the predetermined rate.
     // also make sure size doesn't exceed cap (arguably more important).
 
@@ -67,10 +67,10 @@ bool assert(Array<uint8_t> * arr, void * expected, size_t expected_size, size_t 
     loggerPrintf(LOGGER_TEST, "Expected:\n");
     loggerPrintByteArray(LOGGER_TEST, (uint8_t *)expected, expected_size * expected_size_of_el);
     loggerPrintf(LOGGER_TEST, "Actual:\n");
-    loggerPrintByteArray(LOGGER_TEST, (uint8_t *)arr->buf, arr->getSize() * expected_size_of_el);
+    loggerPrintByteArray(LOGGER_TEST, (uint8_t *)arr->buf, arr->size() * expected_size_of_el);
     loggerPrintf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu)\n", 
         memory_match ? "True" : "False", 
-        size_match ? "True" : "False", expected_size, arr->getSize()
+        size_match ? "True" : "False", expected_size, arr->size()
     );
     // loggerPrintf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu), Size of El Match: %s (%lu == %lu) \n", 
     //     memory_match ? "True" : "False", 
@@ -137,7 +137,7 @@ bool test_array_append_cstrings() {
    bool res = true;
 
     // printf("WTF?, %d, %x\n", arr.getSize(), arr.buf[0]);
-   for (size_t i = 0; i < arr.getSize(); i++) {
+   for (size_t i = 0; i < arr.size(); i++) {
         loggerPrintf(LOGGER_TEST, "%s, %p, %p\n", arr[i], &(arr[i]), &(arr.buf[i]));
    }
 

@@ -102,8 +102,8 @@ class ByteOperationTrim: public ByteOperation {
             l_trimming(true), r_trimming(false), l_trim_match(&left_most_char), r_trim_match(&right_most_char) {}
 
         void rTrimFlush(Array<uint8_t>& buffer, uint8_t c) {
-            if (this->r_trim.getSize() > 0) {
-                buffer.append(this->r_trim.buf, this->r_trim.getSize());
+            if (this->r_trim.size() > 0) {
+                buffer.append(this->r_trim.buf, this->r_trim.size());
             }
             r_trimming = false;
         }
@@ -138,13 +138,14 @@ class Reader {
         
         int fillBuffer();
         bool cursorCheck();
-        // Array<uint8_t> readUntil(std::string until, ByteOperation * operation, bool is_trim);
     public:
         Reader(const int fd) : Reader(fd, READER_RECOMMENDED_BUF_SIZE) {}
         Reader(const int pFd, const size_t pBuf_size) {
             // TODO:
             // ensure buf_size > some amount and fd > 0? else return null? lol idk
+            printf("LOL\n");
             buf = newCArray<uint8_t>(buf_size);
+            printf("LOL\n");
             buf_size = pBuf_size;
             cursor = 0;
             fd = pFd;
@@ -157,13 +158,14 @@ class Reader {
         int peekForEmptyLine();
         Array<uint8_t> readBytes(const size_t n);
         Array<uint8_t> readUntil(const char until) {
-            return readUntil(until, nullptr);
+            return readUntil(std::string(&until));
         }
         Array<uint8_t> readUntil(std::string until) {
             return readUntil(until, nullptr);
         }
-        Array<uint8_t> readUntil(const char until, ByteOperation * operation) {
-            return readUntil(std::string(&until), operation);
+        Array<uint8_t> readUntil(std::string until, bool ignore_until) {
+            ByteOperationIgnore ignore(until);
+            return readUntil(until, &ignore);
         }
         Array<uint8_t> readUntil(std::string until, ByteOperation * operation);
         int read_chunk_non_blocking_fd(int fd, uint8_t ** p);

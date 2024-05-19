@@ -2,50 +2,70 @@
 
 using namespace WylesLibs::Json;
 
-extern void setVariableFromJsonValue(JsonType type, JsonValue * json_value, bool& obj_value, size_t& validation_count) {
+template<class T>
+T WylesLibs::Json::setVariableFromJsonValue(JsonValue * value, size_t& validation_count) {
+    Json::JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+    loggerPrintf(LOGGER_DEBUG, "Setting object variable. %d\n", type);
+    if (type == OBJECT) {
+        validation_count++;
+        return T((JsonObject *)value);
+    } else {
+        return T();
+    }
+}
+
+template<>
+bool WylesLibs::Json::setVariableFromJsonValue<bool>(JsonValue * value, size_t& validation_count) {
+    Json::JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == BOOLEAN) {
-        obj_value = ((JsonBoolean *)json_value)->getValue();
         validation_count++;
+        return ((JsonBoolean *)value)->getValue();
     }
+    return false;
 }
 
-extern void setVariableFromJsonValue(JsonType type, JsonValue * json_value, double& obj_value, size_t& validation_count) {
+template<>
+double WylesLibs::Json::setVariableFromJsonValue<double>(JsonValue * value, size_t& validation_count) {
+    Json::JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == NUMBER) {
-        obj_value = ((JsonNumber *)json_value)->getValue();
         validation_count++;
+        return ((JsonNumber *)value)->getValue();
     }
+    return 0;
 }
 
-extern void setVariableFromJsonValue(JsonType type, JsonValue * json_value, std::string& obj_value, size_t& validation_count) {
+template<>
+std::string WylesLibs::Json::setVariableFromJsonValue<std::string>(JsonValue * value, size_t& validation_count) {
+    Json::JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == STRING) {
-        obj_value = ((JsonString *)json_value)->getValue();
         validation_count++;
+        return ((JsonString *)value)->getValue();
     }
+    return "";
 }
 
-// TO or FROM? English is englishing...
-extern void setArrayVariablesFromJsonValue(JsonType type, JsonValue * json_value, std::vector<bool>& arr, size_t& validation_count) {
+template<class T>
+void WylesLibs::Json::setArrayVariablesFromJsonValue(JsonValue * value, std::vector<T>& arr, size_t& validation_count) {
+    Json::JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;
-        JsonArray * array_value = (JsonArray *)json_value;
-        // TODO: can this be abstracted out? yeah, basically, this for all boolean, number ans string arrays...
-    
-        //  object types, can we template?
-        for (int i = 0; i < array_value->size(); i++) {
-            JsonValue * array_json_value = (*array_value)[i];
-            JsonType array_json_type = array_json_value->type;
-            // TODO: can be object, number, double, etc... no nested arrays for now...
-    
-            // if (arrayJsonType == ARRAY) { // ignore ARRAY types for now...
-            // } else if (arrayJsonType == OBJECT) { // ignore OBJECT also for this vector<bool> type...
-            // } else {
-            if (array_json_type == BOOLEAN) {
-                // T& = arr[i]
-                bool element = arr[i]; // hmmm.....
-                setVariableFromJsonValue(array_json_type, array_json_value, element, array_validation_count);
+        loggerPrintf(LOGGER_DEBUG, "cast?\n");
+        JsonArray * array = (JsonArray *)value;
+        loggerPrintf(LOGGER_DEBUG, "Before loop\n");
+        for (int i = 0; i < array->size(); i++) {
+            JsonValue * array_value = array->at(i);
+            JsonType array_type = array_value->type;
+            if (array_type == OBJECT) {
+                loggerPrintf(LOGGER_DEBUG, "Adding object to array...\n");
+                arr->push_back(setVariableFromJsonValue<T>(array_value, array_validation_count));
             }
         }
-        if (array_validation_count != array_value->size()) {
+        if (array_validation_count != array->size()) {
             // ensures elements in array are correct type.
             throw std::runtime_error("Failed to create User from json object.");
         }
@@ -53,20 +73,21 @@ extern void setArrayVariablesFromJsonValue(JsonType type, JsonValue * json_value
     }
 }
 
-extern void setArrayVariablesFromJsonValue(JsonType type, JsonValue * json_value, std::vector<double>& arr, size_t& validation_count) {
+template<>
+void WylesLibs::Json::setArrayVariablesFromJsonValue<bool>(JsonValue * value, std::vector<bool>& arr, size_t& validation_count) {
+    Json::JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;
-        JsonArray * array_value = (JsonArray *)json_value;
-        for (int i = 0; i < array_value->size(); i++) {
-            JsonValue * array_json_value = array_value->at(i);
-            JsonType array_json_type = array_json_value->type;
-            if (array_json_type == NUMBER) {
-                // T& = arr[i]
-                double element = arr[i]; // hmmm.....
-                setVariableFromJsonValue(array_json_type, array_json_value, element, array_validation_count);
+        JsonArray * array = (JsonArray *)value;
+        for (int i = 0; i < array->size(); i++) {
+            JsonValue * array_value = (*array)[i];
+            JsonType array_type = array_value->type;
+            if (array_type == BOOLEAN) {
+                arr.push_back(setVariableFromJsonValue<bool>(array_value, array_validation_count));
             }
         }
-        if (array_validation_count != array_value->size()) {
+        if (array_validation_count != array->size()) {
             // ensures elements in array are correct type.
             throw std::runtime_error("Failed to create User from json object.");
         }
@@ -74,20 +95,43 @@ extern void setArrayVariablesFromJsonValue(JsonType type, JsonValue * json_value
     }
 }
 
-extern void setArrayVariablesFromJsonValue(JsonType type, JsonValue * json_value, std::vector<std::string>& arr, size_t& validation_count) {
+template<>
+void WylesLibs::Json::setArrayVariablesFromJsonValue<double>(JsonValue * value, std::vector<double>& arr, size_t& validation_count) {
+    Json::JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;
-        JsonArray * array_value = (JsonArray *)json_value;
-        for (int i = 0; i < array_value->size(); i++) {
-            JsonValue * array_json_value = array_value->at(i);
-            JsonType array_json_type = array_json_value->type;
-            if (array_json_type == STRING) {
-                // T& = arr[i] - 
-                std::string element = arr[i]; // hmmm.....
-                setVariableFromJsonValue(array_json_type, array_json_value, element, array_validation_count);
+        JsonArray * array = (JsonArray *)value;
+        for (int i = 0; i < array->size(); i++) {
+            JsonValue * array_value = array->at(i);
+            JsonType array_type = array_value->type;
+            if (array_type == NUMBER) {
+                arr.push_back(setVariableFromJsonValue<double>(array_value, array_validation_count));
             }
         }
-        if (array_validation_count != array_value->size()) {
+        if (array_validation_count != array->size()) {
+            // ensures elements in array are correct type.
+            throw std::runtime_error("Failed to create User from json object.");
+        }
+        validation_count++;
+    }
+}
+
+template<>
+void WylesLibs::Json::setArrayVariablesFromJsonValue<std::string>(JsonValue * value, std::vector<std::string>& arr, size_t& validation_count) {
+    Json::JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+    if (type == ARRAY) {
+        size_t array_validation_count = 0;
+        JsonArray * array = (JsonArray *)value;
+        for (int i = 0; i < array->size(); i++) {
+            JsonValue * array_value = array->at(i);
+            JsonType array_type = array_value->type;
+            if (array_type == STRING) {
+                arr.push_back(setVariableFromJsonValue<std::string>(array_value, array_validation_count));
+            }
+        }
+        if (array_validation_count != array->size()) {
             // ensures elements in array are correct type.
             throw std::runtime_error("Failed to create User from json object.");
         }

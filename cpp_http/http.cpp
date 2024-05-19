@@ -1,17 +1,21 @@
 #include "http.h"
+#include <iostream>
+// #include <openssl/sha.h>
 
 using namespace WylesLibs;
 using namespace WylesLibs::Http;
+
+#define HTTP_FIELD_MAX 64
 
 static Url parseUrl(Reader * reader) {
     Url url;
     // path = /aklmdla/aslmlamk
     // query = ?key=value&key2=value2
     Array<uint8_t> path = reader->readUntil("?\n");
-    if (path.back() == "?") {
+    if ((char)path.back() == '?') {
         char delimeter = 0x00;
         while (delimeter != '\n') {
-            Array<uint8_t> field_name = reader->readUntil('=');
+            Array<uint8_t> field_name = reader->readUntil("=");
             Array<uint8_t> field_value = reader->readUntil("&\n");
             delimeter = field_value.back();
             // alternatively, can toString then remove last?
@@ -25,43 +29,45 @@ static Url parseUrl(Reader * reader) {
     return url;
 }
 
-void HttpConnection::parseRequest(HttpRequest * request, IO::Reader * reader) {
+void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
     if (request == NULL || reader == NULL) {
         throw std::runtime_error("lol....");
     }
-
-    // hm.... think about reader interface/func signatures again...
-    request->method = reader->readUntil(' ', false).toString();
+    request->method = reader->readUntil(" ", true).toString();
     request->url = parseUrl(reader);
-    request->version = reader->readUntil('\n', false).toString();
+    request->version = reader->readUntil("\n", true).toString();
 
     request->content_length = -1;
     int field_idx = 0; 
-    ByteOperationIgnore name_operation("\r\n\t ");
-    ByteOperationLC lowercase();
-    name_operation.next(&lowercase);
-    while (field_idx < FIELD_MAX) {
-        Array<uint8_t> field_name = reader->readUntil('=', &name_operation);
-        if (field_name.back() == '\n') {
+    ByteOperationIgnore name_operation("\t ");
+    ByteOperationLC lowercase;
+    name_operation.nextOperation = &lowercase;
+    while (field_idx < HTTP_FIELD_MAX) {
+        Array<uint8_t> field_name_array = reader->readUntil("=", &name_operation);
+        if (field_name_array.back() == '\n') {
             break;
         }
-        ByteOperationIgnore value_operation("\r\n\t ");
-        if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name)) {
-            value_operation.next(&lowercase);
-        }
+        std::string field_name = field_name_array.popBack().toString();
+        ByteOperationIgnore value_operation("\t ");
+        // TODO:
+        // if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name)) {
+        //     value_operation.nextOperation = &lowercase;
+        // }
+        std::string field_value;
         char delimeter = 0x00;
         while (delimeter != '\n') {
-            Array<uint8_t> field_value = reader->readUntil(",\n", &value_operation);
-            delimeter = field_value.back();
-            request->fields[field_name.popBack().toString()] = field_value.popBack().toString();
+            Array<uint8_t> field_value_array = reader->readUntil(",\n", &value_operation);
+            delimeter = field_value_array.back();
+            field_value = field_value_array.popBack().toString();
+            request->fields[field_name].append(field_value);
         }
         field_idx++;
         if (field_name == "Content-Length") {
             // TODO: negatives? use strtoul instead?
-            request->content_length = atoi(value);
+            request->content_length = atoi(field_value.c_str());
         }
     }
-    if (field_idx == FIELD_MAX) {
+    if (field_idx == HTTP_FIELD_MAX) {
         throw std::runtime_error("Too many fields in request.");
     }
     if (request->content_length != -1) {
@@ -71,37 +77,42 @@ void HttpConnection::parseRequest(HttpRequest * request, IO::Reader * reader) {
     }
 }
 
-bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest request) {
+// might need to change return type...
+bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) {
     bool upgraded = false;
-    if (request.fields["upgrade"].contains("websocket") && request.fields["connection"].contains("upgrade")) {
-        Array<std::string> protocols = request.fields["sec-websocket-protocol"];
+    if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
+        Array<std::string> protocols = request->fields["sec-websocket-protocol"];
         for (size_t i = 0; i < protocols.size(); i++) {
             for (size_t x = 0; i < this->upgraders.size(); i++) {
                 std::string protocol = protocols[i];
-                ConnectionUpgrader upgrader = this->upgraders[i];
+                ConnectionUpgrader * upgrader = this->upgraders[i];
 
-                if upgrader.path == request.url.path && protocol == upgrader.protocol {
-                    printf("Websocket upgrade request...")
-                    // response.StatusCode = 101
-                    // response.fields["Upgrade"] = "websocket"
-                    // response.fields["Connection"] = "upgrade"
-                    // response.fields["Sec-Websocket-Protocol"] = protocol
-                    // response.fields["Sec-WebSocket-Version"] = "13"
-                    // response.fields["Sec-WebSocket-Extensions"] = ""
+                if (upgrader->path == request->url.path && protocol == upgrader->protocol) {
+                    printf("Websocket upgrade request...");
+                    HttpResponse response;
 
-                    // magic_key := response.Fields["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-                    // hash := sha1.New()
-                    // hash.Write([]byte(magic_key))
-                    // checksum := hash.Sum(nil)
-                    // dst := make([]byte, base64.StdEncoding.EncodedLen(len(checksum)))
-                    // base64.StdEncoding.Encode(dst, checksum)
-                    // response.Fields["Sec-WebSocket-Accept"] = string(dst)
+                    response.status_code = 101; 
+                    response.fields["Upgrade"] = "websocket";
+                    response.fields["Connection"] = "upgrade";
+                    response.fields["Sec-Websocket-Protocol"] = protocol;
+                    response.fields["Sec-WebSocket-Version"] = "13";
+                    response.fields["Sec-WebSocket-Extensions"] = "";
 
-                    // if err := utils.WriteBytes(c, response.Bytes()); err != nil {
-                    //     panic(err)
-                    // }
+                    // unsigned char *SHA1(const unsigned char *data, size_t count, unsigned char *md_buf);
+                    // not sure what this is doing, but if that's what the browser wants lmao..
+                    std::string key_string = request->fields["sec-websocket-key"].toString() + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+                    // char * checksum = SHA1(key_string, key_string.size(), nullptr);
+                    // // char * implies NUL terminated right?
+                    // char encodedData[1024]; // this an issue? TODO: how to calculate buffer size... similarly, validate sec-websocket-key
+                    // // then base64 encode checksum...
+                    // EVP_EncodeBlock(encodedData, checksum, strlen(checksum));
+                    // printf(encodedData);
+                    // response.fields["Sec-WebSocket-Accept"] = std::string(encodedData);
 
-                    upgrader.onConnection(conn_fd);
+                    std::string response_string = response.toString();
+                    write(conn_fd, response_string.c_str(), response_string.size());
+
+                    upgrader->onConnection(conn_fd);
 
                     // NOTE: the upgrade function should indefinetly block until the connection is intended to be closed.
                     upgraded = true;
@@ -110,6 +121,29 @@ bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest request) {
         }
     }
     return upgraded;
+}
+
+bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
+    // if (this->config.root_html_file != "" && request.url.path == "/") {
+	// 	request.url.path = s.config.root_html_file;
+	// }
+
+	// path := filepath.Join(s.config.PathToStaticDir, request.Url.Path)
+	// if (this->static_paths[path] != "") {
+	// 	s.processRequestToStaticPath(request, response, path)
+	// } else { // else process handlers
+    //     return false;
+
+
+
+
+	// 	for _, f := range s.request_handlers {
+	// 		if err = f(request, response); err != nil {
+	// 			response.StatusCode = 500
+	// 		}
+	// 	}
+	// }
+    return false;
 }
 
 uint8_t HttpConnection::onConnection(int conn_fd) {

@@ -408,6 +408,11 @@ static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");
 }
 
+// ?
+extern JsonValue * WylesLibs::Json::parse(std::string json) {
+    size_t i = 0;
+    return parse(json, i);
+}
 // Let's define that parse function's start index is first index of token and end index is last index of token (one before delimeter).
 //  Okay, I was convinced to use the string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
 //      also, sizeof(pointers) < sizeof(std::string)

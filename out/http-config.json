@@ -1,0 +1,6 @@
+{
+    "static_path": "../cpp_http/html",
+    "root_html_file": "../cpp_http/html/index.html",
+    "address": "127.0.0.1",
+    "port": "8080"
+}

@@ -1,11 +1,36 @@
 #include "http.h"
+#include "upgrader.h"
+#include "config.h"
 
-void websocketUpgrader() {}
+using namespace WylesLibs;
+using namespace WylesLibs::Http;
 
-void mainRequestProcessor(HttpRequest request) {
-    // if (contentType == application/json) {
-    // }
+class WebsocketConnectionUpgrader: public ConnectionUpgrader {
+    public:
+        WebsocketConnectionUpgrader(std::string path, std::string protocol): ConnectionUpgrader(path, protocol) {}
 
+        // this makes more sense extension of some Connection class?
+        uint8_t onConnection(int conn_fd) {
+            printf("Established websocket connection...\n");
+
+            return 1;
+        }
+};
+
+// HttpResponse * exampleResourceHandler(HttpRequest * request) {
+//     return;
+// }
+
+// HttpResponse * example2ResourceHandler(HttpRequest * request) {
+//     JsonBasedClass obj(request->content);
+
+//     obj.blah
+//     obj.blah
+
+//     return;
+// }
+
+HttpResponse * requestProcessor(HttpRequest * request) {
     // map
     //   resource_path -> JsonObject, request_handler(JsonObject)...
     //
@@ -83,13 +108,48 @@ void mainRequestProcessor(HttpRequest request) {
 
     // what a balancing act
 
+    // insert middleware here....
+    
+    // need parsers for each of these at least
+    //    application/x-www-form-urlencoded
+    //    multipart/byteranges
+    //    multipart/formdata
+    //    application/json
+    // if ("/example" == request.url.path && "application/json" == request.fields["content-type"]) {
+    //     printf("calling resource handler for /example path\n");
+    //     // call to resource handler...
+    // } else if ("/example2" == request.url.path && "multipart/byteranges" == request.fields["content-type"]) {
+    //     // call to resource handler...
+    // } else if ("/example3" == request.url.path) {
+    //     // call to resource handler...
+    // }
+    return nullptr;
+}
+
+static HttpConnection connection;
+
+static uint8_t usethis(int conn_fd) {
+    return connection.onConnection(conn_fd);
 }
 
 int main(int argc, char * argv[]) {
     int ret = -1;
+        printf("?????????\n");
     if (argc == 3) {
-        HttpConnection connection(requestProcessor);
-        server_listen(argv[1], atoi(argv[2]), connection.onConnection);
+        printf("???\n");
+        HttpServerConfig config("./http-config.json");
+
+        printf("???\n");
+        Array<ConnectionUpgrader *> upgraders;
+        WebsocketConnectionUpgrader upgrader("/testpath", "jsonrpc");
+        ConnectionUpgrader * lame = &upgrader;
+        printf("???\n");
+        upgraders.append(lame);
+
+        connection = HttpConnection(config, requestProcessor, upgraders); 
+        printf("???\n");
+        // womp womp womp... :(
+        server_listen(argv[1], atoi(argv[2]), usethis);
         ret = 0;
     } 
     return ret;

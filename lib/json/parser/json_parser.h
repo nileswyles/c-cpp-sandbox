@@ -107,6 +107,7 @@ class JsonString: public JsonValue {
 };
 
 extern JsonValue * parse(std::string json, size_t& i);
+extern JsonValue * parse(std::string json);
 extern std::string pretty(std::string json);
 
 }

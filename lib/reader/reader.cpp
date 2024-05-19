@@ -106,7 +106,7 @@ Array<uint8_t> Reader::readUntil(std::string until, ByteOperation * operation) {
         }
         if (this->cursor == this->bytes_in_buffer) { // if cursor pointing past data...
             loggerPrintf(LOGGER_DEBUG, "reached end of buffer, flush buffer to string and read more:\n");
-            loggerPrintByteArray(LOGGER_DEBUG, data.buf, data.getSize());
+            loggerPrintByteArray(LOGGER_DEBUG, data.buf, data.size());
 
             fillBuffer();
             start_cursor = this->cursor; // == 0

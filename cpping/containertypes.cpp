@@ -45,7 +45,7 @@ class TestClass {
             this->i = x.i;
             // lol.. this seems like not the right way to do this?
             //  let's find out...
-            // this->cap = x.getCap();
+            // this->cap = x.cap();
             // this->size = x.getSize();
             return *this;
         }

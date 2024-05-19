@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_FILES_H
 #define WYLESLIBS_FILES_H
 
-#include "reader.h"
+#include "reader/reader.h"
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -16,8 +16,11 @@ static WylesLibs::Array<uint8_t> read(const char * file_path) {
     // because VLA?
     const size_t buf_size = 1024;
 
+    printf("READ FILE....\n");
     int fd = open(file_path, O_RDONLY);
-    Reader r(fd, buf_size);
+    // Reader r(fd, buf_size);
+    Reader r(fd);
+    printf("READ FILE....\n");
     return r.readUntil((char)EOF);
 }
 

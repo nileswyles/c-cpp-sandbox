@@ -34,12 +34,10 @@ ssize_t read(int fd, void *buf, size_t nbytes) {
 }
 
 void assert(std::string result, std::string expected) {
-    std::string expected = "TESTSTRINGWITHSPACE";
-
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", ret.c_str());
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", result.c_str());
     loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected.c_str());
 
-    if (ret == expected) {
+    if (result == expected) {
         // t->fail = false;
     }
 }

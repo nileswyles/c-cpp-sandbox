@@ -163,9 +163,18 @@ class Reader {
         Array<uint8_t> readUntil(std::string until) {
             return readUntil(until, nullptr);
         }
+        Array<uint8_t> readUntil(const char until, bool ignore_until) {
+            return readUntil(std::string(&until), ignore_until);
+        }
         Array<uint8_t> readUntil(std::string until, bool ignore_until) {
-            ByteOperationIgnore ignore(until);
-            return readUntil(until, &ignore);
+            ByteOperationIgnore * ignore;
+            if (ignore_until) {
+                ByteOperationIgnore ignore_obj(until);
+                ignore = &ignore_obj;
+            } else {
+                ignore = nullptr;
+            }
+            return readUntil(until, ignore);
         }
         Array<uint8_t> readUntil(std::string until, ByteOperation * operation);
         int read_chunk_non_blocking_fd(int fd, uint8_t ** p);

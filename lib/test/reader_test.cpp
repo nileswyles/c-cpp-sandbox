@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "file.h"
+
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 #ifndef LOGGER_LEVEL 
@@ -51,6 +53,8 @@ void testReadUntil() {
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
+
+    File::read("../cpp_http/html");
 
     std::string result = reader.readUntil(' ').toString();
     std::string expected = "TESTSTRINGWITHSPACE ";

@@ -38,7 +38,10 @@ void assert(std::string result, std::string expected) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected.c_str());
 
     if (result == expected) {
+        printf("TEST PASSED!\n");
         // t->fail = false;
+    } else {
+        printf("TEST FAILED!\n");
     }
 }
 
@@ -49,12 +52,12 @@ void testReadUntil() {
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
 
-    std::string ret = reader.readUntil(' ').toString();
-    std::string expected = "TESTSTRINGWITHSPACE";
+    std::string result = reader.readUntil(' ').toString();
+    std::string expected = "TESTSTRINGWITHSPACE ";
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    assert(ret, expected);
+    assert(result, expected);
 }
 
 void testReadUntilUpperCase() {
@@ -64,12 +67,12 @@ void testReadUntilUpperCase() {
     buffer = test_string;
 
     ByteOperationUC uppercase;
-    std::string ret = reader.readUntil(' ', (ByteOperation *)&uppercase).toString();
-    std::string expected = "TESTSTRINGWITHSPACE";
+    std::string result = reader.readUntil(' ', (ByteOperation *)&uppercase).toString();
+    std::string expected = "TESTSTRINGWITHSPACE ";
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    assert(ret, expected);
+    assert(result, expected);
 }
 
 void testReadUntilLowerCase() {
@@ -79,24 +82,24 @@ void testReadUntilLowerCase() {
     buffer = test_string;
 
     ByteOperationLC lowercase;
-    std::string ret = reader.readUntil(' ', (ByteOperation *)&lowercase).toString();
-    std::string expected = "teststringwithspace";
+    std::string result = reader.readUntil(' ', (ByteOperation *)&lowercase).toString();
+    std::string expected = "teststringwithspace ";
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    assert(ret, expected);
+    assert(result, expected);
 }
 
 // void testReadUntilCursorAtUntil() {
 //     reader * reader = reader_constructor(-1, READER_RECOMMENDED_BUF_SIZE);
 //     printf("\nTest Func: testReadUntilCursorAtUntil\n");
 //     buffer = " BLAH";
-//     char * ret = (char *)reader_read_until(reader, ' ');
+//     char * result = (char *)reader_read_until(reader, ' ');
 //     printf("Test String:\n BLAH\n"); // lol
 //     printf("Until char:\n[%x]\n", ' ');
-//     printf("Result:\n%s\n", ret);
+//     printf("Result:\n%s\n", result);
 //     printf("Expected:\n%s\n", "");
-//     if (strcmp(ret, "") == 0) {
+//     if (strcmp(result, "") == 0) {
 //         printf("Test Passed!\n");
 //     } else {
 //         printf("Test Failed!\n");
@@ -120,12 +123,12 @@ void testReadUntilLowerCase() {
 //     strncpy(expected, buf, size-3); // more lame std lib stuff? lol
 //     expected[size-3] = 0;
 
-//     char * ret = (char *)reader_read_until(reader, ' ');
+//     char * result = (char *)reader_read_until(reader, ' ');
 //     printf("Test String:\n%s\n", buf);
 //     printf("Until char:\n[%x]\n", ' ');
-//     printf("Result:\n%s\n", ret);
+//     printf("Result:\n%s\n", result);
 //     printf("Expected:\n%s\n", expected);
-//     if (strcmp(ret, (char *)expected) == 0) {
+//     if (strcmp(result, (char *)expected) == 0) {
 //         printf("Test Passed!\n");
 //     } else {
 //         printf("Expected:\n%s\n", expected);
@@ -151,12 +154,12 @@ void testReadUntilLowerCase() {
 //     strncpy(expected, buf, size-3); // more lame std lib stuff? lol
 //     expected[size-3] = 0;
 
-//     char * ret = (char *)reader_read_until(reader, ' ');
+//     char * result = (char *)reader_read_until(reader, ' ');
 //     printf("Test String:\n%s\n", buf);
 //     printf("Until char:\n[%x]\n", ' ');
-//     printf("Result:\n%s\n", ret);
+//     printf("Result:\n%s\n", result);
 //     printf("Expected:\n%s\n", expected);
-//     if (strcmp(ret, expected) == 0) {
+//     if (strcmp(result, expected) == 0) {
 //         printf("Test Passed!\n");
 //     } else {
 //         printf("Test Failed!\n");
@@ -167,8 +170,8 @@ void testReadUntilLowerCase() {
 int main(int argc, char * argv[]) {
     // Tester t;
 
-    // testReadUntil();
-    // testReadUntilUpperCase();
+    testReadUntil();
+    testReadUntilUpperCase();
     testReadUntilLowerCase();
     // t.addTest(testReadUntil);
     // addTest(testReadUntilCursorAtUntil);

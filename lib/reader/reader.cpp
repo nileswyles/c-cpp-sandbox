@@ -1,5 +1,7 @@
 #include "reader.h"
 
+#include <stdexcept>
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,11 +57,7 @@ int Reader::peekForEmptyLine() {
 //  Need to update tests before making that change. Which I don't feel like doing right now.
 //  or by reading a single byte per read call, but that seems like the wrong way to do it.
 Array<uint8_t> Reader::readBytes(const size_t n) {
-    if (!this->cursorCheck()) {
-        // if read error..
-        // TODO: again... better messages... akin to logger stuff.
-        // throw std::runtime_error("Read error...");
-    }
+    this->cursorCheck();
 
     Array<uint8_t> data;
     size_t bytes_read = 0;
@@ -74,13 +72,7 @@ Array<uint8_t> Reader::readBytes(const size_t n) {
             data.append(this->buf + this->cursor, bytes_left_in_buffer);
             bytes_read += bytes_left_in_buffer;
 
-            int ret = fillBuffer();
-            if (ret == -1) {
-                // TODO:
-                // If an input or output function blocks for this->period of time, and data has been sent or received, the return value of that function will be the amount of data transferred; if no data has been transferred and the timeout has been reached then -1 is returned with errno set to EAGAIN or EWOULDBLOCK, or EINPROGRESS
-                // delete data;
-                // throw std::runtime_error("Read error...");
-            }
+            fillBuffer();
         } else {
             // else enough data in buffer
             // printf("cursor: %lx, start: %lx\n", data_cursor, data);
@@ -99,9 +91,7 @@ Array<uint8_t> Reader::readBytes(const size_t n) {
 
 // if return == NULL, check errno for read error.
 Array<uint8_t> Reader::readUntil(std::string until, ByteOperation * operation) {
-    if (!this->cursorCheck()) {
-        // throw std::runtime_error("Read error...");
-    }
+    this->cursorCheck();
 
     size_t start_cursor = this->cursor;
     loggerPrintf(LOGGER_DEBUG, "reader_read_until start_cursor: %lu\n", start_cursor);
@@ -118,21 +108,18 @@ Array<uint8_t> Reader::readUntil(std::string until, ByteOperation * operation) {
             loggerPrintf(LOGGER_DEBUG, "reached end of buffer, flush buffer to string and read more:\n");
             loggerPrintByteArray(LOGGER_DEBUG, data.buf, data.getSize());
 
-            int ret = fillBuffer();
-            if (ret == -1) {
-                // delete data;
-                // throw std::runtime_error("Read error...");
-            }
+            fillBuffer();
             start_cursor = this->cursor; // == 0
         }
         c = this->buf[++this->cursor]; 
     }
+    // INCLUDE UNTIL CHAR... lol
     if (operation != nullptr) {
         operation->perform(data, c);
         // dump any buffers cached (by the operation classes in the operation objects/instances)...
         operation->flush(data, c);
     } else {
-            data.append(c);
+        data.append(c);
     }
 
     loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);
@@ -206,6 +193,8 @@ int Reader::fillBuffer() {
     // TODO: retry on EAGAIN?, revisit possible errors...
     if (ret == -1 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0; // uint
+        // second should never happen but if we're being thorough...
+        throw std::runtime_error("Read error...");
     } else {
         this->bytes_in_buffer = ret;
     }
@@ -214,9 +203,7 @@ int Reader::fillBuffer() {
 
 bool Reader::cursorCheck() {
     if (this->cursor >= this->bytes_in_buffer) { // if read past buffer
-        if (fillBuffer() < 1) {
-            return false;
-        }
+        fillBuffer();
     }
     return true;
 }

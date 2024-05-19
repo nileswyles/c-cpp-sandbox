@@ -111,6 +111,8 @@ Array<uint8_t> Reader::readUntil(std::string until, ByteOperation * operation) {
     while (until.find(c) == std::string::npos) {
         if (operation != nullptr) {
             operation->perform(data, c);
+        } else {
+            data.append(c);
         }
         if (this->cursor == this->bytes_in_buffer) { // if cursor pointing past data...
             loggerPrintf(LOGGER_DEBUG, "reached end of buffer, flush buffer to string and read more:\n");
@@ -129,6 +131,8 @@ Array<uint8_t> Reader::readUntil(std::string until, ByteOperation * operation) {
         operation->perform(data, c);
         // dump any buffers cached (by the operation classes in the operation objects/instances)...
         operation->flush(data, c);
+    } else {
+            data.append(c);
     }
 
     loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);

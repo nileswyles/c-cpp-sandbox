@@ -21,8 +21,8 @@ class ByteOperation {
         //  By contrast, calls to perform call the function defined by the class-type at creation. Regardless of any casting along the way lol.
         //  Also, the compiler throws an error if perform isn't defined in sub-classes. 
         //     *** Then there's {} vs. = 0, which is effectively the same thing? At least when return type == void? ***
-        void flush(Array<uint8_t> buffer, uint8_t c) {}
-        virtual void perform(Array<uint8_t> buffer, uint8_t c) = 0;
+        void flush(Array<uint8_t>& buffer, uint8_t c) {}
+        virtual void perform(Array<uint8_t>& buffer, uint8_t c) = 0;
 };
 
 class ByteOperationChain: public ByteOperation {
@@ -32,7 +32,7 @@ class ByteOperationChain: public ByteOperation {
         ByteOperationChain() {}
         ByteOperationChain(ByteOperationChain * next): nextOperation(next) {}
 
-        void next(Array<uint8_t> buffer, uint8_t c) {
+        void next(Array<uint8_t>& buffer, uint8_t c) {
             if (this->nextOperation == nullptr) {
                 if (!this->ignored) {
                     buffer.append(c);
@@ -43,12 +43,12 @@ class ByteOperationChain: public ByteOperation {
                 this->nextOperation->perform(buffer, c);
             }
         }
-        virtual void perform(Array<uint8_t> buffer, uint8_t c) = 0;
+        virtual void perform(Array<uint8_t>& buffer, uint8_t c) = 0;
 };
 
 class ByteOperationLC: public ByteOperationChain {
     public:
-        void perform(Array<uint8_t> buffer, uint8_t c) {
+        void perform(Array<uint8_t>& buffer, uint8_t c) {
             if (c >= 0x41 && c <= 0x5A) { // lowercase flag set and is upper case
         		c += 0x20; // lower case the char
         	}
@@ -58,7 +58,7 @@ class ByteOperationLC: public ByteOperationChain {
 
 class ByteOperationUC: public ByteOperationChain {
     public:
-        void perform(Array<uint8_t> buffer, uint8_t c) {
+        void perform(Array<uint8_t>& buffer, uint8_t c) {
             if (c >= 0x61 && c <= 0x7A) {
         		c -= 0x20;
         	}
@@ -70,7 +70,7 @@ class ByteOperationIgnore: public ByteOperationChain {
     public:
         std::string to_ignore;
         ByteOperationIgnore(std::string to_ignore): to_ignore(to_ignore) {}
-        void perform(Array<uint8_t> buffer, uint8_t c) {
+        void perform(Array<uint8_t>& buffer, uint8_t c) {
             if (this->to_ignore.find(c) != std::string::npos) { 
                 this->ignored = true;
             }
@@ -101,14 +101,14 @@ class ByteOperationTrim: public ByteOperation {
         ByteOperationTrim(char left_most_char, char right_most_char): 
             l_trimming(true), r_trimming(false), l_trim_match(&left_most_char), r_trim_match(&right_most_char) {}
 
-        void rTrimFlush(Array<uint8_t> buffer, uint8_t c) {
+        void rTrimFlush(Array<uint8_t>& buffer, uint8_t c) {
             if (this->r_trim.getSize() > 0) {
                 buffer.append(this->r_trim.buf, this->r_trim.getSize());
             }
             r_trimming = false;
         }
 
-        void perform(Array<uint8_t> buffer, uint8_t c) {
+        void perform(Array<uint8_t>& buffer, uint8_t c) {
             if (!this->l_trimming) {
                 if (this->r_trim_match.find(c) != std::string::npos) {
                     this->r_trimming = true;
@@ -162,22 +162,10 @@ class Reader {
         Array<uint8_t> readUntil(std::string until) {
             return readUntil(until, nullptr);
         }
-        // So no overload of types within class hierarchy??
-        // Array<uint8_t> readUntil(const char until, ByteOperationChain * operation) {
-        //     return readUntil(std::string(&until), operation, false);
-        // }
         Array<uint8_t> readUntil(const char until, ByteOperation * operation) {
-            // return readUntil(std::string(&until), operation, false);
             return readUntil(std::string(&until), operation);
         }
         Array<uint8_t> readUntil(std::string until, ByteOperation * operation);
-        // Array<uint8_t> readUntil(std::string until, ByteOperation * operation) {
-        //     // return readUntil(until, operation, true);
-        //     return readUntil(until, operation);
-        // }
-        // Array<uint8_t> readUntil(std::string until, ByteOperationTrim * operation) {
-        //     return readUntil(until, operation, true);
-        // }
         int read_chunk_non_blocking_fd(int fd, uint8_t ** p);
 };
 }

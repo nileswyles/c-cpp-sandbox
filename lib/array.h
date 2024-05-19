@@ -182,6 +182,31 @@ class Array {
                 return this->buf[i];
             }
         }
+        // copy... 
+        Array(const T& x) : cap(x.getCap()), size(x.getSize()), buf(x.buf) {}
+        T& operator= (const T& x) {
+            this->buf = x.buf;
+            // lol.. this doesn't seem like the right way to do this?
+            //  let's find out...
+            this->cap = x.getCap();
+            this->size = x.getSize();
+
+            // how do containers that don't expose pointer to underlying data do this?
+            //  shouldn't this just be the default?
+            //  why do I even need to implement this?
+
+            //  hmm... my example of incrementing some id value doesn't really make sense either lol. so wtf is this?
+            return *this;
+        }
+        // Move
+        Array(T&& x) : cap(x.getCap()), size(x.getSize()), buf(x.buf) {}
+        T& operator= (T&& x) {
+            this->buf = x.buf; // lol.. this seems like not the right way to do this?
+            //  let's find out...
+            this->cap = x.getCap();
+            this->size = x.getSize();
+            return *this;
+        }
 };
 
 template<>

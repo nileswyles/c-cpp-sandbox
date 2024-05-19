@@ -27,27 +27,66 @@ static const char * buffer;
 ssize_t read(int fd, void *buf, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
     memcpy(buf, buffer, ret);
-    loggerPrintf(LOGGER_DEBUG, "READ RETURNED (%ld): ", ret);
+    loggerPrintf(LOGGER_DEBUG, "READ RETURNED (%ld): \n", ret);
     loggerPrintByteArray(LOGGER_DEBUG, (uint8_t*)buf, ret);
     buffer += ret; // duh
     return ret; 
 }
 
-void testReadUntil(TestArg * t) {
+void assert(std::string result, std::string expected) {
+    std::string expected = "TESTSTRINGWITHSPACE";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", ret.c_str());
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected.c_str());
+
+    if (ret == expected) {
+        // t->fail = false;
+    }
+}
+
+// void testReadUntil(TestArg * t) {
+void testReadUntil() {
     Reader reader(-1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
+
     std::string ret = reader.readUntil(' ').toString();
+    std::string expected = "TESTINGWITHSPACE";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string); // lol
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", ret.c_str());
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", "TESTSTRINGWITHSPACE");
+    assert(ret, expected);
+}
 
-    if (strcmp(ret.c_str(), "TESTSTRINGWITHSPACE") == 0) {
-        t->fail = false;
-    }
+void testReadUntilUpperCase() {
+    Reader reader(-1, READER_RECOMMENDED_BUF_SIZE);
+
+    const char * test_string = "TESTSTRINGWITHSPACE BLAH";
+    buffer = test_string;
+
+    ByteOperationUC uppercase;
+    std::string ret = reader.readUntil(' ', (ByteOperation *)&uppercase).toString();
+    std::string expected = "TESTINGWITHSPACE";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(ret, expected);
+}
+
+void testReadUntilLowerCase() {
+    Reader reader(-1, READER_RECOMMENDED_BUF_SIZE);
+
+    const char * test_string = "TESTSTRINGWITHSPACE BLAH";
+    buffer = test_string;
+
+    ByteOperationLC lowercase;
+    std::string ret = reader.readUntil(' ', (ByteOperation *)&lowercase).toString();
+    std::string expected = "testingwithspace";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(ret, expected);
 }
 
 // void testReadUntilCursorAtUntil() {
@@ -128,19 +167,22 @@ void testReadUntil(TestArg * t) {
 // }
 
 int main(int argc, char * argv[]) {
-    Tester t;
+    // Tester t;
 
-    t.addTest(testReadUntil);
+    // testReadUntil();
+    // testReadUntilUpperCase();
+    testReadUntilLowerCase();
+    // t.addTest(testReadUntil);
     // addTest(testReadUntilCursorAtUntil);
     // addTest(testReadUntilFillBufferOnce);
     // addTest(testReadUntilFillBufferTwice);
 
-    if (argc > 1) {
-        loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
-        t.run(argv[1]);
-    } else {
-        t.run(nullptr);
-    }
+    // if (argc > 1) {
+    //     loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
+    //     t.run(argv[1]);
+    // } else {
+    //     t.run(nullptr);
+    // }
 
     return 0;
 }

@@ -285,16 +285,15 @@ static void parseArray(JsonArray * obj, Reader * r) {
         obj->addValue(arr);
     }
 
-    char c = r->peekByte();
+    char c = r->readByte();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     while(c != ']') {
-        r->readByte();
         if (c == '[' || c == ',') { 
             parseValue(arr, r);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
         loggerPrintf(LOGGER_DEBUG, "%c\n", r->peekByte());
-        c = r->peekByte();
+        c = r->readByte();
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Array\n");

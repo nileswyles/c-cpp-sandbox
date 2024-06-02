@@ -127,11 +127,12 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
     if (inclusive) {
         if (operation != nullptr) {
             operation->perform(data, c);
-            // dump any buffers cached (by the operation classes in the operation objects/instances)...
-            operation->flush(data);
         } else {
             data.append(c);
         }
+    } 
+    if (operation != nullptr) {
+        operation->flush(data);
     }
     loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);
     loggerPrintf(LOGGER_DEBUG, "reader_read_until string: %s\n", (char *)data.buf);

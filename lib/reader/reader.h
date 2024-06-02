@@ -28,8 +28,8 @@ class Reader {
         size_t cursor;
         size_t bytes_in_buffer;
         
-        int fillBuffer();
-        bool cursorCheck();
+        void fillBuffer();
+        void cursorCheck();
     public:
         Reader(uint8_t * buf_array, const size_t pBuf_size) {
             buf = buf_array;
@@ -57,7 +57,6 @@ class Reader {
             printf("Deconstructor called...\n");
             delete[] buf;
         }
-        int peekForEmptyLine();
         uint8_t peekByte();
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...
         // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...
@@ -79,7 +78,6 @@ class Reader {
             return readUntil(until, operation, true);
         }
         Array<uint8_t> readUntil(std::string until, ReaderTask * operation, bool inclusive);
-        int read_chunk_non_blocking_fd(int fd, uint8_t ** p);
 };
 }
 

@@ -447,7 +447,6 @@ extern JsonValue * WylesLibs::Json::parse(Reader * r, size_t& i) {
     readWhiteSpaceUntil(r, "{[");
 
     JsonValue * obj = nullptr;
-    // LOL, duh, cursor is copyed ...
     char c = r->peekByte();
     loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {

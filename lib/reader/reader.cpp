@@ -88,10 +88,10 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
     if (operation != nullptr) {
         operation->flush(data);
     }
+
     loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);
-    if (LOGGER_LEVEL >= LOGGER_DEBUG) {
-        loggerPrintf(LOGGER_DEBUG, "reader_read_until string: %s\n", data.toString().c_str());
-    }
+    loggerPrintf(LOGGER_DEBUG, "reader_read_until string: %s\n", data.toString().c_str());
+
     return data;
 }
 

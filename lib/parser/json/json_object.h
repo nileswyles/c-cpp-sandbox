@@ -9,7 +9,7 @@
 #include <vector>
 #include <string>
 
-namespace WylesLibs::Json {
+namespace WylesLibs::Parser::Json {
 class JsonObject: public JsonValue {
     public:
         // TODO: hide this? make interface better...

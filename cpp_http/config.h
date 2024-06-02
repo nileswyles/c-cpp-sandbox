@@ -5,10 +5,11 @@
 #include "file.h"
 
 using namespace WylesLibs;
+using namespace WylesLibs::Parser::Json;
 
 namespace WylesLibs::Http {
 
-class HttpServerConfig: Json::JsonBase {
+class HttpServerConfig: JsonBase {
     public:
         std::string static_path;
         std::string root_html_file;
@@ -18,22 +19,22 @@ class HttpServerConfig: Json::JsonBase {
         HttpServerConfig() {}
         // file sig should support strings... 
         HttpServerConfig(std::string filepath): 
-            HttpServerConfig((Json::JsonObject *)Json::parse(File::read(filepath).toString())) {}
-        HttpServerConfig(Json::JsonObject * obj) {
+            HttpServerConfig((JsonObject *)parse(File::read(filepath).toString())) {}
+        HttpServerConfig(JsonObject * obj) {
             size_t validation_count = 0;
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
-                Json::JsonValue * value = obj->values.at(i);
+                JsonValue * value = obj->values.at(i);
                 if (key == "static_path") {
-                    static_path = Json::setVariableFromJsonValue<std::string>(value, validation_count);
+                    static_path = setVariableFromJsonValue<std::string>(value, validation_count);
                 } else if (key == "address") {
-                    address = Json::setVariableFromJsonValue<std::string>(value, validation_count);
+                    address = setVariableFromJsonValue<std::string>(value, validation_count);
                 } else if (key == "port") {
-                    port = Json::setVariableFromJsonValue<std::string>(value, validation_count);
+                    port = setVariableFromJsonValue<std::string>(value, validation_count);
                 } else if (key == "root_html_file") {
-                    root_html_file = Json::setVariableFromJsonValue<std::string>(value, validation_count);
+                    root_html_file = setVariableFromJsonValue<std::string>(value, validation_count);
                 }
             }
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "validation count: %lu\n", validation_count);
@@ -45,19 +46,19 @@ class HttpServerConfig: Json::JsonBase {
         std::string toJsonString() {
             std::string s("{");
             s += "\"static_path\": ";
-            s += Json::JsonString(this->static_path).toJsonString();
+            s += JsonString(this->static_path).toJsonString();
             s += ",";
 
             s += "\"address\": ";
-            s += Json::JsonString(this->address).toJsonString();
+            s += JsonString(this->address).toJsonString();
             s += ",";
 
             s += "\"port\": ";
-            s += Json::JsonString(this->port).toJsonString();
+            s += JsonString(this->port).toJsonString();
             s += ",";
 
             s += "\"root_html_file\": ";
-            s += Json::JsonString(this->root_html_file).toJsonString();
+            s += JsonString(this->root_html_file).toJsonString();
             s += "}";
 
             return s;

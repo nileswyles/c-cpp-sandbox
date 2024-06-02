@@ -1,4 +1,4 @@
-#include "json.h"
+#include "parser/json/json.h"
 #include <iostream>
 
 // #include "test/tester.h"
@@ -14,19 +14,20 @@
 
 using namespace WylesLibs;
 using namespace WylesLibs::Test;
+using namespace WylesLibs::Parser::Json;
 
-class Nested: public Json::JsonBase {
+class Nested: public JsonBase {
     public:
         std::string name;
         Nested * nested;
         Nested(): nested(nullptr) {}
-        Nested(Json::JsonObject * obj): nested(nullptr) {
+        Nested(JsonObject * obj): nested(nullptr) {
             size_t validation_count = 0;
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
-                Json::JsonValue * value = obj->values.at(i);
+                JsonValue * value = obj->values.at(i);
                 if(key == "nested_name") {
-                    name = Json::setVariableFromJsonValue<std::string>(value, validation_count);
+                    name = setVariableFromJsonValue<std::string>(value, validation_count);
                 }
             }
             loggerPrintf(LOGGER_TEST_VERBOSE, "validation count: %lu\n", validation_count);
@@ -38,7 +39,7 @@ class Nested: public Json::JsonBase {
         std::string toJsonString() {
             std::string s("{");
             s += "\"nested_name\": ";
-            s += Json::JsonString(this->name).toJsonString();
+            s += JsonString(this->name).toJsonString();
 
             if (nested != nullptr) {
                 s += ",\"nested\": ";
@@ -59,7 +60,7 @@ class Nested: public Json::JsonBase {
         }
 };
 
-class User: public Json::JsonBase {
+class User: public JsonBase {
     public:
         std::string name;
         std::string attributes;
@@ -69,24 +70,24 @@ class User: public Json::JsonBase {
 
         // TODO: ?
         User() {}
-        User(Json::JsonObject * obj) {
+        User(JsonObject * obj) {
             size_t validation_count = 0;
             loggerPrintf(LOGGER_TEST_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 loggerPrintf(LOGGER_TEST_VERBOSE, "Key: %s\n", key.c_str());
-                Json::JsonValue * value = obj->values.at(i);
+                JsonValue * value = obj->values.at(i);
                 if(key == "name") {
-                    name = Json::setVariableFromJsonValue<std::string>(value, validation_count);
+                    name = setVariableFromJsonValue<std::string>(value, validation_count);
                 } else if (key == "attributes") {
-                    attributes = Json::setVariableFromJsonValue<std::string>(value, validation_count);
+                    attributes = setVariableFromJsonValue<std::string>(value, validation_count);
                 } else if (key == "dec") {
-                    dec = Json::setVariableFromJsonValue<double>(value, validation_count);
+                    dec = setVariableFromJsonValue<double>(value, validation_count);
                 } else if (key == "arr") {
-                    Json::setArrayVariablesFromJsonValue<bool>(value, arr, validation_count);
+                    setArrayVariablesFromJsonValue<bool>(value, arr, validation_count);
                 } else if (key == "nested") {
                     loggerPrintf(LOGGER_TEST_VERBOSE, "Nested type.\n");
-                    // nested = Json::setVariableFromJsonValue<Nested>(value, validation_count);
+                    // nested = setVariableFromJsonValue<Nested>(value, validation_count);
                     validation_count++;
                 }
             }
@@ -99,20 +100,20 @@ class User: public Json::JsonBase {
         std::string toJsonString() {
             std::string s("{");
             s += "\"name\": ";
-            s += Json::JsonString(this->name).toJsonString();
+            s += JsonString(this->name).toJsonString();
             s += ",";
 
             s += "\"attributes\": ";
-            s += Json::JsonString(this->attributes).toJsonString();
+            s += JsonString(this->attributes).toJsonString();
             s += ",";
 
             s += "\"dec\": ";
-            s += Json::JsonNumber(this->dec).toJsonString();
+            s += JsonNumber(this->dec).toJsonString();
             s += ",";
 
-            Json::JsonArray jsonArray = Json::JsonArray();
+            JsonArray jsonArray = JsonArray();
             for (size_t i = 0; i < arr.size(); i++) {
-                Json::JsonBoolean * v = new Json::JsonBoolean(arr[i]);
+                JsonBoolean * v = new JsonBoolean(arr[i]);
                 jsonArray.push_back(v);
             }
             s += "\"arr\": ";
@@ -163,24 +164,24 @@ static std::string createNestedObject(size_t length) {
         prev->nested = current; 
         prev = current;
     }
-    // std::string s = Json::pretty(root->toJsonString());
+    // std::string s = pretty(root->toJsonString());
     // loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", s.c_str());
     // return s;
     return root->toJsonString();
 }
 
 static std::string createNestedArray(size_t length) {
-    Json::JsonArray * root = new Json::JsonArray();
-    root->addValue((Json::JsonValue *)new Json::JsonBoolean(true));
-    Json::JsonArray * prev = root;
+    JsonArray * root = new JsonArray();
+    root->addValue((JsonValue *)new JsonBoolean(true));
+    JsonArray * prev = root;
     for (size_t i = 0; i < length; i++) {
-        Json::JsonArray * current = new Json::JsonArray();
-        current->addValue((Json::JsonValue *)new Json::JsonBoolean(true));
+        JsonArray * current = new JsonArray();
+        current->addValue((JsonValue *)new JsonBoolean(true));
 
         prev->addValue(current);
         prev = current;
     }
-    // std::string s = Json::pretty(root->toJsonString());
+    // std::string s = pretty(root->toJsonString());
     // loggerPrintf(LOGGER_TEST, "%s\n", s.c_str());
     // return s;
     return root->toJsonString();
@@ -189,15 +190,15 @@ static std::string createNestedArray(size_t length) {
 static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size_t expected_size) {
     try {
         size_t i = 0;
-        Json::JsonObject * obj = (Json::JsonObject *)Json::parse(s);
-        if (obj->type == Json::OBJECT) {
+        JsonObject * obj = (JsonObject *)parse(s);
+        if (obj->type == OBJECT) {
             User user(obj);
             loggerPrintf(LOGGER_TEST_VERBOSE, "JSON To Parse: \n");
-            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", Json::pretty(s).c_str());
+            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(s).c_str());
             loggerPrintf(LOGGER_TEST_VERBOSE, "Parsed JSON - User Class: \n");
-            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", Json::pretty(user.toJsonString()).c_str());
+            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(user.toJsonString()).c_str());
             loggerPrintf(LOGGER_TEST_VERBOSE, "Expected JSON - User Class: \n");
-            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", Json::pretty(expected.toJsonString()).c_str());
+            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(expected.toJsonString()).c_str());
 
             if (user == expected 
                 && obj->keys.size() == expected_size 
@@ -214,10 +215,10 @@ static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size
 static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
     try {
         size_t i = 0;
-        Json::JsonValue * obj = Json::parse(s);
+        JsonValue * obj = parse(s);
 
         std::string actual;
-        if (obj->type == Json::OBJECT) {
+        if (obj->type == OBJECT) {
             // if (obj->toJsonString() == s 
             //     && obj->keys.size() == 77 * 2; 
             //     && obj->values.size() == 77 * 2) {
@@ -227,13 +228,13 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
             // lol.... nah.
 
             // TODO: write tests for the pretty function... because this relies on it.
-            actual = Json::pretty(((Json::JsonObject *)obj)->toJsonString());
-        } else if (obj->type == Json::ARRAY) {
-            actual = Json::pretty(((Json::JsonArray *)obj)->toJsonString());
+            actual = pretty(((JsonObject *)obj)->toJsonString());
+        } else if (obj->type == ARRAY) {
+            actual = pretty(((JsonArray *)obj)->toJsonString());
         }
 
         // printf("size: %u", obj->keys.size());
-        std::string expected = Json::pretty(s.c_str());
+        std::string expected = pretty(s.c_str());
         
         // printf("%s", actual.c_str());
         loggerPrintf(LOGGER_TEST_VERBOSE, "Expected\n%s, %ld\n", expected.c_str(), expected.size());
@@ -251,7 +252,7 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
 static void parseObjectAndAssertMalformedJson(TestArg * t, std::string s) {
     try {
         size_t i = 0;
-        Json::JsonValue * obj = Json::parse(s);
+        JsonValue * obj = parse(s);
         delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
@@ -322,19 +323,19 @@ static void testJsonArray(TestArg * t) {
     std::vector<bool> expected{false, true, false, false};
     try {
         size_t i = 0;
-        Json::JsonValue * obj = Json::parse(s);
+        JsonValue * obj = parse(s);
         if (obj != nullptr) {
-            if (obj->type == Json::ARRAY) {
+            if (obj->type == ARRAY) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "JSON to Parse: \n");
-                loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", Json::pretty(s).c_str());
-                Json::JsonArray * values = (Json::JsonArray *)obj;
+                loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(s).c_str());
+                JsonArray * values = (JsonArray *)obj;
                 loggerPrintf(LOGGER_TEST_VERBOSE, "Parsed JSON Array: \n");
-                loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", Json::pretty(values->toJsonString()).c_str());
+                loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(values->toJsonString()).c_str());
                 size_t validation_count = 0;
                 for (size_t i = 0; i < values->size(); i++) {
-                    Json::JsonValue * value = values->at(i);
-                    if (value->type == Json::BOOLEAN) {
-                        bool actual = ((Json::JsonBoolean *)value)->getValue();
+                    JsonValue * value = values->at(i);
+                    if (value->type == BOOLEAN) {
+                        bool actual = ((JsonBoolean *)value)->getValue();
                         if (expected[i] == actual) {
                             validation_count++;
                         }
@@ -505,7 +506,7 @@ static void testPretty(TestArg * t) {
     s += "\"nested\": { \"nested_name\": \"nested_value\" }, ";
     s += "\"null_value\": null ";
     s += "}";
-    std::string actual = Json::pretty(s);
+    std::string actual = pretty(s);
 
     /*
         {

@@ -1,9 +1,9 @@
 #ifndef WYLESLIBS_JSON_MAPPER_H
 #define WYLESLIBS_JSON_MAPPER_H
 
-#include "parser/json_parser.h"
-#include "parser/json_object.h"
-#include "parser/json_array.h"
+#include "parser/json/json_parser.h"
+#include "parser/json/json_object.h"
+#include "parser/json/json_array.h"
 
 #include <string>
 
@@ -15,7 +15,7 @@
 #define LOGGER_MODULE_ENABLED LOGGER_JSON_MAPPER
 #include "logger.h"
 
-namespace WylesLibs::Json {
+namespace WylesLibs::Parser::Json {
 
 // verdict on supporting multiple types in json arrrays...
 //  the parser will not restrict to single types... that said, I don't plan on providing an abstraction for the multiplexing.

@@ -1,12 +1,15 @@
-#include "json_array.h"
 #include "json_object.h"
 
-using namespace WylesLibs::Json;
+using namespace WylesLibs::Parser::Json;
 
-std::string JsonArray::toJsonString() {
-    std::string s("[");
-    for (size_t i = 0; i < this->size(); i++) {
-        JsonValue * value = this->at(i);
+std::string JsonObject::toJsonString() {
+    std::string s("{");
+    for (size_t i = 0; i < this->keys.size(); i++) {
+        s += "\"";
+        s += this->keys[i];
+        s += "\": ";
+
+        JsonValue * value = this->values.at(i);
         JsonType type = value->type;
         if (type == BOOLEAN) {
             s += ((JsonBoolean *)value)->toJsonString();
@@ -19,10 +22,12 @@ std::string JsonArray::toJsonString() {
         } else if (type == ARRAY) {
             s += ((JsonArray *)value)->toJsonString();
         }
-        if (i != this->size() - 1) {
+        if (i != this->keys.size() - 1) {
             s += ", ";
         } 
     }
-    s += ']';
+
+    s += '}';
+
     return s;
 }

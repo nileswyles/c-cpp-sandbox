@@ -16,7 +16,7 @@
 #define LOGGER_MODULE_ENABLED LOGGER_JSON_PARSER
 #include "logger.h"
 
-using namespace WylesLibs::Json;
+using namespace WylesLibs::Parser::Json;
 using namespace WylesLibs;
 
 static void readWhiteSpaceUntil(Reader * r, std::string until);
@@ -401,7 +401,7 @@ static void parseObject(JsonObject * obj, Reader * r) {
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");
 }
 
-extern JsonValue * WylesLibs::Json::parseFile(std::string file_path) {
+extern JsonValue * WylesLibs::Parser::Json::parseFile(std::string file_path) {
     int fd = open(file_path.c_str(), O_RDONLY);
     if (fd == -1) {
         std::string msg = "File does not exist.";
@@ -413,7 +413,7 @@ extern JsonValue * WylesLibs::Json::parseFile(std::string file_path) {
     return parse(&r, i);
 }
 
-extern JsonValue * WylesLibs::Json::parse(std::string json) {
+extern JsonValue * WylesLibs::Parser::Json::parse(std::string json) {
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", json.c_str());
     if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
@@ -426,7 +426,7 @@ extern JsonValue * WylesLibs::Json::parse(std::string json) {
     return parse(&r, i);
 }
 
-extern JsonValue * WylesLibs::Json::parse(Array<uint8_t> json) {
+extern JsonValue * WylesLibs::Parser::Json::parse(Array<uint8_t> json) {
     if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
         std::string msg = "Json data to loooonnnng!";
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
@@ -443,7 +443,7 @@ extern JsonValue * WylesLibs::Json::parse(Array<uint8_t> json) {
 //      and .at() bounds checks (exceptions), [] doesn't
     // string construction? iterates over string to get length? that might be reason enough to change back to pointers lol... or maybe copy constructor is optimized? yeah
     //  but still that initial creation... 
-extern JsonValue * WylesLibs::Json::parse(Reader * r, size_t& i) {
+extern JsonValue * WylesLibs::Parser::Json::parse(Reader * r, size_t& i) {
     readWhiteSpaceUntil(r, "{[");
 
     JsonValue * obj = nullptr;
@@ -469,7 +469,7 @@ extern JsonValue * WylesLibs::Json::parse(Reader * r, size_t& i) {
     return obj;
 }
 
-extern std::string WylesLibs::Json::pretty(std::string json) {
+extern std::string WylesLibs::Parser::Json::pretty(std::string json) {
     std::string pretty;
     size_t depth = 0;
 

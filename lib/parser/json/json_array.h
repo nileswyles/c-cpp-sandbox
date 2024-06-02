@@ -14,7 +14,7 @@
 #define LOGGER_MODULE_ENABLED LOGGER_JSON_ARRAY
 #include "logger.h"
 
-namespace WylesLibs::Json {
+namespace WylesLibs::Parser::Json {
 class JsonArray: public JsonValue, public std::vector<JsonValue *> {
     public:
         size_t depth;

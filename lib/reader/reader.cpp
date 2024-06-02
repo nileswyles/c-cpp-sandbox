@@ -14,9 +14,6 @@
 
 using namespace WylesLibs;
 
-#define TIME_TO_WAIT_FOR_READ_MS 10000
-#define TIME_TO_WAIT_AFTER_READ_DATA_MS 100
-
 uint8_t Reader::peekByte() {
     this->cursorCheck();
     return this->buf[this->cursor];

@@ -1,6 +1,8 @@
 #include "http.h"
 #include "paths.h"
 #include <iostream>
+
+#include "keyvalue/keyvalue.h"
 // #include <openssl/sha.h>
 // #include <openssl/bio.h>
 // #include <openssl/evp.h>
@@ -12,21 +14,12 @@ using namespace WylesLibs::Http;
 
 static Url parseUrl(Reader * reader) {
     Url url;
-    // path = /aklmdla/aslmlamk
-    // query = ?key=value&key2=value2
+    // path = /aklmdla/aslmlamk(?)
     Array<uint8_t> path = reader->readUntil("?\n");
     if ((char)path.back() == '?') {
-        char delimeter = 0x00;
-        while (delimeter != '\n') {
-            Array<uint8_t> field_name = reader->readUntil("=");
-            Array<uint8_t> field_value = reader->readUntil("&\n");
-            delimeter = field_value.back();
-            // alternatively, can toString then remove last?
-            //  this is probably more performant... the append is guaranteed to not allocate and only iterates string once (creation?)...
-            url.query_map[field_name.popBack().toString()] = field_value.popBack().toString();
-        }
+        // query = key=value&key2=value2
+        url.query_map = KeyValue::parse(reader);
     }
-    // hmm... this stringyness is the shiznit... son! #streams...
     url.path = path.popBack().toString();
 
     return url;

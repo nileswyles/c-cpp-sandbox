@@ -10,7 +10,7 @@
 
 using namespace WylesLibs;
 
-namespace WylesLibs::Json {
+namespace WylesLibs::Parser::Json {
 
 static constexpr size_t MAX_JSON_DEPTH = 7;
 static constexpr size_t MAX_LENGTH_OF_JSON_STRING = 2<<27;

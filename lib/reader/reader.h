@@ -47,15 +47,15 @@ class Reader {
             if (pBuf_size < 1) {
                 throw std::runtime_error("Invalid buffer size provided.");
             }
-            buf = newCArray<uint8_t>(buf_size);
             buf_size = pBuf_size;
             cursor = 0;
             fd = pFd;
             bytes_in_buffer = 0;
+            buf = newCArray<uint8_t>(buf_size);
         }
         ~Reader() {
             printf("Deconstructor called...\n");
-            delete[] buf;
+            // delete[] buf;
         }
         uint8_t peekByte();
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...

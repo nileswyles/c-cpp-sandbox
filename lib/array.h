@@ -163,17 +163,9 @@ class Array {
             }
         }
         T& front() {
-            if (this->size() == 0) {
-                T nul = {0};
-                this->append(nul);
-            }
             return this->buf[0];
         }
         T& back() {
-            if (this->size() == 0) {
-                T nul = {0};
-                this->append(nul);
-            }
             return this->buf[this->size()-1];
         }
         Array& popBack() {

@@ -1,10 +1,10 @@
 #include "json_mapper.h"
 
-using namespace WylesLibs::Json;
+using namespace WylesLibs::Parser::Json;
 
 template<class T>
-T WylesLibs::Json::setVariableFromJsonValue(JsonValue * value, size_t& validation_count) {
-    Json::JsonType type = value->type;
+T WylesLibs::Parser::Json::setVariableFromJsonValue(JsonValue * value, size_t& validation_count) {
+    JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     loggerPrintf(LOGGER_DEBUG, "Setting object variable. %d\n", type);
     if (type == OBJECT) {
@@ -16,8 +16,8 @@ T WylesLibs::Json::setVariableFromJsonValue(JsonValue * value, size_t& validatio
 }
 
 template<>
-bool WylesLibs::Json::setVariableFromJsonValue<bool>(JsonValue * value, size_t& validation_count) {
-    Json::JsonType type = value->type;
+bool WylesLibs::Parser::Json::setVariableFromJsonValue<bool>(JsonValue * value, size_t& validation_count) {
+    JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == BOOLEAN) {
         validation_count++;
@@ -27,8 +27,8 @@ bool WylesLibs::Json::setVariableFromJsonValue<bool>(JsonValue * value, size_t& 
 }
 
 template<>
-double WylesLibs::Json::setVariableFromJsonValue<double>(JsonValue * value, size_t& validation_count) {
-    Json::JsonType type = value->type;
+double WylesLibs::Parser::Json::setVariableFromJsonValue<double>(JsonValue * value, size_t& validation_count) {
+    JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == NUMBER) {
         validation_count++;
@@ -38,8 +38,8 @@ double WylesLibs::Json::setVariableFromJsonValue<double>(JsonValue * value, size
 }
 
 template<>
-std::string WylesLibs::Json::setVariableFromJsonValue<std::string>(JsonValue * value, size_t& validation_count) {
-    Json::JsonType type = value->type;
+std::string WylesLibs::Parser::Json::setVariableFromJsonValue<std::string>(JsonValue * value, size_t& validation_count) {
+    JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == STRING) {
         validation_count++;
@@ -49,8 +49,8 @@ std::string WylesLibs::Json::setVariableFromJsonValue<std::string>(JsonValue * v
 }
 
 template<class T>
-void WylesLibs::Json::setArrayVariablesFromJsonValue(JsonValue * value, std::vector<T>& arr, size_t& validation_count) {
-    Json::JsonType type = value->type;
+void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue(JsonValue * value, std::vector<T>& arr, size_t& validation_count) {
+    JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;
@@ -74,8 +74,8 @@ void WylesLibs::Json::setArrayVariablesFromJsonValue(JsonValue * value, std::vec
 }
 
 template<>
-void WylesLibs::Json::setArrayVariablesFromJsonValue<bool>(JsonValue * value, std::vector<bool>& arr, size_t& validation_count) {
-    Json::JsonType type = value->type;
+void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<bool>(JsonValue * value, std::vector<bool>& arr, size_t& validation_count) {
+    JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;
@@ -96,8 +96,8 @@ void WylesLibs::Json::setArrayVariablesFromJsonValue<bool>(JsonValue * value, st
 }
 
 template<>
-void WylesLibs::Json::setArrayVariablesFromJsonValue<double>(JsonValue * value, std::vector<double>& arr, size_t& validation_count) {
-    Json::JsonType type = value->type;
+void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<double>(JsonValue * value, std::vector<double>& arr, size_t& validation_count) {
+    JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;
@@ -118,8 +118,8 @@ void WylesLibs::Json::setArrayVariablesFromJsonValue<double>(JsonValue * value, 
 }
 
 template<>
-void WylesLibs::Json::setArrayVariablesFromJsonValue<std::string>(JsonValue * value, std::vector<std::string>& arr, size_t& validation_count) {
-    Json::JsonType type = value->type;
+void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<std::string>(JsonValue * value, std::vector<std::string>& arr, size_t& validation_count) {
+    JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         size_t array_validation_count = 0;

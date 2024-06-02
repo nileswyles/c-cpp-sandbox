@@ -117,7 +117,7 @@ class ReaderTaskTrim: public ReaderTask {
         ReaderTaskTrim(char left_most_char, char right_most_char): 
             l_trimming(true), r_trimming(false), left_most_char(left_most_char), right_most_char(right_most_char), r_trim_has_non_whitespace(false) {}
 
-        void flush(Array<uint8_t>& buffer, uint8_t c) {
+        void flush(Array<uint8_t>& buffer) {
             // if extracting token and non whitespace after token throw an exception...
             if (right_most_char != 0 && r_trim_has_non_whitespace) {
                 std::string msg = "Found non-whitespace char right of token.";

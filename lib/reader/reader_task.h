@@ -96,12 +96,12 @@ class ReaderTaskTrim: public ReaderTask {
         Array<uint8_t> r_trim;
         bool l_trimming;
         bool r_trimming;
-        bool r_trim_has_non_whitespace;
+        char r_trim_non_whitespace;
 
         char left_most_char;
         char right_most_char;
 
-        ReaderTaskTrim(): l_trimming(true), r_trimming(false), left_most_char(0), right_most_char(0), r_trim_has_non_whitespace(false) {}
+        ReaderTaskTrim(): l_trimming(true), r_trimming(false), left_most_char(0), right_most_char(0), r_trim_non_whitespace(0) {}
 
         // then can use this for extracting things like json keystring and valuestring...
         //      hmm... might be worth refactoring json parser to use this.  
@@ -115,13 +115,13 @@ class ReaderTaskTrim: public ReaderTask {
         // how common is it too trim whitespace around token?, fair to implement here?
         //  fair to throw exception if non whitespace character found before token? 
         ReaderTaskTrim(char left_most_char, char right_most_char): 
-            l_trimming(true), r_trimming(false), left_most_char(left_most_char), right_most_char(right_most_char), r_trim_has_non_whitespace(false) {}
+            l_trimming(true), r_trimming(false), left_most_char(left_most_char), right_most_char(right_most_char), r_trim_non_whitespace(0) {}
 
         void flush(Array<uint8_t>& buffer) {
             // if extracting token and non whitespace after token throw an exception...
-            if (right_most_char != 0 && r_trim_has_non_whitespace) {
+            if (right_most_char != 0 && r_trim_non_whitespace != 0) {
                 std::string msg = "Found non-whitespace char right of token.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_ERROR, "%s, '%c'\n", msg.c_str(), r_trim_non_whitespace);
                 throw std::runtime_error(msg);
             }
         }
@@ -157,11 +157,11 @@ class ReaderTaskTrim: public ReaderTask {
                         rTrimFlush(buffer);
                         buffer.append(c);
                         this->r_trimming = false;
-                        this->r_trim_has_non_whitespace = false;
+                        this->r_trim_non_whitespace = 0;
                     } else {
                         this->r_trim.append(c);
                         if (this->right_most_char != 0 && STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
-                            this->r_trim_has_non_whitespace = true;
+                            this->r_trim_non_whitespace = c;
                         }
                     }
                 } else {
@@ -178,7 +178,7 @@ class ReaderTaskTrim: public ReaderTask {
                     this->l_trimming = false;
                 } else {
                     std::string msg = "Found non-whitespace char left of token.";
-                    loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                    loggerPrintf(LOGGER_ERROR, "%s, '%c'\n", msg.c_str(), c);
                     throw std::runtime_error(msg);
                 }
             }

@@ -134,7 +134,9 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
         operation->flush(data);
     }
     loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);
-    loggerPrintf(LOGGER_DEBUG, "reader_read_until string: %s\n", (char *)data.buf);
+    if (LOGGER_LEVEL >= LOGGER_DEBUG) {
+        loggerPrintf(LOGGER_DEBUG, "reader_read_until string: %s\n", data.toString().c_str());
+    }
     return data;
 }
 

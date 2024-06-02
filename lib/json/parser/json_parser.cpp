@@ -37,7 +37,7 @@ static void parseArray(JsonArray * obj, Reader * r);
 
 // 2 
 static void parseValue(JsonArray * obj, Reader * r);
-static void parseKey(JsonObject * obj, Reader * r);
+static bool parseKey(JsonObject * obj, Reader * r);
 
 // 1
 static void parseObject(JsonObject * obj, Reader * r);
@@ -288,6 +288,7 @@ static void parseArray(JsonArray * obj, Reader * r) {
     char c = r->peekByte();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     while(c != ']') {
+        r->readByte();
         if (c == '[' || c == ',') { 
             parseValue(arr, r);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
@@ -335,7 +336,7 @@ static void parseValue(JsonArray * obj, Reader * r) {
                 parsed = true;
             } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
                 std::string msg = "Non-whitespace found left of value token.";
-                loggerPrintf(LOGGER_ERROR, "%s, '%c'\n", msg.c_str(), c);
+                loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
                 throw std::runtime_error(msg);
             } else {
                 // consume whitespace...
@@ -343,7 +344,7 @@ static void parseValue(JsonArray * obj, Reader * r) {
             }
         } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
             std::string msg = "Non-whitespace found right of value token.";
-            loggerPrintf(LOGGER_ERROR, "%s, '%c'\n", msg.c_str(), c);
+            loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
             throw std::runtime_error(msg);
         } else {
             // consume whitespace...
@@ -353,13 +354,18 @@ static void parseValue(JsonArray * obj, Reader * r) {
     }
 }
 
-static void parseKey(JsonObject * obj, Reader * r) {
+static bool parseKey(JsonObject * obj, Reader * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Key. %c\n", r->peekByte());
-    // TODO:
-    //  hm... this also doesn't throw exception if non-whitespace character is found... think about whether necessary?
-    ReaderTaskTrim trim('"', '"');
-    std::string key_string = r->readUntil(":", &trim).popBack().toString();
-    printf("HUH?\n");
+
+    ReaderTaskExtract extract('"', '"');
+    Array<uint8_t> key = r->readUntil(":}", &extract);
+
+    // This is actually the more correct way to check this... why you no work?
+    // printf("BACK: %c\n", (char)key.back());
+    // if ((char)key.back() == '}') {
+    //     return false;
+    // }
+    std::string key_string = key.toString();
     size_t size = key_string.size();
     if (size == 0) {
         std::string msg = "Empty key string found.";
@@ -369,8 +375,13 @@ static void parseKey(JsonObject * obj, Reader * r) {
         std::string msg = "Key string to loooooonnng!";
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
+    } else if (key_string == "}") {
+        return false;
     }
+
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s\n", key_string.c_str());
+
+    return true;
 }
 
 static void parseObject(JsonObject * obj, Reader * r) {
@@ -378,7 +389,10 @@ static void parseObject(JsonObject * obj, Reader * r) {
     while (c != '}') {
         if (c == '{' || c == ',') {
             loggerPrintf(LOGGER_DEBUG, "New Object Entry\n");
-            parseKey(obj, r);
+            if (!parseKey(obj, r)) {
+                // end of obj.
+                break;
+            }
             parseValue(&(obj->values), r);
             c = r->readByte();
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function. @ %c\n", c);

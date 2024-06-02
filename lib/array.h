@@ -36,11 +36,11 @@ class Array {
         Array() : Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         Array(const size_t initial_cap) : e_cap(new size_t(initial_cap)), e_size(new size_t(0)), buf(newCArray<T>(initial_cap)), instance_count(new size_t(1)) {}
         ~Array() {
-            printf("Deconstructor called., %p, instance count: %ld\n", this, *this->instance_count);
-            printf("Buf..., %p\n", this->buf);
+            // printf("Deconstructor called., %p, instance count: %ld\n", this, *this->instance_count);
+            // printf("Buf..., %p\n", this->buf);
             (*this->instance_count)--;
             if (*this->instance_count == 0) {
-                printf("Freeing\n");
+                // printf("Freeing\n");
                 delete[] buf;
                 delete e_cap;
                 delete e_size;
@@ -182,9 +182,7 @@ class Array {
         }
         std::string toString() {
             T nul = {0};
-            printf("blabla1\n");
             this->append(nul);
-            printf("blabla\n");
             return std::string((char *)this->buf);
         }
         T& operator [] (const size_t pos) {
@@ -242,11 +240,11 @@ class Array<const char *> {
         Array() : Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         Array(const size_t initial_cap) : e_cap(new size_t(initial_cap)), e_size(new size_t(0)), buf(newCArray<char *>(initial_cap)), instance_count(new size_t(1)) {}
         ~Array() {
-            printf("Deconstructor called., %p, instance count: %ld\n", this, *this->instance_count);
-            printf("Buf..., %p\n", this->buf);
+            // printf("Deconstructor called., %p, instance count: %ld\n", this, *this->instance_count);
+            // printf("Buf..., %p\n", this->buf);
             (*this->instance_count)--;
             if (*this->instance_count == 0) {
-                printf("Freeing\n");
+                // printf("Freeing\n");
                 for (size_t i = 0; i < this->size(); i++) {
                     delete[] buf[i];
                 }

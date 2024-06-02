@@ -102,6 +102,9 @@ Array<uint8_t> Reader::readBytes(const size_t n) {
 
 // if return == NULL, check errno for read error.
 Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
+    // # less clunky
+    operation->read_until = until;
+
     this->cursorCheck();
 
     Array<uint8_t> data;

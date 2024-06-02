@@ -115,6 +115,7 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
         } else {
             data.append(c);
         }
+        this->cursor++;
         if (this->cursor == this->bytes_in_buffer) { // if cursor pointing past data...
             loggerPrintf(LOGGER_DEBUG, "reached end of buffer, flush buffer to string and read more:\n");
             loggerPrintByteArray(LOGGER_DEBUG, data.buf, data.size());
@@ -122,7 +123,7 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
             fillBuffer();
             start_cursor = this->cursor; // == 0
         }
-        c = this->buf[++this->cursor]; 
+        c = this->buf[this->cursor + 1]; 
     }
     if (inclusive) {
         if (operation != nullptr) {
@@ -130,6 +131,7 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
         } else {
             data.append(c);
         }
+        this->cursor++;
     } 
     if (operation != nullptr) {
         operation->flush(data);

@@ -30,7 +30,6 @@ static void parseNatural(Reader * r, double& value);
 static void parseNumber(JsonArray * obj, Reader * r);
 static void parseString(JsonArray * obj, Reader * r);
 static void parseImmediate(JsonArray * obj, Reader * r, std::string comp, JsonValue * value);
-static void parseKeyString(JsonObject * obj, Reader * r);
 
 // base-ish (base and 1 at same time)...
 static void parseNestedObject(JsonArray * obj, Reader * r);
@@ -335,16 +334,16 @@ static void parseValue(JsonArray * obj, Reader * r) {
                 parseNestedObject(obj, r);
                 parsed = true;
             } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
-                std::string msg = "Non-whitespace found in parseValue";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                std::string msg = "Non-whitespace found left of value token.";
+                loggerPrintf(LOGGER_ERROR, "%s, '%c'\n", msg.c_str(), c);
                 throw std::runtime_error(msg);
             } else {
                 // consume whitespace...
                 r->readByte();
             }
         } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
-            std::string msg = "Non-whitespace found in parseValue";
-            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            std::string msg = "Non-whitespace found right of value token.";
+            loggerPrintf(LOGGER_ERROR, "%s, '%c'\n", msg.c_str(), c);
             throw std::runtime_error(msg);
         } else {
             // consume whitespace...

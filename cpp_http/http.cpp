@@ -36,14 +36,14 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
     if (request == NULL || reader == NULL) {
         throw std::runtime_error("lol....");
     }
-    request->method = reader->readUntil(" ", true).toString();
+    request->method = reader->readUntil(" ").popBack().toString();
     request->url = parseUrl(reader);
-    request->version = reader->readUntil("\n", true).toString();
+    request->version = reader->readUntil("\n").popBack().toString();
 
     request->content_length = -1;
     int field_idx = 0; 
-    ByteOperationIgnore name_operation("\t ");
-    ByteOperationLC lowercase;
+    ReaderTaskIgnore name_operation("\t ");
+    ReaderTaskLC lowercase;
     name_operation.nextOperation = &lowercase;
     while (field_idx < HTTP_FIELD_MAX) {
         Array<uint8_t> field_name_array = reader->readUntil("=", &name_operation);
@@ -51,7 +51,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
             break;
         }
         std::string field_name = field_name_array.popBack().toString();
-        ByteOperationIgnore value_operation("\t ");
+        ReaderTaskIgnore value_operation("\t ");
         // TODO:
         // if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name)) {
         //     value_operation.nextOperation = &lowercase;

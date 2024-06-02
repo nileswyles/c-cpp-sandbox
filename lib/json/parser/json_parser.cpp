@@ -358,8 +358,8 @@ static void parseKey(JsonObject * obj, Reader * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Key. %c\n", r->peekByte());
     // TODO:
     //  hm... this also doesn't throw exception if non-whitespace character is found... think about whether necessary?
-    ByteOperationTrim trim('"', '"');
-    std::string key_string = r->readUntil(":", &trim, true).toString();
+    ReaderTaskTrim trim('"', '"');
+    std::string key_string = r->readUntil(":", &trim).popBack().toString();
     printf("HUH?\n");
     size_t size = key_string.size();
     if (size == 0) {

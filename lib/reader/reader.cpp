@@ -101,7 +101,7 @@ Array<uint8_t> Reader::readBytes(const size_t n) {
 }
 
 // if return == NULL, check errno for read error.
-Array<uint8_t> Reader::readUntil(std::string until, ByteOperation * operation) {
+Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
     this->cursorCheck();
 
     size_t start_cursor = this->cursor;
@@ -124,17 +124,17 @@ Array<uint8_t> Reader::readUntil(std::string until, ByteOperation * operation) {
         }
         c = this->buf[++this->cursor]; 
     }
-    if (operation != nullptr) {
-        operation->perform(data, c);
-        // dump any buffers cached (by the operation classes in the operation objects/instances)...
-        operation->flush(data);
-    } else {
-        data.append(c);
+    if (inclusive) {
+        if (operation != nullptr) {
+            operation->perform(data, c);
+            // dump any buffers cached (by the operation classes in the operation objects/instances)...
+            operation->flush(data);
+        } else {
+            data.append(c);
+        }
     }
-
     loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);
     loggerPrintf(LOGGER_DEBUG, "reader_read_until string: %s\n", (char *)data.buf);
-
     return data;
 }
 

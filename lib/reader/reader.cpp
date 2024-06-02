@@ -107,21 +107,27 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
     Array<uint8_t> data;
     uint8_t c = this->buf[this->cursor];
     while (until.find(c) == std::string::npos) {
+        // commit character
         if (operation != nullptr) {
             operation->perform(data, c);
         } else {
             data.append(c);
         }
+        // move to next cursor
         this->cursor++;
+        // if no more data in buffer, fill buffer and reset cursor...
         this->cursorCheck();
+        // points to new value...
         c = this->buf[this->cursor]; 
     }
     if (inclusive) {
+        // commit character
         if (operation != nullptr) {
             operation->perform(data, c);
         } else {
             data.append(c);
         }
+        // make sure to move cursor past until char. 
         this->cursor++;
     }
     if (operation != nullptr) {

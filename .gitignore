@@ -1,3 +1,6 @@
 .vscode/**
-*.out
-*.o
+**.out
+**.o
+**.log
+out/**
+openssl*

@@ -1,15 +1,24 @@
 #include "http.h"
-#include "upgrader.h"
+#include "connection.h"
 #include "config.h"
+
+#ifndef LOGGER_HTTP_SERVER_TEST
+#define LOGGER_HTTP_SERVER_TEST 1
+#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_HTTP_SERVER_TEST
+#include "logger.h"
 
 using namespace WylesLibs;
 using namespace WylesLibs::Http;
 
-class WebsocketConnectionUpgrader: public ConnectionUpgrader {
+class WebsocketJsonRpcConnection: public ConnectionUpgrader {
     public:
-        WebsocketConnectionUpgrader(std::string path, std::string protocol): ConnectionUpgrader(path, protocol) {}
+        WebsocketJsonRpcConnection(std::string path, std::string protocol): ConnectionUpgrader(path, protocol) {}
 
         // this makes more sense extension of some Connection class?
+        //  alright, I know I "c@n'T gr@MM@R" but definetly not that bad...
         uint8_t onConnection(int conn_fd) {
             printf("Established websocket connection...\n");
 
@@ -30,7 +39,7 @@ class WebsocketConnectionUpgrader: public ConnectionUpgrader {
 //     return;
 // }
 
-HttpResponse * requestProcessor(HttpRequest * request) {
+HttpResponse requestProcessor(HttpRequest * request) {
     // map
     //   resource_path -> JsonObject, request_handler(JsonObject)...
     //
@@ -123,33 +132,46 @@ HttpResponse * requestProcessor(HttpRequest * request) {
     // } else if ("/example3" == request.url.path) {
     //     // call to resource handler...
     // }
-    return nullptr;
+    return HttpResponse();
 }
 
 static HttpConnection connection;
 
-static uint8_t usethis(int conn_fd) {
+static uint8_t connectionHandler(int conn_fd) {
+    // because instance functions can't be passed to function pointer args?
     return connection.onConnection(conn_fd);
 }
 
 int main(int argc, char * argv[]) {
     int ret = -1;
-        printf("?????????\n");
     if (argc == 3) {
-        printf("???\n");
-        HttpServerConfig config("./http-config.json");
-
-        printf("???\n");
-        Array<ConnectionUpgrader *> upgraders;
-        WebsocketConnectionUpgrader upgrader("/testpath", "jsonrpc");
-        ConnectionUpgrader * lame = &upgrader;
-        printf("???\n");
-        upgraders.append(lame);
-
-        connection = HttpConnection(config, requestProcessor, upgraders); 
-        printf("???\n");
-        // womp womp womp... :(
-        server_listen(argv[1], atoi(argv[2]), usethis);
+        try {
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
+            HttpServerConfig config("out/http-config.json");
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created config object.\n");
+            Array<ConnectionUpgrader *> upgraders;
+            WebsocketJsonRpcConnection upgrader("/testpath", "jsonrpc");
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created upgrader object.\n");
+            // WebsocketCastProtobufConnection upgrader("/testpath", "cast-protobuf"); LOL
+            // WebsocketCastJsonRpcConnection upgrader("/testpath", "cast-jsonrpc"); LOL
+     
+            // WebsocketCastProtobufConnection upgrader("/test-cast-protobuf"); LOL
+            // WebsocketCastJsonRpcConnection upgrader("/test-cast-jsonrpc"); LOL
+     
+            // hmmmmm... if only this weren't so................
+            // ConnectionUpgrader * lame = &upgrader;
+            // upgraders.append(lame);
+            // upgraders.append((ConnectionUpgrader *)&upgrader);
+            // lol...
+     
+            // alright, still a shit ton of open questions but this should work?
+            connection = HttpConnection(config, requestProcessor, upgraders); 
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
+            server_listen(argv[1], atoi(argv[2]), connectionHandler);
+        } catch (const std::exception& e) {
+            // Again, low overhead.... so, should be fine...
+            loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
+        }
         ret = 0;
     } 
     return ret;

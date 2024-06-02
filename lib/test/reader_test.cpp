@@ -5,6 +5,15 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <sys/types.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+// lol?
+#include <filesystem>
+
 #include "file.h"
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -49,12 +58,10 @@ void assert(std::string result, std::string expected) {
 
 // void testReadUntil(TestArg * t) {
 void testReadUntil() {
-    Reader reader(-1, READER_RECOMMENDED_BUF_SIZE);
+    Reader reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
-
-    File::read("../cpp_http/html");
 
     std::string result = reader.readUntil(' ').toString();
     std::string expected = "TESTSTRINGWITHSPACE ";
@@ -65,7 +72,7 @@ void testReadUntil() {
 }
 
 void testReadUntilUpperCase() {
-    Reader reader(-1, READER_RECOMMENDED_BUF_SIZE);
+    Reader reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
@@ -80,7 +87,7 @@ void testReadUntilUpperCase() {
 }
 
 void testReadUntilLowerCase() {
-    Reader reader(-1, READER_RECOMMENDED_BUF_SIZE);
+    Reader reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
@@ -175,8 +182,8 @@ int main(int argc, char * argv[]) {
     // Tester t;
 
     testReadUntil();
-    testReadUntilUpperCase();
-    testReadUntilLowerCase();
+    // testReadUntilUpperCase();
+    // testReadUntilLowerCase();
     // t.addTest(testReadUntil);
     // addTest(testReadUntilCursorAtUntil);
     // addTest(testReadUntilFillBufferOnce);

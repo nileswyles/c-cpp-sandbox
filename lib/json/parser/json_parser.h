@@ -5,6 +5,11 @@
 #include <string>
 #include <vector>
 
+#include "array.h"
+#include "reader/reader.h"
+
+using namespace WylesLibs;
+
 namespace WylesLibs::Json {
 
 static constexpr size_t MAX_JSON_DEPTH = 7;
@@ -106,8 +111,13 @@ class JsonString: public JsonValue {
         }
 };
 
-extern JsonValue * parse(std::string json, size_t& i);
+// LOL, over optimizating? probably but this should definitely minimize memory footprint some... probably not as much as one would think though?
+//  if nothing else, let's keep parsing stuff consistent... 
+extern JsonValue * parseFile(std::string file_path);
 extern JsonValue * parse(std::string json);
+extern JsonValue * parse(Array<uint8_t> json);
+extern JsonValue * parse(Reader * r, size_t& i);
+
 extern std::string pretty(std::string json);
 
 }

@@ -1,9 +1,12 @@
 #include <stdbool.h>
-#include "cstring.h"
+#include <fcntl.h>
+#include "string_utils.h"
 
 #include "json_parser.h"
 #include "json_array.h"
 #include "json_object.h"
+
+// #include "message_formatter.h"
 
 #ifndef LOGGER_JSON_PARSER
 #define LOGGER_JSON_PARSER 1
@@ -14,68 +17,54 @@
 #include "logger.h"
 
 using namespace WylesLibs::Json;
+using namespace WylesLibs;
 
-static void readWhiteSpaceUntil(std::string buf, size_t& i, std::string until);
-static bool peekWhiteSpaceUntil(std::string buf, size_t& i, char until);
+static void readWhiteSpaceUntil(Reader * r, std::string until);
+static bool peekWhiteSpaceUntil(Reader * r, char until);
 
-static size_t compareCString(std::string buf, std::string comp, size_t comp_length);
+static size_t compareCString(Reader * r, std::string comp, size_t comp_length);
 
 // tree base
-static void parseDecimal(std::string buf, size_t& i, double& value);
-static void parseNatural(std::string buf, size_t& i, double& value);
-static void parseNumber(JsonArray * obj, std::string buf, size_t& i);
-static void parseString(JsonArray * obj, std::string buf, size_t& i);
-static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::string comp, JsonValue * value);
-static void parseKeyString(JsonObject * obj, std::string buf, size_t& i);
+static void parseDecimal(Reader * r, double& value);
+static void parseNatural(Reader * r, double& value);
+static void parseNumber(JsonArray * obj, Reader * r);
+static void parseString(JsonArray * obj, Reader * r);
+static void parseImmediate(JsonArray * obj, Reader * r, std::string comp, JsonValue * value);
+static void parseKeyString(JsonObject * obj, Reader * r);
 
 // base-ish (base and 1 at same time)...
-static void parseNestedObject(JsonArray * obj, std::string buf, size_t& i);
-static void parseArray(JsonArray * obj, std::string buf, size_t& i);
+static void parseNestedObject(JsonArray * obj, Reader * r);
+static void parseArray(JsonArray * obj, Reader * r);
 
 // 2 
-static void parseValue(JsonArray * obj, std::string buf, size_t& i);
-static void parseKey(JsonObject * obj, std::string buf, size_t& i);
+static void parseValue(JsonArray * obj, Reader * r);
+static void parseKey(JsonObject * obj, Reader * r);
 
 // 1
-static void parseObject(JsonObject * obj, std::string buf, size_t& i);
+static void parseObject(JsonObject * obj, Reader * r);
 
-static std::string whitespace(" \r\n\t");
-static void readWhiteSpaceUntil(std::string buf, size_t& i, std::string until) {
-    char c = buf.at(i);
-    loggerPrintf(LOGGER_DEBUG, "Reading Whitespace Until: %s, @ %lu, %c\n", until.c_str(), i, c);
+static void readWhiteSpaceUntil(Reader * r, std::string until) {
+    char c = r->peekByte();
+    loggerPrintf(LOGGER_DEBUG, "Reading Whitespace Until: %s, %c\n", until.c_str(), c);
     if (until.find(c) != std::string::npos) {
         return;
     }
-    while (whitespace.find(c) != std::string::npos) {
-        c = buf.at(++i);
+    while (STRING_UTILS_WHITESPACE.find(c) != std::string::npos) {
+        r->readByte(); // consume whitespace...
+        c = r->peekByte();
     }
     if (until.find(c) == std::string::npos) {
-        throw std::runtime_error("Only allow whitespace between tokens...");
+        std::string msg = "Only allow whitespace between tokens...";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
     }
+    // cursor == until...
 }
 
-static bool peekWhiteSpaceUntil(std::string buf, size_t& i, char until) {
-    size_t x = i;
-    char c = buf.at(++x);
-    if (c == until) {
-        i = x;
-        return true;
-    }
-    while (whitespace.find(c) != std::string::npos) {
-        c = buf.at(++x);
-    } // found non whitespace character...
-    if (c == until) {
-        i = x;
-        return true;
-    }
-
-    return false;
-}
-
-static size_t compareCString(std::string buf, std::string comp, size_t comp_length) {
+static size_t compareCString(std::string actual, std::string comp, size_t comp_length) {
     size_t x = 0;
     while(x < comp_length) {
-        if (comp.at(x) != buf.at(x)) {
+        if (comp.at(x) != actual.at(x)) {
             break;
         }
         x++;
@@ -83,41 +72,41 @@ static size_t compareCString(std::string buf, std::string comp, size_t comp_leng
     return x;
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseDecimal(std::string buf, size_t& i, double& value, size_t& digit_count) {
+// Let's define that parse function's start index is first index of token and end index is last index of token + 1.
+static void parseDecimal(Reader * r, double& value, size_t& digit_count) {
     double decimal_divisor = 10;
-    char c = buf.at(i);
+    char c = r->peekByte();
     while (isDigit(c)) {
+        r->readByte();
         value += (c - 0x30) / decimal_divisor;
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         decimal_divisor *= 10;
-        c = buf.at(++i);
+        c = r->peekByte();
         if (++digit_count > FLT_MAX_MIN_DIGITS) {
-            throw std::runtime_error("parseDecimal: Exceeded decimal digit limit.");
+            std::string msg = "parseDecimal: Exceeded decimal digit limit.";
+            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
         }
     }
-    // make sure we point at last digit
-    i--;
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseNatural(std::string buf, size_t& i, double& value, size_t& digit_count) {
-    char c = buf.at(i);
+static void parseNatural(Reader * r, double& value, size_t& digit_count) {
+    char c = r->peekByte();
     while (isDigit(c)) {
+        r->readByte();
         value = (value * 10) + (c - 0x30); 
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
-        c = buf.at(++i);
+        c = r->peekByte();
         if (++digit_count > FLT_MAX_MIN_DIGITS) {
-            throw std::runtime_error("parseNatural: Exceeded natural digit limit.");
+            std::string msg = "parseNatural: Exceeded natural digit limit.";
+            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
         }
     }
-    // make sure we point at last digit
-    i--;
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
-    loggerPrintf(LOGGER_DEBUG, "Parsing Number @ %lu\n", i);
+static void parseNumber(JsonArray * obj, Reader * r) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing Number\n");
     int8_t sign = 1;
     int8_t exponential_sign = 0;
     double exponential_multiplier = 1;
@@ -125,45 +114,46 @@ static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
 
     size_t natural_digits = 1;
     size_t decimal_digits = 1;
-    char c = buf.at(i);
+    char c = r->peekByte();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string comp(" ,}\r\n\t");
     while (comp.find(c) == std::string::npos) {
         if (isDigit(c)) {
-            parseNatural(buf, i, value, natural_digits);
+            parseNatural(r, value, natural_digits);
         } else if (c == '.') {
-            parseDecimal(buf, ++i, value, decimal_digits);
+            r->readByte();
+            parseDecimal(r, value, decimal_digits);
         } else if (c == 'e' || c == 'E') {
-            c = buf.at(++i);
+            c = r->peekByte();
             if (c == '-') { 
                 exponential_sign = -1;
-                i++;
+                r->readByte();
             } else if (c == '+') {
                 exponential_sign = 1;
-                i++;
+                r->readByte();
             }
 
             double exp = 0;
             size_t dummy_digit_count = 0;
-            parseNatural(buf, i, exp, dummy_digit_count);
+            parseNatural(r, exp, dummy_digit_count);
             
             if (exp > FLT_MAX_EXP_ABS) {
-                throw std::runtime_error("parseNumber: exponential to large.");
+                std::string msg = "parseNumber: exponential to large.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
             }
             for (size_t x = 0; x < exp; x++) {
                 exponential_multiplier *= 10;
             }
             loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
-        } else if (buf.at(i) == '-') {
+        } else if (c == '-') {
             sign = -1;
         } 
         // Consume invalid data in-between tokens...
-        // else if (buf.at(i) == '+') {} 
+        // else if (c == '+') {} 
         // else {} 
-        c = buf.at(++i);
+        c = r->peekByte();
     }
-    // make sure we point at last digit
-    i--;
 
     loggerPrintf(LOGGER_DEBUG, "Number before applying exponential: %f\n", value);
 
@@ -177,14 +167,15 @@ static void parseNumber(JsonArray * obj, std::string buf, size_t& i) {
 
     obj->addValue((JsonValue *) new JsonNumber(value * sign));
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Number @ %lu\n", i);
+    loggerPrintf(LOGGER_DEBUG, "Parsed Number\n");
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseString(JsonArray * obj, std::string buf, size_t& i) {
-    loggerPrintf(LOGGER_DEBUG, "Parsing String @ %lu\n", i);
+static void parseString(JsonArray * obj, Reader * r) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing String\n");
 
-    char c = buf.at(++i);
+    r->readByte(); // consume starting quote
+
+    char c = r->readByte();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string s;
     char prev_c = (char)0x00;
@@ -218,10 +209,10 @@ static void parseString(JsonArray * obj, std::string buf, size_t& i) {
                 for (size_t x = 0; x < 4; x = x + 2) {
                     // so, this takes a hex string and converts to it's binary value.
                     //  i.e. "0F" -> 0x0F;
-                    // s += hexToChar(buf.at(i + x));
+                    // s += hexToChar(r.at(i + x));
                 }
                 // because indexing starts at 0 and x < 4 lol...
-                i += 3;
+                r->readBytes(3);
             } else {
                 // actual characters can just be appended.
                 s += c;
@@ -230,44 +221,43 @@ static void parseString(JsonArray * obj, std::string buf, size_t& i) {
             s += c;
         }
         prev_c = c;
-        c = buf.at(++i);
+        c = r->readByte();
     }
 
     if (s.size() > MAX_LENGTH_OF_JSON_STRING_VALUES) {
-        throw std::runtime_error("parseString: string value too looooooonnnng!");
+        std::string msg = "parseString: string value too looooooonnnng!";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
     }
 
     obj->addValue((JsonValue *) new JsonString(s));
 
     loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
-    loggerPrintf(LOGGER_DEBUG, "Parsed String @ %lu\n", i);
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseImmediate(JsonArray * obj, std::string buf, size_t& i, std::string comp, JsonValue * value) {
-    loggerPrintf(LOGGER_DEBUG, "Parsing %s @ %lu\n", comp.c_str(), i);
+static void parseImmediate(JsonArray * obj, Reader * r, std::string comp, JsonValue * value) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing %s\n", comp.c_str());
 
-    std::string buf_i = buf.substr(i, comp.size());
-    size_t consumed = compareCString(buf_i, comp, comp.size());
-    i += consumed - 1; // point at last index of token
-
+    std::string actual = r->readBytes(comp.size()).toString();
+    size_t consumed = compareCString(actual, comp, comp.size());
     if (consumed == comp.size()) {
-        loggerPrintf(LOGGER_DEBUG, "Parsed %s @ %lu, %c\n", comp.c_str(), i, buf.at(i));
+        loggerPrintf(LOGGER_DEBUG, "Parsed %s, @ %c\n", comp.c_str(), r->peekByte());
 
         // kind of annoying but we want to parse null and not include it in intermediate structure...
         if (value->type != NULL_TYPE) {
             obj->addValue(value);
         }
     } else {
-        throw std::runtime_error("parseImmediate: invalid immediate value. Throw away the whole object lol.");
+        std::string msg = "Invalid immediate value. Throw away the whole object lol.";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
     }
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
-    char c = buf.at(i);
+static void parseNestedObject(JsonArray * arr, Reader * r) {
+    char c = r->peekByte();
     if (c == '{') {
-        loggerPrintf(LOGGER_DEBUG, "Found %c @ %lu\n", c, i);
+        loggerPrintf(LOGGER_DEBUG, "Found %c\n", c);
         // create new object... and update cursor/pointer to object.
         JsonObject * new_obj = new JsonObject(arr->depth + 1);
         // TODO: this 
@@ -275,171 +265,192 @@ static void parseNestedObject(JsonArray * arr, std::string buf, size_t& i) {
             // this should never be null.. but lets
             arr->addValue((JsonValue *)new_obj);
         } else {
-            // TODO: better exception messages...
-            throw std::runtime_error("parseNestedObject: parent array null");
+            std::string msg = "Parent array null";
+            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
         }
-        loggerPrintf(LOGGER_DEBUG, "New OBJ, @ %lu\n", i);
-        parseObject((JsonObject *) new_obj, buf, i);
+        loggerPrintf(LOGGER_DEBUG, "New OBJ\n");
+        parseObject((JsonObject *) new_obj, r);
     }
-    loggerPrintf(LOGGER_DEBUG, "Returning object, found %c @ %lu\n", c, i);
+    loggerPrintf(LOGGER_DEBUG, "Returning object, found %c\n", c);
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseArray(JsonArray * obj, std::string buf, size_t& i) {
-    loggerPrintf(LOGGER_DEBUG, "Parsing Array @ %lu\n", i);
+static void parseArray(JsonArray * obj, Reader * r) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing Array\n");
     
     JsonArray * arr;
-    if (i == 0) {
+    if (obj->depth == 0) {
         arr = obj;
     } else {
         arr = new JsonArray(obj->depth + 1); 
         obj->addValue(arr);
     }
 
-    char c = buf.at(i);
+    char c = r->peekByte();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     while(c != ']') {
         if (c == '[' || c == ',') { 
-            // peek for at end of object...
-            if (peekWhiteSpaceUntil(buf, i, ']')) break;
-
-            parseValue(arr, buf, ++i);
+            parseValue(arr, r);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
-        loggerPrintf(LOGGER_DEBUG, "%c\n", buf.at(i));
-        c = buf.at(i);
+        loggerPrintf(LOGGER_DEBUG, "%c\n", r->peekByte());
+        c = r->peekByte();
     }
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Array @ %lu\n", i);
+    loggerPrintf(LOGGER_DEBUG, "Parsed Array\n");
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseValue(JsonArray * obj, std::string buf, size_t& i) {
-    char c = buf.at(i);
+static void parseValue(JsonArray * obj, Reader * r) {
+    char c = r->peekByte();
     bool parsed = false;
     // read until , or } or parsed token...
     while (c != ',' && c != '}' && c != ']') { 
         if (!parsed) {
             if (c == '"') {
-                parseString(obj, buf, i);
+                parseString(obj, r);
                 parsed = true;
             } else if (isDigit(c) || c == '+' || c == '-') {
-                parseNumber(obj, buf, i);
+                parseNumber(obj, r);
                 parsed = true;
             } else if (c == '[') {
-                parseArray(obj, buf, i);
+                parseArray(obj, r);
                 parsed = true;
             } else if (c == 't') {
                 std::string comp("true");
                 JsonValue * boolean = (JsonValue *) new JsonBoolean(true);
-                parseImmediate(obj, buf, i, comp, boolean);
+                parseImmediate(obj, r, comp, boolean);
                 parsed = true;
             } else if (c == 'f') {
                 std::string comp("false");
                 JsonValue * boolean = (JsonValue *) new JsonBoolean(false);
-                parseImmediate(obj, buf, i, comp, boolean);
+                parseImmediate(obj, r, comp, boolean);
                 parsed = true;
             } else if (c == 'n') {
                 std::string comp("null");
                 JsonValue * nullValue = new JsonValue();
-                parseImmediate(obj, buf, i, comp, nullValue);
+                parseImmediate(obj, r, comp, nullValue);
                 parsed = true;
             } else if (c == '{') { 
-                loggerPrintf(LOGGER_DEBUG, "Found object delimeter '%c' @ %lu\n", c, i);
-                parseNestedObject(obj, buf, i);
+                loggerPrintf(LOGGER_DEBUG, "Found object delimeter '%c'\n", c);
+                parseNestedObject(obj, r);
                 parsed = true;
-            } else if (whitespace.find(c) == std::string::npos) {
-                throw std::runtime_error("Non-whitespace found in parseValue");
+            } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+                std::string msg = "Non-whitespace found in parseValue";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            } else {
+                // consume whitespace...
+                r->readByte();
             }
-        } else if (whitespace.find(c) == std::string::npos) {
-            throw std::runtime_error("Non-whitespace found in parseValue");
+        } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+            std::string msg = "Non-whitespace found in parseValue";
+            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
+        } else {
+            // consume whitespace...
+            r->readByte();
         }
-        c = buf.at(++i);
+        c = r->peekByte();
     }
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseKeyString(JsonObject * obj, std::string buf, size_t& i) {
-    size_t start_i = i;
-    char c = buf.at(i);
-    while (c != '"') {
-        c = buf.at(++i);
-    } // found trailing quote...
-    size_t size = i - start_i;
+static void parseKey(JsonObject * obj, Reader * r) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing Key. %c\n", r->peekByte());
+    // TODO:
+    //  hm... this also doesn't throw exception if non-whitespace character is found... think about whether necessary?
+    ByteOperationTrim trim('"', '"');
+    std::string key_string = r->readUntil(":", &trim, true).toString();
+    printf("HUH?\n");
+    size_t size = key_string.size();
     if (size == 0) {
-        throw std::runtime_error("Empty key string found.");
+        std::string msg = "Empty key string found.";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
     } else if (size > MAX_LENGTH_OF_JSON_STRING_KEYS) {
-        throw std::runtime_error("parseKeyString: Key string to loooooonnng!");
+        std::string msg = "Key string to loooooonnng!";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
     }
-    std::string s = buf.substr(start_i, size);
-    obj->addKey(s);
-    loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s @ %lu\n", s.c_str(), i);
+    loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s\n", key_string.c_str());
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseKey(JsonObject * obj, std::string buf, size_t& i) {
-    loggerPrintf(LOGGER_DEBUG, "Parsing Key. @ %lu, %c\n", i, buf.at(i));
-    readWhiteSpaceUntil(buf, i, "\"");
-    // i @ "
-    parseKeyString(obj, buf, ++i);
-    // i @ "
-    readWhiteSpaceUntil(buf, ++i, ":");
-    // i @ :
-}
-
-// Let's define that parse function's start index is first index of token and end index is last index of token.
-static void parseObject(JsonObject * obj, std::string buf, size_t& i) {
-    char c = buf.at(i);
+static void parseObject(JsonObject * obj, Reader * r) {
+    char c = r->readByte();
     while (c != '}') {
         if (c == '{' || c == ',') {
             loggerPrintf(LOGGER_DEBUG, "New Object Entry\n");
-
-            // peek for at end of object...
-            if (peekWhiteSpaceUntil(buf, i, '}')) break;
-
-            parseKey(obj, buf, ++i);
-            // i @ :
-            parseValue(&(obj->values), buf, ++i);
-            c = buf.at(i);
-            loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function. @ %lu, %c\n", i, c);
+            parseKey(obj, r);
+            parseValue(&(obj->values), r);
+            c = r->readByte();
+            loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function. @ %c\n", c);
         }
     }
 
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");
 }
 
-// ?
-extern JsonValue * WylesLibs::Json::parse(std::string json) {
+extern JsonValue * WylesLibs::Json::parseFile(std::string file_path) {
+    int fd = open(file_path.c_str(), O_RDONLY);
+    if (fd == -1) {
+        std::string msg = "File does not exist.";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
+    }
     size_t i = 0;
-    return parse(json, i);
+    Reader r(fd);
+    return parse(&r, i);
 }
+
+extern JsonValue * WylesLibs::Json::parse(std::string json) {
+    loggerPrintf(LOGGER_DEBUG, "JSON: \n");
+    loggerPrintf(LOGGER_DEBUG, "%s\n", json.c_str());
+    if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
+        std::string msg = "String to loooonnnng!";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
+    }
+    size_t i = 0;
+    Reader r((uint8_t *)json.data(), json.size());
+    return parse(&r, i);
+}
+
+extern JsonValue * WylesLibs::Json::parse(Array<uint8_t> json) {
+    if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
+        std::string msg = "Json data to loooonnnng!";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
+    }
+    size_t i = 0;
+    Reader r(json.buf, json.size());
+    return parse(&r, i);
+}
+
 // Let's define that parse function's start index is first index of token and end index is last index of token (one before delimeter).
 //  Okay, I was convinced to use the string class for this lol... C++ book insists relatively low overhead when exceptions are thrown.
 //      also, sizeof(pointers) < sizeof(std::string)
 //      and .at() bounds checks (exceptions), [] doesn't
     // string construction? iterates over string to get length? that might be reason enough to change back to pointers lol... or maybe copy constructor is optimized? yeah
     //  but still that initial creation... 
-extern JsonValue * WylesLibs::Json::parse(std::string s, size_t& i) {
-    if (s.size() > MAX_LENGTH_OF_JSON_STRING) {
-        throw std::runtime_error("WylesLibs::Json::parse: String to loooonnnng!");
-    }
-    loggerPrintf(LOGGER_DEBUG, "JSON: \n");
-    loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
-
-    readWhiteSpaceUntil(s, i, "{[");
+extern JsonValue * WylesLibs::Json::parse(Reader * r, size_t& i) {
+    readWhiteSpaceUntil(r, "{[");
 
     JsonValue * obj = nullptr;
-    char c = s.at(i);
+    // LOL, duh, cursor is copyed ...
+    char c = r->peekByte();
     loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {
         JsonObject * new_obj = new JsonObject(0);
-        parseObject(new_obj, s, i);
+        parseObject(new_obj, r);
         obj = (JsonValue *) new_obj;
     } else if (c == '[') {
         JsonArray * new_obj = new JsonArray(0);
         // [1, 2, 3, 4] is valid JSON lol...
-        parseArray(new_obj, s, i);
+        parseArray(new_obj, r);
         obj = (JsonValue *) new_obj;
+    } else {
+        std::string msg = "Invalid JSON data.";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed JSON object. Returning to caller.\n");

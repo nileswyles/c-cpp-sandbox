@@ -2,8 +2,10 @@
 #define WYLESLIBS_READER_H
 
 #include "array.h"
+#include "string_utils.h"
 
 #include <string>
+#include <stdexcept>
 
 #include <stdio.h>
 #include <stdint.h>
@@ -13,6 +15,16 @@
 
 namespace WylesLibs {
 
+// TODO: If I do end up using CPP's, stream stuff it will be to replace fd read calls from the c standard library... 
+//  and should encapsulate ByteOperation behavior for readUntil?
+//  maybe extend and overwrite readline?
+//
+//  Also, maybe implement include filtering too...
+//      can go as far as to support pseudo-regex syntax? (character class) [A-Za-z0-9\s] etc...
+//      i.e. 7e[0-5] should expand to "7e012345" then just string::find(match)
+//          idk, seems useful?
+
+//      that means a parser within a parser, parsception LMAO
 class ByteOperation {
     public:
         ByteOperation() {}
@@ -21,7 +33,7 @@ class ByteOperation {
         //  By contrast, calls to perform call the function defined by the class-type at creation. Regardless of any casting along the way lol.
         //  Also, the compiler throws an error if perform isn't defined in sub-classes. 
         //     *** Then there's {} vs. = 0, which is effectively the same thing? At least when return type == void? ***
-        void flush(Array<uint8_t>& buffer, uint8_t c) {}
+        void flush(Array<uint8_t>& buffer) {}
         virtual void perform(Array<uint8_t>& buffer, uint8_t c) = 0;
 };
 
@@ -78,17 +90,19 @@ class ByteOperationIgnore: public ByteOperationChain {
         }
 };
 
+
 class ByteOperationTrim: public ByteOperation {
     public:
         Array<uint8_t> data;
         Array<uint8_t> r_trim;
         bool l_trimming;
         bool r_trimming;
+        bool r_trim_has_non_whitespace;
 
-        std::string l_trim_match;
-        std::string r_trim_match;
+        char left_most_char;
+        char right_most_char;
 
-        ByteOperationTrim(): l_trimming(true), r_trimming(false), l_trim_match("\r\n\t "), r_trim_match("\r\n\t ") {}
+        ByteOperationTrim(): l_trimming(true), r_trimming(false), left_most_char(0), right_most_char(0), r_trim_has_non_whitespace(false) {}
 
         // then can use this for extracting things like json keystring and valuestring...
         //      hmm... might be worth refactoring json parser to use this.  
@@ -98,10 +112,22 @@ class ByteOperationTrim: public ByteOperation {
         // What I have works just fine for now... I guess...
 
         // resulting trim does not include these characters...
-        ByteOperationTrim(char left_most_char, char right_most_char): 
-            l_trimming(true), r_trimming(false), l_trim_match(&left_most_char), r_trim_match(&right_most_char) {}
 
-        void rTrimFlush(Array<uint8_t>& buffer, uint8_t c) {
+        // how common is it too trim whitespace around token?, fair to implement here?
+        //  fair to throw exception if non whitespace character found before token? 
+        ByteOperationTrim(char left_most_char, char right_most_char): 
+            l_trimming(true), r_trimming(false), left_most_char(left_most_char), right_most_char(right_most_char), r_trim_has_non_whitespace(false) {}
+
+        void flush(Array<uint8_t>& buffer, uint8_t c) {
+            // if extracting token and non whitespace after token throw an exception...
+            if (right_most_char != 0 && r_trim_has_non_whitespace) {
+                std::string msg = "Found non-whitespace char right of token.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+        }
+
+        void rTrimFlush(Array<uint8_t>& buffer) {
             if (this->r_trim.size() > 0) {
                 buffer.append(this->r_trim.buf, this->r_trim.size());
             }
@@ -110,20 +136,52 @@ class ByteOperationTrim: public ByteOperation {
 
         void perform(Array<uint8_t>& buffer, uint8_t c) {
             if (!this->l_trimming) {
-                if (this->r_trim_match.find(c) != std::string::npos) {
+                if (this->right_most_char == 0 && STRING_UTILS_WHITESPACE.find(c) != std::string::npos) {
+                    // if just trimming whitespace...
                     this->r_trimming = true;
+                    this->r_trim.append(c);
+                } else if (right_most_char == c) {
+                    this->r_trimming = true;
+                    this->r_trim.append(c);
                 } else if (this->r_trimming) {
-                    if (this->r_trim_match.find(c) == std::string::npos) {
-                        this->r_trim.append(c);
+                    if (this->right_most_char == 0 && STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+                        // blablbl blablabl blablbal    | == blablbl blablabl blablbal
+                        // if just trimming whitespace and not whitespace char found, flush...
+                        rTrimFlush(buffer);
+                        buffer.append(c);
+                        this->r_trimming = false;
+                    } else if (this->right_most_char == c) {
+                        // if extracting token and right_most_char found, flush and include right_most
+                        // "blablbl" bblbnlbl    | == exception 
+                        // "blablbl"    | == blablbl 
+                        // "blablbl" " alknla| == blablbl 
+                        rTrimFlush(buffer);
+                        buffer.append(c);
+                        this->r_trimming = false;
+                        this->r_trim_has_non_whitespace = false;
                     } else {
-                        // r_trimming and see r_trim_match... flush buffer and reset trim...
-                        rTrimFlush(buffer, c);
+                        this->r_trim.append(c);
+                        if (this->right_most_char != 0 && STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+                            this->r_trim_has_non_whitespace = true;
+                        }
                     }
                 } else {
                     buffer.append(c);
                 }
-            } else if (this->l_trim_match.find(c) == std::string::npos) {
-                this->l_trimming = false;
+            } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+                if (this->left_most_char == 0) {
+                    // if just trimming whitespace...
+                    this->l_trimming = false;
+                    buffer.append(c);
+                } else if (c == left_most_char) {
+                    // TODO:
+                    // hmm... yeah these should be separate operations..
+                    this->l_trimming = false;
+                } else {
+                    std::string msg = "Found non-whitespace char left of token.";
+                    loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
             }
         }
 };
@@ -139,13 +197,24 @@ class Reader {
         int fillBuffer();
         bool cursorCheck();
     public:
+        Reader(uint8_t * buf_array, const size_t pBuf_size) {
+            buf = buf_array;
+            buf_size = pBuf_size;
+            cursor = 0;
+            // ! IMPORTANT - an exception is thrown if read past buffer. (see fillBuffer implementation)
+            fd = -1;
+            bytes_in_buffer = pBuf_size;
+        }
         Reader(const int fd) : Reader(fd, READER_RECOMMENDED_BUF_SIZE) {}
         Reader(const int pFd, const size_t pBuf_size) {
-            // TODO:
-            // ensure buf_size > some amount and fd > 0? else return null? lol idk
-            printf("LOL\n");
+            if (pFd < 0) {
+                throw std::runtime_error("Invalid file descriptor provided.");
+            }
+            if (pBuf_size < 1) {
+                throw std::runtime_error("Invalid buffer size provided.");
+            }
+            printf("Lol, oh right. buf_size requested: %ld\n", pBuf_size);
             buf = newCArray<uint8_t>(buf_size);
-            printf("LOL\n");
             buf_size = pBuf_size;
             cursor = 0;
             fd = pFd;
@@ -154,8 +223,11 @@ class Reader {
         ~Reader() {
             delete buf;
         }
-        // peeking might still be useful? if we're being complete, missed a primitive? STL implements peeking functionality... 
         int peekForEmptyLine();
+        uint8_t peekByte();
+        // peek until doesn't make much sense with static sized buffer... so let's omit for now...
+        // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...
+        uint8_t readByte();
         Array<uint8_t> readBytes(const size_t n);
         Array<uint8_t> readUntil(const char until) {
             return readUntil(std::string(&until));
@@ -163,18 +235,27 @@ class Reader {
         Array<uint8_t> readUntil(std::string until) {
             return readUntil(until, nullptr);
         }
+        // TODO:
+        //  hmmm.. yeah, this syntax might not be any better than calling popBack() separately... 
+        //  that said, might also want to readUntil ignore but not consume until character...
+        //      so maybe that's what that flag should do? Too confusing lol?
+        // put back?
         Array<uint8_t> readUntil(const char until, bool ignore_until) {
             return readUntil(std::string(&until), ignore_until);
         }
         Array<uint8_t> readUntil(std::string until, bool ignore_until) {
-            ByteOperationIgnore * ignore;
             if (ignore_until) {
-                ByteOperationIgnore ignore_obj(until);
-                ignore = &ignore_obj;
+                return readUntil(until, nullptr).popBack();
             } else {
-                ignore = nullptr;
+                return readUntil(until, nullptr);
             }
-            return readUntil(until, ignore);
+        }
+        Array<uint8_t> readUntil(std::string until, ByteOperation * operation, bool ignore_until) {
+            if (ignore_until) {
+                return readUntil(until, operation).popBack();
+            } else {
+                return readUntil(until, operation);
+            }
         }
         Array<uint8_t> readUntil(std::string until, ByteOperation * operation);
         int read_chunk_non_blocking_fd(int fd, uint8_t ** p);

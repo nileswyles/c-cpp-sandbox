@@ -1,9 +1,12 @@
-#ifndef WYLESLIBS_CSTRING_H
-#define WYLESLIBS_CSTRING_H
+#ifndef WYLESLIBS_STRING_UTILS_H
+#define WYLESLIBS_STRING_UTILS_H
 
 // TODO:
 #include <string>
 #include <stdbool.h>
+
+// TODO: actually yeah, I wanted to remove cpp dependency from this file...
+static std::string STRING_UTILS_WHITESPACE = "\r\n\t ";
 
 static bool isAlpha(char c) {
     if ((c >= 0x41 && c <= 0x5A) || (c >=0x61 && c <= 0x7A)) {

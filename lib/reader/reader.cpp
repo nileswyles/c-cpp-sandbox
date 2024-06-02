@@ -1,10 +1,10 @@
 #include "reader.h"
 
-#include <stdexcept>
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+
+// #include "message_formatter.h"
 
 #ifndef LOGGER_READER
 #define LOGGER_READER 1
@@ -49,6 +49,17 @@ int Reader::peekForEmptyLine() {
         return 1;
     }
     return 0;
+}
+
+uint8_t Reader::peekByte() {
+    this->cursorCheck();
+    return this->buf[this->cursor];
+}
+
+uint8_t Reader::readByte() {
+    uint8_t byte = peekByte();
+    this->cursor++;
+    return byte;
 }
 
 // if return == NULL, check errno for read error.
@@ -113,11 +124,10 @@ Array<uint8_t> Reader::readUntil(std::string until, ByteOperation * operation) {
         }
         c = this->buf[++this->cursor]; 
     }
-    // INCLUDE UNTIL CHAR... lol
     if (operation != nullptr) {
         operation->perform(data, c);
         // dump any buffers cached (by the operation classes in the operation objects/instances)...
-        operation->flush(data, c);
+        operation->flush(data);
     } else {
         data.append(c);
     }
@@ -194,7 +204,8 @@ int Reader::fillBuffer() {
     if (ret == -1 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0; // uint
         // second should never happen but if we're being thorough...
-        throw std::runtime_error("Read error...");
+        loggerPrintf(LOGGER_ERROR, "Read error: %d\n", errno);
+        throw std::runtime_error("Read error.");
     } else {
         this->bytes_in_buffer = ret;
     }

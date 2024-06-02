@@ -18,7 +18,7 @@ class HttpServerConfig: Json::JsonBase {
         HttpServerConfig() {}
         // file sig should support strings... 
         HttpServerConfig(std::string filepath): 
-            HttpServerConfig((Json::JsonObject *)Json::parse(File::read(filepath.c_str()).toString())) {}
+            HttpServerConfig((Json::JsonObject *)Json::parse(File::read(filepath).toString())) {}
         HttpServerConfig(Json::JsonObject * obj) {
             size_t validation_count = 0;
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());

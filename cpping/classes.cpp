@@ -71,7 +71,21 @@ int main() {
 
     // so...
 
-    // you can call constructor directly? 
+    // 
+
+    // MyClass fn();            // function returning a MyClass object
+    // MyClass foo;             // default constructor
+    // MyClass bar = foo;       // copy constructor
+    // MyClass baz = fn();      // move constructor
+    // foo = bar;               // copy assignment
+    // baz = MyClass();         // move assignment 
+
+    // and also, uniform move assignment? 
+    //  baz = {}; // like c struct static zero intialization?
+    //  baz = {0}; // also valid?
+    //  return {};
+
+    // you can call constructor directly (move assignment)? 
     //      <type-name>()
     // but also via other type of expresions... 
     //      <type-name> <variable-name>[()]; 

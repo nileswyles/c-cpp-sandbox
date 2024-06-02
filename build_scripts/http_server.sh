@@ -33,11 +33,14 @@ $ROOT_DIR/lib/reader/reader.cpp
 $ROOT_DIR/lib/server.c
 "
 
-# LD_FLAGS="-lcrypto"
+LD_FLAGS="
+-lssl
+-lcrypto
+"
 LD_FLAGS=""
 
 PROGRAM_PATH=$ROOT_DIR/out/http-server.out
 rm $PROGRAM_PATH
-g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT -iquote $QUOTE_INCLUDE_ROOT/cpp_http $LD_FLAGS $DEFINES -Wno-pointer-arith -std=c++23 -o $PROGRAM_PATH
+g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT -iquote $QUOTE_INCLUDE_ROOT/cpp_http -I/home/floxnard7/openssl-3.3.0/include $LD_FLAGS $DEFINES -Wno-pointer-arith -std=c++23 -o $PROGRAM_PATH
 # exec $PROGRAM_PATH $PROGRAM_ARG
 exec $PROGRAM_PATH 127.0.0.1 8080

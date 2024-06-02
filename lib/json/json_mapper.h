@@ -24,6 +24,7 @@ namespace WylesLibs::Json {
 
 /// this is something... aint it...
 
+// hmm... so how would one implement this?
 template<class T>
 T setVariableFromJsonValue(JsonValue * value, size_t& validation_count);
 

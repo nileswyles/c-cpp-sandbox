@@ -85,6 +85,23 @@ void testFunction(TestClass testClass) {
     printf("ret testClass 2: %p, %p\n", &ret, ret.i);
 }
 
+// If this isn't the case, then CPP is of less value too me lol...
+//  Actually, I thought I saw compiler magic but I am just being dumb? Revisions are good.
+//
+// Constructor called.
+// Copy constructor called.
+// testClass: 0x7fffb82161e0, 0x563342765eb0
+// Copy constructor called.
+// testClass 2: 0x7fffb82161a0, 0x563342765eb0
+// Copy constructor called.
+// ret testClass: 0x7fffb8216198, 0x563342765eb0
+// Deconstructor called., 0x7fffb82161a0
+// ret testClass 2: 0x7fffb8216198, 0x563342765eb0
+// Deconstructor called., 0x7fffb8216198
+// Deconstructor called., 0x7fffb82161e0
+// Deconstructor called., 0x7fffb82161d8
+
+// automatic storage duration. The storage for the object is allocated at the beginning of the enclosing code block and deallocated at the end.
 int main() {
     TestClass t;
     testFunction(t);

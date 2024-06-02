@@ -1,6 +1,9 @@
 #include "http.h"
+#include "paths.h"
 #include <iostream>
 // #include <openssl/sha.h>
+// #include <openssl/bio.h>
+// #include <openssl/evp.h>
 
 using namespace WylesLibs;
 using namespace WylesLibs::Http;
@@ -79,7 +82,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
 
 // might need to change return type...
 bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) {
-    bool upgraded = false;
+    bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
         Array<std::string> protocols = request->fields["sec-websocket-protocol"];
         for (size_t i = 0; i < protocols.size(); i++) {
@@ -91,31 +94,52 @@ bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) 
                     printf("Websocket upgrade request...");
                     HttpResponse response;
 
-                    response.status_code = 101; 
+                    response.status_code = "101"; 
                     response.fields["Upgrade"] = "websocket";
                     response.fields["Connection"] = "upgrade";
                     response.fields["Sec-Websocket-Protocol"] = protocol;
                     response.fields["Sec-WebSocket-Version"] = "13";
                     response.fields["Sec-WebSocket-Extensions"] = "";
 
-                    // unsigned char *SHA1(const unsigned char *data, size_t count, unsigned char *md_buf);
                     // not sure what this is doing, but if that's what the browser wants lmao..
                     std::string key_string = request->fields["sec-websocket-key"].toString() + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-                    // char * checksum = SHA1(key_string, key_string.size(), nullptr);
-                    // // char * implies NUL terminated right?
-                    // char encodedData[1024]; // this an issue? TODO: how to calculate buffer size... similarly, validate sec-websocket-key
-                    // // then base64 encode checksum...
-                    // EVP_EncodeBlock(encodedData, checksum, strlen(checksum));
-                    // printf(encodedData);
-                    // response.fields["Sec-WebSocket-Accept"] = std::string(encodedData);
 
+                    // char message_digest[1024]; // this an issue? TODO: how to calculate buffer size... similarly, validate sec-websocket-key
+                    // SHA_CTX context;
+                    // int result = SHA1_Init(&context);
+                    // // if (result =)
+                    // result = SHA1_Update(&context, (void *)key_string.c_str(), key_string.size());
+                    // result = SHA1_Final((unsigned char *)message_digest, &context);
+
+                    // // lol... wtf is this?
+                    // BIO *bio, *b64;
+                    // b64 = BIO_new(BIO_f_base64());
+                    // // lol.... why is this needed?
+                    // char base64_encoded[2048];
+                    // bio = BIO_new_mem_buf(base64_encoded, 2048);
+                    // // bio = BIO_new_fp(stdout, BIO_NOCLOSE);
+                    // BIO_push(b64, bio);
+                    // BIO_write(b64, message_digest, strlen(message_digest));
+
+                    // printf(base64_encoded);
+                    // response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
+
+                    // BIO_flush(b64);
+
+                    // printf(base64_encoded);
+                    // response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
+
+                    // BIO_free_all(b64);
+
+                    // API not stable? lol...
+                    // EVP_EncodeBlock((unsigned char *)encodedData, (const unsigned char *)checksum, strlen(checksum));
                     std::string response_string = response.toString();
                     write(conn_fd, response_string.c_str(), response_string.size());
 
                     upgrader->onConnection(conn_fd);
 
                     // NOTE: the upgrade function should indefinetly block until the connection is intended to be closed.
-                    upgraded = true;
+                    upgraded = 1;
                 }
             }
         }
@@ -124,26 +148,32 @@ bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) 
 }
 
 bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
-    // if (this->config.root_html_file != "" && request.url.path == "/") {
-	// 	request.url.path = s.config.root_html_file;
-	// }
+    bool handled = false;
+    if (this->config.root_html_file != "" && request->url.path == "/") {
+		request->url.path = this->config.root_html_file;
+	}
+    std::string content_type = this->static_paths[request->url.path];
+	if (content_type != "") {
+        HttpResponse response;
+		if (request->method == "HEAD" || request->method == "GET") {
+	        std::string path = Paths::join(this->config.static_path, request->url.path);
+            Array<uint8_t> file_data = File::read(path);
+			response.fields["Content-Length"] = file_data.size();
+			response.fields["Content-Type"] = content_type;
+			if (request->method == "GET") {
+				response.content = file_data;
+            }
+			response.status_code = "200";
+		} else {
+            response.status_code = "500";
+        }
+        std::string response_string = response.toString();
+        write(conn_fd, response_string.c_str(), response_string.size());
 
-	// path := filepath.Join(s.config.PathToStaticDir, request.Url.Path)
-	// if (this->static_paths[path] != "") {
-	// 	s.processRequestToStaticPath(request, response, path)
-	// } else { // else process handlers
-    //     return false;
+        handled = true;
+	}
 
-
-
-
-	// 	for _, f := range s.request_handlers {
-	// 		if err = f(request, response); err != nil {
-	// 			response.StatusCode = 500
-	// 		}
-	// 	}
-	// }
-    return false;
+    return handled;
 }
 
 uint8_t HttpConnection::onConnection(int conn_fd) {
@@ -151,13 +181,20 @@ uint8_t HttpConnection::onConnection(int conn_fd) {
     Reader * reader = new Reader(conn_fd);
     try {
         parseRequest(request, reader);
-        if (!handleWebsocketRequest(conn_fd, request)) {
-            this->processor(request);
+        bool handled = handleStaticRequest(conn_fd, request);
+        if (!handled) {
+            handled = handleWebsocketRequest(conn_fd, request);
+        }
+        if (!handled) {
+            // these should always produce a response, so sig need not include connection file descriptor..
+            HttpResponse response = this->processor(request);
+            std::string response_string = response.toString();
+            write(conn_fd, response_string.c_str(), response_string.size());
         }
         delete reader;
     } catch (const std::exception& e) {
         // Again, low overhead.... so, should be fine...
-        std::cout << "Exception: \n" << e.what() << '\n';
+        loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
     }
     delete request;
     delete reader;

@@ -7,10 +7,12 @@
 #include <errno.h>
 #include <stdbool.h>
 
+#include <filesystem>
+
 #include "reader/reader.h"
 #include "server.h"
 #include "config.h"
-#include "upgrader.h"
+#include "connection.h"
 
 #include "file.h"
 
@@ -43,6 +45,13 @@ class HttpRequest {
         
         std::unordered_map<std::string, Array<std::string>> fields;
         std::unordered_map<std::string, Array<std::string>> cookies;
+        // TODO:
+        // if content-type == then different types?
+        //  JsonObject content;
+        //  MultipartFile content;
+        //  then use reader to parse json?
+
+        //  update json parser to support both string and reader?
         Array<uint8_t> content;
         size_t content_length;
 
@@ -97,7 +106,7 @@ class HttpResponse {
         }
 };
 
-typedef HttpResponse *(* RequestProcessor)(HttpRequest *);
+typedef HttpResponse(* RequestProcessor)(HttpRequest *);
 // voila!
 class HttpConnection {
     private:
@@ -113,39 +122,32 @@ class HttpConnection {
         HttpConnection() {}
         HttpConnection(HttpServerConfig config, RequestProcessor processor, Array<ConnectionUpgrader *> upgraders): 
             config(config), processor(processor), upgraders(upgraders) {
-                //  init staticpaths 
-                Array<uint8_t> readDir = File::read(config.static_path.c_str());
-                printf("readDir: %s\n", readDir.toString().c_str());
-
-                // DIR * static_path_dir = opendir(config.static_path);
-                // // if (errno == )
-                // struct dirent * dir_listing = readdir(static_path_dir);
-
-                // //  struct dirent {
-                // //        ino_t          d_ino;       /* Inode number */
-                // //        off_t          d_off;       /* Not an offset; see below */
-                // //        unsigned short d_reclen;    /* Length of this record */
-                // //        unsigned char  d_type;      /* Type of file; not supported
-                // //                                       by all filesystem types */
-                // //        char           d_name[256]; /* Null-terminated filename */
-                // //    };
-
-
-                // for () {
-
-                //     config.path_to_static_dir
-				// 	switch filepath.Ext(path) {
-				// 	case ".html":
-				// 		static_paths[path] = "text/html"
-				// 	case ".js":
-				// 		static_paths[path] = "text/javascript"
-				// 	case ".css":
-				// 		static_paths[path] = "text/css"
-				// 	default:
-				// 		static_paths[path] = "none"
-				// 	}
-                // }
+                for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(config.static_path)) {
+                    std::string path = "/" + dir_entry.path().string();
+                    std::string ext = dir_entry.path().extension().string();
+                    printf("path: %s\n", path.c_str());
+                    printf("ext: %s\n", ext.c_str());
+					if (ext == "html") {
+						static_paths[path] = "text/html";
+					} else if (ext == "js") {
+						static_paths[path] = "text/javascript";
+					} else if (ext == "css") {
+						static_paths[path] = "text/css";
+                    } else {
+						static_paths[path] = "text/plain";
+                    }
+					// if (ext == ".html") {
+					// 	static_paths[path] = "text/html"
+					// } else if (ext == ".js") {
+					// 	static_paths[path] = "text/javascript"
+					// } else if (ext == ".css") {
+					// 	static_paths[path] = "text/css"
+                    // } else {
+					// 	static_paths[path] = "none"
+                    // }
+                }
         }
+
         uint8_t onConnection(int conn_fd);
 };
 

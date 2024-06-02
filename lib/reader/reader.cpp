@@ -113,9 +113,9 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
         } else {
             data.append(c);
         }
-        // move to next cursor
+        // move to next character
         this->cursor++;
-        // if no more data in buffer, fill buffer and reset cursor...
+        // if no more data in buffer (cursor beyond end of buffer), fill buffer and reset cursor...
         this->cursorCheck();
         // points to new value...
         c = this->buf[this->cursor]; 
@@ -127,7 +127,7 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
         } else {
             data.append(c);
         }
-        // make sure to move cursor past until char. 
+        // make sure to move cursor past until char. else still point to until char for next read...
         this->cursor++;
     }
     if (operation != nullptr) {

@@ -21,33 +21,29 @@ namespace WylesLibs::Parser::Json {
 //  the parser will not restrict to single types... that said, I don't plan on providing an abstraction for the multiplexing.
 //  it's up to the developer to process the parsed intermediate on a case-by-case basis.  
 
-
-/// this is something... aint it...
-
-// hmm... so how would one implement this?
 template<class T>
-T setVariableFromJsonValue(JsonValue * value, size_t& validation_count);
+T setVariableFromJsonValue(JsonValue * value);
 
 template<>
-bool setVariableFromJsonValue<bool>(JsonValue * value, size_t& validation_count);
+bool setVariableFromJsonValue<bool>(JsonValue * value);
 
 template<>
-double setVariableFromJsonValue<double>(JsonValue * value, size_t& validation_count);
+double setVariableFromJsonValue<double>(JsonValue * value);
 
 template<>
-std::string setVariableFromJsonValue<std::string>(JsonValue * value, size_t& validation_count);
+std::string setVariableFromJsonValue<std::string>(JsonValue * value);
 
 template<class T>
-void setArrayVariablesFromJsonValue(JsonValue * value, std::vector<T>& arr, size_t& validation_count);
+void setArrayVariablesFromJsonValue(JsonValue * value, std::vector<T>& arr);
 
 template<>
-void setArrayVariablesFromJsonValue<bool>(JsonValue * value, std::vector<bool>& arr, size_t& validation_count);
+void setArrayVariablesFromJsonValue<bool>(JsonValue * value, std::vector<bool>& arr);
 
 template<>
-void setArrayVariablesFromJsonValue<double>(JsonValue * value, std::vector<double>& arr, size_t& validation_count);
+void setArrayVariablesFromJsonValue<double>(JsonValue * value, std::vector<double>& arr);
 
 template<>
-void setArrayVariablesFromJsonValue<std::string>(JsonValue * value, std::vector<std::string>& arr, size_t& validation_count);
+void setArrayVariablesFromJsonValue<std::string>(JsonValue * value, std::vector<std::string>& arr);
 
 }
 #endif 

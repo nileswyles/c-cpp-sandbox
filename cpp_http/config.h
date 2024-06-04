@@ -20,25 +20,20 @@ class HttpServerConfig: JsonBase {
         HttpServerConfig(std::string filepath): 
             HttpServerConfig((JsonObject *)parseFile(filepath)) {}
         HttpServerConfig(JsonObject * obj) {
-            size_t validation_count = 0;
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if (key == "static_path") {
-                    static_path = setVariableFromJsonValue<std::string>(value, validation_count);
+                    static_path = setVariableFromJsonValue<std::string>(value);
                 } else if (key == "address") {
-                    address = setVariableFromJsonValue<std::string>(value, validation_count);
+                    address = setVariableFromJsonValue<std::string>(value);
                 } else if (key == "port") {
-                    port = setVariableFromJsonValue<std::string>(value, validation_count);
+                    port = setVariableFromJsonValue<std::string>(value);
                 } else if (key == "root_html_file") {
-                    root_html_file = setVariableFromJsonValue<std::string>(value, validation_count);
+                    root_html_file = setVariableFromJsonValue<std::string>(value);
                 }
-            }
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "validation count: %lu\n", validation_count);
-            if (validation_count != obj->keys.size()) {
-                throw std::runtime_error("Failed to create HttpServerConfig from json object.");
             }
         }
 

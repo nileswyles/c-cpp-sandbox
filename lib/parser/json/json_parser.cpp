@@ -190,6 +190,7 @@ static void parseString(JsonArray * obj, Reader * r) {
             't'
             'u' hex hex hex hex    
         */
+       // lol....
         if (prev_c == '\\') {
             if (c == 'b') { // backspace
                 s += '\b';
@@ -241,10 +242,7 @@ static void parseImmediate(JsonArray * obj, Reader * r, std::string comp, JsonVa
     if (consumed == comp.size()) {
         loggerPrintf(LOGGER_DEBUG, "Parsed %s, @ %c\n", comp.c_str(), r->peekByte());
 
-        // kind of annoying but we want to parse null and not include it in intermediate structure...
-        if (value->type != NULL_TYPE) {
-            obj->addValue(value);
-        }
+        obj->addValue(value);
     } else {
         std::string msg = "Invalid immediate value. Throw away the whole object lol.";
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());

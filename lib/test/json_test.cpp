@@ -22,17 +22,12 @@ class Nested: public JsonBase {
         Nested * nested;
         Nested() = default;
         Nested(JsonObject * obj): Nested() {
-            size_t validation_count = 0;
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 JsonValue * value = obj->values.at(i);
                 if(key == "nested_name") {
-                    name = setVariableFromJsonValue<std::string>(value, validation_count);
+                    name = setVariableFromJsonValue<std::string>(value);
                 }
-            }
-            loggerPrintf(LOGGER_TEST_VERBOSE, "validation count: %lu\n", validation_count);
-            if (validation_count != obj->keys.size()) {
-                throw std::runtime_error("Failed to create User from json object.");
             }
         }
 
@@ -77,22 +72,20 @@ class User: public JsonBase {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if(key == "name") {
-                    name = setVariableFromJsonValue<std::string>(value, validation_count);
+                    name = setVariableFromJsonValue<std::string>(value);
                 } else if (key == "attributes") {
-                    attributes = setVariableFromJsonValue<std::string>(value, validation_count);
+                    attributes = setVariableFromJsonValue<std::string>(value);
                 } else if (key == "dec") {
-                    dec = setVariableFromJsonValue<double>(value, validation_count);
+                    dec = setVariableFromJsonValue<double>(value);
                 } else if (key == "arr") {
-                    setArrayVariablesFromJsonValue<bool>(value, arr, validation_count);
+                    setArrayVariablesFromJsonValue<bool>(value, arr);
+                } else if (key == "null_value") {
+                    loggerPrintf(LOGGER_TEST_VERBOSE, "Null Value.\n");
+                    // let's allow null values and handle during mapping and validation.
                 } else if (key == "nested") {
                     loggerPrintf(LOGGER_TEST_VERBOSE, "Nested type.\n");
-                    // nested = setVariableFromJsonValue<Nested>(value, validation_count);
-                    validation_count++;
+                    // nested = setVariableFromJsonValue<Nested>(value);
                 }
-            }
-            loggerPrintf(LOGGER_TEST_VERBOSE, "validation count: %lu\n", validation_count);
-            if (validation_count != expected_num_keys) {
-                throw std::runtime_error("Failed to create User from json object.");
             }
         }
 
@@ -188,7 +181,7 @@ static std::string createNestedArray(size_t length) {
 
 static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size_t expected_size) {
     try {
-        size_t i = 0;
+        printf("???\n");
         JsonObject * obj = (JsonObject *)parse(s);
         if (obj->type == OBJECT) {
             User user(obj, expected_size);
@@ -265,7 +258,7 @@ static void testJsonNestedArray(TestArg * t);
 static void testJsonEmptyObject(TestArg * t);
 static void testJsonObjectWithName(TestArg * t);
 static void testJsonObjectWithArray(TestArg * t);
-static void testJson(TestArg * t);
+static void testJsonAll(TestArg * t);
 
 // negative test cases, these should all cause the parser to through an exception...
 static void testJsonMalformedOpenObject(TestArg * t);
@@ -291,7 +284,7 @@ int main(int argc, char * argv[]) {
     t.addTest(testJsonEmptyObject);
     t.addTest(testJsonObjectWithName);
     t.addTest(testJsonObjectWithArray);
-    t.addTest(testJson);
+    t.addTest(testJsonAll);
 
     t.addTest(testJsonMalformedOpenObject);
     t.addTest(testJsonMalformedOpenArray);
@@ -394,7 +387,7 @@ static void testJsonObjectWithArray(TestArg * t) {
     parseObjectAndAssert(t, s, expected, 1);
 }
 
-static void testJson(TestArg * t) {
+static void testJsonAll(TestArg * t) {
     std::string s("{ \n");
     s += "\"name\":\"username\", \n";
     s += "\"attributes\":\"attributes for user\", \n";
@@ -415,7 +408,7 @@ static void testJson(TestArg * t) {
     expected.dec = 272727.1111;
     expected.nested = nested_obj;
 
-    parseObjectAndAssert(t, expected.toJsonString(), expected, 5);
+    parseObjectAndAssert(t, s, expected, 5);
 }
 
 

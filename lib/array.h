@@ -20,7 +20,8 @@
 namespace WylesLibs {
 
 constexpr size_t ARRAY_RECOMMENDED_INITIAL_CAP = 8;
-constexpr double RESIZE_FACTOR = 1.75;
+constexpr double UPSIZE_FACTOR = 1.75;
+constexpr double DOWNSIZE_FACTOR = 0.50;
 
 template<typename T>
 static inline T * newCArray(size_t size) {
@@ -86,7 +87,7 @@ class Array {
             T * new_buf = this->buf; 
             bool recapped = false;
             if (num_els + this->size() > this->cap()) {
-                size_t new_cap = (size_t)((num_els + this->size()) * RESIZE_FACTOR);
+                size_t new_cap = (size_t)((num_els + this->size()) * UPSIZE_FACTOR);
                 new_buf = newCArray<T>(new_cap);
                 if (new_buf == nullptr) {
                     return MEMORY_OPERATION_ERROR;
@@ -149,28 +150,44 @@ class Array {
                 delete ptr;
                 *this->e_cap -= 1;
             } else {
+                T * selected_buf = nullptr;
+                bool recapped = false;
+                size_t new_cap_threshold = this->cap() * DOWNSIZE_FACTOR;
+                size_t potential_new_cap = ((this->size() - num_els) * UPSIZE_FACTOR);
+                if (potential_new_cap < new_cap_threshold) {
+                    T * new_buf = newCArray<T>(potential_new_cap);
+                    // because of how new/delete work and we want to make sure the data is continuous, we'll need to reallocate...
+                    if (new_buf == nullptr) {
+                        return MEMORY_OPERATION_ERROR;
+                    } else {
+                        recapped = true;
+                        *this->e_cap = potential_new_cap;
+                        // if recapped, copy elements up until pos.
+                        //  the rest will be automatically intialized by remove operation... 
+                        selected_buf = new_buf;
+                        for (size_t i = 0; i < pos; i++) {
+                            selected_buf[i] = this->buf[i];
+                        }
+                    }
+                } else {
+                    // else, just remove, don't recap array...
+                    selected_buf = this->buf;
+                }
                 for (size_t i = pos; i < this->size(); i++) {
                     if (i + num_els < this->size()) {
-                        this->buf[i] = this->buf[i + num_els];
+                        // if removing last element, just leave it... decrementing size should be enough...
+                        selected_buf[i] = this->buf[i + num_els];
                     }
                 }
-                // downsize cap by num elements removed...
-
-                // alright, so since we want to make sure the data is continuous, we'll need to reallocate...
-                //  so, maybe don't run recapping everytime...
-                //    maybe if size < THRESHOLD relative to cap...
-
-                //  it's complicated and I think that's why I decided to implement it that way originally?
-
-                //  hybrid approach? if resize, run old algo... else run current...
-                for (size_t i = this->cap() - num_els - 1; i < this->cap(); i++) {
-                    printf("????\n"); // damn is right....
-                    delete &(this->buf[i]);
+                if (recapped) {
+                    delete[] this->buf;
+                    this->buf = selected_buf;
                 }
-                *this->e_cap -= num_els;
             }
 
+            printf("Removing element... %ld\n", *this->e_size);
             *this->e_size -= num_els;
+            printf("Removed element... %ld\n", *this->e_size);
 
             return OPERATION_SUCCESS;
         }
@@ -305,7 +322,7 @@ class Array<const char *> {
             char ** new_buf = this->buf; 
             bool recapped = false;
             if (num_els + this->size() > this->cap()) {
-                size_t new_cap = (size_t)((num_els + this->size()) * RESIZE_FACTOR);
+                size_t new_cap = (size_t)((num_els + this->size()) * UPSIZE_FACTOR);
                 new_buf = newCArray<char *>(new_cap);
                 if (new_buf == nullptr) {
                     return MEMORY_OPERATION_ERROR;

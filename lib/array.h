@@ -80,7 +80,7 @@ class Array {
         }
         operation_result insert(const size_t pos, const T * els, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos > this->size()) return OPERATION_ERROR;
+            if (pos < 0 || pos >= this->size()) return OPERATION_ERROR;
 
             loggerPrintf(LOGGER_DEBUG, "num_els: %ld, size: %ld, e_cap: %ld, pos: %ld\n", num_els, this->size(), this->cap(), pos);
 
@@ -185,9 +185,7 @@ class Array {
                 }
             }
 
-            printf("Removing element... %ld\n", *this->e_size);
             *this->e_size -= num_els;
-            printf("Removed element... %ld\n", *this->e_size);
 
             return OPERATION_SUCCESS;
         }

@@ -65,13 +65,12 @@ class User: public JsonBase {
 
         User() = default;
         User(JsonObject * obj, size_t expected_num_keys): User() {
-            size_t validation_count = 0;
             loggerPrintf(LOGGER_TEST_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 loggerPrintf(LOGGER_TEST_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
-                if(key == "name") {
+                if (key == "name") {
                     name = setVariableFromJsonValue<std::string>(value);
                 } else if (key == "attributes") {
                     attributes = setVariableFromJsonValue<std::string>(value);

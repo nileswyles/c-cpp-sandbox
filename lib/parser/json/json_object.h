@@ -26,6 +26,7 @@ class JsonObject: public JsonValue {
 
         void addKey(std::string key) {
             this->keys.push_back(key);
+            loggerPrintf(LOGGER_DEBUG, "Added json key! @ %s\n", key.c_str());
         }
 
         std::string toJsonString();

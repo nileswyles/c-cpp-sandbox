@@ -170,8 +170,10 @@ int main(int argc, char * argv[]) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
             server_listen(argv[1], atoi(argv[2]), connectionHandler);
         } catch (const std::exception& e) {
-            // Again, low overhead.... so, should be fine...
+            // redundant try/catch? let's show where exception handled...
             loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
+            // exit program same way as if this weren't caught...
+            throw e;
         }
         ret = 0;
     } 

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdexcept>
 
 #include "result.h"
 
@@ -39,7 +40,6 @@ class Array {
             buf[pos] = el;
         }
     public:
-        // hmm... need to think about this again... 
         T * buf;
         Array() : Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         Array(const size_t initial_cap) : e_cap(new size_t(initial_cap)), e_size(new size_t(0)), buf(newCArray<T>(initial_cap)), instance_count(new size_t(1)) {}
@@ -48,7 +48,6 @@ class Array {
             // printf("Buf..., %p\n", this->buf);
             (*this->instance_count)--;
             if (*this->instance_count == 0) {
-                // printf("Freeing\n");
                 delete[] buf;
                 delete e_cap;
                 delete e_size;
@@ -62,25 +61,28 @@ class Array {
             // this is really only useful for testing.
             return *this->e_cap;
         }
-        operation_result uniqueAppend(T& el) {
+        Array<T>& uniqueAppend(T& el) {
             if (this->contains(el)) { 
-                return OPERATION_ERROR;
             } else {
                 return this->append(&el, 1);
             }
         }
-        operation_result append(T& el) {
+        Array<T>& append(T& el) {
             return this->append(&el, 1);
         }
-        operation_result append(const T * els, const size_t num_els) {
+        Array<T>& append(const T * els, const size_t num_els) {
             return this->insert(this->size(), els, num_els);
         }
-        operation_result insert(const size_t pos, const T& el) {
+        Array<T>& insert(const size_t pos, const T& el) {
             return this->insert(pos, el, 1);
         }
-        operation_result insert(const size_t pos, const T * els, const size_t num_els) {
+        Array<T>& insert(const size_t pos, const T * els, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos >= this->size()) return OPERATION_ERROR;
+            if (pos < 0 || pos > this->size()) {
+                std::string msg = "Position out of range.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
 
             loggerPrintf(LOGGER_DEBUG, "num_els: %ld, size: %ld, e_cap: %ld, pos: %ld\n", num_els, this->size(), this->cap(), pos);
 
@@ -90,7 +92,10 @@ class Array {
                 size_t new_cap = (size_t)((num_els + this->size()) * UPSIZE_FACTOR);
                 new_buf = newCArray<T>(new_cap);
                 if (new_buf == nullptr) {
-                    return MEMORY_OPERATION_ERROR;
+                    // if no bad_alloc thrown? lol whatever...
+                    std::string msg = "Failed to allocate new array.";
+                    loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
                 } else {
                     recapped = true;
                     *this->e_cap = new_cap;
@@ -105,7 +110,10 @@ class Array {
             
             T * bucket = newCArray<T>(num_els);
             if (bucket == nullptr) {
-                return MEMORY_OPERATION_ERROR;
+                // if no bad_alloc thrown? lol whatever...
+                std::string msg = "Failed to allocate new array.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
             }
             size_t bucket_push = 0;
             size_t bucket_pop = 0;
@@ -135,59 +143,59 @@ class Array {
             }
             *this->e_size += num_els;
 
-            return OPERATION_SUCCESS;
+            return *this;
         }
-        operation_result remove(const size_t pos) {
+        Array<T>& remove(const size_t pos) {
             return this->remove(pos, 1);
         }
-        operation_result remove(const size_t pos, const size_t num_els) {
+        Array<T>& remove(const size_t pos, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos + num_els > this->size()) return OPERATION_ERROR;
+            if (pos < 0 || pos + num_els > this->size()) {
+                std::string msg = "Position out of range.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
 
-            if (pos == 0 && num_els == 1) {
-                T * ptr = this->buf;
-                this->buf++;
-                delete ptr;
-                *this->e_cap -= 1;
-            } else {
-                T * selected_buf = nullptr;
-                bool recapped = false;
-                size_t new_cap_threshold = this->cap() * DOWNSIZE_FACTOR;
-                size_t potential_new_cap = ((this->size() - num_els) * UPSIZE_FACTOR);
-                if (potential_new_cap < new_cap_threshold) {
-                    T * new_buf = newCArray<T>(potential_new_cap);
-                    // because of how new/delete work and we want to make sure the data is continuous, we'll need to reallocate...
-                    if (new_buf == nullptr) {
-                        return MEMORY_OPERATION_ERROR;
-                    } else {
-                        recapped = true;
-                        *this->e_cap = potential_new_cap;
-                        // if recapped, copy elements up until pos.
-                        //  the rest will be automatically intialized by remove operation... 
-                        selected_buf = new_buf;
-                        for (size_t i = 0; i < pos; i++) {
-                            selected_buf[i] = this->buf[i];
-                        }
-                    }
+            T * selected_buf = nullptr;
+            bool recapped = false;
+            size_t new_cap_threshold = this->cap() * DOWNSIZE_FACTOR;
+            size_t potential_new_cap = ((this->size() - num_els) * UPSIZE_FACTOR);
+            if (potential_new_cap < new_cap_threshold) {
+                T * new_buf = newCArray<T>(potential_new_cap);
+                // because of how new/delete work and we want to make sure the data is continuous, we'll need to reallocate...
+                if (new_buf == nullptr) {
+                    // if no bad_alloc thrown? lol whatever...
+                    std::string msg = "Failed to allocate new array.";
+                    loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
                 } else {
-                    // else, just remove, don't recap array...
-                    selected_buf = this->buf;
-                }
-                for (size_t i = pos; i < this->size(); i++) {
-                    if (i + num_els < this->size()) {
-                        // if removing last element, just leave it... decrementing size should be enough...
-                        selected_buf[i] = this->buf[i + num_els];
+                    recapped = true;
+                    *this->e_cap = potential_new_cap;
+                    // if recapped, copy elements up until pos.
+                    //  the rest will be automatically intialized by remove operation... 
+                    selected_buf = new_buf;
+                    for (size_t i = 0; i < pos; i++) {
+                        selected_buf[i] = this->buf[i];
                     }
                 }
-                if (recapped) {
-                    delete[] this->buf;
-                    this->buf = selected_buf;
+            } else {
+                // else, just remove, don't recap array...
+                selected_buf = this->buf;
+            }
+            for (size_t i = pos; i < this->size(); i++) {
+                if (i + num_els < this->size()) {
+                    // if removing last element, just leave it... decrementing size should be enough...
+                    selected_buf[i] = this->buf[i + num_els];
                 }
+            }
+            if (recapped) {
+                delete[] this->buf;
+                this->buf = selected_buf;
             }
 
             *this->e_size -= num_els;
 
-            return OPERATION_SUCCESS;
+            return *this;
         }
         bool contains(const T& el) {
             return find(el) != -1;
@@ -213,13 +221,13 @@ class Array {
         T& back() {
             return this->buf[this->size()-1];
         }
-        Array& popFront() {
+        Array<T>& removeFront() {
             remove(0);
-            return *this; // lmaooo...
+            return *this;
         }
-        Array& popBack() {
+        Array<T>& removeBack() {
             remove(this->size()-1);
-            return *this; // lmaooo...
+            return *this;
         }
         std::string toString() {
             T nul = {0};
@@ -269,6 +277,7 @@ class Array<const char *> {
     private:
         size_t * e_cap;
         size_t * e_size;
+        size_t * instance_count;
         void addElement(char ** buffer, const size_t pos, const char * el) {
             char * new_cstring = newCArray<char>(strlen(el) + 1);
             strcpy(new_cstring, el);
@@ -276,7 +285,6 @@ class Array<const char *> {
             buffer[pos] = new_cstring;
         }
     public:
-        size_t * instance_count;
         char ** buf;
         Array() : Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         Array(const size_t initial_cap) : e_cap(new size_t(initial_cap)), e_size(new size_t(0)), buf(newCArray<char *>(initial_cap)), instance_count(new size_t(1)) {}
@@ -285,7 +293,6 @@ class Array<const char *> {
             // printf("Buf..., %p\n", this->buf);
             (*this->instance_count)--;
             if (*this->instance_count == 0) {
-                // printf("Freeing\n");
                 for (size_t i = 0; i < this->size(); i++) {
                     delete[] buf[i];
                 }
@@ -302,18 +309,22 @@ class Array<const char *> {
             // this is really only useful for testing.
             return *this->e_cap;
         }
-        operation_result append(const char * el) {
+        Array<const char *>& append(const char * el) {
             return this->append(&el, 1);
         }
-        operation_result append(const char ** els, const size_t num_els) {
+        Array<const char *>& append(const char ** els, const size_t num_els) {
             return this->insert(this->size(), els, num_els);
         }
-        operation_result insert(const size_t pos, const char * el) {
+        Array<const char *>& insert(const size_t pos, const char * el) {
             return this->insert(pos, &el, 1);
         }
-        operation_result insert(const size_t pos, const char ** els, const size_t num_els) {
+        Array<const char *>& insert(const size_t pos, const char ** els, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos > this->size()) return OPERATION_ERROR;
+            if (pos < 0 || pos >= this->size()) {
+                std::string msg = "Position out of range.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
 
             loggerPrintf(LOGGER_DEBUG, "num_els: %ld, size: %ld, e_cap: %ld, pos: %ld\n", num_els, this->size(), this->cap(), pos);
 
@@ -323,7 +334,10 @@ class Array<const char *> {
                 size_t new_cap = (size_t)((num_els + this->size()) * UPSIZE_FACTOR);
                 new_buf = newCArray<char *>(new_cap);
                 if (new_buf == nullptr) {
-                    return MEMORY_OPERATION_ERROR;
+                    // if no bad_alloc thrown? lol whatever...
+                    std::string msg = "Failed to allocate new array.";
+                    loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
                 } else {
                     recapped = true;
                     *this->e_cap = new_cap;
@@ -338,7 +352,10 @@ class Array<const char *> {
 
             char ** bucket = newCArray<char *>(num_els);
             if (bucket == nullptr) {
-                return MEMORY_OPERATION_ERROR;
+                // if no bad_alloc thrown? lol whatever...
+                std::string msg = "Failed to allocate new array.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
             }
             size_t bucket_push = 0;
             size_t bucket_pop = 0;
@@ -373,36 +390,59 @@ class Array<const char *> {
                  loggerPrintf(LOGGER_DEBUG, "%s\n", this->buf[i]);
             }
 
-            return OPERATION_SUCCESS;
+            return *this;
         }
-        operation_result remove(const size_t pos) {
+        Array<const char *>& remove(const size_t pos) {
             return this->remove(pos, 1);
         }
-        operation_result remove(const size_t pos, const size_t num_els) {
+        Array<const char *>& remove(const size_t pos, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos + num_els > this->size()) return OPERATION_ERROR;
+            if (pos < 0 || pos + num_els > this->size()) {
+                std::string msg = "Position out of range.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
 
-            if (pos == 0 && num_els == 1) {
-                char ** ptr = this->buf;
-                this->buf++;
-                delete ptr;
-                *this->e_cap -= 1;
-            } else {
-                for (size_t i = pos; i < this->size(); i++) {
-                    if (i + num_els < this->size()) {
-                        this->buf[i] = this->buf[i + num_els];
+            char ** selected_buf = nullptr;
+            bool recapped = false;
+            size_t new_cap_threshold = this->cap() * DOWNSIZE_FACTOR;
+            size_t potential_new_cap = ((this->size() - num_els) * UPSIZE_FACTOR);
+            if (potential_new_cap < new_cap_threshold) {
+                char ** new_buf = newCArray<char *>(potential_new_cap);
+                // because of how new/delete work and we want to make sure the data is continuous, we'll need to reallocate...
+                if (new_buf == nullptr) {
+                    // if no bad_alloc thrown? lol whatever...
+                    std::string msg = "Failed to allocate new array.";
+                    loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                } else {
+                    recapped = true;
+                    *this->e_cap = potential_new_cap;
+                    // if recapped, copy elements up until pos.
+                    //  the rest will be automatically intialized by remove operation... 
+                    selected_buf = new_buf;
+                    for (size_t i = 0; i < pos; i++) {
+                        selected_buf[i] = this->buf[i];
                     }
                 }
-                // downsize cap by num elements removed...
-                for (size_t i = this->cap() - num_els - 1; i < this->cap(); i++) {
-                    delete &(this->buf[i]);
+            } else {
+                // else, just remove, don't recap array...
+                selected_buf = this->buf;
+            }
+            for (size_t i = pos; i < this->size(); i++) {
+                if (i + num_els < this->size()) {
+                    // if removing last element, just leave it... decrementing size should be enough...
+                    selected_buf[i] = this->buf[i + num_els];
                 }
-                *this->e_cap -= num_els;
+            }
+            if (recapped) {
+                delete[] this->buf;
+                this->buf = selected_buf;
             }
 
             *this->e_size -= num_els;
 
-            return OPERATION_SUCCESS;
+            return *this;
         }
         bool contains(const char * el) {
             for (size_t i = 0; i < this->size(); i++) {

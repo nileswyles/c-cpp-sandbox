@@ -36,7 +36,7 @@ std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(
             // new line instead of delim, so we are done.
             break;
         }
-        data[field_name.popBack().toString()] = field_value.popBack().toString();
+        data[field_name.removeBack().toString()] = field_value.removeBack().toString();
     }
     return data;
 } 

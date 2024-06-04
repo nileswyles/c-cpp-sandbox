@@ -21,7 +21,7 @@ static Url parseUrl(Reader * reader) {
         // query = key=value&key2=value2
         url.query_map = KeyValue::parse(reader, '&');
     }
-    url.path = path.popBack().toString();
+    url.path = path.removeBack().toString();
 
     return url;
 }
@@ -30,9 +30,9 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
     if (request == NULL || reader == NULL) {
         throw std::runtime_error("lol....");
     }
-    request->method = reader->readUntil(" ").popBack().toString();
+    request->method = reader->readUntil(" ").removeBack().toString();
     request->url = parseUrl(reader);
-    request->version = reader->readUntil("\n").popBack().toString();
+    request->version = reader->readUntil("\n").removeBack().toString();
 
     request->content_length = -1;
     int field_idx = 0; 
@@ -44,7 +44,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
         if (field_name_array.back() == '\n') {
             break;
         }
-        std::string field_name = field_name_array.popBack().toString();
+        std::string field_name = field_name_array.removeBack().toString();
         ReaderTaskIgnore value_operation("\t ");
         // TODO:
         // if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name)) {
@@ -55,7 +55,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
         while (delimeter != '\n') {
             Array<uint8_t> field_value_array = reader->readUntil(",\n", &value_operation);
             delimeter = field_value_array.back();
-            field_value = field_value_array.popBack().toString();
+            field_value = field_value_array.removeBack().toString();
             request->fields[field_name].append(field_value);
         }
         field_idx++;

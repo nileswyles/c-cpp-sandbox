@@ -356,14 +356,14 @@ static bool parseKey(JsonObject * obj, Reader * r) {
     ReaderTaskExtract extract('"', '"');
     Array<uint8_t> key = r->readUntil(":}", &extract);
 
-    char until = (char)key.back();
+    uint8_t until = key.back();
     printf("BACK: %c\n", until);
     loggerPrintf(LOGGER_DEBUG, "Found end of object. %s\n", key.toString().c_str());
-    if (until == '}') {
+    if (until == (uint8_t)'}') {
         loggerPrintf(LOGGER_DEBUG, "Found end of object. %s\n", key.toString().c_str());
         return false;
     }
-    std::string key_string = key.popBack().toString();
+    std::string key_string = key.removeBack().toString();
     size_t size = key_string.size();
     if (size == 0) {
         std::string msg = "Empty key string found.";

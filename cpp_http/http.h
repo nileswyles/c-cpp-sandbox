@@ -30,6 +30,9 @@ namespace WylesLibs::Http {
 //     "upgrade"
 // };
 
+// boundary: MultipartFile
+static std::map<std::string, MultipartFile> filesMap;
+
 class Url {
     public:
         std::string path;

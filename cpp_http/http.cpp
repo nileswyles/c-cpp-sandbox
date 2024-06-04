@@ -80,9 +80,21 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
 
             // yeah, might aswell file everything...
 
-            //   
-            //  
             //  womp womp womp womp
+
+            // moving on....
+            // multipart file lookup/create.
+            // parse(reader, multipartfile);
+            //  - parses and writes to file...
+            // 
+            //  multipartfile added to http request...  
+
+            // processor dispatch function.
+            //  if multipartfile.full and http.status_code == Finished {
+            // } 
+
+            //  
+            //
         } else if ("multipart/formdata" == request->fields["content-type"].front()) { // less important
         } else {
             request->content = reader->readBytes(request->content_length);

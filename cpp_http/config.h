@@ -2,6 +2,7 @@
 #define WYLESLIBS_HTTP_SERVER_CONFIG_H
 
 #include "parser/json/json.h"
+#include "server_config.h"
 #include "file.h"
 
 using namespace WylesLibs;
@@ -9,7 +10,7 @@ using namespace WylesLibs::Parser::Json;
 
 namespace WylesLibs::Http {
 
-class HttpServerConfig: JsonBase {
+class HttpServerConfig: public ServerConfig {
     public:
         std::string static_path;
         std::string root_html_file;
@@ -17,9 +18,8 @@ class HttpServerConfig: JsonBase {
         std::string port;
 
         HttpServerConfig() = default;
-        HttpServerConfig(std::string filepath): 
-            HttpServerConfig((JsonObject *)parseFile(filepath)) {}
-        HttpServerConfig(JsonObject * obj) {
+        HttpServerConfig(std::string filepath): HttpServerConfig((JsonObject *)parseFile(filepath)) {}
+        HttpServerConfig(JsonObject * obj): ServerConfig(obj) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);

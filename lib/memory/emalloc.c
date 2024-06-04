@@ -80,13 +80,17 @@ extern void efree(void * ptr) {
 
     if (0 <= index && index < DYNAMIC_MEMORY_SIZE) {
         MemoryHeapNode * freed = memoryHeapPop(&used_root_node, ptrHeapPopCondition, &index);
-        MemoryHeapNode * found_contigious = memoryHeapPop(&freed_root_node, mergeHeapPopCondition, &index);
-        if (found_contigious == NULL) {
-            memoryHeapPush(&freed_root_node, freed);
-        } else {
-            found_contigious->block_size += freed->block_size;
-            memoryHeapPush(&freed_root_node, found_contigious);
+        // TODO: Womp womp womp... also, thank god I don't need to free sub-blocks of existing used blocks. 
+        //  At least for now? Further review malloc/free - new/delete documentation.
+        if (freed != NULL) {
+            MemoryHeapNode * found_contigious = memoryHeapPop(&freed_root_node, mergeHeapPopCondition, &index);
+            if (found_contigious == NULL) {
+                memoryHeapPush(&freed_root_node, freed);
+            } else {
+                found_contigious->block_size += freed->block_size;
+                memoryHeapPush(&freed_root_node, found_contigious);
+            }
+            // yeah, this is actually pretty clean! I like the solution, assuming that mergeHeadPopCondition stuff works.
         }
-        // yeah, this is actually pretty clean! I like the solution, assuming that mergeHeadPopCondition stuff works.
     }
 }

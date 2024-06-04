@@ -28,12 +28,11 @@ $ROOT_DIR/lib/parser/json/json_parser.cpp
 $ROOT_DIR/lib/parser/json/json_mapper.cpp
 $ROOT_DIR/lib/parser/json/json_object.cpp
 $ROOT_DIR/lib/parser/json/json_array.cpp
-$ROOT_DIR/lib/c/array.c
 $ROOT_DIR/lib/test/tester.cpp
 $ROOT_DIR/lib/reader/reader.cpp
 "
 
 TEST_PATH=$ROOT_DIR/out/json_test.out
 rm $TEST_PATH
-g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT $DEFINES -Wno-pointer-arith -std=c++23 -o $TEST_PATH
+g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT $DEFINES -std=c++23 -o $TEST_PATH
 exec $TEST_PATH $TEST_ARG

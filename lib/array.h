@@ -27,6 +27,8 @@ static inline T * newCArray(size_t size) {
     return (T *) new T[size];
 }
 
+// TODO: delete
+
 // TODO: exceptions...
 template<typename T>
 class Array {
@@ -139,14 +141,29 @@ class Array {
         operation_result remove(const size_t pos) {
             return this->remove(pos, 1);
         }
-        // TODO: resize (free some allocated blocks in array...) after remove, re-adjust cap.
         operation_result remove(const size_t pos, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos >= this->size()) return OPERATION_ERROR;
+            if (pos < 0 || pos + num_els > this->size()) return OPERATION_ERROR;
 
-            for (size_t i = pos + num_els; i < this->size(); i++) {
-                this->buf[i - num_els] = this->buf[i];
+            if (pos == 0 && num_els == 1) {
+                T * ptr = this->buf;
+                this->buf++;
+                delete ptr;
+                *this->e_cap -= 1;
+            } else {
+                for (size_t i = pos; i < this->size(); i++) {
+                    if (i + num_els < this->size()) {
+                        this->buf[i] = this->buf[i + num_els];
+                    }
+                }
+                // downsize cap by num elements removed...
+                for (size_t i = this->cap() - num_els - 1; i < this->cap(); i++) {
+                    printf("????\n"); // damn is right....
+                    delete &(this->buf[i]);
+                }
+                *this->e_cap -= num_els;
             }
+
             *this->e_size -= num_els;
 
             return OPERATION_SUCCESS;
@@ -174,6 +191,10 @@ class Array {
         }
         T& back() {
             return this->buf[this->size()-1];
+        }
+        Array& popFront() {
+            remove(0);
+            return *this; // lmaooo...
         }
         Array& popBack() {
             remove(this->size()-1);
@@ -338,11 +359,26 @@ class Array<const char *> {
         }
         operation_result remove(const size_t pos, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos >= this->size()) return OPERATION_ERROR;
+            if (pos < 0 || pos + num_els > this->size()) return OPERATION_ERROR;
 
-            for (size_t i = pos + num_els; i < this->size(); i++) {
-                this->buf[i - num_els] = this->buf[i];
+            if (pos == 0 && num_els == 1) {
+                char ** ptr = this->buf;
+                this->buf++;
+                delete ptr;
+                *this->e_cap -= 1;
+            } else {
+                for (size_t i = pos; i < this->size(); i++) {
+                    if (i + num_els < this->size()) {
+                        this->buf[i] = this->buf[i + num_els];
+                    }
+                }
+                // downsize cap by num elements removed...
+                for (size_t i = this->cap() - num_els - 1; i < this->cap(); i++) {
+                    delete &(this->buf[i]);
+                }
+                *this->e_cap -= num_els;
             }
+
             *this->e_size -= num_els;
 
             return OPERATION_SUCCESS;

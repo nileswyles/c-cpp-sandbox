@@ -356,9 +356,11 @@ static bool parseKey(JsonObject * obj, Reader * r) {
     ReaderTaskExtract extract('"', '"');
     Array<uint8_t> key = r->readUntil(":}", &extract);
 
-    // This is actually the more correct way to check this... why you no work?
-    printf("BACK: %c\n", (char)key.back());
-    if ((char)key.back() == '}') {
+    char until = (char)key.back();
+    printf("BACK: %c\n", until);
+    loggerPrintf(LOGGER_DEBUG, "Found end of object. %s\n", key.toString().c_str());
+    if (until == '}') {
+        loggerPrintf(LOGGER_DEBUG, "Found end of object. %s\n", key.toString().c_str());
         return false;
     }
     std::string key_string = key.popBack().toString();
@@ -371,8 +373,6 @@ static bool parseKey(JsonObject * obj, Reader * r) {
         std::string msg = "Key string to loooooonnng!";
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
-    // } else if (key_string == "}") {
-    //     return false;
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s\n", key_string.c_str());

@@ -16,9 +16,8 @@
 
 #include "file.h"
 
-// lol, yeah think about this... there aren't that many items...
 #include <unordered_map>
-// TODO: how to keep imports clean? don't want to rely on preprocessor stuff.?
+#include <map>
 
 #define HTTP_FIELD_MAX 64
 
@@ -43,17 +42,13 @@ class HttpRequest {
         Url url;
         std::string version;
         
-        std::unordered_map<std::string, Array<std::string>> fields;
-        std::unordered_map<std::string, Array<std::string>> cookies;
-        // TODO:
-        // if content-type == then different types?
-        //  JsonObject content;
-        //  MultipartFile content;
-        //  then use reader to parse json?
+        std::map<std::string, Array<std::string>> fields;
+        std::map<std::string, Array<std::string>> cookies;
 
-        //  update json parser to support both string and reader?
-        Array<uint8_t> content;
         size_t content_length;
+        JsonValue * json_content;
+        std::unordered_map<std::string, std::string> form_content;
+        Array<uint8_t> content;
 
         void print() {
             // printf("%s %s %s\n", this->method, this->path, this->version);

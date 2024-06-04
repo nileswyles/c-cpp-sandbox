@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_HTTP_SERVER_CONFIG_H
 #define WYLESLIBS_HTTP_SERVER_CONFIG_H
 
-#include "json/json.h"
+#include "parser/json/json.h"
 #include "file.h"
 
 using namespace WylesLibs;
@@ -16,10 +16,9 @@ class HttpServerConfig: JsonBase {
         std::string address;
         std::string port;
 
-        HttpServerConfig() {}
-        // file sig should support strings... 
+        HttpServerConfig() = default;
         HttpServerConfig(std::string filepath): 
-            HttpServerConfig((JsonObject *)parse(File::read(filepath).toString())) {}
+            HttpServerConfig((JsonObject *)parseFile(filepath)) {}
         HttpServerConfig(JsonObject * obj) {
             size_t validation_count = 0;
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());

@@ -20,8 +20,8 @@ class Nested: public JsonBase {
     public:
         std::string name;
         Nested * nested;
-        Nested(): nested(nullptr) {}
-        Nested(JsonObject * obj): nested(nullptr) {
+        Nested() = default;
+        Nested(JsonObject * obj): Nested() {
             size_t validation_count = 0;
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
@@ -68,9 +68,8 @@ class User: public JsonBase {
         std::vector<bool> arr;
         Nested nested;
 
-        // TODO: ?
-        User() {}
-        User(JsonObject * obj) {
+        User() = default;
+        User(JsonObject * obj, size_t expected_num_keys): User() {
             size_t validation_count = 0;
             loggerPrintf(LOGGER_TEST_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
@@ -92,7 +91,7 @@ class User: public JsonBase {
                 }
             }
             loggerPrintf(LOGGER_TEST_VERBOSE, "validation count: %lu\n", validation_count);
-            if (validation_count != obj->keys.size()) {
+            if (validation_count != expected_num_keys) {
                 throw std::runtime_error("Failed to create User from json object.");
             }
         }
@@ -192,7 +191,7 @@ static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size
         size_t i = 0;
         JsonObject * obj = (JsonObject *)parse(s);
         if (obj->type == OBJECT) {
-            User user(obj);
+            User user(obj, expected_size);
             loggerPrintf(LOGGER_TEST_VERBOSE, "JSON To Parse: \n");
             loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(s).c_str());
             loggerPrintf(LOGGER_TEST_VERBOSE, "Parsed JSON - User Class: \n");

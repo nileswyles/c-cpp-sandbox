@@ -1,6 +1,6 @@
 #include "parser/keyvalue/parse.h"
 
-map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(std::string s, char delim) {
+std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(std::string s, char delim) {
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
     if (s.size() > MAX_LENGTH_OF_KEYVALUE_STRING) {
@@ -13,14 +13,19 @@ map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(std::string s, 
 }
 
 // ! IMPORTANT - Newline after kv string is required.
-map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(Reader * reader, char delim) {
-    map<std::string, std::string> data;
+std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(Reader * reader, char delim) {
+    std::unordered_map<std::string, std::string> data;
 
     std::string delim_string = "\n";
     if (delim != '\n') {
         delim_string += delim;
     }
     while (1) {
+        //  TODO: allow specifying
+        //      key/value delim
+        //      =, :, etc...
+
+        //      also, trim whitespace?
         Array<uint8_t> field_name = reader->readUntil("=\n");
         if (field_name.back() == '\n') {
             // empty line... we are done...

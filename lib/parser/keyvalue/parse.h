@@ -4,7 +4,7 @@
 #include "reader/reader.h"
 
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <stdexcept>
 
 #ifndef LOGGER_JSON_PARSER
@@ -18,11 +18,9 @@
 #define MAX_LENGTH_OF_KEYVALUE_STRING 1024
 
 namespace WylesLibs::Parser::KeyValue {
-
-extern map<std::string, std::string> parse(std::string s, char delim);
+extern std::unordered_map<std::string, std::string> parse(std::string s, char delim);
 // ! IMPORTANT - Newline after kv string is required.
-extern map<std::string, std::string> parse(Reader * reader, char delim);
-
+extern std::unordered_map<std::string, std::string> parse(Reader * reader, char delim);
 }
 
 #endif

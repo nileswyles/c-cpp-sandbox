@@ -2,13 +2,14 @@
 #include "paths.h"
 #include <iostream>
 
-#include "keyvalue/keyvalue.h"
+#include "parser/keyvalue/parse.h"
 // #include <openssl/sha.h>
 // #include <openssl/bio.h>
 // #include <openssl/evp.h>
 
 using namespace WylesLibs;
 using namespace WylesLibs::Http;
+using namespace WylesLibs::Parser;
 
 #define HTTP_FIELD_MAX 64
 
@@ -18,7 +19,7 @@ static Url parseUrl(Reader * reader) {
     Array<uint8_t> path = reader->readUntil("?\n");
     if ((char)path.back() == '?') {
         // query = key=value&key2=value2
-        url.query_map = KeyValue::parse(reader);
+        url.query_map = KeyValue::parse(reader, '&');
     }
     url.path = path.popBack().toString();
 
@@ -66,9 +67,26 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
     if (field_idx == HTTP_FIELD_MAX) {
         throw std::runtime_error("Too many fields in request.");
     }
-    if (request->content_length != -1) {
-        // printf("request->content: %lx\n", request->content);
-        request->content = reader->readBytes(request->content_length);
+    if (request->method == "POST" && request->content_length != -1) {
+        if ("application/json" == request->fields["content-type"].front()) {
+            size_t i = 0;
+            request->json_content = Json::parse(reader, i);
+        } else if ("application/x-www-form-urlencoded" == request->fields["content-type"].front()) {
+            request->form_content = KeyValue::parse(reader, '&');
+        } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
+            // alright, so we want to parse and buffer content... but parse and call request handler only after all of the content has been received...
+            //  so, need to store, requests in progress?
+            //  hmm... so, if file being uploaded is gig's, do we want to write to disk? Overlycomplicated? 
+
+            // yeah, might aswell file everything...
+
+            //   
+            //  
+            //  womp womp womp womp
+        } else if ("multipart/formdata" == request->fields["content-type"].front()) { // less important
+        } else {
+            request->content = reader->readBytes(request->content_length);
+        }
         // printf("request->content: %lx\n", request->content);
     }
 }

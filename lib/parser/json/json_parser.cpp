@@ -1,12 +1,11 @@
 #include <stdbool.h>
 #include <fcntl.h>
-#include "string_utils.h"
+#include <unistd.h>
 
+#include "string_utils.h"
 #include "json_parser.h"
 #include "json_array.h"
 #include "json_object.h"
-
-// #include "message_formatter.h"
 
 #ifndef LOGGER_JSON_PARSER
 #define LOGGER_JSON_PARSER 1
@@ -380,6 +379,8 @@ static bool parseKey(JsonObject * obj, Reader * r) {
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s\n", key_string.c_str());
 
+    obj->addKey(key_string);
+
     return true;
 }
 
@@ -387,7 +388,6 @@ static void parseObject(JsonObject * obj, Reader * r) {
     char c = r->readByte();
     while (c != '}') {
         if (c == '{' || c == ',') {
-            loggerPrintf(LOGGER_DEBUG, "New Object Entry\n");
             if (!parseKey(obj, r)) {
                 // end of obj.
                 break;
@@ -410,7 +410,9 @@ extern JsonValue * WylesLibs::Parser::Json::parseFile(std::string file_path) {
     }
     size_t i = 0;
     Reader r(fd);
-    return parse(&r, i);
+    JsonValue * json = parse(&r, i);
+    close(fd);
+    return json;
 }
 
 extern JsonValue * WylesLibs::Parser::Json::parse(std::string json) {

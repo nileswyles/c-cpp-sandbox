@@ -5,8 +5,11 @@
 
 #include <stdio.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <string>
+
+using namespace WylesLibs;
 
 namespace WylesLibs::File {
 
@@ -24,7 +27,9 @@ static WylesLibs::Array<uint8_t> read(std::string file_path) {
         return WylesLibs::Array<uint8_t>();
     }
     Reader r(fd);
-    return r.readUntil((char)EOF, true);
+    Array<uint8_t> file = r.readUntil((char)EOF, true);
+    close(fd);
+    return file;
 }
 
 }

@@ -8,6 +8,13 @@
 #include <stdlib.h>
 
 #include "result.h"
+
+#ifndef LOGGER_ARRAY
+#define LOGGER_ARRAY 1
+#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_ARRAY
 #include "logger.h"
 
 namespace WylesLibs {

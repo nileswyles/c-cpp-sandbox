@@ -11,6 +11,9 @@
 // TODO:
 //  yeah, add more tests...
 
+// ALSO, in practice, maybe not override the global new/delete functions... if that is ever a thing...
+//  instead implement for select classes?
+
 int main() {
     // uint16_t size = 65536 / 4;
     uint16_t size = DYNAMIC_MEMORY_SIZE;

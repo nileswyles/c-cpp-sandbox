@@ -27,8 +27,6 @@ static inline T * newCArray(size_t size) {
     return (T *) new T[size];
 }
 
-// TODO: delete
-
 // TODO: exceptions...
 template<typename T>
 class Array {
@@ -157,6 +155,14 @@ class Array {
                     }
                 }
                 // downsize cap by num elements removed...
+
+                // alright, so since we want to make sure the data is continuous, we'll need to reallocate...
+                //  so, maybe don't run recapping everytime...
+                //    maybe if size < THRESHOLD relative to cap...
+
+                //  it's complicated and I think that's why I decided to implement it that way originally?
+
+                //  hybrid approach? if resize, run old algo... else run current...
                 for (size_t i = this->cap() - num_els - 1; i < this->cap(); i++) {
                     printf("????\n"); // damn is right....
                     delete &(this->buf[i]);

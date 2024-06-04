@@ -20,7 +20,8 @@ class Nested: public JsonBase {
     public:
         std::string name;
         Nested * nested;
-        Nested() = default;
+        // Nested() = default;
+        Nested(): name(""), nested(nullptr) {}
         Nested(JsonObject * obj): Nested() {
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
@@ -63,8 +64,10 @@ class User: public JsonBase {
         std::vector<bool> arr;
         Nested nested;
 
-        User() = default;
-        User(JsonObject * obj, size_t expected_num_keys): User() {
+        // User() = default;
+        User(): name(""), attributes(""), dec(0), arr(std::vector<bool>()), nested(Nested()) {}
+        // TODO: specify required fields
+        User(JsonObject * obj): User() {
             loggerPrintf(LOGGER_TEST_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
@@ -83,7 +86,8 @@ class User: public JsonBase {
                     // let's allow null values and handle during mapping and validation.
                 } else if (key == "nested") {
                     loggerPrintf(LOGGER_TEST_VERBOSE, "Nested type.\n");
-                    // nested = setVariableFromJsonValue<Nested>(value);
+                    nested = setVariableFromJsonValue<Nested>(value);
+                    // setVariableFromJsonValue<Nested>(value, nested);
                 }
             }
         }
@@ -136,6 +140,8 @@ class User: public JsonBase {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "arr not equal\n");
                 return false;
             }
+            // TODO:
+            //  lol... so, you don't also need to define != operator?
             if(this->nested != other.nested) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "nested not equal\n");
                 return false;
@@ -180,16 +186,25 @@ static std::string createNestedArray(size_t length) {
 
 static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size_t expected_size) {
     try {
-        printf("???\n");
         JsonObject * obj = (JsonObject *)parse(s);
         if (obj->type == OBJECT) {
-            User user(obj, expected_size);
+            User user(obj);
             loggerPrintf(LOGGER_TEST_VERBOSE, "JSON To Parse: \n");
             loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(s).c_str());
             loggerPrintf(LOGGER_TEST_VERBOSE, "Parsed JSON - User Class: \n");
             loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(user.toJsonString()).c_str());
             loggerPrintf(LOGGER_TEST_VERBOSE, "Expected JSON - User Class: \n");
             loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(expected.toJsonString()).c_str());
+
+            if (user != expected) {
+                loggerPrintf(LOGGER_TEST_VERBOSE, "User object mismatch.\n");
+            }
+            if (obj->keys.size() != expected_size) {
+                loggerPrintf(LOGGER_TEST_VERBOSE, "Unexpected number of keys.\n");
+            }
+            if (obj->values.size() != expected_size) {
+                loggerPrintf(LOGGER_TEST_VERBOSE, "Unexpected number of values.\n");
+            }
 
             if (user == expected 
                 && obj->keys.size() == expected_size 
@@ -407,7 +422,7 @@ static void testJsonAll(TestArg * t) {
     expected.dec = 272727.1111;
     expected.nested = nested_obj;
 
-    parseObjectAndAssert(t, s, expected, 5);
+    parseObjectAndAssert(t, s, expected, 6);
 }
 
 

@@ -357,11 +357,11 @@ static bool parseKey(JsonObject * obj, Reader * r) {
     Array<uint8_t> key = r->readUntil(":}", &extract);
 
     // This is actually the more correct way to check this... why you no work?
-    // printf("BACK: %c\n", (char)key.back());
-    // if ((char)key.back() == '}') {
-    //     return false;
-    // }
-    std::string key_string = key.toString();
+    printf("BACK: %c\n", (char)key.back());
+    if ((char)key.back() == '}') {
+        return false;
+    }
+    std::string key_string = key.popBack().toString();
     size_t size = key_string.size();
     if (size == 0) {
         std::string msg = "Empty key string found.";
@@ -371,8 +371,8 @@ static bool parseKey(JsonObject * obj, Reader * r) {
         std::string msg = "Key string to loooooonnng!";
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
-    } else if (key_string == "}") {
-        return false;
+    // } else if (key_string == "}") {
+    //     return false;
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s\n", key_string.c_str());

@@ -2,19 +2,17 @@
 
 using namespace WylesLibs::Parser::Json;
 
-static std::string SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG = "Failed to set variable from json value. Invalid type.";
-
-template<class T>
-T WylesLibs::Parser::Json::setVariableFromJsonValue(JsonValue * value) {
-    JsonType type = value->type;
-    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
-    if (type == OBJECT) {
-        return T((JsonObject *)value);
-    } else {
-        loggerPrintf(LOGGER_ERROR, "%s\n", SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG.c_str());
-        throw std::runtime_error(SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG);
-    }
-}
+// template<class T>
+// T WylesLibs::Parser::Json::setVariableFromJsonValue(JsonValue * value) {
+//     JsonType type = value->type;
+//     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+//     if (type == OBJECT) {
+//         return T((JsonObject *)value);
+//     } else {
+//         loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+//         throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+//     }
+// }
 
 template<>
 bool WylesLibs::Parser::Json::setVariableFromJsonValue<bool>(JsonValue * value) {
@@ -23,8 +21,8 @@ bool WylesLibs::Parser::Json::setVariableFromJsonValue<bool>(JsonValue * value) 
     if (type == BOOLEAN) {
         return ((JsonBoolean *)value)->getValue();
     } else {
-        loggerPrintf(LOGGER_ERROR, "%s\n", SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG.c_str());
-        throw std::runtime_error(SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG);
+        loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
     }
 }
 
@@ -35,8 +33,8 @@ double WylesLibs::Parser::Json::setVariableFromJsonValue<double>(JsonValue * val
     if (type == NUMBER) {
         return ((JsonNumber *)value)->getValue();
     } else {
-        loggerPrintf(LOGGER_ERROR, "%s\n", SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG.c_str());
-        throw std::runtime_error(SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG);
+        loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
     }
     return 0;
 }
@@ -48,8 +46,8 @@ std::string WylesLibs::Parser::Json::setVariableFromJsonValue<std::string>(JsonV
     if (type == STRING) {
         return ((JsonString *)value)->getValue();
     } else {
-        loggerPrintf(LOGGER_ERROR, "%s\n", SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG.c_str());
-        throw std::runtime_error(SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG);
+        loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
     }
     return "";
 }
@@ -68,8 +66,8 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue(JsonValue * value, 
             }
         }
     } else {
-        loggerPrintf(LOGGER_ERROR, "%s\n", SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG.c_str());
-        throw std::runtime_error(SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG);
+        loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
     }
 }
 
@@ -87,8 +85,8 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<bool>(JsonValue * v
             }
         }
     } else {
-        loggerPrintf(LOGGER_ERROR, "%s\n", SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG.c_str());
-        throw std::runtime_error(SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG);
+        loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
     }
 }
 
@@ -106,8 +104,8 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<double>(JsonValue *
             }
         }
     } else {
-        loggerPrintf(LOGGER_ERROR, "%s\n", SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG.c_str());
-        throw std::runtime_error(SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG);
+        loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
     }
 }
 
@@ -125,7 +123,7 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<std::string>(JsonVa
             }
         }
     } else {
-        loggerPrintf(LOGGER_ERROR, "%s\n", SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG.c_str());
-        throw std::runtime_error(SET_VARIABLE_FROM_JSON_VALUE_ERR_MSG);
+        loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
     }
 }

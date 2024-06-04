@@ -11,7 +11,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define READER_RECOMMENDED_BUF_SIZE 8096
+#ifndef LOGGER_READER_TASK
+#define LOGGER_READER_TASK 1
+#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_READER_TASK
+#include "logger.h"
 
 namespace WylesLibs {
 
@@ -34,7 +40,7 @@ class ReaderTask {
         //  By contrast, calls to perform call the function defined by the class-type at creation. Regardless of any casting along the way lol.
         //  Also, the compiler throws an error if perform isn't defined in sub-classes. 
         //     *** Then there's {} vs. = 0, which is effectively the same thing? At least when return type == void? ***
-        void flush(Array<uint8_t>& buffer) {}
+        virtual void flush(Array<uint8_t>& buffer) = 0;
         virtual void perform(Array<uint8_t>& buffer, uint8_t c) = 0;
 };
 
@@ -56,6 +62,7 @@ class ReaderTaskChain: public ReaderTask {
                 this->nextOperation->perform(buffer, c);
             }
         }
+        void flush(Array<uint8_t>& buffer) {}
         virtual void perform(Array<uint8_t>& buffer, uint8_t c) = 0;
 };
 
@@ -138,13 +145,16 @@ class ReaderTaskExtract: public ReaderTask {
         Array<uint8_t> r_trim;
         bool l_trimming;
         bool r_trimming;
-        char r_trim_non_whitespace;
+        uint8_t r_trim_non_whitespace;
+        uint8_t r_trim_read_until;
 
-        char left_most_char;
-        char right_most_char;
+        uint8_t left_most_char;
+        uint8_t right_most_char;
 
         ReaderTaskExtract(char left_most_char, char right_most_char): 
-            l_trimming(true), r_trimming(false), left_most_char(left_most_char), right_most_char(right_most_char), r_trim_non_whitespace(0) {}
+            l_trimming(true), r_trimming(false), 
+            left_most_char(left_most_char), right_most_char(right_most_char), 
+            r_trim_non_whitespace(0), r_trim_read_until(0) {}
 
         void flush(Array<uint8_t>& buffer) {
             // if extracting token and non whitespace after token throw an exception...
@@ -152,6 +162,12 @@ class ReaderTaskExtract: public ReaderTask {
                 std::string msg = "Found non-whitespace char right of token.";
                 loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), r_trim_non_whitespace);
                 throw std::runtime_error(msg);
+            } else if (!this->l_trimming && !this->r_trimming) {
+                std::string msg = "Found open ended token.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            } else if (this->r_trim_read_until != 0) {
+                buffer.append(this->r_trim_read_until);
             }
         }
 
@@ -159,12 +175,12 @@ class ReaderTaskExtract: public ReaderTask {
             if (this->r_trim.size() > 0) {
                 buffer.append(this->r_trim.buf, this->r_trim.size());
             }
-            r_trimming = false;
+            this->r_trimming = false;
         }
 
         void perform(Array<uint8_t>& buffer, uint8_t c) {
             if (!this->l_trimming) {
-                if (right_most_char == c) {
+                if (this->right_most_char == c) {
                     this->r_trimming = true;
                     this->r_trim.append(c);
                 } else if (this->r_trimming) {
@@ -174,13 +190,16 @@ class ReaderTaskExtract: public ReaderTask {
                         // "blablbl"    | == blablbl 
                         // "blablbl" " alknla| == blablbl 
                         rTrimFlush(buffer);
-                        buffer.append(c);
-                        this->r_trimming = false;
+                        this->r_trim.append(c);
+                        // buffer.append(c);
+                        // this->r_trimming = false;
                         this->r_trim_non_whitespace = 0;
                     } else {
                         this->r_trim.append(c);
-                        if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+                        if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos && read_until.find(c) == std::string::npos) {
                             this->r_trim_non_whitespace = c;
+                        } else if (read_until.find(c) != std::string::npos) {
+                            this->r_trim_read_until = c;
                         }
                     }
                 } else {

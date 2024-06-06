@@ -73,7 +73,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
             request->json_content = Json::parse(reader, i);
         } else if ("application/x-www-form-urlencoded" == request->fields["content-type"].front()) {
             request->form_content = KeyValue::parse(reader, '&');
-        } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
+        } else if ("multipart/formdata" == request->fields["content-type"].front()) { // less important
             // alright, so we want to parse and buffer content... but parse and call request handler only after all of the content has been received...
             //  so, need to store, requests in progress?
             //  hmm... so, if file being uploaded is gig's, do we want to write to disk? Overlycomplicated? 
@@ -95,11 +95,16 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
 
             //  
             //
-        } else if ("multipart/formdata" == request->fields["content-type"].front()) { // less important
+            // at 128Kb/s can transfer just under 2Mb/s (bits...) in 15second timeout...
+            //  if set min transfer rate at 128Kb/s, 
+
+            //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
+            server_set_connection_recv_timeout(reader->fd(), request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
+            this->formDataParser.parse(reader, request->files, request->form_content);
+        } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
             request->content = reader->readBytes(request->content_length);
         }
-        // printf("request->content: %lx\n", request->content);
     }
 }
 
@@ -216,7 +221,11 @@ uint8_t HttpConnection::onConnection(int conn_fd) {
         }
         delete reader;
     } catch (const std::exception& e) {
-        // Again, low overhead.... so, should be fine...
+        // respond with empty HTTP status code 500
+        HttpResponse response;
+        std::string response_string = response.toString();
+        write(conn_fd, response_string.c_str(), response_string.size());
+
         loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
     }
     delete request;

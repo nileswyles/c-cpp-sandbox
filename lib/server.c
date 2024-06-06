@@ -100,7 +100,24 @@ static void * handler_wrapper_func(void * arg) {
     return NULL;
 }
 
-static void process_sockopts(int fd) {
+extern void server_set_connection_recv_timeout(int fd, uint32_t recv_timeout_s) {
+    struct timeval timeout = {
+        .tv_sec = recv_timeout_s,
+        .tv_usec = 0,
+    };
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
+    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);
+
+    // read and print relevant options, ignore any error's reading... this is a nice to have...
+    if (LOGGER_LEVEL >= LOGGER_DEBUG) {
+        struct timeval rcv_timeout = {0};
+        getsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, &timeval_len);
+
+        loggerPrintf(LOGGER_DEBUG, "SO_RCVTIMEO %lds %ldus\n", rcv_timeout.tv_sec, rcv_timeout.tv_usec);
+    }
+}
+
+static void server_set_connection_sockopts(int fd) {
     socklen_t byte_len = sizeof(uint8_t);
     socklen_t uint32_t_len = sizeof(uint32_t);
     socklen_t timeval_len = sizeof(struct timeval);

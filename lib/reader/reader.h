@@ -22,7 +22,7 @@
 namespace WylesLibs {
 class Reader {
     private:
-        int fd;
+        int r_fd;
         uint8_t * buf;
         size_t buf_size;
         size_t cursor;
@@ -36,10 +36,10 @@ class Reader {
             buf_size = pBuf_size;
             cursor = 0;
             // ! IMPORTANT - an exception is thrown if read past buffer. (see fillBuffer implementation)
-            fd = -1;
+            r_fd = -1;
             bytes_in_buffer = pBuf_size;
         }
-        Reader(const int fd) : Reader(fd, READER_RECOMMENDED_BUF_SIZE) {}
+        Reader(const int r_fd) : Reader(r_fd, READER_RECOMMENDED_BUF_SIZE) {}
         Reader(const int pFd, const size_t pBuf_size) {
             if (pFd < 0) {
                 throw std::runtime_error("Invalid file descriptor provided.");
@@ -49,7 +49,7 @@ class Reader {
             }
             buf_size = pBuf_size;
             cursor = 0;
-            fd = pFd;
+            r_fd = pFd;
             bytes_in_buffer = 0;
             buf = newCArray<uint8_t>(buf_size);
         }
@@ -57,6 +57,7 @@ class Reader {
             printf("Deconstructor called...\n");
             // delete[] buf;
         }
+        int fd() { return r_fd; }
         uint8_t peekByte();
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...
         // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...

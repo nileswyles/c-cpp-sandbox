@@ -14,6 +14,9 @@
 #include "config.h"
 #include "connection.h"
 
+#include "parser/multipart/parse_formdata.h"
+#include "parser/multipart/multipart_file.h"
+
 #include "file.h"
 
 #include <unordered_map>
@@ -22,6 +25,7 @@
 #define HTTP_FIELD_MAX 64
 
 using namespace WylesLibs;
+using namespace WylesLibs::Parser::Multipart;
 
 namespace WylesLibs::Http {
 
@@ -29,9 +33,6 @@ namespace WylesLibs::Http {
 //     "connection",
 //     "upgrade"
 // };
-
-// boundary: MultipartFile
-static std::map<std::string, MultipartFile> filesMap;
 
 class Url {
     public:
@@ -50,7 +51,8 @@ class HttpRequest {
 
         size_t content_length;
         JsonValue * json_content;
-        std::unordered_map<std::string, std::string> form_content;
+        Array<MultipartFile> files;
+        std::map<std::string, std::string> form_content;
         Array<uint8_t> content;
 
         void print() {
@@ -108,6 +110,7 @@ typedef HttpResponse(* RequestProcessor)(HttpRequest *);
 // voila!
 class HttpConnection {
     private:
+        FormDataParser formDataParser;
         RequestProcessor processor;
         Array<ConnectionUpgrader *> upgraders;
         HttpServerConfig config;
@@ -120,6 +123,7 @@ class HttpConnection {
         HttpConnection() {}
         HttpConnection(HttpServerConfig config, RequestProcessor processor, Array<ConnectionUpgrader *> upgraders): 
             config(config), processor(processor), upgraders(upgraders) {
+                formDataParser = FormDataParser(config);
                 for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(config.static_path)) {
                     std::string path = "/" + dir_entry.path().string();
                     std::string ext = dir_entry.path().extension().string();

@@ -94,7 +94,7 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
 
 void Reader::fillBuffer() {
     this->cursor = 0;
-    ssize_t ret = read(this->fd, this->buf, this->buf_size);
+    ssize_t ret = read(this->r_fd, this->buf, this->buf_size);
     // TODO: retry on EAGAIN?, revisit possible errors...
     if (ret == -1 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;

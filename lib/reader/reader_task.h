@@ -139,7 +139,6 @@ class ReaderTaskTrim: public ReaderTask {
         }
 };
 
-// LOL, oh well...
 class ReaderTaskExtract: public ReaderTask {
     public:
         Array<uint8_t> data;

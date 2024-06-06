@@ -8,59 +8,100 @@
 #include "server_config.h"
 #include "paths.h"
 
+using WylesLibs::Parser;
+
 namespace WylesLibs {
 
 class MultipartFile {
     private:
         std::string resource_root;
     public:
-        std::string resource_uuid;
+        std::string id;
         std::string name;
 
         MultipartFile(): resource_root("./") {
             throw std::runtime_error("What even are you doing!");
         }
 
-        MultipartFile(ServerConfig config) {
+        MultipartFile(ServerConfig config, std::string id, std::string name) {
             resource_root = config.resources_root;
-            // database information 
-            // new resource_uuid, different from boundary and database id...
-            //  resource_uuid is name of local file.
-            //  name of actual file stored here (and in database, likely postgresql, because featureset)...
-
-            // hmmm.. yeah but on second thought sometimes coupling is unavoidable? so why not more closely work with database system here?
-            //  abstractions.... 
-            //  hmm.... resource_uuid can be primary key of database table... and name of local file.
-
-            //  this is very cat-like/delegation/ma-like lol I'm confused? or so they say at least?
-            //  teamwork!
-            //  we all we got
-
-            // similarly, supporting all database systems is very ma-like lol? 
-            //  perspective!
-
-            // you know what just toss those categories == i (== all).
-            //  logical and sane conclusion?
-
-            //  idk more confusion... but there might be value as a form of communication and that's it.
-
-            // know yourself, i guess is moral of the story :)...
-
-            // alright, back to this...
-
-            // connecting to psql... libpq...
-             
+            id = id;
+            name = name;
+            // hmm.. yeah so my initial approach of using an in-memory database for now was right
         }
 
         std::string getResourcePath() {
-            return Paths::join(this->resource_root, this->resource_uuid);
+            return Paths::join(this->resource_root, this->id);
         }
 };
 }
 
 namespace WylesLibs::Parser::Multipart::ByteRanges {
 static void parse(Reader * r, MultipartFile& file) {
+    // can read bytes specified in range
+    //   or
+    //  can read until next boundary line
 
+    // how strict do I want to be?
+    // revisit specification...
+
+    while (1) {
+        Array<uint8_t> potential_boundary = r->readUntil("\n"); // read and consume boundary string
+        if (potential_boundary.buf[0] == '-' && potential_boundary.buf[1] == '-') {
+            if (potential_boundary.back() == '-' && potential_boundary.buf[potential_boundary.size() - 2] == '-') break;
+            // assume type then range for now...
+            r->readUntil("\n"); // read and consume content type because who cares.
+
+            // parse byte range...
+            // Content-Range: bytes 0-50/1024
+            r->readUntil(" "); // read and consume Content-Range: |
+            r->readUntil(" "); // read and consume bytes |
+
+            double min = 0;
+            uint32_t digits = 0;
+            parseNatural(r, min, digits);
+            if (r->readByte() != '-') {
+                // -50 == 0-50... that's fine...
+                // throw exception...
+                throw std::runtime_error("Out of bounds error.");
+            }
+
+            double max = 0;
+            digits = 0;
+            parseNatural(r, max, digits);
+            if (r->readByte() != '/') {
+                // 0- == 0-0... that's fine...
+                // throw exception...
+                throw std::runtime_error("Out of bounds error.");
+            }
+
+            size_t size = max - min;
+            if (size < 1) {
+                // throw exception.
+                // -/ == 0-0, that's also fine...
+                throw std::runtime_error("Out of bounds error.");
+            }
+            Array<uint8_t> data = r->readBytes(max - min);
+            WylesLibs::File::writeFile(file.getResourcePath(), data);
+        } else {
+            throw std::runtime_error("Boundary string expected at start or after read.");
+        }
+    }
+
+    // bool init = false;
+    // while (1) {
+    //     Array<uint8_t> potential_boundary = r->readUntil("\n"); // read and consume boundary string
+    //     if (potential_boundary.buf[0] == '-' && potential_boundary.buf[1] == '-') {
+    //         if (potential_boundary.back() == '-' && potential_boundary.buf[potential_boundary.size() - 2] == '-') break;
+    //         init = true;
+    //         r->readUntil("\n"); // read and consume content type because who cares.
+    //         r->readUntil("\n"); // read and consume content range because also who cares.
+    //     } else if (!init) {
+    //         throw std::runtime_error("Request content must start with boundary string.");
+    //     } else {
+    //         WylesLibs::File::writeFile(file.getResourcePath(), potential_boundary);
+    //     }
+    // }
 }
 
 }

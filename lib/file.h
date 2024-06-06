@@ -13,6 +13,13 @@ using namespace WylesLibs;
 
 namespace WylesLibs::File {
 
+// TODO:
+//  create, append, overwrite and maybe use fstream?
+static void writeFile(std::string file_path, Array<uint8_t> buffer) {
+    int fd = open(file_path, O_WRONLY);
+    write(fd, buffer.buf, buffer.size());
+    close(fd);
+}
 // TODO: seek... when multipart file support is added?
 //  # ifstream - ed edition lol
 //  Worth creating abstraction around that for files, instead of using reader? 

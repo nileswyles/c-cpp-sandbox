@@ -2,6 +2,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "parser/common.h"
+
 #include "string_utils.h"
 #include "json_parser.h"
 #include "json_array.h"
@@ -16,6 +18,7 @@
 #include "logger.h"
 
 using namespace WylesLibs::Parser::Json;
+using namespace WylesLibs::Parser;
 using namespace WylesLibs;
 
 static void readWhiteSpaceUntil(Reader * r, std::string until);
@@ -70,39 +73,6 @@ static size_t compareCString(std::string actual, std::string comp, size_t comp_l
     return x;
 }
 
-// Let's define that parse function's start index is first index of token and end index is last index of token + 1.
-static void parseDecimal(Reader * r, double& value, size_t& digit_count) {
-    double decimal_divisor = 10;
-    char c = r->peekByte();
-    while (isDigit(c)) {
-        r->readByte();
-        value += (c - 0x30) / decimal_divisor;
-        loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
-        decimal_divisor *= 10;
-        c = r->peekByte();
-        if (++digit_count > FLT_MAX_MIN_DIGITS) {
-            std::string msg = "parseDecimal: Exceeded decimal digit limit.";
-            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-            throw std::runtime_error(msg);
-        }
-    }
-}
-
-static void parseNatural(Reader * r, double& value, size_t& digit_count) {
-    char c = r->peekByte();
-    while (isDigit(c)) {
-        r->readByte();
-        value = (value * 10) + (c - 0x30); 
-        loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
-        c = r->peekByte();
-        if (++digit_count > FLT_MAX_MIN_DIGITS) {
-            std::string msg = "parseNatural: Exceeded natural digit limit.";
-            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-            throw std::runtime_error(msg);
-        }
-    }
-}
-
 static void parseNumber(JsonArray * obj, Reader * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number\n");
     int8_t sign = 1;
@@ -114,43 +84,52 @@ static void parseNumber(JsonArray * obj, Reader * r) {
     size_t decimal_digits = 1;
     char c = r->peekByte();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
-    std::string comp(" ,}\r\n\t");
-    while (comp.find(c) == std::string::npos) {
-        if (isDigit(c)) {
-            parseNatural(r, value, natural_digits);
-        } else if (c == '.') {
-            r->readByte();
-            parseDecimal(r, value, decimal_digits);
-        } else if (c == 'e' || c == 'E') {
-            c = r->peekByte();
-            if (c == '-') { 
-                exponential_sign = -1;
-                r->readByte();
-            } else if (c == '+') {
-                exponential_sign = 1;
-                r->readByte();
-            }
+    if (c == '-') {
+        sign = -1;
+    }
 
-            double exp = 0;
-            size_t dummy_digit_count = 0;
-            parseNatural(r, exp, dummy_digit_count);
-            
-            if (exp > FLT_MAX_EXP_ABS) {
-                std::string msg = "parseNumber: exponential to large.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-                throw std::runtime_error(msg);
-            }
-            for (size_t x = 0; x < exp; x++) {
-                exponential_multiplier *= 10;
-            }
-            loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
-        } else if (c == '-') {
-            sign = -1;
-        } 
-        // Consume invalid data in-between tokens...
-        // else if (c == '+') {} 
-        // else {} 
+    char c = r->peekByte();
+    if (isDigit(c)) {
+        parseNatural(r, value, natural_digits);
+    } else {
+        // throw exception...
+    }
+
+    std::string comp(" ,}\r\n\t");
+    char c = r->peekByte();
+    if (c == '.') {
+        r->readByte();
+        parseDecimal(r, value, decimal_digits);
+    } else if (comp.find(c) != std::string::npos) {
+        // throw exception if not whitespace or delimeter...
+    }
+
+    char c = r->peekByte();
+    if (c == 'e' || c == 'E') {
         c = r->peekByte();
+        if (c == '-') { 
+            exponential_sign = -1;
+            r->readByte();
+        } else if (c == '+') {
+            exponential_sign = 1;
+            r->readByte();
+        }
+
+        double exp = 0;
+        size_t dummy_digit_count = 0;
+        parseNatural(r, exp, dummy_digit_count);
+        
+        if (exp > FLT_MAX_EXP_ABS) {
+            std::string msg = "parseNumber: exponential to large.";
+            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
+        }
+        for (size_t x = 0; x < exp; x++) {
+            exponential_multiplier *= 10;
+        }
+        loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
+    } else if (comp.find(c) != std::string::npos) {
+        // throw exception if not whitespace or delimeter...
     }
 
     loggerPrintf(LOGGER_DEBUG, "Number before applying exponential: %f\n", value);

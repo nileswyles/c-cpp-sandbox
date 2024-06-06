@@ -78,7 +78,7 @@ static void parseNumber(JsonArray * obj, Reader * r) {
 
     char c = r->peekByte();
     if (isDigit(c)) {
-        parseNatural(r, value, natural_digits);
+        r->parseNatural(value, natural_digits);
     } else {
         // throw exception...
         std::string msg = "Invalid number.";
@@ -90,7 +90,7 @@ static void parseNumber(JsonArray * obj, Reader * r) {
     char c = r->peekByte();
     if (c == '.') {
         r->readByte();
-        parseDecimal(r, value, decimal_digits);
+        r->parseDecimal(value, decimal_digits);
     } else if (comp.find(c) != std::string::npos) {
         // throw exception if not whitespace or delimeter...
         std::string msg = "Invalid number.";
@@ -111,7 +111,7 @@ static void parseNumber(JsonArray * obj, Reader * r) {
 
         double exp = 0;
         size_t dummy_digit_count = 0;
-        parseNatural(r, exp, dummy_digit_count);
+        r->parseNatural(exp, dummy_digit_count);
         
         if (exp > FLT_MAX_EXP_ABS) {
             std::string msg = "parseNumber: exponential to large.";

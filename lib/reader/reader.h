@@ -82,6 +82,9 @@ class Reader {
             return readUntil(until, operation, true);
         }
         Array<uint8_t> readUntil(std::string until, ReaderTask * operation, bool inclusive);
+
+        void readDecimal(double& value, size_t& digit_count);
+        void readNatural(double& value, size_t& digit_count);
 };
 }
 

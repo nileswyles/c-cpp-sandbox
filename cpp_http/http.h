@@ -52,7 +52,7 @@ class HttpRequest {
         size_t content_length;
         JsonValue * json_content;
         Array<MultipartFile> files;
-        std::map<std::string, std::string> form_content;
+        std::unordered_map<std::string, std::string> form_content;
         Array<uint8_t> content;
 
         void print() {

@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 #include <string>
-#include <map>
+#include <unordered_map>
 
 #include "server_config.h"
 #include "parser/multipart/multipart_file.h"
@@ -19,7 +19,7 @@ class FormDataParser {
     public:
         FormDataParser() {}
         FormDataParser(ServerConfig config) {}
-        void parse(Reader * r, Array<MultipartFile> files, map<std::string, std::string> form_content) {
+        void parse(Reader * r, Array<MultipartFile> files, unordered_map<std::string, std::string> form_content) {
             while (1) {
                 std::string field_name;
                 bool is_file = false;

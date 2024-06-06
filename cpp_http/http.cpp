@@ -74,30 +74,8 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
         } else if ("application/x-www-form-urlencoded" == request->fields["content-type"].front()) {
             request->form_content = KeyValue::parse(reader, '&');
         } else if ("multipart/formdata" == request->fields["content-type"].front()) { // less important
-            // alright, so we want to parse and buffer content... but parse and call request handler only after all of the content has been received...
-            //  so, need to store, requests in progress?
-            //  hmm... so, if file being uploaded is gig's, do we want to write to disk? Overlycomplicated? 
-
-            // yeah, might aswell file everything...
-
-            //  womp womp womp womp
-
-            // moving on....
-            // multipart file lookup/create.
-            // parse(reader, multipartfile);
-            //  - parses and writes to file...
-            // 
-            //  multipartfile added to http request...  
-
-            // processor dispatch function.
-            //  if multipartfile.full and http.status_code == Finished {
-            // } 
-
-            //  
-            //
-            // at 128Kb/s can transfer just under 2Mb/s (bits...) in 15second timeout...
+            // at 128Kb/s can transfer just under 2Mb/s (bits...) in 15s.
             //  if set min transfer rate at 128Kb/s, 
-
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
             server_set_connection_recv_timeout(reader->fd(), request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
             this->formDataParser.parse(reader, request->files, request->form_content);

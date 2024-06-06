@@ -37,7 +37,7 @@ static void parse(Reader * r, MultipartFile& file) {
 
             double min = 0;
             uint32_t digits = 0;
-            parseNatural(r, min, digits);
+            r->parseNatural(min, digits);
             if (r->readByte() != '-') {
                 // -50 == 0-50... that's fine...
                 // throw exception...
@@ -46,7 +46,7 @@ static void parse(Reader * r, MultipartFile& file) {
 
             double max = 0;
             digits = 0;
-            parseNatural(r, max, digits);
+            r->parseNatural(max, digits);
             if (r->readByte() != '/') {
                 // 0- == 0-0... that's fine...
                 // throw exception...

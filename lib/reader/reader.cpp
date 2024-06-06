@@ -111,3 +111,39 @@ void Reader::cursorCheck() {
         fillBuffer();
     }
 }
+
+// this is still an arbitrary limit chosen based on number of digits of 2**32.
+//  it also satisfies requirement of single precision significand size (2**24) which is well within 10 digits (10**10 - 1).
+static constexpr size_t FLT_MAX_MIN_DIGITS = 10;
+
+void Reader::readDecimal(double& value, size_t& digit_count) {
+    double decimal_divisor = 10;
+    char c = this->peekByte();
+    while (isDigit(c)) {
+        this->readByte();
+        value += (c - 0x30) / decimal_divisor;
+        loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
+        decimal_divisor *= 10;
+        c = this->peekByte();
+        if (++digit_count > FLT_MAX_MIN_DIGITS) {
+            std::string msg = "parseDecimal: Exceeded decimal digit limit.";
+            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
+        }
+    }
+}
+
+void Reader::readNatural(double& value, size_t& digit_count) {
+    char c = this->peekByte();
+    while (isDigit(c)) {
+        this->readByte();
+        value = (value * 10) + (c - 0x30); 
+        loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
+        c = this->peekByte();
+        if (++digit_count > FLT_MAX_MIN_DIGITS) {
+            std::string msg = "parseNatural: Exceeded natural digit limit.";
+            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
+        }
+    }
+}

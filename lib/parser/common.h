@@ -5,6 +5,8 @@
 #include "reader/reader.h"
 
 namespace WylesLib::Parser {
+// TODO:
+//  move to reader?
 // Let's define that parse function's start index is first index of token and end index is last index of token + 1.
 static void parseDecimal(Reader * r, double& value, size_t& digit_count) {
     double decimal_divisor = 10;

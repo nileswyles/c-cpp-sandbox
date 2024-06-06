@@ -22,9 +22,6 @@ using namespace WylesLibs::Parser;
 using namespace WylesLibs;
 
 static void readWhiteSpaceUntil(Reader * r, std::string until);
-static bool peekWhiteSpaceUntil(Reader * r, char until);
-
-static size_t compareCString(Reader * r, std::string comp, size_t comp_length);
 
 // tree base
 static void parseDecimal(Reader * r, double& value);
@@ -44,6 +41,8 @@ static bool parseKey(JsonObject * obj, Reader * r);
 // 1
 static void parseObject(JsonObject * obj, Reader * r);
 
+// TODO: move to reader? but extend further? 
+//  ignore/allow and strict options...
 static void readWhiteSpaceUntil(Reader * r, std::string until) {
     char c = r->peekByte();
     loggerPrintf(LOGGER_DEBUG, "Reading Whitespace Until: %s, %c\n", until.c_str(), c);
@@ -60,17 +59,6 @@ static void readWhiteSpaceUntil(Reader * r, std::string until) {
         throw std::runtime_error(msg);
     }
     // cursor == until...
-}
-
-static size_t compareCString(std::string actual, std::string comp, size_t comp_length) {
-    size_t x = 0;
-    while(x < comp_length) {
-        if (comp.at(x) != actual.at(x)) {
-            break;
-        }
-        x++;
-    }
-    return x;
 }
 
 static void parseNumber(JsonArray * obj, Reader * r) {
@@ -226,13 +214,11 @@ static void parseImmediate(JsonArray * obj, Reader * r, std::string comp, JsonVa
     loggerPrintf(LOGGER_DEBUG, "Parsing %s\n", comp.c_str());
 
     std::string actual = r->readBytes(comp.size()).toString();
-    size_t consumed = compareCString(actual, comp, comp.size());
-    if (consumed == comp.size()) {
+    if (actual == comp) {
         loggerPrintf(LOGGER_DEBUG, "Parsed %s, @ %c\n", comp.c_str(), r->peekByte());
-
         obj->addValue(value);
     } else {
-        std::string msg = "Invalid immediate value. Throw away the whole object lol.";
+        std::string msg = "Invalid immediate value - throw away the whole object. Don't rest on your laurels!";
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }

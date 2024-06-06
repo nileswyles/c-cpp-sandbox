@@ -93,6 +93,9 @@ static void parseNumber(JsonArray * obj, Reader * r) {
         parseNatural(r, value, natural_digits);
     } else {
         // throw exception...
+        std::string msg = "Invalid number.";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
     }
 
     std::string comp(" ,}\r\n\t");
@@ -102,6 +105,9 @@ static void parseNumber(JsonArray * obj, Reader * r) {
         parseDecimal(r, value, decimal_digits);
     } else if (comp.find(c) != std::string::npos) {
         // throw exception if not whitespace or delimeter...
+        std::string msg = "Invalid number.";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
     }
 
     char c = r->peekByte();
@@ -130,6 +136,9 @@ static void parseNumber(JsonArray * obj, Reader * r) {
         loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
     } else if (comp.find(c) != std::string::npos) {
         // throw exception if not whitespace or delimeter...
+        std::string msg = "Invalid number.";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
     }
 
     loggerPrintf(LOGGER_DEBUG, "Number before applying exponential: %f\n", value);

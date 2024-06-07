@@ -21,8 +21,7 @@ class JsonObject: public JsonValue {
             if (depth > MAX_JSON_DEPTH) {
                 throw std::runtime_error("JsonObject creation error... TOO MUCH DEPTH!");
             }
-            // start array values at 1 for reasons, see json_parser::parseArray()... probably not the most elegant solution but whatever... 
-            values.depth = depth + 1;
+            values.depth = depth;
         }
 
         void addKey(std::string key) {

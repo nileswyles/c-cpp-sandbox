@@ -18,6 +18,7 @@
 
 #define MAX_CONNECTIONS (1 << 16)
 
+// TODO: think about default... LMAO...
 #define INITIAL_CONNECTION_TIMEOUT_S 15
 
 typedef struct thread_arg {

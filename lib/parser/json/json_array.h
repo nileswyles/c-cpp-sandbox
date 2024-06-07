@@ -19,8 +19,6 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
     public:
         size_t depth;
         JsonType value_type;
-        // TODO: 
-        //  down side of this is no compiler check? so maybe that's why required to define default constructor?
         JsonArray(): JsonArray(0) {}
         JsonArray(size_t depth): depth(depth), JsonValue(ARRAY), std::vector<JsonValue *>() {
             if (depth > MAX_JSON_DEPTH) {

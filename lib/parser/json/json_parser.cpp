@@ -78,7 +78,7 @@ static void parseNumber(JsonArray * obj, Reader * r) {
     } else {
         // throw exception...
         std::string msg = "Invalid number.";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_ERROR, "%s, found '%c'\n", msg.c_str(), c);
         throw std::runtime_error(msg);
     }
 
@@ -87,10 +87,9 @@ static void parseNumber(JsonArray * obj, Reader * r) {
     if (c == '.') {
         r->readByte();
         r->readDecimal(value, decimal_digits);
-    } else if (comp.find(c) != std::string::npos) {
-        // throw exception if not whitespace or delimeter...
+    } else if (comp.find(c) == std::string::npos) { // if not one of the characters in comp throw exception...
         std::string msg = "Invalid number.";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_ERROR, "%s, found '%c'\n", msg.c_str(), c);
         throw std::runtime_error(msg);
     }
 
@@ -118,10 +117,9 @@ static void parseNumber(JsonArray * obj, Reader * r) {
             exponential_multiplier *= 10;
         }
         loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
-    } else if (comp.find(c) != std::string::npos) {
-        // throw exception if not whitespace or delimeter...
+    } else if (comp.find(c) == std::string::npos) { // if not one of the characters in comp throw exception...
         std::string msg = "Invalid number.";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_ERROR, "%s, found '%c'\n", msg.c_str(), c);
         throw std::runtime_error(msg);
     }
 
@@ -241,16 +239,8 @@ static void parseNestedObject(JsonArray * arr, Reader * r) {
     loggerPrintf(LOGGER_DEBUG, "Returning object, found %c\n", c);
 }
 
-static void parseArray(JsonArray * obj, Reader * r) {
+static void parseArray(JsonArray * arr, Reader * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array\n");
-    
-    JsonArray * arr;
-    if (obj->depth == 0) {
-        arr = obj;
-    } else {
-        arr = new JsonArray(obj->depth + 1); 
-        obj->addValue(arr);
-    }
 
     char c = r->readByte();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
@@ -279,7 +269,9 @@ static void parseValue(JsonArray * obj, Reader * r) {
                 parseNumber(obj, r);
                 parsed = true;
             } else if (c == '[') {
-                parseArray(obj, r);
+                JsonArray * new_arr = new JsonArray(obj->depth + 1);
+                obj->addValue(new_arr);
+                parseArray(new_arr, r);
                 parsed = true;
             } else if (c == 't') {
                 std::string comp("true");
@@ -326,14 +318,18 @@ static bool parseKey(JsonObject * obj, Reader * r) {
     ReaderTaskExtract extract('"', '"');
     Array<uint8_t> key = r->readUntil(":}", &extract);
 
-    uint8_t until_match = key.back();
-    printf("BACK| %c, %c\n", (char)until_match, key.buf[key.size()-2]);
-    loggerPrintf(LOGGER_DEBUG, "Found end of object. %s\n", key.toString().c_str());
-    if (until_match == (uint8_t)'}') {
-        loggerPrintf(LOGGER_DEBUG, "Found end of object. %s\n", key.toString().c_str());
+    // uint8_t until_match = key.back();
+    // printf("BACK| %c, %c\n", (char)until_match, key.buf[key.size()-2]);
+    // loggerPrintf(LOGGER_DEBUG, "Found end of object. %s\n", key.toString().c_str());
+    // if (until_match == (uint8_t)'}') {
+    //     return false;
+    // }
+
+    // LOL
+    if (key.size() >= 2 && key.buf[key.size()-2] == (uint8_t)'}') {
         return false;
     }
-    std::string key_string = key.removeBack().toString();
+    std::string key_string = key.removeBack().removeBack().toString();
     size_t size = key_string.size();
     if (size == 0) {
         std::string msg = "Empty key string found.";

@@ -168,7 +168,7 @@ int main(int argc, char * argv[]) {
             // alright, still a shit ton of open questions but this should work?
             connection = HttpConnection(config, requestProcessor, upgraders); 
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
-            server_listen(argv[1], atoi(argv[2]), connectionHandler);
+            serverListen(argv[1], atoi(argv[2]), connectionHandler);
         } catch (const std::exception& e) {
             // redundant try/catch? let's show where exception handled...
             loggerPrintf(LOGGER_ERROR, "%s\n", e.what());

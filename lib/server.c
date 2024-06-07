@@ -14,7 +14,11 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
+#include "server_connection_timer.h"
+
 #define MAX_CONNECTIONS (1 << 16)
+
+#define INITIAL_CONNECTION_TIMEOUT_S 15
 
 typedef struct thread_arg {
     connection_handler_t * handler;
@@ -24,7 +28,13 @@ typedef struct thread_arg {
 static void * handler_wrapper_func(void * arg);
 static void process_sockopts(int fd);
 
-extern void server_listen(const char * address, const uint16_t port, connection_handler_t handler) {
+extern void serverSetConnectionTimeout(int fd, uint32_t timeout_s) {
+    if (timeout_s > INITIAL_CONNECTION_TIMEOUT_S) {
+        timerSetTimeout(fd, timeout_s);
+    }
+}
+
+extern void serverListen(const char * address, const uint16_t port, connection_handler_t handler) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
         // check errno for error
@@ -55,6 +65,7 @@ extern void server_listen(const char * address, const uint16_t port, connection_
      
                     int conn = accept(fd, NULL, NULL);
                     while (conn != -1) {
+                        // TODO: might reach some stack limit...
                         pthread_t thread;
                         thread_arg * arg = (thread_arg *)malloc(sizeof(thread_arg));
                         arg->fd = conn;
@@ -93,30 +104,24 @@ static void * handler_wrapper_func(void * arg) {
 
     // it's lame that I need to do this for each 'connection'. And 'socket' is same as 'connection' which is the same as 'socket'? lol
     // I thought it was a 1 (socket) to many (connections) kind of thing (at least for bind).
+
+    // what I meant is that
+    // socket == source:port,destination:port == connection
+    //  not, socket == destination:port and source:port,destination:port == connection
+    //  in other words, the api doesn't distinguish between the two. I thought socket was a higher level abstraction of the interface, vs an instance of the interface?
+    //  idk...
+    // in hindsight, duh lol...
     process_sockopts(fd);
-    printf("HTTP START!\n");
+    timerAddConnection(fd, INITIAL_CONNECTION_TIMEOUT_S);
     handler(fd);
-    printf("HTTP DONE!\n");
     return NULL;
 }
 
-extern void server_set_connection_recv_timeout(int fd, uint32_t recv_timeout_s) {
-    struct timeval timeout = {
-        .tv_sec = recv_timeout_s,
-        .tv_usec = 0,
-    };
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
-    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);
+// TODO: this is not what I thought? hmm... need to implement connection timer... though, it's really only a nice to have...
 
-    // read and print relevant options, ignore any error's reading... this is a nice to have...
-    if (LOGGER_LEVEL >= LOGGER_DEBUG) {
-        struct timeval rcv_timeout = {0};
-        getsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, &timeval_len);
-
-        loggerPrintf(LOGGER_DEBUG, "SO_RCVTIMEO %lds %ldus\n", rcv_timeout.tv_sec, rcv_timeout.tv_usec);
-    }
-}
-
+//  as far as terminating an active connection/thread...
+//  setting SO_RCVTIMEO and SO_SNDTIMEO to a very small usec value, 
+//      should cause read errors and a properly implemented application *should* gracefully terminate thread...
 static void server_set_connection_sockopts(int fd) {
     socklen_t byte_len = sizeof(uint8_t);
     socklen_t uint32_t_len = sizeof(uint32_t);
@@ -126,8 +131,8 @@ static void server_set_connection_sockopts(int fd) {
     uint8_t keep_alive = 1;
     setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &keep_alive, byte_len);
     struct timeval timeout = {
-        .tv_sec = 15,
-        .tv_usec = 0, // 15s
+        .tv_sec = INITIAL_CONNECTION_TIMEOUT_S,
+        .tv_usec = 0,
     };
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);

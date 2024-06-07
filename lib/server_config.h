@@ -1,5 +1,5 @@
-#ifndef WYLESLIBS_HTTP_SERVER_CONFIG_H
-#define WYLESLIBS_HTTP_SERVER_CONFIG_H
+#ifndef WYLESLIBS_SERVER_CONFIG_H
+#define WYLESLIBS_SERVER_CONFIG_H
 
 #include "parser/json/json.h"
 #include "file.h"

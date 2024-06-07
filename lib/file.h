@@ -9,16 +9,24 @@
 #include <sys/types.h>
 #include <string>
 
+#include <fstream>
+
 using namespace WylesLibs;
 
 namespace WylesLibs::File {
 
-// TODO:
-//  create, append, overwrite and maybe use fstream?
-static void writeFile(std::string file_path, Array<uint8_t> buffer) {
-    int fd = open(file_path, O_WRONLY);
-    write(fd, buffer.buf, buffer.size());
-    close(fd);
+static void writeFile(std::string file_path, Array<uint8_t> buffer, bool append) {
+    // open every time a problem?
+    std::fstream s{file_path, s.binary | s.out};
+    if (!s.is_open()) {
+    } else {
+        if (append) {
+            s.seekp(0, std::ios_base::end);
+        } else {
+            s.seekp(0);
+        }
+        s.write((const char *)buffer.buf, buffer.size()); // binary output
+    }
 }
 // TODO: seek... when multipart file support is added?
 //  # ifstream - ed edition lol

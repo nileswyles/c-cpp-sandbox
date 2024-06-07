@@ -2,8 +2,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "parser/common.h"
-
 #include "string_utils.h"
 #include "json_parser.h"
 #include "json_array.h"
@@ -24,8 +22,6 @@ using namespace WylesLibs;
 static void readWhiteSpaceUntil(Reader * r, std::string until);
 
 // tree base
-static void parseDecimal(Reader * r, double& value);
-static void parseNatural(Reader * r, double& value);
 static void parseNumber(JsonArray * obj, Reader * r);
 static void parseString(JsonArray * obj, Reader * r);
 static void parseImmediate(JsonArray * obj, Reader * r, std::string comp, JsonValue * value);
@@ -76,9 +72,9 @@ static void parseNumber(JsonArray * obj, Reader * r) {
         sign = -1;
     }
 
-    char c = r->peekByte();
+    c = r->peekByte();
     if (isDigit(c)) {
-        r->parseNatural(value, natural_digits);
+        r->readNatural(value, natural_digits);
     } else {
         // throw exception...
         std::string msg = "Invalid number.";
@@ -87,10 +83,10 @@ static void parseNumber(JsonArray * obj, Reader * r) {
     }
 
     std::string comp(" ,}\r\n\t");
-    char c = r->peekByte();
+    c = r->peekByte();
     if (c == '.') {
         r->readByte();
-        r->parseDecimal(value, decimal_digits);
+        r->readDecimal(value, decimal_digits);
     } else if (comp.find(c) != std::string::npos) {
         // throw exception if not whitespace or delimeter...
         std::string msg = "Invalid number.";
@@ -98,7 +94,7 @@ static void parseNumber(JsonArray * obj, Reader * r) {
         throw std::runtime_error(msg);
     }
 
-    char c = r->peekByte();
+    c = r->peekByte();
     if (c == 'e' || c == 'E') {
         c = r->peekByte();
         if (c == '-') { 
@@ -111,7 +107,7 @@ static void parseNumber(JsonArray * obj, Reader * r) {
 
         double exp = 0;
         size_t dummy_digit_count = 0;
-        r->parseNatural(exp, dummy_digit_count);
+        r->readNatural(exp, dummy_digit_count);
         
         if (exp > FLT_MAX_EXP_ABS) {
             std::string msg = "parseNumber: exponential to large.";
@@ -330,10 +326,10 @@ static bool parseKey(JsonObject * obj, Reader * r) {
     ReaderTaskExtract extract('"', '"');
     Array<uint8_t> key = r->readUntil(":}", &extract);
 
-    uint8_t until = key.back();
-    printf("BACK: %c\n", until);
+    uint8_t until_match = key.back();
+    printf("BACK| %c, %c\n", (char)until_match, key.buf[key.size()-2]);
     loggerPrintf(LOGGER_DEBUG, "Found end of object. %s\n", key.toString().c_str());
-    if (until == (uint8_t)'}') {
+    if (until_match == (uint8_t)'}') {
         loggerPrintf(LOGGER_DEBUG, "Found end of object. %s\n", key.toString().c_str());
         return false;
     }

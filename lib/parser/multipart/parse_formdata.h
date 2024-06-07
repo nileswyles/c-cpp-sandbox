@@ -23,6 +23,7 @@ class FormDataParser {
             while (1) {
                 std::string field_name;
                 bool is_file = false;
+                bool new_file = true;
                 MultipartFile file;
                 Array<uint8_t> line = r->readUntil("\n"); // read and consume boundary string
                 if (line.buf[0] == '-' && line.buf[1] == '-') {
@@ -39,6 +40,7 @@ class FormDataParser {
                         if (field == "filename") {
                             is_file = true;
                             file = MultipartFile(config, value);
+                            new_file = true;
                         } else if (field == "name") {
                             field_name = value;
                             has_name = true;
@@ -50,7 +52,8 @@ class FormDataParser {
                     r->readUntil("\n"); // consume new line...
                 } else if (field_name != "") {
                     if (is_file) {
-                        WylesLibs::File::writeFile(file.getResourcePath(), line);
+                        WylesLibs::File::writeFile(file.getResourcePath(), line, !new_file);
+                        new_file = false;
                     } else {
                         form_content[field_name] += line.toString();
                     }

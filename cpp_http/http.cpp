@@ -73,11 +73,11 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
             request->json_content = Json::parse(reader, i);
         } else if ("application/x-www-form-urlencoded" == request->fields["content-type"].front()) {
             request->form_content = KeyValue::parse(reader, '&');
-        } else if ("multipart/formdata" == request->fields["content-type"].front()) { // less important
-            // at 128Kb/s can transfer just under 2Mb/s (bits...) in 15s.
+        } else if ("multipart/formdata" == request->fields["content-type"].front()) {
+            // at 128Kb/s can transfer just under 2Mb (bits...) in 15s.
             //  if set min transfer rate at 128Kb/s, 
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
-            server_set_connection_recv_timeout(reader->fd(), request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
+            serverSetConnectionTimeout(reader->fd(), request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
             this->formDataParser.parse(reader, request->files, request->form_content);
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {

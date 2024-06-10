@@ -86,13 +86,41 @@ class ReaderTaskUC: public ReaderTaskChain {
         }
 };
 
-class ReaderTaskIgnore: public ReaderTaskChain {
+class ReaderTaskDisallow: public ReaderTaskChain {
     public:
-        std::string to_ignore;
-        ReaderTaskIgnore(std::string to_ignore): to_ignore(to_ignore) {}
+        std::string to_disallow;
+        bool strict;
+        ReaderTaskDisallow(std::string to_disallow): to_disallow(to_disallow), strict(false) {}
+        ReaderTaskDisallow(std::string to_disallow, bool strict): to_disallow(to_disallow), strict(strict) {}
         void perform(Array<uint8_t>& buffer, uint8_t c) {
-            if (this->to_ignore.find(c) != std::string::npos) { 
-                this->ignored = true;
+            if (this->to_disallow.find(c) != std::string::npos) { 
+                if (strict) {
+                    std::string msg = "Banned character found:";
+                    loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
+                    throw std::runtime_error(msg);
+                } else {
+                    this->ignored = true;
+                }
+            }
+            this->next(buffer, c);
+        }
+};
+
+class ReaderTaskAllow: public ReaderTaskChain {
+    public:
+        std::string to_allow;
+        bool strict;
+        ReaderTaskAllow(std::string to_allow): to_allow(to_allow), strict(false) {}
+        ReaderTaskAllow(std::string to_allow, bool strict): to_allow(to_allow), strict(strict) {}
+        void perform(Array<uint8_t>& buffer, uint8_t c) {
+            if (this->to_allow.find(c) == std::string::npos) { 
+                if (strict) {
+                    std::string msg = "Banned character found:";
+                    loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
+                    throw std::runtime_error(msg);
+                } else {
+                    this->ignored = true;
+                }
             }
             this->next(buffer, c);
         }

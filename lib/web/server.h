@@ -1,5 +1,5 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef WYLESLIBS_SERVER_H
+#define WYLESLIBS_SERVER_H
 
 #if defined __cplusplus
 extern "C"

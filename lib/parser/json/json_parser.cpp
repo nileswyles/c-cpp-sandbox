@@ -133,7 +133,7 @@ static void parseNumber(JsonArray * obj, Reader * r) {
 
     loggerPrintf(LOGGER_DEBUG, "Number after exponential: %f\n", value);
 
-    obj->addValue((JsonValue *) new JsonNumber(value * sign));
+    obj->addValue((JsonValue *) new JsonNumber(value * sign, natural_digits, decimal_digits));
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Number\n");
 }

@@ -41,8 +41,20 @@ class Array {
         }
     public:
         T * buf;
-        Array() : Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
-        Array(const size_t initial_cap) : e_cap(new size_t(initial_cap)), e_size(new size_t(0)), buf(newCArray<T>(initial_cap)), instance_count(new size_t(1)) {}
+        Array(): Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
+        //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
+        Array(std::initializer_list<T> list) {
+            e_cap = new size_t(list.size() * UPSIZE_FACTOR);
+            e_size = new size_t(list.size()); 
+            instance_count = new size_t(1);
+            buf = newCArray<T>(list.size());
+
+            size_t i = 0;
+            for (auto el: list) {
+                buf[i++] = el;
+            }
+        }
+        Array(const size_t initial_cap): e_cap(new size_t(initial_cap)), e_size(new size_t(0)), buf(newCArray<T>(initial_cap)), instance_count(new size_t(1)) {}
         ~Array() {
             // printf("Deconstructor called., %p, instance count: %ld\n", this, *this->instance_count);
             // printf("Buf..., %p\n", this->buf);
@@ -74,7 +86,7 @@ class Array {
             return this->insert(this->size(), els, num_els);
         }
         Array<T>& insert(const size_t pos, const T& el) {
-            return this->insert(pos, el, 1);
+            return this->insert(pos, &el, 1);
         }
         Array<T>& insert(const size_t pos, const T * els, const size_t num_els) {
             // pos out of bounds, return error...
@@ -234,10 +246,10 @@ class Array {
             this->append(nul);
             return std::string((char *)this->buf);
         }
-        T& operator [] (const size_t pos) {
+        T& operator[] (const size_t pos) {
             return this->buf[pos];
         }
-        T& operator [] (const T& el) {
+        T& operator[] (const T& el) {
             size_t i = this->find(el);
             if (i == -1) {
                 this->append(el); 
@@ -248,7 +260,7 @@ class Array {
         }
         // copy... 
         //  Can access private variables?
-        Array(const Array<T>& x) : e_cap(x.e_cap), e_size(x.e_size), buf(x.buf) {
+        Array(const Array<T>& x): e_cap(x.e_cap), e_size(x.e_size), buf(x.buf) {
             instance_count = x.instance_count;
             (*this->instance_count)++;
         }

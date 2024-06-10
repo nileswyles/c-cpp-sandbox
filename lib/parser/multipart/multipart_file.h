@@ -5,8 +5,9 @@
 #include <string>
 #include <map>
 
-#include "server_config.h"
+#include "web/server_context.h"
 #include "paths.h"
+#include "key_generator.h"
 
 namespace WylesLibs {
 
@@ -17,16 +18,13 @@ class MultipartFile {
         std::string id;
         std::string name;
 
-        MultipartFile(): resource_root("./") {
-            throw std::runtime_error("What even are you doing!");
-        }
+        MultipartFile(): resource_root("./") {}
 
-        // TODO:
-        //  this serverconfig will likely become servercontext with access to db/service layer...
-        MultipartFile(ServerConfig config, std::string name) {
-            resource_root = config.resources_root;
+        MultipartFile(ServerContext * context, std::string name) {
+            resource_root = context->config.resources_root;
             // TODO: generate ID, for now, we'll just overwrite file...
-            // id = 
+            //      hmmm... yeah, think about this... again.
+            id = context->key_generator.next();
             name = name;
         }
 

@@ -11,9 +11,8 @@ namespace WylesLibs {
 class ServerConfig: public JsonBase {
     public:
         std::string resources_root;
-        std::string db_path;
 
-        ServerConfig() = default;
+        ServerConfig(): resources_root("./") {}
         ServerConfig(std::string filepath): 
             ServerConfig((JsonObject *)parseFile(filepath)) {}
         ServerConfig(JsonObject * obj) {

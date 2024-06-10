@@ -1,3 +1,6 @@
+#ifndef WYLESLIB_HTTP_H
+#define WYLESLIB_HTTP_H
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -10,9 +13,10 @@
 #include <filesystem>
 
 #include "reader/reader.h"
-#include "server.h"
+#include "web/server.h"
 #include "config.h"
 #include "connection.h"
+#include "web/authorization.h"
 
 #include "parser/multipart/parse_formdata.h"
 #include "parser/multipart/multipart_file.h"
@@ -29,15 +33,17 @@ using namespace WylesLibs::Parser::Multipart;
 
 namespace WylesLibs::Http {
 
-// static Array<std::string> FIELD_VALUES_TO_LOWER_CASE{
-//     "connection",
-//     "upgrade"
-// };
+static Array<std::string> FIELD_VALUES_TO_LOWER_CASE{
+    "connection",
+    "upgrade"
+};
 
 class Url {
     public:
         std::string path;
         std::unordered_map<std::string, std::string> query_map;
+        
+        Url() {}
 };
 
 class HttpRequest {
@@ -55,27 +61,9 @@ class HttpRequest {
         std::unordered_map<std::string, std::string> form_content;
         Array<uint8_t> content;
 
-        void print() {
-            // printf("%s %s %s\n", this->method, this->path, this->version);
+        Authorization auth;
 
-            // int idx = 0;
-            // std::string field_name = this->fields[idx].name;
-            // while(field_name != "" && idx < FIELD_MAX) {
-            //     // TODO: add field for cookies
-            //     // TODO: add a separate field to request struct for this?
-            //     printf("%s: %s\n", field_name, this->fields[idx].value);
-            //     idx++;
-            //     field_name = this->fields[idx].name;
-            // }
-
-            // if (this->content.size() != 0 && this->content_length > 0) {
-            //     printf("---CONTENT_START(%d)---\n", this->content_length);
-            //     for (int i = 0; i < this->content_length; i++) {
-            //         printf("%c", (char)this->content[i]);
-            //     }
-            // }
-            // printf("---END\n");
-        }
+        HttpRequest() {}
 };
 
 class HttpResponse {
@@ -106,11 +94,10 @@ class HttpResponse {
         }
 };
 
-typedef HttpResponse(* RequestProcessor)(HttpRequest *);
+typedef HttpResponse *(* RequestProcessor)(HttpRequest *);
 // voila!
 class HttpConnection {
     private:
-        FormDataParser formDataParser;
         RequestProcessor processor;
         Array<ConnectionUpgrader *> upgraders;
         HttpServerConfig config;
@@ -123,7 +110,6 @@ class HttpConnection {
         HttpConnection() {}
         HttpConnection(HttpServerConfig config, RequestProcessor processor, Array<ConnectionUpgrader *> upgraders): 
             config(config), processor(processor), upgraders(upgraders) {
-                formDataParser = FormDataParser(config);
                 for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(config.static_path)) {
                     std::string path = "/" + dir_entry.path().string();
                     std::string ext = dir_entry.path().extension().string();
@@ -154,3 +140,5 @@ class HttpConnection {
 };
 
 };
+
+#endif

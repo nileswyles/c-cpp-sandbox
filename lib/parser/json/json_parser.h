@@ -8,6 +8,8 @@
 #include "array.h"
 #include "reader/reader.h"
 
+#include "global_consts.h"
+
 using namespace WylesLibs;
 
 namespace WylesLibs::Parser::Json {
@@ -16,6 +18,11 @@ static constexpr size_t MAX_JSON_DEPTH = 7;
 static constexpr size_t MAX_LENGTH_OF_JSON_STRING = 2<<27;
 static constexpr size_t MAX_LENGTH_OF_JSON_STRING_KEYS = 2<<7;
 static constexpr size_t MAX_LENGTH_OF_JSON_STRING_VALUES = 2<<19;
+
+// Natural.Decimal<NUL>
+static constexpr size_t JSON_NUMBER_MAX_DIGITS = NUMBER_MAX_DIGITS * 2 + 2;
+// %NUM_MAX_DIGITS.NUM_MAX_DIGITSf<NUL>
+static constexpr size_t JSON_NUMBER_FORMAT_STRING_SIZE = 4 + 2 + 2;
 
 // single precision == exp is 8-bits... [-126, 127] (255, but centered around zero because decimal point can move in both directions.)
 //  I am using double precision types (double) throughout the program so this shouldn't be an issue.
@@ -74,18 +81,30 @@ class JsonBoolean: public JsonValue {
 class JsonNumber: public JsonValue {
     private:
         double number;
+        size_t natural_digit_count;
+        size_t decimal_digit_count;
     public:
-        JsonNumber(double number): number(number), JsonValue(NUMBER) {}
+        JsonNumber(double number): number(number), natural_digit_count(-1), decimal_digit_count(-1), JsonValue(NUMBER) {}
+        JsonNumber(double number, size_t natural_digit_count, size_t decimal_digit_count): number(number), natural_digit_count(natural_digit_count), decimal_digit_count(decimal_digit_count), JsonValue(NUMBER) {}
 
         double getValue() {
             return this->number;
         }
 
         std::string toJsonString() {
-            // TODO: when figure out limits (precision), adjust this...
-            char number_arr[16];
-            sprintf(number_arr, "%f", this->number);
-            return std::string(number_arr);
+            char format_i[JSON_NUMBER_FORMAT_STRING_SIZE] = {};
+            if (natural_digit_count == -1 || decimal_digit_count == -1) {
+                sprintf(format_i, "%ld.%ldf", NUMBER_MAX_DIGITS, NUMBER_MAX_DIGITS);
+            } else {
+                sprintf(format_i, "%ld.%ldf", natural_digit_count, decimal_digit_count);
+            }
+            char format[JSON_NUMBER_FORMAT_STRING_SIZE] = {};
+            format[0] = '%';
+            strcat(format, format_i);
+         
+            char number[JSON_NUMBER_MAX_DIGITS] = {};
+            sprintf(number, format, this->number);
+            return std::string(number);
         }
 };
 

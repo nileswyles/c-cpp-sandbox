@@ -102,16 +102,6 @@ static void * handler_wrapper_func(void * arg) {
     //  SIGTRAP?
     //  SIGXCPU?
     //  SIGXFSZ?
-
-    // it's lame that I need to do this for each 'connection'. And 'socket' is same as 'connection' which is the same as 'socket'? lol
-    // I thought it was a 1 (socket) to many (connections) kind of thing (at least for bind).
-
-    // what I meant is that
-    // socket == source:port,destination:port == connection
-    //  not, socket == destination:port and source:port,destination:port == connection
-    //  in other words, the api doesn't distinguish between the two. I thought socket was a higher level abstraction of the interface, vs an instance of the interface?
-    //  idk...
-    // in hindsight, duh lol...
     process_sockopts(fd);
     timerAddConnection(fd, INITIAL_CONNECTION_TIMEOUT_S);
     handler(fd);
@@ -123,7 +113,7 @@ static void * handler_wrapper_func(void * arg) {
 //  as far as terminating an active connection/thread...
 //  setting SO_RCVTIMEO and SO_SNDTIMEO to a very small usec value, 
 //      should cause read errors and a properly implemented application *should* gracefully terminate thread...
-static void server_set_connection_sockopts(int fd) {
+static void process_sockopts(int fd) {
     socklen_t byte_len = sizeof(uint8_t);
     socklen_t uint32_t_len = sizeof(uint32_t);
     socklen_t timeval_len = sizeof(struct timeval);

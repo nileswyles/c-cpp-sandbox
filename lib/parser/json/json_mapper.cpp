@@ -19,7 +19,9 @@ bool WylesLibs::Parser::Json::setVariableFromJsonValue<bool>(JsonValue * value) 
     JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == BOOLEAN) {
-        return ((JsonBoolean *)value)->getValue();
+        bool s = ((JsonBoolean *)value)->getValue();
+        loggerPrintf(LOGGER_DEBUG, "value: %d\n", s);
+        return s;
     } else {
         loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
         throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
@@ -31,7 +33,9 @@ double WylesLibs::Parser::Json::setVariableFromJsonValue<double>(JsonValue * val
     JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == NUMBER) {
-        return ((JsonNumber *)value)->getValue();
+        double s = ((JsonNumber *)value)->getValue();
+        loggerPrintf(LOGGER_DEBUG, "value: %f\n", s);
+        return s;
     } else {
         loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
         throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
@@ -44,12 +48,13 @@ std::string WylesLibs::Parser::Json::setVariableFromJsonValue<std::string>(JsonV
     JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == STRING) {
-        return ((JsonString *)value)->getValue();
+        std::string s = ((JsonString *)value)->getValue();
+        loggerPrintf(LOGGER_DEBUG, "value: %s\n", s.c_str());
+        return s;
     } else {
         loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
         throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
     }
-    return "";
 }
 
 template<class T>

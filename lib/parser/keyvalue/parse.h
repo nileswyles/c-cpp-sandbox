@@ -18,9 +18,17 @@
 #define MAX_LENGTH_OF_KEYVALUE_STRING 1024
 
 namespace WylesLibs::Parser::KeyValue {
-extern std::unordered_map<std::string, std::string> parse(std::string s, char delim);
+extern std::unordered_map<std::string, std::string> parse(std::string s, char key_delim, char delim);
 // ! IMPORTANT - Newline after kv string is required.
-extern std::unordered_map<std::string, std::string> parse(Reader * reader, char delim);
+extern std::unordered_map<std::string, std::string> parse(Reader * reader, char key_delim, char delim);
+
+// LOL
+static std::unordered_map<std::string, std::string> parse(std::string s, char delim) {
+    return parse(s, '=', delim);
+}
+static std::unordered_map<std::string, std::string> parse(Reader * reader, char delim) {
+    return parse(reader, '=', delim);
+}
 }
 
 #endif

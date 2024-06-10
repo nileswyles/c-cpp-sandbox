@@ -39,7 +39,7 @@ class Reader {
             r_fd = -1;
             bytes_in_buffer = pBuf_size;
         }
-        Reader(const int r_fd) : Reader(r_fd, READER_RECOMMENDED_BUF_SIZE) {}
+        Reader(const int r_fd): Reader(r_fd, READER_RECOMMENDED_BUF_SIZE) {}
         Reader(const int pFd, const size_t pBuf_size) {
             if (pFd < 0) {
                 throw std::runtime_error("Invalid file descriptor provided.");

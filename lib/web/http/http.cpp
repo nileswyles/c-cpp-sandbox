@@ -30,13 +30,15 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
     if (request == NULL || reader == NULL) {
         throw std::runtime_error("lol....");
     }
+    printf("NO READER Logs?\n");
     request->method = reader->readUntil(" ").removeBack().toString();
+    printf("NO READER Logs?\n");
     request->url = parseUrl(reader);
     request->version = reader->readUntil("\n").removeBack().toString();
 
     request->content_length = -1;
     int field_idx = 0; 
-    ReaderTaskIgnore name_operation("\t ");
+    ReaderTaskDisallow name_operation("\t ");
     ReaderTaskLC lowercase;
     name_operation.nextOperation = &lowercase;
     while (field_idx < HTTP_FIELD_MAX) {
@@ -45,23 +47,30 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
             break;
         }
         std::string field_name = field_name_array.removeBack().toString();
-        ReaderTaskIgnore value_operation("\t ");
-        // TODO:
-        // if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name)) {
-        //     value_operation.nextOperation = &lowercase;
-        // }
-        std::string field_value;
-        char delimeter = 0x00;
-        while (delimeter != '\n') {
-            Array<uint8_t> field_value_array = reader->readUntil(",\n", &value_operation);
-            delimeter = field_value_array.back();
-            field_value = field_value_array.removeBack().toString();
-            request->fields[field_name].append(field_value);
+        ReaderTaskDisallow value_operation("\t ");
+        if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name)) {
+            value_operation.nextOperation = &lowercase;
         }
         field_idx++;
         if (field_name == "Content-Length") {
-            // TODO: negatives? use strtoul instead?
-            request->content_length = atoi(field_value.c_str());
+            double value = 0;
+            size_t count = 0;
+            reader->readNatural(value, count);
+            if (count == 0) {
+                request->content_length = -1;
+            } else {
+                request->content_length = (size_t)value;
+            }
+            reader->readUntil(",\n");
+        } else {
+            std::string field_value;
+            char delimeter = 0x00;
+            while (delimeter != '\n') {
+                Array<uint8_t> field_value_array = reader->readUntil(",\n", &value_operation);
+                delimeter = field_value_array.back();
+                field_value = field_value_array.removeBack().toString();
+                request->fields[field_name].append(field_value);
+            }
         }
     }
     if (field_idx == HTTP_FIELD_MAX) {
@@ -78,7 +87,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
             //  if set min transfer rate at 128Kb/s, 
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
             serverSetConnectionTimeout(reader->fd(), request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
-            this->formDataParser.parse(reader, request->files, request->form_content);
+            Multipart::FormData::parse(reader, request->files, request->form_content);
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
             request->content = reader->readBytes(request->content_length);
@@ -161,6 +170,7 @@ bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
     std::string content_type = this->static_paths[request->url.path];
 	if (content_type != "") {
         HttpResponse response;
+        printf("Processing static request...");
 		if (request->method == "HEAD" || request->method == "GET") {
 	        std::string path = Paths::join(this->config.static_path, request->url.path);
             Array<uint8_t> file_data = File::read(path);
@@ -183,31 +193,40 @@ bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
 }
 
 uint8_t HttpConnection::onConnection(int conn_fd) {
-    HttpRequest * request = new HttpRequest();
-    Reader * reader = new Reader(conn_fd);
+    HttpRequest request;
+    Reader reader(conn_fd);
+    HttpResponse * response = nullptr;
     try {
-        parseRequest(request, reader);
-        bool handled = handleStaticRequest(conn_fd, request);
+        parseRequest(&request, &reader);
+        bool handled = handleStaticRequest(conn_fd, &request);
         if (!handled) {
-            handled = handleWebsocketRequest(conn_fd, request);
+            handled = handleWebsocketRequest(conn_fd, &request);
         }
         if (!handled) {
             // these should always produce a response, so sig need not include connection file descriptor..
-            HttpResponse response = this->processor(request);
-            std::string response_string = response.toString();
-            write(conn_fd, response_string.c_str(), response_string.size());
+            response = this->processor(&request);
+            if (response == nullptr) {
+                std::string msg = "HttpResponse object is a nullptr.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            } else {
+                std::string response_string = response->toString();
+                delete response;
+                free(response);
+                write(conn_fd, response_string.c_str(), response_string.size());
+            }
         }
-        delete reader;
     } catch (const std::exception& e) {
+        delete response;
+        free(response);
+
         // respond with empty HTTP status code 500
-        HttpResponse response;
-        std::string response_string = response.toString();
-        write(conn_fd, response_string.c_str(), response_string.size());
+        HttpResponse err;
+        std::string err_string = err.toString();
+        write(conn_fd, err_string.c_str(), err_string.size());
 
         loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
     }
-    delete request;
-    delete reader;
 
     close(conn_fd); // doc's say you shouldn't retry close so ignore ret
 

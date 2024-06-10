@@ -1,6 +1,10 @@
-#include "http.h"
-#include "connection.h"
-#include "config.h"
+#include "web/http/http.h"
+#include "web/http/connection.h"
+#include "web/http/config.h"
+#include "web/services.h"
+#include "web/server_context.h"
+
+#include "controllers/example.h"
 
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1
@@ -26,20 +30,13 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
         }
 };
 
-// HttpResponse * exampleResourceHandler(HttpRequest * request) {
-//     return;
-// }
+void requestFilterMiddleware(HttpRequest * request) {
+    // for login filters, initializing auth context, etc
+}
 
-// HttpResponse * example2ResourceHandler(HttpRequest * request) {
-//     JsonBasedClass obj(request->content);
+void responseFilterMiddleware(HttpResponse * response) {}
 
-//     obj.blah
-//     obj.blah
-
-//     return;
-// }
-
-HttpResponse requestProcessor(HttpRequest * request) {
+HttpResponse * requestDispatcher(HttpRequest * request) {
     // map
     //   resource_path -> JsonObject, request_handler(JsonObject)...
     //
@@ -116,24 +113,37 @@ HttpResponse requestProcessor(HttpRequest * request) {
     //                  lol... blehhhhhhhhhhhhh...... derppppppppp....
 
     // what a balancing act
+    requestFilterMiddleware(request);
+    HttpResponse * response = nullptr;
+    if ("/example" == request->url.path && "application/json" == request->fields["content-type"][0]) {
+        response = Controller::example(request);
+    } else if ("/example2" == request->url.path && "multipart/byteranges" == request->fields["content-type"][0]) {
+        response = Controller::example2(request);
+    } else if ("/example3" == request->url.path) {
+        response = Controller::example3(request);
+    }
+    responseFilterMiddleware(response);
 
-    // insert middleware here....
-    
-    // need parsers for each of these at least
-    //    application/x-www-form-urlencoded
-    //      same as parsing query string...
-    //    multipart/byteranges
-    //    multipart/formdata
-    //    application/json
-    // if ("/example" == request.url.path && "application/json" == request.fields["content-type"]) {
-    //     printf("calling resource handler for /example path\n");
-    //     // call to resource handler...
-    // } else if ("/example2" == request.url.path && "multipart/byteranges" == request.fields["content-type"]) {
-    //     // call to resource handler...
-    // } else if ("/example3" == request.url.path) {
-    //     // call to resource handler...
-    // }
-    return HttpResponse();
+    return response;
+}
+
+// Generally, direct access to global contexts (state) are frowned upon... but this should be fine...
+//    alternatively, can move this to each service layer module...
+//    or pass along 'only' via function params... (absolutely not, some centralization is needed to keep this from becoming a mess.) 
+
+// But again, it might depend on the application? This is an example application to illustrate how you would use the http library...
+static ServerContext * server_context = nullptr;
+
+// again, why?
+extern ServerContext * WylesLibs::getServerContext() {
+    // LOL
+    if (server_context == nullptr) {
+        std::string msg = "ServerContext is a null pointer.";
+        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
+    } else {
+        return server_context;
+    }
 }
 
 static HttpConnection connection;
@@ -144,38 +154,39 @@ static uint8_t connectionHandler(int conn_fd) {
 }
 
 int main(int argc, char * argv[]) {
-    int ret = -1;
-    if (argc == 3) {
-        try {
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
-            HttpServerConfig config("out/http-config.json");
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created config object.\n");
-            Array<ConnectionUpgrader *> upgraders;
-            WebsocketJsonRpcConnection upgrader("/testpath", "jsonrpc");
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created upgrader object.\n");
-            // WebsocketCastProtobufConnection upgrader("/testpath", "cast-protobuf"); LOL
-            // WebsocketCastJsonRpcConnection upgrader("/testpath", "cast-jsonrpc"); LOL
-     
-            // WebsocketCastProtobufConnection upgrader("/test-cast-protobuf"); LOL
-            // WebsocketCastJsonRpcConnection upgrader("/test-cast-jsonrpc"); LOL
-     
-            // hmmmmm... if only this weren't so................
-            // ConnectionUpgrader * lame = &upgrader;
-            // upgraders.append(lame);
-            // upgraders.append((ConnectionUpgrader *)&upgrader);
-            // lol...
-     
-            // alright, still a shit ton of open questions but this should work?
-            connection = HttpConnection(config, requestProcessor, upgraders); 
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
-            serverListen(argv[1], atoi(argv[2]), connectionHandler);
-        } catch (const std::exception& e) {
-            // redundant try/catch? let's show where exception handled...
-            loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
-            // exit program same way as if this weren't caught...
-            throw e;
-        }
-        ret = 0;
-    } 
+    int ret = 0;
+    try {
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
+        HttpServerConfig config("config.json");
+        
+        ServerContext context(config);
+        server_context = &context;
+
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created config object.\n");
+        Array<ConnectionUpgrader *> upgraders;
+        WebsocketJsonRpcConnection upgrader("/testpath", "jsonrpc");
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created upgrader object.\n");
+        // WebsocketCastProtobufConnection upgrader("/testpath", "cast-protobuf"); LOL
+        // WebsocketCastJsonRpcConnection upgrader("/testpath", "cast-jsonrpc"); LOL
+    
+        // WebsocketCastProtobufConnection upgrader("/test-cast-protobuf"); LOL
+        // WebsocketCastJsonRpcConnection upgrader("/test-cast-jsonrpc"); LOL
+    
+        // hmmmmm... if only this weren't so................
+        // ConnectionUpgrader * lame = &upgrader;
+        // upgraders.append(lame);
+        // upgraders.append((ConnectionUpgrader *)&upgrader);
+        // lol...
+    
+        // alright, still a shit ton of open questions but this should work?
+        connection = HttpConnection(config, requestDispatcher, upgraders); 
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
+        serverListen(config.address.c_str(), (uint16_t)config.port, connectionHandler);
+    } catch (const std::exception& e) {
+        // redundant try/catch? let's show where exception handled...
+        loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
+        // exit program same way as if this weren't caught...
+        throw e;
+    }
     return ret;
 }

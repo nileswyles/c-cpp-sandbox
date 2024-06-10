@@ -1,6 +1,6 @@
 #include "parser/keyvalue/parse.h"
 
-std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(std::string s, char delim) {
+std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(std::string s, char key_delim, char delim) {
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
     if (s.size() > MAX_LENGTH_OF_KEYVALUE_STRING) {
@@ -9,11 +9,11 @@ std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(
         throw std::runtime_error(msg);
     }
     Reader r((uint8_t *)s.data(), s.size());
-    return parse(&r, delim);
+    return parse(&r, key_delim, delim);
 }
 
 // ! IMPORTANT - Newline after kv string is required.
-std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(Reader * reader, char delim) {
+std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(Reader * reader, char key_delim, char delim) {
     std::unordered_map<std::string, std::string> data;
 
     std::string delim_string = "\n";
@@ -21,12 +21,8 @@ std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(
         delim_string += delim;
     }
     while (1) {
-        //  TODO: allow specifying
-        //      key/value delim
-        //      =, :, etc...
-
-        //      also, trim whitespace?
-        Array<uint8_t> field_name = reader->readUntil("=\n");
+        ReaderTaskDisallow ignore_whitespace(" \t");
+        Array<uint8_t> field_name = reader->readUntil("=\n", &ignore_whitespace);
         if (field_name.back() == '\n') {
             // empty line... we are done...
             break;

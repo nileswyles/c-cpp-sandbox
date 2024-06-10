@@ -1,5 +1,5 @@
-#ifndef SERVER_CONNECTION_TIMER_H
-#define SERVER_CONNECTION_TIMER_H
+#ifndef WYLESLIBS_SERVER_CONNECTION_TIMER_H
+#define WYLESLIBS_SERVER_CONNECTION_TIMER_H
 
 #if defined __cplusplus
 extern "C"
@@ -12,6 +12,7 @@ extern "C"
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdbool.h>
 
 #ifndef LOGGER_SERVER_CONNECTION_TIMER
 #define LOGGER_SERVER_CONNECTION_TIMER 1
@@ -45,7 +46,7 @@ static bool run = false;
 static void timerCloseConnection(int fd);
 static int timerStart();
 static void timerStop();
-static void timerProcess(void * arg);
+static void * timerProcess(void * arg);
 static void timerSetTimeout(int fd, uint32_t timeout_s);
 static void timerAddConnection(int fd, uint32_t timeout_s);
 
@@ -80,7 +81,7 @@ static void timerStop() {
     run = false;
 }
 
-static void timerProcess(void * arg) {
+static void * timerProcess(void * arg) {
     while(run) {
         pthread_mutex_lock(&mutex);
         Connection * current = start;
@@ -90,7 +91,7 @@ static void timerProcess(void * arg) {
             struct timespec ts;
             clock_gettime(CLOCK_MONOTONIC, &ts);
             if (current->start_s + current->timeout_s >= ts.tv_sec) {
-                timerCloseConnection(current->fd());
+                timerCloseConnection(current->fd);
 
                 // remove item from linked list.
                 if (prev == NULL) { // if first item in list...
@@ -111,6 +112,8 @@ static void timerProcess(void * arg) {
         sleep(1); // 1s
         runtime++;
     }
+
+    return NULL;
 }
 
 static void timerSetTimeout(int fd, uint32_t timeout_s) {

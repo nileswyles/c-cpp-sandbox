@@ -196,9 +196,14 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
     // for login filters, initializing auth context, etc
     for (size_t i = 0; i < this->request_filters.size(); i++) {
         this->request_filters[i](request);
-
     }
-    HttpResponse * response = this->request_map[request->url.path][request->fields["content-type"].front()](request);
+    HttpResponse * response = nullptr;
+    if (this->request_map[request->url.path].contains("")) {
+        // indicates that the user does not care about content type.
+        response = this->request_map[request->url.path][""](request);
+    } else if (this->request_map[request->url.path].contains(request->fields["content-type"].front())) {
+        response = this->request_map[request->url.path][request->fields["content-type"].front()](request);
+    }
     for (size_t i = 0; i < this->response_filters.size(); i++) {
         this->response_filters[i](response);
     }

@@ -36,7 +36,9 @@ static Array<ResponseFilter> responseFilters{};
 static map<std::string, map<std::string, RequestProcessor *>> requestMap{
     {"/example", {{"application/json", Controller::example }}},
     {"/example2", {{"multipart/byteranges", Controller::example2 }}},
-    {"/example3", {{"", Controller::example3 }}}
+    {"/example3", {{"application/x-www-form-urlencoded", Controller::example3 }}},
+    {"/example4", {{"multipart/formdata", Controller::example }}},
+    {"/exampleDontCare", {{"", Controller::example }}} 
 };
 
 // Generally, direct access to global contexts (state) are frowned upon... but this should be fine...

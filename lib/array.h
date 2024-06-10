@@ -228,9 +228,17 @@ class Array {
             }
         }
         T& front() {
+            if (this->size() == 0) {
+                T t;
+                this->append(t);
+            }
             return this->buf[0];
         }
         T& back() {
+            if (this->size() == 0) {
+                T t;
+                this->append(t);
+            }
             return this->buf[this->size()-1];
         }
         Array<T>& removeFront() {

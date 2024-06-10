@@ -94,11 +94,21 @@ class HttpResponse {
         }
 };
 
-typedef HttpResponse *(* RequestProcessor)(HttpRequest *);
+// TODO: func ptr types... 
+// typedef HttpResponse *(RequestProcessor)(HttpRequest *);
+//  vs.
+// typedef HttpResponse *(* RequestProcessor)(HttpRequest *);
+typedef HttpResponse *(RequestProcessor)(HttpRequest *);
+typedef void(* RequestFilter)(HttpRequest *);
+typedef void(* ResponseFilter)(HttpResponse *);
+
 // voila!
 class HttpConnection {
     private:
-        RequestProcessor processor;
+        RequestProcessor * processor;
+        map<std::string, map<std::string, RequestProcessor *>> request_map;
+        Array<RequestFilter> request_filters;
+        Array<ResponseFilter> response_filters;
         Array<ConnectionUpgrader *> upgraders;
         HttpServerConfig config;
         std::unordered_map<std::string, std::string> static_paths; 
@@ -106,10 +116,10 @@ class HttpConnection {
         void parseRequest(HttpRequest * request, Reader * reader);
         bool handleWebsocketRequest(int conn_fd, HttpRequest * request);
         bool handleStaticRequest(int conn_fd, HttpRequest * request);
-    public:
-        HttpConnection() {}
-        HttpConnection(HttpServerConfig config, RequestProcessor processor, Array<ConnectionUpgrader *> upgraders): 
-            config(config), processor(processor), upgraders(upgraders) {
+
+        HttpResponse * requestDispatcher(HttpRequest * request);
+        // hmm... private static member?
+        static void initializeStaticPaths(HttpServerConfig config, std::unordered_map<std::string, std::string> static_paths) {
                 for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(config.static_path)) {
                     std::string path = "/" + dir_entry.path().string();
                     std::string ext = dir_entry.path().extension().string();
@@ -134,6 +144,28 @@ class HttpConnection {
 					// 	static_paths[path] = "none"
                     // }
                 }
+        }
+    public:
+        HttpConnection() {}
+        // haha, funny how that worked out...
+        HttpConnection(HttpServerConfig pConfig, map<std::string, map<std::string, RequestProcessor *>> pRequest_map, 
+                        Array<RequestFilter> pRequest_filters, Array<ResponseFilter> pResponse_filters, 
+                        Array<ConnectionUpgrader *> pUpgraders) {
+            config = pConfig;
+            request_map = pRequest_map;
+            request_filters = pRequest_filters;
+            response_filters = pResponse_filters;
+            upgraders = pUpgraders;
+            HttpConnection::initializeStaticPaths(config, static_paths);
+        }
+        HttpConnection(HttpServerConfig config, RequestProcessor * processor, Array<ConnectionUpgrader *> upgraders): 
+            config(config), processor(processor), upgraders(upgraders) {
+                if (processor == nullptr) {
+                    std::string msg = "Processor can not be a nullptr when invoking this constructor.";
+                    loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                HttpConnection::initializeStaticPaths(config, static_paths);
         }
 
         uint8_t onConnection(int conn_fd);

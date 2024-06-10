@@ -192,6 +192,19 @@ bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
     return handled;
 }
 
+HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
+    // for login filters, initializing auth context, etc
+    for (size_t i = 0; i < this->request_filters.size(); i++) {
+        this->request_filters[i](request);
+
+    }
+    HttpResponse * response = this->request_map[request->url.path][request->fields["content-type"].front()](request);
+    for (size_t i = 0; i < this->response_filters.size(); i++) {
+        this->response_filters[i](response);
+    }
+    return response;
+}
+
 uint8_t HttpConnection::onConnection(int conn_fd) {
     HttpRequest request;
     Reader reader(conn_fd);
@@ -204,7 +217,11 @@ uint8_t HttpConnection::onConnection(int conn_fd) {
         }
         if (!handled) {
             // these should always produce a response, so sig need not include connection file descriptor..
-            response = this->processor(&request);
+            if (this->processor == nullptr) {
+                response = this->requestDispatcher(&request);
+            } else {
+                response = this->processor(&request);
+            }
             if (response == nullptr) {
                 std::string msg = "HttpResponse object is a nullptr.";
                 loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());

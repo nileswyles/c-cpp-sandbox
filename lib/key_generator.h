@@ -24,19 +24,19 @@ class UniqueKeyGeneratorStore {
             int fd = open(file_path.c_str(), O_RDONLY);
             if (fd != -1) {
                 Reader r(fd);
-                for (size_t i = 0; i < 16; i++) {
-                    current = current << 4;
-                    uint8_t byte = r.readByte();
-                    if (isDigit(byte)) {
-                        current |= r.readByte() - 0x30;
-                    } else if (isUpperHex(byte)) {
-                        current |= r.readByte() - 0x41;
-                    } else {
-                        std::string msg = "Non-hex character detected.";
-                        loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
-                        throw std::runtime_error(msg);
-                    }
-                }
+                // for (size_t i = 0; i < 16; i++) {
+                //     current = current << 4;
+                //     uint8_t byte = r.readByte();
+                //     if (isDigit(byte)) {
+                //         current |= r.readByte() - 0x30;
+                //     } else if (isUpperHex(byte)) {
+                //         current |= r.readByte() - 0x41;
+                //     } else {
+                //         std::string msg = "Non-hex character detected.";
+                //         loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                //         throw std::runtime_error(msg);
+                //     }
+                // }
                 close(fd);
             }
         }

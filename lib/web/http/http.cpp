@@ -3,9 +3,9 @@
 #include <iostream>
 
 #include "parser/keyvalue/parse.h"
-// #include <openssl/sha.h>
-// #include <openssl/bio.h>
-// #include <openssl/evp.h>
+#include <openssl/sha.h>
+#include <openssl/bio.h>
+#include <openssl/evp.h>
 
 using namespace WylesLibs;
 using namespace WylesLibs::Http;
@@ -16,7 +16,7 @@ using namespace WylesLibs::Parser;
 static Url parseUrl(Reader * reader) {
     Url url;
     // path = /aklmdla/aslmlamk(?)
-    Array<uint8_t> path = reader->readUntil("?\n");
+    Array<uint8_t> path = reader->readUntil("? ");
     if ((char)path.back() == '?') {
         // query = key=value&key2=value2
         url.query_map = KeyValue::parse(reader, '&');
@@ -30,9 +30,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
     if (request == NULL || reader == NULL) {
         throw std::runtime_error("lol....");
     }
-    printf("NO READER Logs?\n");
     request->method = reader->readUntil(" ").removeBack().toString();
-    printf("NO READER Logs?\n");
     request->url = parseUrl(reader);
     request->version = reader->readUntil("\n").removeBack().toString();
 
@@ -42,8 +40,12 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
     ReaderTaskLC lowercase;
     name_operation.nextOperation = &lowercase;
     while (field_idx < HTTP_FIELD_MAX) {
-        Array<uint8_t> field_name_array = reader->readUntil("=", &name_operation);
-        if (field_name_array.back() == '\n') {
+        Array<uint8_t> field_name_array = reader->readUntil(":\n", &name_operation);
+        // if (field_name_array.back() == '\n') {
+        //     break;
+        // }
+        // TODO: again this makes no sense.
+        if (field_name_array.size() >= 2 && field_name_array.buf[field_name_array.size()-2] == '\n') {
             break;
         }
         std::string field_name = field_name_array.removeBack().toString();
@@ -68,6 +70,11 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
             while (delimeter != '\n') {
                 Array<uint8_t> field_value_array = reader->readUntil(",\n", &value_operation);
                 delimeter = field_value_array.back();
+                // TODO: this makes no sense...
+                // lol... 
+                if (field_value_array.size() >= 2) {
+                    delimeter = field_value_array.buf[field_value_array.size()-2];
+                }
                 field_value = field_value_array.removeBack().toString();
                 request->fields[field_name].append(field_value);
             }
@@ -119,32 +126,28 @@ bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) 
                     // not sure what this is doing, but if that's what the browser wants lmao..
                     std::string key_string = request->fields["sec-websocket-key"].toString() + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-                    // char message_digest[1024]; // this an issue? TODO: how to calculate buffer size... similarly, validate sec-websocket-key
-                    // SHA_CTX context;
-                    // int result = SHA1_Init(&context);
-                    // // if (result =)
-                    // result = SHA1_Update(&context, (void *)key_string.c_str(), key_string.size());
-                    // result = SHA1_Final((unsigned char *)message_digest, &context);
+                    char message_digest[1024]; // this an issue? TODO: how to calculate buffer size... similarly, validate sec-websocket-key
+                    SHA_CTX context;
+                    int result = SHA1_Init(&context);
+                    result = SHA1_Update(&context, (void *)key_string.c_str(), key_string.size());
+                    result = SHA1_Final((unsigned char *)message_digest, &context);
 
-                    // // lol... wtf is this?
-                    // BIO *bio, *b64;
-                    // b64 = BIO_new(BIO_f_base64());
-                    // // lol.... why is this needed?
-                    // char base64_encoded[2048];
-                    // bio = BIO_new_mem_buf(base64_encoded, 2048);
-                    // // bio = BIO_new_fp(stdout, BIO_NOCLOSE);
-                    // BIO_push(b64, bio);
-                    // BIO_write(b64, message_digest, strlen(message_digest));
+                    BIO *bio, *b64;
+                    b64 = BIO_new(BIO_f_base64());
+                    char base64_encoded[2048];
+                    bio = BIO_new_mem_buf(base64_encoded, 2048);
+                    BIO_push(b64, bio);
+                    BIO_write(b64, message_digest, strlen(message_digest));
 
-                    // printf(base64_encoded);
-                    // response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
+                    printf(base64_encoded);
+                    printf(message_digest);
+                    response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
+                    BIO_flush(b64);
+                    printf(base64_encoded);
+                    printf(message_digest);
+                    response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
 
-                    // BIO_flush(b64);
-
-                    // printf(base64_encoded);
-                    // response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
-
-                    // BIO_free_all(b64);
+                    BIO_free_all(b64);
 
                     // API not stable? lol...
                     // EVP_EncodeBlock((unsigned char *)encodedData, (const unsigned char *)checksum, strlen(checksum));
@@ -164,15 +167,20 @@ bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) 
 
 bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
     bool handled = false;
-    if (this->config.root_html_file != "" && request->url.path == "/") {
-		request->url.path = this->config.root_html_file;
-	}
-    std::string content_type = this->static_paths[request->url.path];
+    printf("url path: %s\n, config: %s\n", request->url.path.c_str(), this->config.root_html_file.c_str());
+    std::string path;
+    if (request->url.path == "/") {
+        printf("static_path: %s\n", this->config.static_path.c_str());
+	    path = Paths::join("/", Paths::join(this->config.static_path, this->config.root_html_file));
+	} else {
+        path = Paths::join("/", Paths::join(this->config.static_path, request->url.path));
+    }
+    printf("%s\n", path.c_str());
+    std::string content_type = this->static_paths[path];
 	if (content_type != "") {
         HttpResponse response;
         printf("Processing static request...");
 		if (request->method == "HEAD" || request->method == "GET") {
-	        std::string path = Paths::join(this->config.static_path, request->url.path);
             Array<uint8_t> file_data = File::read(path);
 			response.fields["Content-Length"] = file_data.size();
 			response.fields["Content-Type"] = content_type;
@@ -198,11 +206,14 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
         this->request_filters[i](request);
     }
     HttpResponse * response = nullptr;
+    // lol, should I even bother with content-type?
+    //  let's leave it there until I start building an actual API... might not be as useful as once thought.
+    std::string content_type = request->fields["content-type"].front();
     if (this->request_map[request->url.path].contains("")) {
         // indicates that the user does not care about content type.
         response = this->request_map[request->url.path][""](request);
-    } else if (this->request_map[request->url.path].contains(request->fields["content-type"].front())) {
-        response = this->request_map[request->url.path][request->fields["content-type"].front()](request);
+    } else if (this->request_map[request->url.path].contains(content_type)) {
+        response = this->request_map[request->url.path][content_type](request);
     }
     for (size_t i = 0; i < this->response_filters.size(); i++) {
         this->response_filters[i](response);

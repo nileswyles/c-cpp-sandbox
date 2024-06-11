@@ -54,7 +54,9 @@ Array<uint8_t> Reader::readBytes(const size_t n) {
 
 Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
     // # less clunky
-    operation->read_until = until;
+    if (operation != nullptr) {
+        operation->read_until = until;
+    }
 
     this->cursorCheck();
 
@@ -91,8 +93,6 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
     loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);
     loggerPrintf(LOGGER_DEBUG, "reader_read_until string: '%s'\n", data.toString().c_str());
 
-    // make this make sense....
-    printf("BACK| %c\n", data.buf[data.size()-2]);
     return data;
 }
 

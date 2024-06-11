@@ -33,6 +33,7 @@ class HttpServerConfig: public ServerConfig {
                 std::string key = obj->keys.at(i);
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
+                // TODO: validation... like root_html_file should be defined and size>0
                 if (key == "static_path") {
                     static_path = setVariableFromJsonValue<std::string>(value);
                 } else if (key == "address") {

@@ -125,24 +125,15 @@ class HttpConnection {
                     std::string ext = dir_entry.path().extension().string();
                     printf("path: %s\n", path.c_str());
                     printf("ext: %s\n", ext.c_str());
-					if (ext == "html") {
+					if (ext == ".html") {
 						static_paths[path] = "text/html";
-					} else if (ext == "js") {
+					} else if (ext == ".js") {
 						static_paths[path] = "text/javascript";
-					} else if (ext == "css") {
+					} else if (ext == ".css") {
 						static_paths[path] = "text/css";
                     } else {
-						static_paths[path] = "text/plain";
+						static_paths[path] = "none";
                     }
-					// if (ext == ".html") {
-					// 	static_paths[path] = "text/html"
-					// } else if (ext == ".js") {
-					// 	static_paths[path] = "text/javascript"
-					// } else if (ext == ".css") {
-					// 	static_paths[path] = "text/css"
-                    // } else {
-					// 	static_paths[path] = "none"
-                    // }
                 }
         }
     public:

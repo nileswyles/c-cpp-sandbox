@@ -40,7 +40,6 @@ LD_FLAGS="
 -lssl
 -lcrypto
 "
-LD_FLAGS=""
 
 PROGRAM_PATH=$ROOT_DIR/http_test/out/http-server.out
 rm $PROGRAM_PATH

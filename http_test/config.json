@@ -1,6 +1,6 @@
 {
     "static_path": "html",
-    "root_html_file": "html/index.html",
+    "root_html_file": "index.html",
     "address": "0.0.0.0",
     "port": 8080
 }

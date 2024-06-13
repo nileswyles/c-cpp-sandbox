@@ -137,7 +137,7 @@ class ReaderTaskTrim: public ReaderTask {
 
         void rTrimFlush(Array<uint8_t>& buffer) {
             if (this->r_trim.size() > 0) {
-                buffer.append(this->r_trim.buf, this->r_trim.size());
+                buffer.append(this->r_trim.buf(), this->r_trim.size());
             }
             r_trimming = false;
         }
@@ -201,7 +201,7 @@ class ReaderTaskExtract: public ReaderTask {
 
         void rTrimFlush(Array<uint8_t>& buffer) {
             if (this->r_trim.size() > 0) {
-                buffer.append(this->r_trim.buf, this->r_trim.size());
+                buffer.append(this->r_trim.buf(), this->r_trim.size());
             }
             this->r_trimming = false;
         }

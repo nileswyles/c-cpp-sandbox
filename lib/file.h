@@ -25,7 +25,7 @@ static void writeFile(std::string file_path, Array<uint8_t> buffer, bool append)
         } else {
             s.seekp(0);
         }
-        s.write((const char *)buffer.buf, buffer.size()); // binary output
+        s.write((const char *)buffer.buf(), buffer.size()); // binary output
     }
 }
 // TODO: seek... when multipart file support is added?
@@ -42,6 +42,7 @@ static WylesLibs::Array<uint8_t> read(std::string file_path) {
         return WylesLibs::Array<uint8_t>();
     }
     Reader r(fd);
+    printf("???????\n");
     Array<uint8_t> file = r.readUntil((char)EOF, true);
     close(fd);
     return file;

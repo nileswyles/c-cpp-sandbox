@@ -33,10 +33,11 @@ using namespace WylesLibs::Parser::Multipart;
 
 namespace WylesLibs::Http {
 
-static Array<std::string> FIELD_VALUES_TO_LOWER_CASE{
-    "connection",
-    "upgrade"
-};
+// TODO: const char * specialization needs some work.
+// static Array<const char *> FIELD_VALUES_TO_LOWER_CASE{
+//     "connection",
+//     "upgrade"
+// };
 
 class Url {
     public:
@@ -119,20 +120,21 @@ class HttpConnection {
 
         HttpResponse * requestDispatcher(HttpRequest * request);
         // hmm... private static member?
-        static void initializeStaticPaths(HttpServerConfig config, std::unordered_map<std::string, std::string> static_paths) {
+        static void initializeStaticPaths(HttpServerConfig config, std::unordered_map<std::string, std::string> * static_paths) {
                 for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(config.static_path)) {
-                    std::string path = "/" + dir_entry.path().string();
+                    std::string path = dir_entry.path().string();
                     std::string ext = dir_entry.path().extension().string();
                     printf("path: %s\n", path.c_str());
                     printf("ext: %s\n", ext.c_str());
 					if (ext == ".html") {
-						static_paths[path] = "text/html";
+                        printf("?/\n");
+						(*static_paths)[path] = "text/html";
 					} else if (ext == ".js") {
-						static_paths[path] = "text/javascript";
+						(*static_paths)[path] = "text/javascript";
 					} else if (ext == ".css") {
-						static_paths[path] = "text/css";
+						(*static_paths)[path] = "text/css";
                     } else {
-						static_paths[path] = "none";
+						(*static_paths)[path] = "none";
                     }
                 }
         }
@@ -147,7 +149,8 @@ class HttpConnection {
             request_filters = pRequest_filters;
             response_filters = pResponse_filters;
             upgraders = pUpgraders;
-            HttpConnection::initializeStaticPaths(config, static_paths);
+            // why though?
+            HttpConnection::initializeStaticPaths(config, &static_paths);
         }
         HttpConnection(HttpServerConfig config, RequestProcessor * processor, Array<ConnectionUpgrader *> upgraders): 
             config(config), processor(processor), upgraders(upgraders) {
@@ -156,7 +159,7 @@ class HttpConnection {
                     loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 }
-                HttpConnection::initializeStaticPaths(config, static_paths);
+                HttpConnection::initializeStaticPaths(config, &static_paths);
         }
 
         uint8_t onConnection(int conn_fd);

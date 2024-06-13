@@ -21,8 +21,8 @@ static void parse(Reader * r, Array<MultipartFile> files, unordered_map<std::str
         bool new_file = true;
         MultipartFile file;
         Array<uint8_t> line = r->readUntil("\n"); // read and consume boundary string
-        if (line.buf[0] == '-' && line.buf[1] == '-') {
-            if (line.buf[line.size() - 3] == '-') break;
+        if (line.buf()[0] == '-' && line.buf()[1] == '-') {
+            if (line.buf()[line.size() - 3] == '-') break;
             // assume type then range for now...
             r->readUntil(";"); // read and consume content disposition type because who cares.
 

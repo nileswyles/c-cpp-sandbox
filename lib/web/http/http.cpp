@@ -21,7 +21,8 @@ static Url parseUrl(Reader * reader) {
         // query = key=value&key2=value2
         url.query_map = KeyValue::parse(reader, '&');
     }
-    url.path = path.removeBack().toString();
+    // TODO: same as other comments... need to fix this...
+    url.path = path.removeBack().removeBack().toString();
 
     return url;
 }
@@ -45,14 +46,14 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
         //     break;
         // }
         // TODO: again this makes no sense.
-        if (field_name_array.size() >= 2 && field_name_array.buf[field_name_array.size()-2] == '\n') {
+        if (field_name_array.size() >= 2 && field_name_array.buf()[field_name_array.size()-2] == '\n') {
             break;
         }
         std::string field_name = field_name_array.removeBack().toString();
         ReaderTaskDisallow value_operation("\t ");
-        if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name)) {
-            value_operation.nextOperation = &lowercase;
-        }
+        // if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name)) {
+        //     value_operation.nextOperation = &lowercase;
+        // }
         field_idx++;
         if (field_name == "Content-Length") {
             double value = 0;
@@ -73,7 +74,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
                 // TODO: this makes no sense...
                 // lol... 
                 if (field_value_array.size() >= 2) {
-                    delimeter = field_value_array.buf[field_value_array.size()-2];
+                    delimeter = field_value_array.buf()[field_value_array.size()-2];
                 }
                 field_value = field_value_array.removeBack().toString();
                 request->fields[field_name].append(field_value);
@@ -167,33 +168,39 @@ bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) 
 
 bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
     bool handled = false;
+    for (auto e: this->static_paths) {
+        printf("%s: %s\n", e.first, e.second);
+    }
     printf("url path: %s\n, config: %s\n", request->url.path.c_str(), this->config.root_html_file.c_str());
     std::string path;
     if (request->url.path == "/") {
         printf("static_path: %s\n", this->config.static_path.c_str());
-	    path = Paths::join("/", Paths::join(this->config.static_path, this->config.root_html_file));
+	    path = Paths::join(this->config.static_path, this->config.root_html_file);
 	} else {
-        path = Paths::join("/", Paths::join(this->config.static_path, request->url.path));
+        path = Paths::join(this->config.static_path, request->url.path);
     }
     printf("%s\n", path.c_str());
     std::string content_type = this->static_paths[path];
 	if (content_type != "") {
         HttpResponse response;
-        printf("Processing static request...");
-		if (request->method == "HEAD" || request->method == "GET") {
+        printf("Processing static request...\n");
+		if (request->method == "HEAD" || request->method == "GET ") {
             Array<uint8_t> file_data = File::read(path);
+            printf("Read file\n");
+            // TODO: limit to content-length?
 			response.fields["Content-Length"] = file_data.size();
 			response.fields["Content-Type"] = content_type;
 			if (request->method == "GET") {
 				response.content = file_data;
             }
+            printf("Read file\n");
 			response.status_code = "200";
 		} else {
             response.status_code = "500";
         }
         std::string response_string = response.toString();
         write(conn_fd, response_string.c_str(), response_string.size());
-
+        printf("Wrote static request...\n");
         handled = true;
 	}
 

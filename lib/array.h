@@ -33,6 +33,7 @@ static inline T * newCArray(size_t size) {
 template<typename T>
 class Array {
     private:
+        T ** e_buf;
         size_t * e_cap;
         size_t * e_size;
         size_t * instance_count;
@@ -40,31 +41,33 @@ class Array {
             buf[pos] = el;
         }
     public:
-        T * buf;
         Array(): Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         Array(std::initializer_list<T> list) {
             e_cap = new size_t(list.size() * UPSIZE_FACTOR);
             e_size = new size_t(list.size()); 
             instance_count = new size_t(1);
-            buf = newCArray<T>(list.size());
+            e_buf = new T *(newCArray<T>(*e_cap));
 
             size_t i = 0;
             for (auto el: list) {
-                buf[i++] = el;
+                (*e_buf)[i++] = el;
             }
         }
-        Array(const size_t initial_cap): e_cap(new size_t(initial_cap)), e_size(new size_t(0)), buf(newCArray<T>(initial_cap)), instance_count(new size_t(1)) {}
+        Array(const size_t initial_cap): e_cap(new size_t(initial_cap)), e_size(new size_t(0)), e_buf(new T*(newCArray<T>(initial_cap))), instance_count(new size_t(1)) {}
         ~Array() {
-            // printf("Deconstructor called., %p, instance count: %ld\n", this, *this->instance_count);
-            // printf("Buf..., %p\n", this->buf);
             (*this->instance_count)--;
             if (*this->instance_count == 0) {
-                delete[] buf;
+                delete[] *e_buf;
+                delete e_buf;
                 delete e_cap;
                 delete e_size;
                 delete instance_count;
             }
+        }
+        T * buf() {
+            // use at your own risk, obviously...
+            return *this->e_buf;
         }
         size_t size() {
             return *this->e_size;
@@ -98,11 +101,11 @@ class Array {
 
             loggerPrintf(LOGGER_DEBUG, "num_els: %ld, size: %ld, e_cap: %ld, pos: %ld\n", num_els, this->size(), this->cap(), pos);
 
-            T * new_buf = this->buf; 
+            T ** new_buf = this->e_buf; 
             bool recapped = false;
             if (num_els + this->size() > this->cap()) {
                 size_t new_cap = (size_t)((num_els + this->size()) * UPSIZE_FACTOR);
-                new_buf = newCArray<T>(new_cap);
+                *new_buf = newCArray<T>(new_cap);
                 if (new_buf == nullptr) {
                     // if no bad_alloc thrown? lol whatever...
                     std::string msg = "Failed to allocate new array.";
@@ -115,7 +118,7 @@ class Array {
                     //  the rest will be automagically intialized by insert operation... (see use of new_buf vs this->buf variables below)
                     size_t total_size_up_to_pos = pos * sizeof(T);
                     for (size_t i = 0; i < pos; i++) {
-                        new_buf[i] = this->buf[i];
+                        (*new_buf)[i] = (*this->e_buf)[i];
                     }
                 }
             }
@@ -140,18 +143,18 @@ class Array {
                     }
                 }
                 if (i < this->size()) {
-                    bucket[bucket_push] = this->buf[i];
+                    bucket[bucket_push] = (*this->e_buf)[i];
                     if (++bucket_push == num_els) {
                         bucket_push = 0;
                     }
                 }
-                addElement(new_buf, i, value);
+                addElement(*new_buf, i, value);
             }
             delete[] bucket;
 
             if (recapped) {
-                delete[] this->buf;
-                this->buf = new_buf;
+                delete[] *this->e_buf;
+                *this->e_buf = *new_buf;
             }
             *this->e_size += num_els;
 
@@ -187,22 +190,22 @@ class Array {
                     //  the rest will be automatically intialized by remove operation... 
                     selected_buf = new_buf;
                     for (size_t i = 0; i < pos; i++) {
-                        selected_buf[i] = this->buf[i];
+                        selected_buf[i] = (*this->e_buf)[i];
                     }
                 }
             } else {
                 // else, just remove, don't recap array...
-                selected_buf = this->buf;
+                selected_buf = *this->e_buf;
             }
             for (size_t i = pos; i < this->size(); i++) {
                 if (i + num_els < this->size()) {
                     // if removing last element, just leave it... decrementing size should be enough...
-                    selected_buf[i] = this->buf[i + num_els];
+                    selected_buf[i] = (*this->e_buf)[i + num_els];
                 }
             }
             if (recapped) {
-                delete[] this->buf;
-                this->buf = selected_buf;
+                delete[] *this->e_buf;
+                *this->e_buf = selected_buf;
             }
 
             *this->e_size -= num_els;
@@ -214,7 +217,7 @@ class Array {
         }
         size_t find(const T& el) {
             for (size_t i = 0; i < this->size(); i++) {
-                if (this->buf[i] == el) {
+                if ((*this->e_buf)[i] == el) {
                     return i;
                 }
             }
@@ -222,7 +225,7 @@ class Array {
         }
         T& at(const size_t pos) {
             if (pos > 0 && pos < this->size()) {
-                return this->buf[pos];
+                return (*this->e_buf)[pos];
             } else {
                 // throw std::runtime_error("Invalid pos...");
             }
@@ -232,14 +235,15 @@ class Array {
                 T t;
                 this->append(t);
             }
-            return this->buf[0];
+            return (*this->e_buf)[0];
         }
         T& back() {
+            // TODO: might want to through exception for these...
             if (this->size() == 0) {
                 T t;
                 this->append(t);
             }
-            return this->buf[this->size()-1];
+            return (*this->e_buf)[this->size()-1];
         }
         Array<T>& removeFront() {
             remove(0);
@@ -252,29 +256,29 @@ class Array {
         std::string toString() {
             T nul = {0};
             this->append(nul);
-            return std::string((char *)this->buf);
+            return std::string((char *)(*this->e_buf));
         }
         T& operator[] (const size_t pos) {
-            return this->buf[pos];
+            return (*this->e_buf)[pos];
         }
         T& operator[] (const T& el) {
             size_t i = this->find(el);
             if (i == -1) {
                 this->append(el); 
-                this->buf[this->size()-1];
+                (*this->e_buf)[this->size()-1];
             } else {
-                return this->buf[i];
+                return (*this->e_buf)[i];
             }
         }
         // copy... 
         //  Can access private variables?
-        Array(const Array<T>& x): e_cap(x.e_cap), e_size(x.e_size), buf(x.buf) {
+        Array(const Array<T>& x): e_cap(x.e_cap), e_size(x.e_size), e_buf(x.e_buf) {
             instance_count = x.instance_count;
             (*this->instance_count)++;
         }
         Array<T>& operator= (const Array<T>& x) {
             this->instance_count = x.instance_count;
-            this->buf = x.buf;
+            this->e_buf = x.e_buf;
             this->e_cap = x.e_cap;
             this->e_size = x.e_size;
 

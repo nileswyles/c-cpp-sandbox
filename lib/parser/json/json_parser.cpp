@@ -326,7 +326,7 @@ static bool parseKey(JsonObject * obj, Reader * r) {
     // }
 
     // LOL
-    if (key.size() >= 2 && key.buf[key.size()-2] == (uint8_t)'}') {
+    if (key.size() >= 2 && key.buf()[key.size()-2] == (uint8_t)'}') {
         return false;
     }
     std::string key_string = key.removeBack().removeBack().toString();
@@ -399,7 +399,7 @@ extern JsonValue * WylesLibs::Parser::Json::parse(Array<uint8_t> json) {
         throw std::runtime_error(msg);
     }
     size_t i = 0;
-    Reader r(json.buf, json.size());
+    Reader r(json.buf(), json.size());
     return parse(&r, i);
 }
 

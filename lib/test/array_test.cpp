@@ -14,70 +14,23 @@
 
 using namespace WylesLibs;
 
-// TODO:
-//  Template and convert to uint8_t in assert function?
-//  Revisit and think about this some more later.
-typedef struct ArrayAssert {
-    uint8_t * actual;
-    size_t actual_size;
-    size_t actual_cap;
-    uint8_t * expected;
-    size_t expected_size;
-    size_t expected_cap;
-} ArrayAssert;
-
-// bool assert(Array * arr, Array * expected_arr) {
-// bool assert(ArrayAssert assert) {
-//     bool memory_match = memcmp(assert.expected, assert.actual, assert.expected_size) == 0;
-//     bool size_match = assert.actual_size == assert.expected_size;
-//     // make sure cap grows at the predetermined rate.
-//     // also make sure size doesn't exceed cap (arguably more important).
-//     bool cap_match = assert.actual_cap == assert.expected_cap && assert.actual_size <= assert.actual_cap; 
-
-//     loggerPrintf(LOGGER_TEST, "Expected:\n");
-//     loggerPrintByteArray(LOGGER_TEST, assert.expected, assert.expected_size * expected_size_of_el);
-//     loggerPrintf(LOGGER_TEST, "Actual:\n");
-//     loggerPrintByteArray(LOGGER_TEST, assert.actual, assert.actual_size * expected_size_of_el);
-//     loggerPrintf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu), Size of El Match: %s (%lu == %lu) \n", 
-//         memory_match ? "True" : "False", 
-//         size_match ? "True" : "False", assert.expected_size, assert.actual_size,
-//         cap_match ? "True" : "False", assert.expected_cap assert.actual_cap
-//     );
-
-//     if (!memory_match || !size_match || !cap_match) {
-//         printf("\nTest Failed!\n");
-//     } else {
-//         printf("\nTest Passed!\n");
-//     }
-
-//     return memory_match && size_match && cap_match;
-// }
-
-// bool assert(Array * arr, Array * expected_arr) {
-bool assert(Array<uint8_t> * arr, void * expected, size_t expected_size, size_t expected_cap, size_t expected_size_of_el) {
-    bool memory_match = memcmp(expected, (uint8_t *)arr->buf(), expected_size) == 0;
-    bool size_match = arr->size() == expected_size;
+template<typename T>
+bool assert(Array<T> actual, T * expected, size_t expected_size, size_t expected_cap) {
+    bool memory_match = memcmp((void *)expected, (void *)actual.buf(), expected_size * sizeof(T)) == 0;
+    bool size_match = actual.size() == expected_size;
     // make sure cap grows at the predetermined rate.
     // also make sure size doesn't exceed cap (arguably more important).
 
-    bool cap_match = true;
-    // bool cap_match = arr->cap == expected_cap && arr->size <= arr->cap; 
-    // bool size_of_el_match = expected_size_of_el == arr->size_of_el;
-
+    bool cap_match = actual.cap() == expected_cap;
     loggerPrintf(LOGGER_TEST, "Expected:\n");
-    loggerPrintByteArray(LOGGER_TEST, (uint8_t *)expected, expected_size * expected_size_of_el);
+    loggerPrintByteArray(LOGGER_TEST, (uint8_t *)expected, expected_size * sizeof(T));
     loggerPrintf(LOGGER_TEST, "Actual:\n");
-    loggerPrintByteArray(LOGGER_TEST, (uint8_t *)arr->buf(), arr->size() * expected_size_of_el);
-    loggerPrintf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu)\n", 
+    loggerPrintByteArray(LOGGER_TEST, (uint8_t *)actual.buf(), actual.size() * sizeof(T));
+    loggerPrintf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu)\n", 
         memory_match ? "True" : "False", 
-        size_match ? "True" : "False", expected_size, arr->size()
+        size_match ? "True" : "False", expected_size, actual.size(),
+        cap_match ? "True" : "False", expected_cap, actual.cap()
     );
-    // loggerPrintf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu), Size of El Match: %s (%lu == %lu) \n", 
-    //     memory_match ? "True" : "False", 
-    //     size_match ? "True" : "False", expected_size, arr->size 
-        // cap_match ? "True" : "False", expected_cap, arr->cap,
-        // size_of_el_match ? "True" : "False", expected_size_of_el, arr->size_of_el
-    // );
 
     if (!memory_match || !size_match || !cap_match) {
         printf("\nTest Failed!\n");
@@ -88,29 +41,48 @@ bool assert(Array<uint8_t> * arr, void * expected, size_t expected_size, size_t 
     return memory_match && size_match && cap_match;
 }
 
-bool test_array_append() {
-    printf("\n#######################################\n");
-    printf("\nTest Func: %s\n\n", __func__);
-    Array<uint8_t> arr;
+template<>
+bool assert<const char *>(Array<const char *> actual, const char ** expected, size_t expected_size, size_t expected_cap) {
+    bool size_match = actual.size() == expected_size;
+    // make sure cap grows at the predetermined rate.
+    // also make sure size doesn't exceed cap (arguably more important).
+    bool cap_match = actual.cap() == expected_cap;
 
-    // VLA!
-    size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP - 1; // in this case, expected_size == expected_num_els
-    uint8_t expected[expected_size];
-    memset(expected, 0x07, expected_size);
+    bool memory_match = true;
+    if (size_match) {
+        for (size_t i = 0; i < expected_size; i++) {
+            if (strcmp(expected[i], actual.buf()[i]) != 0) {
+                memory_match = false;
+            }
+        }
+    }
+    loggerPrintf(LOGGER_TEST, "Expected:\n");
+    for (size_t i = 0; i < expected_size; i++) {
+        loggerPrintf(LOGGER_TEST, "%s\n", expected[i]);
+    }
+    loggerPrintf(LOGGER_TEST, "Actual:\n");
+    for (size_t i = 0; i < actual.size(); i++) {
+        loggerPrintf(LOGGER_TEST, "%s\n", actual.buf()[i]);
+    }
+    loggerPrintf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (%lu == %lu), Cap Match: %s (%lu == %lu)\n", 
+        memory_match ? "True" : "False", 
+        size_match ? "True" : "False", expected_size, actual.size(),
+        cap_match ? "True" : "False", expected_cap, actual.cap()
+    );
 
-    arr.append(expected, expected_size);
+    if (!memory_match || !size_match || !cap_match) {
+        printf("\nTest Failed!\n");
+    } else {
+        printf("\nTest Passed!\n");
+    }
 
-    bool res = assert(&arr, (void *)expected, expected_size, ARRAY_RECOMMENDED_INITIAL_CAP, sizeof(uint8_t));
-
-    printf("\n#######################################\n");
-
-    return res;
+    return memory_match && size_match && cap_match;
 }
 
 bool test_array_append_cstrings() {
     printf("\n#######################################\n");
     printf("\nTest Func: %s\n\n", __func__);
-    Array<const char *> arr(ARRAY_RECOMMENDED_INITIAL_CAP);
+
     size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP - 1;
     const char * expected[ARRAY_RECOMMENDED_INITIAL_CAP] = {
         std::string("STRING 1").c_str(),
@@ -121,51 +93,52 @@ bool test_array_append_cstrings() {
         std::string("STRING 6").c_str(),
         std::string("STRING 7").c_str()
     };
-    // char * expected[7] = {
-    //     "STRING 1",
-    //     "STRING 2",
-    //     "STRING 3",
-    //     "STRING 4",
-    //     "STRING 5",
-    //     "STRING 6",
-    //     "STRING 7"
-    // };
+    Array<const char *> actual(ARRAY_RECOMMENDED_INITIAL_CAP);
+    actual.append(expected, expected_size);
 
-    arr.append("STRING!!!!");
-    arr.append(expected, expected_size);
-   // bool res = assert(&arr, (void *)expected, expected_size, ARRAY_RECOMMENDED_INITIAL_CAP, sizeof(uint8_t));
-   bool res = true;
-
-    // printf("WTF?, %d, %x\n", arr.getSize(), arr.buf[0]);
-   for (size_t i = 0; i < arr.size(); i++) {
-        loggerPrintf(LOGGER_TEST, "%s, %p, %p\n", arr[i], &(arr[i]), &(arr.buf()[i]));
-   }
+    bool res = assert<const char *>(actual, expected, expected_size, ARRAY_RECOMMENDED_INITIAL_CAP);
 
     printf("\n#######################################\n");
 
     return res;
 }
 
-// bool test_array_append_resize() {
-//     printf("\n#######################################\n");
-//     printf("\nTest Func: %s\n\n", __func__);
-//     Array * arr = array_constructor(ARRAY_RECOMMENDED_INITIAL_CAP, sizeof(uint8_t));
+bool test_array_append() {
+    printf("\n#######################################\n");
+    printf("\nTest Func: %s\n\n", __func__);
 
-//     size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP + 7; // in this case, expected_size == expected_num_els - force resize
-//     uint8_t expected[expected_size];
-//     memset(expected, 0x07, expected_size);
+    size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP - 1; // in this case, expected_size == expected_num_els
+    uint8_t expected[expected_size];
+    memset(expected, 0x07, expected_size);
+    
+    Array<uint8_t> actual;
+    actual.append(expected, expected_size);
 
-//     size_t initial_size = arr->size;
-//     array_append(arr, expected, expected_size);
+    bool res = assert<uint8_t>(actual, expected, expected_size, ARRAY_RECOMMENDED_INITIAL_CAP);
 
-//     bool res = assert(arr, (void *)expected, expected_size, (size_t)((expected_size + initial_size) * 1.75), sizeof(uint8_t)); // only one resize performed
+    printf("\n#######################################\n");
 
-//     printf("\n#######################################\n");
+    return res;
+}
 
-//     array_destructor(arr);
+bool test_array_append_resize() {
+    printf("\n#######################################\n");
+    printf("\nTest Func: %s\n\n", __func__);
 
-//     return res;
-// }
+    size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP + 7; // in this case, expected_size == expected_num_els - force resize
+    uint8_t expected[expected_size];
+    memset(expected, 0x07, expected_size);
+
+    Array<uint8_t> actual;
+    size_t initial_size = actual.size();
+    actual.append(expected, expected_size);
+
+    bool res = assert<uint8_t>(actual, expected, expected_size, (size_t)((expected_size + initial_size) * 1.75));
+
+    printf("\n#######################################\n");
+
+    return res;
+}
 
 // bool test_array_append_consecutive() {
 //     printf("\n#######################################\n");
@@ -314,7 +287,7 @@ bool test_array_append_cstrings() {
 int main() {
     test_array_append_cstrings();
     test_array_append();
-    // test_array_append_resize();
+    test_array_append_resize();
     // test_array_append_consecutive();
     // test_array_append_consecutive_resize();
     // test_array_append_large_el();

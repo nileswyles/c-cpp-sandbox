@@ -60,7 +60,7 @@ bool test_array_append() {
     return res;
 }
 
-bool test_array_append_resize() {
+bool test_array_append_recapped() {
     printf("\n#######################################\n");
     printf("\nTest Func: %s\n\n", __func__);
     Array * arr = array_constructor(ARRAY_RECOMMENDED_INITIAL_CAP, sizeof(uint8_t));
@@ -227,7 +227,7 @@ bool test_array_append_large_el_consecutive_resize() {
 
 int main() {
     test_array_append();
-    test_array_append_resize();
+    test_array_append_recapped();
     test_array_append_consecutive();
     test_array_append_consecutive_resize();
     test_array_append_large_el();

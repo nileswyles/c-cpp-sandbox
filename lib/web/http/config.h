@@ -33,7 +33,7 @@ class HttpServerConfig: public ServerConfig {
                 std::string key = obj->keys.at(i);
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
-                // TODO: validation... like root_html_file should be defined and size>0
+                // TODO: validation... these are all required fields
                 if (key == "static_path") {
                     static_path = setVariableFromJsonValue<std::string>(value);
                 } else if (key == "address") {
@@ -67,7 +67,7 @@ class HttpServerConfig: public ServerConfig {
             return s;
         }
 
-        bool operator == (const HttpServerConfig& other) {
+        bool operator ==(const HttpServerConfig& other) {
             if(this->static_path != other.static_path) {
                 return false;
             }
@@ -83,7 +83,7 @@ class HttpServerConfig: public ServerConfig {
             return true;
         }
 
-        bool operator != (const HttpServerConfig& other) {
+        bool operator !=(const HttpServerConfig& other) {
             return !(*this == other);
         }
 };

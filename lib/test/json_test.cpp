@@ -47,12 +47,15 @@ class Nested: public JsonBase {
             return s;
         }
 
-        bool operator == (const Nested& other) {
+        bool operator ==(const Nested& other) {
             if(this->name != other.name) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "name not equal\n");
                 return false;
             }
             return true;
+        }
+        bool operator !=(const Nested& other) {
+            return !(*this == other);
         }
 };
 
@@ -122,7 +125,7 @@ class User: public JsonBase {
             return s;
         }
 
-        bool operator == (const User& other) {
+        bool operator ==(const User& other) {
             if(this->name != other.name) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "name not equal\n");
                 return false;
@@ -147,6 +150,10 @@ class User: public JsonBase {
                 return false;
             }
             return true;
+        }
+
+        bool operator !=(const User& other) {
+            return !(*this == other);
         }
 };
 

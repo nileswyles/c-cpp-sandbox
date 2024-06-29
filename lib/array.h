@@ -8,8 +8,6 @@
 #include <stdlib.h>
 #include <stdexcept>
 
-#include "result.h"
-
 #ifndef LOGGER_ARRAY
 #define LOGGER_ARRAY 1
 #endif
@@ -30,39 +28,30 @@ static inline T * newCArray(size_t size) {
 }
 
 template<typename T>
-void addElement(T * buf, const size_t pos, T el) {
-    buf[pos] = el;
+void addElement(T * e_buf, const size_t pos, T el) {
+    e_buf[pos] = el;
+    // loggerPrintf(LOGGER_DEBUG, "%p, NEW BUFFER ELEMENT: [%x], OLD BUFFER ELEMENT: [%x]\n", e_buf + pos, e_buf[pos], el);
 }
-
 template<>
-void addElement<const char *>(const char ** buffer, const size_t pos, const char * el) {
-    char * new_cstring = newCArray<char>(strlen(el) + 1);
-    strcpy(new_cstring, el);
-    loggerPrintf(LOGGER_DEBUG, "New String: %s\n", new_cstring);
-    buffer[pos] = new_cstring;
-}
+void addElement<const char *>(const char ** buffer, const size_t pos, const char * el);
 
 template<typename T>
 void deleteCArray(T ** e_buf, size_t size) {
+    loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'generic'\n");
     delete[] *e_buf;
     delete e_buf;
 }
-
-// const char value...
-// T == const char *
-// T * == const char **
-// T ** == const char ***
 template<>
-void deleteCArray<const char *>(const char *** e_buf, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        // iterate over char ptrs...
-        delete[] (*e_buf)[i];
-    }
-    // delete char ptr array...
-    delete[] *e_buf;
-    // delete char ptr array container... lol... 
-    delete e_buf;
-}
+void deleteCArray<void *>(void *** e_buf, size_t size);
+template<>
+void deleteCArray<const char *>(const char *** e_buf, size_t size);
+
+template<typename T>
+void deleteCArrayElement(T * e_buf, size_t pos) {}
+template<>
+void deleteCArrayElement<const char *>(const char ** e_buf, size_t pos);
+template<>
+void deleteCArrayElement<void *>(void ** e_buf, size_t pos);
 
 template<typename T>
 class Array {
@@ -131,11 +120,11 @@ class Array {
 
             loggerPrintf(LOGGER_DEBUG, "num_els: %ld, size: %ld, e_cap: %ld, pos: %ld\n", num_els, this->size(), this->cap(), pos);
 
-            T ** new_buf = this->e_buf; 
+            T * new_buf = *this->e_buf; 
             bool recapped = false;
             if (num_els + this->size() > this->cap()) {
                 size_t new_cap = (size_t)((num_els + this->size()) * UPSIZE_FACTOR);
-                *new_buf = newCArray<T>(new_cap);
+                new_buf = newCArray<T>(new_cap);
                 if (new_buf == nullptr) {
                     // if no bad_alloc thrown? lol whatever...
                     std::string msg = "Failed to allocate new array.";
@@ -145,14 +134,14 @@ class Array {
                     recapped = true;
                     *this->e_cap = new_cap;
                     // if recapped, copy elements up until pos.
-                    //  the rest will be automagically intialized by insert operation... (see use of new_buf vs this->buf variables below)
+                    //  the rest will be automagically initialized by the insert operation... (see use of new_buf vs this->buf variables below)
                     size_t total_size_up_to_pos = pos * sizeof(T);
                     for (size_t i = 0; i < pos; i++) {
-                        (*new_buf)[i] = (*this->e_buf)[i];
+                        new_buf[i] = (*this->e_buf)[i];
                     }
                 }
             }
-            
+
             T * bucket = newCArray<T>(num_els);
             if (bucket == nullptr) {
                 // if no bad_alloc thrown? lol whatever...
@@ -178,15 +167,16 @@ class Array {
                         bucket_push = 0;
                     }
                 }
-                addElement<T>(*new_buf, i, value);
+                addElement<T>(new_buf, i, value);
             }
             delete[] bucket;
 
+            *this->e_size += num_els;
+
             if (recapped) {
                 delete[] *this->e_buf;
-                *this->e_buf = *new_buf;
+                *this->e_buf = new_buf;
             }
-            *this->e_size += num_els;
 
             return *this;
         }
@@ -231,10 +221,7 @@ class Array {
                 if (i + num_els < this->size()) {
                     // if removing last element, just leave it... decrementing size should be enough...
                     selected_buf[i] = (*this->e_buf)[i + num_els];
-
-                    // for const char * (cstring) type... call delete[] on each element removed. 
-                    //      otherwise, this is a no-op...
-                    delete[] (*e_buf)[i];
+                    deleteCArrayElement<T>(*this->e_buf, i);
                 }
             }
             if (recapped) {

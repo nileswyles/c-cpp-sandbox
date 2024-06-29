@@ -37,7 +37,7 @@ class Tester {
         std::vector<Test> tests;
         size_t num_tests;
 
-        Tester() {}
+        Tester(): before(nullptr), after(nullptr), before_each(nullptr), after_each(nullptr), num_tests(0) {}
         Tester(SuiteFunction * before, TestFunction * before_each, SuiteFunction * after, TestFunction * after_each): 
             before(before), before_each(before_each), after(after), after_each(after_each), num_tests(0) {}
 

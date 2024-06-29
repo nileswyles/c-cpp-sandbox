@@ -41,9 +41,10 @@ LD_FLAGS="
 -lcrypto
 "
 
+mkdir $ROOT_DIR/http_test/out
 PROGRAM_PATH=$ROOT_DIR/http_test/out/http-server.out
 rm $PROGRAM_PATH
-g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT -iquote $ROOT_DIR/http_test -I/home/floxnard7/openssl-3.3.0/include $LD_FLAGS $DEFINES -Wno-pointer-arith -std=c++23 -o $PROGRAM_PATH
+g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT -iquote $ROOT_DIR/http_test -I/home/floxnard7/openssl-3.3.0/include $LD_FLAGS $DEFINES -Wno-pointer-arith -std=c++20 -o $PROGRAM_PATH
 
 cd http_test
 exec out/http-server.out 

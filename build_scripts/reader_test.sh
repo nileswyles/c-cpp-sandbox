@@ -28,6 +28,7 @@ $ROOT_DIR/lib/reader/reader.cpp
 $ROOT_DIR/lib/test/tester.cpp
 "
 
+mkdir $ROOT_DIR/out
 TEST_PATH=$ROOT_DIR/out/reader_test.out
 rm $TEST_PATH
 g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT -iquote $QUOTE_INCLUDE_ROOT/reader $DEFINES -Wno-pointer-arith -std=c++23 -o $TEST_PATH

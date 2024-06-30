@@ -26,15 +26,16 @@ bool assert(Array<T> actual, T * expected, size_t expected_size, size_t expected
     // also make sure size doesn't exceed cap (arguably more important).
 
     bool cap_match = actual.cap() == expected_cap;
+    loggerPrintf(LOGGER_TEST, "Memory Match: %s\n", 
+        memory_match ? "True" : "False");
     loggerPrintf(LOGGER_TEST, "Expected:\n");
     loggerPrintByteArray(LOGGER_TEST, (uint8_t *)expected, expected_size * sizeof(T));
     loggerPrintf(LOGGER_TEST, "Actual:\n");
     loggerPrintByteArray(LOGGER_TEST, (uint8_t *)actual.buf(), actual.size() * sizeof(T));
-    loggerPrintf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (expected: %lu, actual: %lu), Cap Match: %s (expected: %lu, actual: %lu)\n", 
-        memory_match ? "True" : "False", 
-        size_match ? "True" : "False", expected_size, actual.size(),
-        cap_match ? "True" : "False", expected_cap, actual.cap()
-    );
+    loggerPrintf(LOGGER_TEST, "Size Match: %s (Expected: %lu, Actual: %lu)\n", 
+        size_match ? "True" : "False", expected_size, actual.size());
+    loggerPrintf(LOGGER_TEST, "Cap Match: %s (Expected: %lu, Actual: %lu)\n", 
+        cap_match ? "True" : "False", expected_cap, actual.cap());
 
     return memory_match && size_match && cap_match;
 }
@@ -54,6 +55,8 @@ bool assert<const char *>(Array<const char *> actual, const char ** expected, si
             }
         }
     }
+    loggerPrintf(LOGGER_TEST, "Memory Match: %s\n", 
+        memory_match ? "True" : "False");
     loggerPrintf(LOGGER_TEST, "Expected:\n");
     for (size_t i = 0; i < expected_size; i++) {
         loggerPrintf(LOGGER_TEST, "%s\n", expected[i]);
@@ -62,11 +65,10 @@ bool assert<const char *>(Array<const char *> actual, const char ** expected, si
     for (size_t i = 0; i < actual.size(); i++) {
         loggerPrintf(LOGGER_TEST, "%s\n", actual.buf()[i]);
     }
-    loggerPrintf(LOGGER_TEST, "Memory Match: %s, Size Match: %s (expected: %lu, actual: %lu), Cap Match: %s (expected: %lu, actual: %lu)\n", 
-        memory_match ? "True" : "False", 
-        size_match ? "True" : "False", expected_size, actual.size(),
-        cap_match ? "True" : "False", expected_cap, actual.cap()
-    );
+    loggerPrintf(LOGGER_TEST, "Size Match: %s (Expected: %lu, Actual: %lu)\n", 
+        size_match ? "True" : "False", expected_size, actual.size());
+    loggerPrintf(LOGGER_TEST, "Cap Match: %s (Expected: %lu, Actual: %lu)\n", 
+        cap_match ? "True" : "False", expected_cap, actual.cap());
 
     return memory_match && size_match && cap_match;
 }
@@ -114,8 +116,9 @@ int main(int argc, char * argv[]) {
 }
 
 static void testArrayAppendCstrings(TestArg * t) {
-    size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP - 1;
-    const char * expected[ARRAY_RECOMMENDED_INITIAL_CAP] = {
+    #undef expected_size
+    #define expected_size 7
+    const char * expected[expected_size] = {
         "STRING 1",
         "STRING 2",
         "STRING 3",
@@ -131,7 +134,8 @@ static void testArrayAppendCstrings(TestArg * t) {
 }
 
 static void testArrayAppend(TestArg * t) {
-    size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP - 1; // in this case, expected_size == expected_num_els
+    #undef expected_size
+    #define expected_size 7
     uint8_t expected[expected_size];
     memset(expected, 0x07, expected_size);
     
@@ -142,7 +146,8 @@ static void testArrayAppend(TestArg * t) {
 }
 
 static void testArrayAppendRecapped(TestArg * t) {
-    size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP + 7; // in this case, expected_size == expected_num_els - force resize
+    #undef expected_size
+    #define expected_size 15
     uint8_t expected[expected_size];
     memset(expected, 0x07, expected_size);
 
@@ -154,11 +159,11 @@ static void testArrayAppendRecapped(TestArg * t) {
 }
 
 static void testArrayAppendConsecutive(TestArg * t) {
-    Array<uint8_t> actual;
-
-    size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP - 1; // in this case, expected_size == expected_num_els
+    #undef expected_size
+    #define expected_size 7
     uint8_t expected[expected_size];
 
+    Array<uint8_t> actual;
     for (int i = 0; i < expected_size; i++) {
         expected[i] = 0x07;
         actual.append(expected + i, 1);
@@ -168,11 +173,11 @@ static void testArrayAppendConsecutive(TestArg * t) {
 }
 
 static void testArrayAppendConsecutiveRecapped(TestArg * t) {
-    Array<uint8_t> actual;
-
-    size_t expected_size = ARRAY_RECOMMENDED_INITIAL_CAP + 7; // in this case, expected_size == expected_num_els - force resize
+    #undef expected_size
+    #define expected_size 15
     uint8_t expected[expected_size];
 
+    Array<uint8_t> actual;
     size_t initial_size = actual.size();
 
     for (int i = 0; i < expected_size; i++) {
@@ -184,8 +189,8 @@ static void testArrayAppendConsecutiveRecapped(TestArg * t) {
 }
 
 static void testArrayRemoveCstrings(TestArg * t) {
-    size_t expected_size = 6;
-    // 
+    #undef expected_size
+    #define expected_size 6
     const char * expected[expected_size] = {
         "STRING 1",
         "STRING 3",
@@ -209,7 +214,8 @@ static void testArrayRemoveCstrings(TestArg * t) {
 }
 
 static void testArrayRemove(TestArg * t) {
-    size_t expected_size = 6;
+    #undef expected_size
+    #define expected_size 6
     uint8_t expected[expected_size] = {
         0x1,
         0x3,
@@ -233,7 +239,8 @@ static void testArrayRemove(TestArg * t) {
 }
 
 static void testArrayRemoveConsecutive(TestArg * t) {
-    size_t expected_size = 5;
+    #undef expected_size
+    #define expected_size 5
     uint8_t expected[expected_size] = {
         0x1,
         0x4,
@@ -257,7 +264,8 @@ static void testArrayRemoveConsecutive(TestArg * t) {
 }
 
 static void testArrayRemoveRecapped(TestArg * t) {
-    size_t expected_size = 2;
+    #undef expected_size
+    #define expected_size 2
     uint8_t expected[expected_size] = {
         0x1,
         0x7
@@ -277,7 +285,8 @@ static void testArrayRemoveRecapped(TestArg * t) {
 }
 
 static void testArrayRemoveConsecutiveRecapped(TestArg * t) {
-    size_t expected_size = 3;
+    #undef expected_size
+    #define expected_size 3
     uint8_t expected[expected_size] = {
         0x1,
         0x6,

@@ -117,6 +117,7 @@ class HttpConnection {
         void parseRequest(HttpRequest * request, Reader * reader);
         bool handleWebsocketRequest(int conn_fd, HttpRequest * request);
         bool handleStaticRequest(int conn_fd, HttpRequest * request);
+        bool handleTimeoutRequests(int conn_fd, HttpRequest * request);
 
         HttpResponse * requestDispatcher(HttpRequest * request);
         // hmm... private static member?
@@ -149,7 +150,7 @@ class HttpConnection {
             request_filters = pRequest_filters;
             response_filters = pResponse_filters;
             upgraders = pUpgraders;
-            // why though?
+            processor = nullptr;
             HttpConnection::initializeStaticPaths(config, &static_paths);
         }
         HttpConnection(HttpServerConfig config, RequestProcessor * processor, Array<ConnectionUpgrader *> upgraders): 

@@ -35,6 +35,28 @@ extern void serverSetConnectionTimeout(int fd, uint32_t timeout_s) {
     }
 }
 
+extern void serverSetSocketTimeout(int fd, uint32_t timeout_s) {
+    socklen_t timeval_len = sizeof(struct timeval);
+
+    struct timeval timeout = {
+        .tv_sec = timeout_s,
+        .tv_usec = 0,
+    };
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
+    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);
+}
+
+extern uint32_t serverGetConnectionTimeout(int fd) {
+    return timerGetTimeout(fd);
+}
+
+extern uint32_t serverGetSocketTimeout(int fd) {
+    socklen_t timeval_len = sizeof(struct timeval);
+    struct timeval rcv_timeout = {0};
+    getsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, &timeval_len);
+    return rcv_timeout.tv_sec;
+}
+
 extern void serverListen(const char * address, const uint16_t port, connection_handler_t handler) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {

@@ -14,6 +14,9 @@ typedef uint8_t(connection_handler_t)(int);
 
 extern void serverListen(const char * address, const uint16_t port, connection_handler_t * handler);
 extern void serverSetConnectionTimeout(int fd, uint32_t timeout_s);
+extern void serverSetSocketTimeout(int fd, uint32_t timeout_s);
+extern uint32_t serverGetConnectionTimeout(int fd);
+extern uint32_t serverGetSocketTimeout(int fd);
 
 #if defined __cplusplus
 }

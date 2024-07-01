@@ -116,6 +116,10 @@ void Reader::cursorCheck() {
     }
 }
 
+// TODO: 
+//  streamify, these as well.
+//  also, think about what other generalizations can be made - think map/reduce/filter/collect
+//  some of the afforementioned operations are already accounted for.
 void Reader::readDecimal(double& value, size_t& digit_count) {
     double decimal_divisor = 10;
     char c = this->peekByte();

@@ -44,6 +44,7 @@ static int timerStart();
 static void timerStop();
 static void * timerProcess(void * arg);
 static void timerSetTimeout(int fd, uint32_t timeout_s);
+static uint32_t timerGetTimeout(int fd);
 static void timerAddConnection(int fd, uint32_t timeout_s);
 static void timerRemoveConnection(int fd);
 static void removeConnection(Connection * connection);
@@ -75,7 +76,7 @@ static void * timerProcess(void * arg) {
             Connection * next = current->next;
             struct timespec ts;
             clock_gettime(CLOCK_MONOTONIC, &ts);
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "fd: %d, start: %lu, timeout: %lu, current_time: %lu\n", current->fd, current->start_s, current->timeout_s, ts.tv_sec);
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "fd: %d, start: %lu, timeout: %u, current_time: %lu\n", current->fd, current->start_s, current->timeout_s, ts.tv_sec);
             if (current->start_s + current->timeout_s <= ts.tv_sec) {
                 closeConnection(current);
             }
@@ -95,6 +96,18 @@ static void timerSetTimeout(int fd, uint32_t timeout_s) {
         if (current->fd == fd) {
             current->timeout_s = timeout_s;
             break;
+        }
+        current = current->prev;
+    }
+    pthread_mutex_unlock(&mutex);
+}
+
+static uint32_t timerGetTimeout(int fd) {
+    Connection * current = end;
+    pthread_mutex_lock(&mutex);
+    while (current != NULL) {
+        if (current->fd == fd) {
+            return current->timeout_s;
         }
         current = current->prev;
     }

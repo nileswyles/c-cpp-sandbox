@@ -12,6 +12,10 @@ using namespace WylesLibs;
 using namespace WylesLibs::Http;
 using namespace WylesLibs::Parser;
 
+#ifndef HTTP_DEBUG
+#define HTTP_DEBUG 0
+#endif
+
 #define HTTP_FIELD_MAX 64
 
 static Url parseUrl(Reader * reader) {
@@ -185,9 +189,7 @@ bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
 			sprintf(content_length, "%ld", file_data.size());
             response.fields["Content-Length"] = std::string(content_length);
 			response.fields["Content-Type"] = content_type;
-            // 
 			if (request->method == "GET ") {
-                printf("GET REQUEST?\n");
 				response.content = file_data;
             }
 			response.status_code = "200";
@@ -224,15 +226,82 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
     return response;
 }
 
+bool HttpConnection::handleTimeoutRequests(int conn_fd, HttpRequest * request) {
+    bool handled = false;
+    if (request->url.path == "/timeout" && request->method == "POST") {
+        JsonObject * obj = (JsonObject *)request->json_content;
+        if (obj != nullptr) {
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
+            for (size_t i = 0; i < obj->keys.size(); i++) {
+                std::string key = obj->keys.at(i);
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
+                JsonValue * value = obj->values.at(i);
+                if (key == "socket") {
+                    serverSetSocketTimeout(conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
+                } else if (key == "connection") {
+                    serverSetConnectionTimeout(conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
+                }
+            }
+        }
+        handled = true;
+    } else if (request->url.path == "/timeout/socket" && request->method == "GET") {
+        std::string responseJson("{\"socket_timeout\":");
+        char timeout[11];
+        sprintf(timeout, "%d", serverGetSocketTimeout(conn_fd));
+        responseJson += timeout;
+        responseJson += "}";
+
+        HttpResponse response;
+        response.status_code = "200";
+
+        Array<uint8_t> content;
+        content.append((uint8_t *)responseJson.data(), responseJson.size());
+
+        response.content = content;
+
+        std::string response_string = response.toString();
+        write(conn_fd, response_string.c_str(), response_string.size());
+        loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n", response_string.c_str());
+
+        handled = true;
+    } else if (request->url.path == "/timeout/connection" && request->method == "GET") {
+        printf("Where are you seg fault connection?\n");
+        std::string responseJson("{\"connection_timeout\":");
+        char timeout[11];
+        sprintf(timeout, "%d", serverGetConnectionTimeout(conn_fd));
+        responseJson += timeout;
+        responseJson += "}";
+
+        HttpResponse response;
+        response.status_code = "200";
+
+        Array<uint8_t> content;
+        content.append((uint8_t *)responseJson.data(), responseJson.size());
+
+        response.content = content;
+
+        std::string response_string = response.toString();
+        write(conn_fd, response_string.c_str(), response_string.size());
+        loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n", response_string.c_str());
+        handled = true;
+    }
+    loggerPrintf(LOGGER_DEBUG, "Processed timeout requests: %u\n", handled);
+    return handled;
+}
+
 uint8_t HttpConnection::onConnection(int conn_fd) {
     HttpRequest request;
     Reader reader(conn_fd);
     HttpResponse * response = nullptr;
     try {
         parseRequest(&request, &reader);
+        loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
         bool handled = handleStaticRequest(conn_fd, &request);
         if (!handled) {
             handled = handleWebsocketRequest(conn_fd, &request);
+        }
+        if (HTTP_DEBUG && !handled) {
+            handled = handleTimeoutRequests(conn_fd, &request);
         }
         if (!handled) {
             // these should always produce a response, so sig need not include connection file descriptor..

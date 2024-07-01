@@ -8,6 +8,8 @@
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 
+#include <string.h>
+
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1
 #endif
@@ -101,14 +103,102 @@ void testHttpServer(TestArg * t) {
 }
 
 void testHttpServerSocketTimeout(TestArg * t) {
-    std::string request("GET / HTTP 1.1\n");
+    std::string request("GET / HTTP/1.1\n");
     request += "b";
     int fd = connect();
 
     write(fd, request.c_str(), request.size());
 
+    struct timespec ts_before;
+    clock_gettime(CLOCK_MONOTONIC, &ts_before);
+
     uint8_t buf[1024];
     int ret = read(fd, buf, 1024);
+
+    struct timespec ts_after;
+    clock_gettime(CLOCK_MONOTONIC, &ts_after);
+    loggerPrintf(LOGGER_DEBUG, "read ret: %d, errno: %u\n", ret, errno);
+
+    if (ret > 0) {
+        buf[ret] = 0;
+        std::string response((const char *)buf); 
+        loggerPrintf(LOGGER_TEST, "Actual Response (%ld): \n%s\n\n", response.size(), response.c_str());
+
+        std::string expected_response("HTTP/1.1 500\n");
+        expected_response += "Connection: close\n\n";
+        loggerPrintf(LOGGER_TEST, "Expected Response (%ld): \n%s\n", expected_response.size(), expected_response.c_str());
+
+        uint64_t delta = ts_after.tv_sec - ts_before.tv_sec;
+        loggerPrintf(LOGGER_TEST, "Time Before: %lu, Time After: %lu, Time Delta: %lu\n", ts_before.tv_sec, ts_after.tv_sec, delta);
+        if (response == expected_response && delta < 4 && delta > 1) {
+            t->fail = false;
+        }
+    }
+    close(fd);
+}
+
+static uint32_t getTimeout(std::string timeout) {
+    std::string socket_timeout_request("GET /timeout/");
+    socket_timeout_request += timeout;
+    socket_timeout_request += " HTTP/1.1\n\n";
+
+    int fd = connect();
+    write(fd, socket_timeout_request.c_str(), socket_timeout_request.size());
+
+    char buf[1024];
+    int ret = read(fd, buf, 1024);
+    if (ret > 0) {
+        buf[ret] = 0;
+        std::string resp(buf);
+        size_t split_i = resp.find_first_of(":");
+        size_t split_j = resp.find_first_of("}");
+        
+        std::string timeout = resp.substr(split_i, split_j - split_i);
+
+        return atoi(timeout.c_str());
+    }
+    close(fd);
+
+    return -1;
+}
+
+static void setSocketTimeout(uint32_t value) {
+    char timeout[11];
+    sprintf(timeout, "%d", value);
+    
+    char content_length[11];
+    sprintf(content_length, "%ld", strlen(timeout) + 12);
+    std::string socket_timeout_request("POST /timeout HTTP/1.1\n");
+    socket_timeout_request += "Content-Type: application/json\n";
+    socket_timeout_request += "Content-Length: ";
+    socket_timeout_request += content_length;
+    socket_timeout_request += "\n\n";
+    socket_timeout_request += "{\"socket\": ";
+    socket_timeout_request += timeout;
+    socket_timeout_request += "}";
+
+    int fd = connect();
+    write(fd, socket_timeout_request.c_str(), socket_timeout_request.size());
+    close(fd);
+}
+
+void testHttpServerConnectionTimeout(TestArg * t) {
+    uint32_t initial_socket_timeout = getTimeout("socket");
+    uint32_t connection_timeout = getTimeout("connection");
+    setSocketTimeout(connection_timeout + 2); // set socket timeout greater than connection.
+
+    std::string request("GET / HTTP/1.1\n");
+    request += "b";
+    int fd = connect();
+    write(fd, request.c_str(), request.size());
+    struct timespec ts_before;
+    clock_gettime(CLOCK_MONOTONIC, &ts_before);
+
+    uint8_t buf[1024];
+    int ret = read(fd, buf, 1024);
+
+    struct timespec ts_after;
+    clock_gettime(CLOCK_MONOTONIC, &ts_after);
     loggerPrintf(LOGGER_DEBUG, "read ret: %d, errno: %u\n", ret, errno);
     if (ret > 0) {
         buf[ret] = 0;
@@ -118,11 +208,16 @@ void testHttpServerSocketTimeout(TestArg * t) {
         std::string expected_response("HTTP/1.1 500\n");
         expected_response += "Connection: close\n\n";
         loggerPrintf(LOGGER_TEST, "Expected Response (%ld): \n%s\n", expected_response.size(), expected_response.c_str());
-        if (response == expected_response) {
+
+        uint64_t delta = ts_after.tv_sec - ts_before.tv_sec;
+        loggerPrintf(LOGGER_TEST, "Time Before: %lu, Time After: %lu, Time Delta: %lu\n", ts_before.tv_sec, ts_after.tv_sec, delta);
+        if (response == expected_response && delta < 17 && delta > 14) {
             t->fail = false;
         }
     }
     close(fd);
+
+    setSocketTimeout(initial_socket_timeout);
 }
 
 int main(int argc, char * argv[]) {
@@ -130,6 +225,7 @@ int main(int argc, char * argv[]) {
 
     t.addTest(testHttpServer);
     t.addTest(testHttpServerSocketTimeout);
+    t.addTest(testHttpServerConnectionTimeout);
 
     if (argc > 1) {
         loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);

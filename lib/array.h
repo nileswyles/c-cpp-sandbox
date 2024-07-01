@@ -248,29 +248,32 @@ class Array {
             if (pos > 0 && pos < this->size()) {
                 return (*this->e_buf)[pos];
             } else {
-                // throw std::runtime_error("Invalid pos...");
+                throw std::runtime_error("Invalid position.");
             }
         }
         T& front() {
             if (this->size() == 0) {
-                T t;
-                this->append(t);
+                throw std::runtime_error("No element to return.");
             }
             return (*this->e_buf)[0];
         }
         T& back() {
-            // TODO: might want to through exception for these...
             if (this->size() == 0) {
-                T t;
-                this->append(t);
+                throw std::runtime_error("No element to return.");
             }
             return (*this->e_buf)[this->size()-1];
         }
         Array<T>& removeFront() {
+            if (this->size() == 0) {
+                throw std::runtime_error("No element to remove.");
+            }
             remove(0);
             return *this;
         }
         Array<T>& removeBack() {
+            if (this->size() == 0) {
+                throw std::runtime_error("No element to remove.");
+            }
             remove(this->size()-1);
             return *this;
         }

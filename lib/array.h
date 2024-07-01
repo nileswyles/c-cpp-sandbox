@@ -8,12 +8,25 @@
 #include <stdlib.h>
 #include <stdexcept>
 
+// make sure global logger level is initialized
+#ifndef GLOBAL_LOGGER_LEVEL
+#define GLOBAL_LOGGER_LEVEL 0
+#endif
+
+// if per module logger level not defined, set to global...
+#ifndef LOGGER_LEVEL_ARRAY
+#define LOGGER_LEVEL_ARRAY GLOBAL_LOGGER_LEVEL
+#endif
+
 #ifndef LOGGER_ARRAY
 #define LOGGER_ARRAY 1
 #endif
 
 #undef LOGGER_MODULE_ENABLED
 #define LOGGER_MODULE_ENABLED LOGGER_ARRAY
+
+#undef LOGGER_LEVEL
+#define LOGGER_LEVEL LOGGER_LEVEL_ARRAY
 #include "logger.h"
 
 namespace WylesLibs {
@@ -52,6 +65,20 @@ template<>
 void deleteCArrayElement<const char *>(const char ** e_buf, size_t pos);
 template<>
 void deleteCArrayElement<void *>(void ** e_buf, size_t pos);
+
+// TODO: again, member function specialization didn't work, so...
+//  revisit in future.
+template<typename T>
+size_t arrayFind(T ** e_buf, size_t size, const T el) {
+    for (size_t i = 0; i < size; i++) {
+        if ((*e_buf)[i] == el) {
+            return i;
+        }
+    }
+    return -1;
+}
+template<>
+size_t arrayFind<const char *>(const char *** e_buf, size_t size, const char * el);
 
 template<typename T>
 class Array {
@@ -234,15 +261,7 @@ class Array {
             return *this;
         }
         bool contains(const T& el) {
-            return find(el) != -1;
-        }
-        size_t find(const T& el) {
-            for (size_t i = 0; i < this->size(); i++) {
-                if ((*this->e_buf)[i] == el) {
-                    return i;
-                }
-            }
-            return -1;
+            return arrayFind<T>(this->e_buf, this->size(), el) != -1;
         }
         T& at(const size_t pos) {
             if (pos > 0 && pos < this->size()) {
@@ -253,26 +272,34 @@ class Array {
         }
         T& front() {
             if (this->size() == 0) {
-                throw std::runtime_error("No element to return.");
+                std::string msg = "No element to return.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
             }
             return (*this->e_buf)[0];
         }
         T& back() {
             if (this->size() == 0) {
-                throw std::runtime_error("No element to return.");
+                std::string msg = "No element to return.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
             }
             return (*this->e_buf)[this->size()-1];
         }
         Array<T>& removeFront() {
             if (this->size() == 0) {
-                throw std::runtime_error("No element to remove.");
+                std::string msg = "No element to remove.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
             }
             remove(0);
             return *this;
         }
         Array<T>& removeBack() {
             if (this->size() == 0) {
-                throw std::runtime_error("No element to remove.");
+                std::string msg = "No element to remove.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
             }
             remove(this->size()-1);
             return *this;

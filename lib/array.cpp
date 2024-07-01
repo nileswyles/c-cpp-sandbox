@@ -60,3 +60,13 @@ void WylesLibs::deleteCArrayElement<const char *>(const char ** e_buf, size_t po
 //     loggerPrintf(LOGGER_DEBUG, "Deleting element of ptr type 'void *'\n");
 //     delete e_buf[pos];
 // }
+
+template<>
+size_t WylesLibs::arrayFind<const char *>(const char *** e_buf, size_t size, const char * el) {
+    for (size_t i = 0; i < size; i++) {
+        if (strcmp((*e_buf)[i], el) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}

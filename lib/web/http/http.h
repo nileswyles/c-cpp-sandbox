@@ -33,11 +33,10 @@ using namespace WylesLibs::Parser::Multipart;
 
 namespace WylesLibs::Http {
 
-// TODO: const char * specialization needs some work.
-// static Array<const char *> FIELD_VALUES_TO_LOWER_CASE{
-//     "connection",
-//     "upgrade"
-// };
+static Array<const char *> FIELD_VALUES_TO_LOWER_CASE{
+    "connection",
+    "upgrade"
+};
 
 class Url {
     public:
@@ -64,7 +63,7 @@ class HttpRequest {
 
         Authorization auth;
 
-        HttpRequest() {}
+        HttpRequest(): json_content(nullptr) {}
 };
 
 class HttpResponse {
@@ -122,13 +121,11 @@ class HttpConnection {
         HttpResponse * requestDispatcher(HttpRequest * request);
         // hmm... private static member?
         static void initializeStaticPaths(HttpServerConfig config, std::unordered_map<std::string, std::string> * static_paths) {
+            loggerPrintf(LOGGER_DEBUG, "Static Paths: %s\n", config.static_path.c_str());
                 for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(config.static_path)) {
                     std::string path = dir_entry.path().string();
                     std::string ext = dir_entry.path().extension().string();
-                    printf("path: %s\n", path.c_str());
-                    printf("ext: %s\n", ext.c_str());
 					if (ext == ".html") {
-                        printf("?/\n");
 						(*static_paths)[path] = "text/html";
 					} else if (ext == ".js") {
 						(*static_paths)[path] = "text/javascript";

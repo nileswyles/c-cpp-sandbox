@@ -112,6 +112,7 @@ static uint32_t timerGetTimeout(int fd) {
         current = current->prev;
     }
     pthread_mutex_unlock(&mutex);
+    return 0;
 }
 
 static void timerAddConnection(int fd, uint32_t timeout_s) {

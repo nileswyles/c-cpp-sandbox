@@ -11,7 +11,7 @@ $ROOT_DIR/lib/memory/heap.c
 # see logger.h for log level values
 DEFINES="
 -DDYNAMIC_MEMORY_SIZE=16
--DLOGGER_LEVEL=$1
+-DGLOBAL_LOGGER_LEVEL=$1
 "
 
 mkdir $ROOT_DIR/out

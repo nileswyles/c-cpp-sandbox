@@ -13,7 +13,7 @@ done
 
 # see logger.h for log level values
 DEFINES=$DEFINES"
--DLOGGER_LEVEL=$LOG_LEVEL
+-DGLOBAL_LOGGER_LEVEL=$LOG_LEVEL
 "
 
 ROOT_DIR="."

@@ -18,8 +18,8 @@
 
 #define MAX_CONNECTIONS (1 << 16)
 
-// TODO: think about default... LMAO...
-#define INITIAL_CONNECTION_TIMEOUT_S 15
+static uint32_t INITIAL_CONNECTION_TIMEOUT_S = 15;
+static uint32_t INITIAL_SOCKET_TIMEOUT_S = 2;
 
 typedef struct thread_arg {
     connection_handler_t * handler;
@@ -35,6 +35,11 @@ extern void serverSetConnectionTimeout(int fd, uint32_t timeout_s) {
     }
 }
 
+extern void serverSetInitialConnectionTimeout(int fd, uint32_t timeout_s) {
+    serverSetConnectionTimeout(fd, timeout_s);
+    INITIAL_CONNECTION_TIMEOUT_S = timeout_s;
+}
+
 extern void serverSetSocketTimeout(int fd, uint32_t timeout_s) {
     socklen_t timeval_len = sizeof(struct timeval);
 
@@ -44,6 +49,12 @@ extern void serverSetSocketTimeout(int fd, uint32_t timeout_s) {
     };
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);
+
+}
+
+extern void serverSetInitialSocketTimeout(int fd, uint32_t timeout_s) {
+    serverSetSocketTimeout(fd, timeout_s);
+    INITIAL_SOCKET_TIMEOUT_S = timeout_s;
 }
 
 extern uint32_t serverGetConnectionTimeout(int fd) {
@@ -151,7 +162,7 @@ static void process_sockopts(int fd) {
     // should be minimum value greater than max(SO_RCVBUF, READER_BUF_SIZE)/128kbps (aribitrary minimum connection speed)
     //  default RCVBUF == 131072, READER_BUF_SIZE == 8096, so ~1.024 seconds. Let's round to 2 seconds.
     struct timeval timeout = {
-        .tv_sec = 2,
+        .tv_sec = INITIAL_SOCKET_TIMEOUT_S,
         .tv_usec = 0,
     };
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);

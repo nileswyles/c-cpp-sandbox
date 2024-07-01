@@ -13,7 +13,7 @@ done
 
 # see logger.h for log level values
 DEFINES=$DEFINES"
--DLOGGER_LEVEL=$LOG_LEVEL
+-DGLOBAL_LOGGER_LEVEL=$LOG_LEVEL
 "
 
 ROOT_DIR="."
@@ -34,6 +34,7 @@ $ROOT_DIR/http_test/controllers/example.cpp
 $ROOT_DIR/http_test/services/example.cpp
 $ROOT_DIR/lib/reader/reader.cpp
 $ROOT_DIR/lib/web/server.c
+$ROOT_DIR/lib/array.cpp
 "
 
 LD_FLAGS="

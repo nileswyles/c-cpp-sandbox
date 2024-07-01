@@ -2,6 +2,7 @@
 #include "paths.h"
 #include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "parser/keyvalue/parse.h"
 #include <openssl/sha.h>
@@ -36,9 +37,9 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
     if (request == NULL || reader == NULL) {
         throw std::runtime_error("lol....");
     }
-    request->method = reader->readUntil(" ").removeBack().toString();
+    request->method = reader->readUntil(" ").removeBack().removeBack().toString();
     request->url = parseUrl(reader);
-    request->version = reader->readUntil("\n").removeBack().toString();
+    request->version = reader->readUntil("\n").removeBack().removeBack().toString();
 
     request->content_length = -1;
     int field_idx = 0; 
@@ -55,42 +56,35 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
             printf("FOUND EMPTY NEW LINE AFTER PARSING FIELDS\n");
             break;
         }
-        std::string field_name = field_name_array.removeBack().toString();
+        std::string field_name = field_name_array.removeBack().removeBack().toString();
         ReaderTaskDisallow value_operation("\t ");
-        // if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name)) {
-        //     value_operation.nextOperation = &lowercase;
-        // }
+        if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name.c_str())) {
+            value_operation.nextOperation = &lowercase;
+        }
         field_idx++;
-        if (field_name == "Content-Length") {
-            double value = 0;
-            size_t count = 0;
-            reader->readNatural(value, count);
-            if (count == 0) {
-                request->content_length = -1;
-            } else {
-                request->content_length = (size_t)value;
+        std::string field_value;
+        char delimeter = 0x00;
+        while (delimeter != '\n') {
+            Array<uint8_t> field_value_array = reader->readUntil(",\n", &value_operation);
+            delimeter = field_value_array.back();
+            // TODO: this makes no sense...
+            // lol... 
+            if (field_value_array.size() >= 2) {
+                delimeter = field_value_array.buf()[field_value_array.size()-2];
             }
-            reader->readUntil(",\n");
-        } else {
-            std::string field_value;
-            char delimeter = 0x00;
-            while (delimeter != '\n') {
-                Array<uint8_t> field_value_array = reader->readUntil(",\n", &value_operation);
-                delimeter = field_value_array.back();
-                // TODO: this makes no sense...
-                // lol... 
-                if (field_value_array.size() >= 2) {
-                    delimeter = field_value_array.buf()[field_value_array.size()-2];
-                }
-                field_value = field_value_array.removeBack().toString();
-                request->fields[field_name].append(field_value);
+            field_value = field_value_array.removeBack().removeBack().toString();
+            request->fields[field_name].append(field_value);
+            if (field_name == "content-length") {
+                request->content_length = atoi(field_value.c_str());
             }
         }
     }
     if (field_idx == HTTP_FIELD_MAX) {
         throw std::runtime_error("Too many fields in request.");
     }
-    if (request->method == "POST" && request->content_length != -1) {
+
+    if (request->method == "POST" && request->fields["content-type"].size() > 0 && request->content_length != -1) {
+        loggerPrintf(LOGGER_DEBUG, "Content-Type: %s, Content-Length: %ld\n", request->fields["content-type"].front().c_str(), request->content_length);
         if ("application/json" == request->fields["content-type"].front()) {
             size_t i = 0;
             request->json_content = Json::parse(reader, i);
@@ -183,13 +177,13 @@ bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
     std::string content_type = this->static_paths[path];
 	if (content_type != "") {
         HttpResponse response;
-		if (request->method == "HEAD" || request->method == "GET ") {
+		if (request->method == "HEAD" || request->method == "GET") {
             Array<uint8_t> file_data = File::read(path);
             char content_length[17];
 			sprintf(content_length, "%ld", file_data.size());
             response.fields["Content-Length"] = std::string(content_length);
 			response.fields["Content-Type"] = content_type;
-			if (request->method == "GET ") {
+			if (request->method == "GET") {
 				response.content = file_data;
             }
 			response.status_code = "200";
@@ -213,7 +207,10 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
     HttpResponse * response = nullptr;
     // lol, should I even bother with content-type?
     //  let's leave it there until I start building an actual API... might not be as useful as once thought.
-    std::string content_type = request->fields["content-type"].front();
+    std::string content_type;
+    if (request->fields["content-type"].size() > 0) {
+        content_type = request->fields["content-type"].front();
+    }
     if (this->request_map[request->url.path].contains("")) {
         // indicates that the user does not care about content type.
         response = this->request_map[request->url.path][""](request);
@@ -237,15 +234,37 @@ bool HttpConnection::handleTimeoutRequests(int conn_fd, HttpRequest * request) {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if (key == "socket") {
-                    serverSetSocketTimeout(conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
+                    serverSetInitialSocketTimeout(conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
                 } else if (key == "connection") {
-                    serverSetConnectionTimeout(conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
+                    serverSetInitialConnectionTimeout(conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
                 }
             }
+
+            std::string responseJson("{\"socket\":");
+            char timeout[11];
+            sprintf(timeout, "%d", serverGetSocketTimeout(conn_fd));
+            responseJson += timeout;
+
+            responseJson += ",\"connection\":";
+            sprintf(timeout, "%d", serverGetConnectionTimeout(conn_fd));
+            responseJson += timeout;
+            responseJson += "}";
+     
+            HttpResponse response;
+            response.status_code = "200";
+     
+            Array<uint8_t> content;
+            content.append((uint8_t *)responseJson.data(), responseJson.size());
+     
+            response.content = content;
+     
+            std::string response_string = response.toString();
+            write(conn_fd, response_string.c_str(), response_string.size());
+            loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n", response_string.c_str());
         }
         handled = true;
     } else if (request->url.path == "/timeout/socket" && request->method == "GET") {
-        std::string responseJson("{\"socket_timeout\":");
+        std::string responseJson("{\"socket\":");
         char timeout[11];
         sprintf(timeout, "%d", serverGetSocketTimeout(conn_fd));
         responseJson += timeout;
@@ -265,8 +284,7 @@ bool HttpConnection::handleTimeoutRequests(int conn_fd, HttpRequest * request) {
 
         handled = true;
     } else if (request->url.path == "/timeout/connection" && request->method == "GET") {
-        printf("Where are you seg fault connection?\n");
-        std::string responseJson("{\"connection_timeout\":");
+        std::string responseJson("{\"connection\":");
         char timeout[11];
         sprintf(timeout, "%d", serverGetConnectionTimeout(conn_fd));
         responseJson += timeout;

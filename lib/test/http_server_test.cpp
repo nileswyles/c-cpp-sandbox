@@ -10,12 +10,26 @@
 
 #include <string.h>
 
+// make sure global logger level is initialized...
+#ifndef GLOBAL_LOGGER_LEVEL
+#define GLOBAL_LOGGER_LEVEL 0
+#endif
+
+// if per module logger level not defined, set to global...
+#ifndef LOGGER_LEVEL_HTTP_SERVER_TEST
+#define LOGGER_LEVEL_HTTP_SERVER_TEST GLOBAL_LOGGER_LEVEL
+#endif
+
+// enable toggle...
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1
 #endif
 
 #undef LOGGER_MODULE_ENABLED
 #define LOGGER_MODULE_ENABLED LOGGER_HTTP_SERVER_TEST
+
+#undef LOGGER_LEVEL
+#define LOGGER_LEVEL LOGGER_LEVEL_HTTP_SERVER_TEST
 #include "logger.h"
 
 using namespace WylesLibs;
@@ -41,7 +55,7 @@ int connect() {
             } else {
                 socklen_t timeval_len = sizeof(struct timeval);
                 struct timeval timeout = {
-                    .tv_sec = 44,
+                    .tv_sec = 22,
                     .tv_usec = 0,
                 };
                 setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
@@ -150,6 +164,7 @@ static uint32_t getTimeout(std::string timeout) {
     if (ret > 0) {
         buf[ret] = 0;
         std::string resp(buf);
+        loggerPrintf(LOGGER_DEBUG, "Response (%ld): \n%s\n", resp.size(), resp.c_str());
         size_t split_i = resp.find_first_of(":");
         size_t split_j = resp.find_first_of("}");
         
@@ -168,17 +183,26 @@ static void setSocketTimeout(uint32_t value) {
     
     char content_length[11];
     sprintf(content_length, "%ld", strlen(timeout) + 12);
-    std::string socket_timeout_request("POST /timeout HTTP/1.1\n");
-    socket_timeout_request += "Content-Type: application/json\n";
-    socket_timeout_request += "Content-Length: ";
-    socket_timeout_request += content_length;
-    socket_timeout_request += "\n\n";
-    socket_timeout_request += "{\"socket\": ";
-    socket_timeout_request += timeout;
-    socket_timeout_request += "}";
+    std::string request("POST /timeout HTTP/1.1\n");
+    request += "Content-Type: application/json\n";
+    request += "Content-Length: ";
+    request += content_length;
+    request += "\n\n";
+    request += "{\"socket\": ";
+    request += timeout;
+    request += "}";
 
     int fd = connect();
-    write(fd, socket_timeout_request.c_str(), socket_timeout_request.size());
+    loggerPrintf(LOGGER_DEBUG, "Request (%ld): \n%s\n\n", request.size(), request.c_str());
+    write(fd, request.c_str(), request.size());
+
+    char buf[1024];
+    int ret = read(fd, buf, 1024);
+    if (ret > 0) {
+        buf[ret] = 0;
+        std::string response(buf);
+        loggerPrintf(LOGGER_DEBUG, "Response (%ld): \n%s\n\n", response.size(), response.c_str());
+    }
     close(fd);
 }
 
@@ -222,7 +246,7 @@ void testHttpServerConnectionTimeout(TestArg * t) {
 
 int main(int argc, char * argv[]) {
     Tester t;
-
+    
     t.addTest(testHttpServer);
     t.addTest(testHttpServerSocketTimeout);
     t.addTest(testHttpServerConnectionTimeout);

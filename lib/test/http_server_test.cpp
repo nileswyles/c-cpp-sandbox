@@ -39,7 +39,7 @@ int connect() {
             } else {
                 socklen_t timeval_len = sizeof(struct timeval);
                 struct timeval timeout = {
-                    .tv_sec = 22,
+                    .tv_sec = 44,
                     .tv_usec = 0,
                 };
                 setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
@@ -76,7 +76,7 @@ void testHttpServer(TestArg * t) {
     if (ret > 0) {
         buf[ret] = 0;
         std::string response((const char *)buf); 
-        loggerPrintf(LOGGER_DEBUG, "Actual Response (%ld): \n%s\n\n", response.size(), response.c_str());
+        loggerPrintf(LOGGER_TEST, "Actual Response (%ld): \n%s\n\n", response.size(), response.c_str());
 
         std::string expected_response("HTTP/1.1 200\n");
         expected_response += "Content-Type: text/html\n";
@@ -100,7 +100,7 @@ void testHttpServer(TestArg * t) {
     close(fd);
 }
 
-void testHttpServerTimeout(TestArg * t) {
+void testHttpServerSocketTimeout(TestArg * t) {
     std::string request("GET / HTTP 1.1\n");
     request += "b";
     int fd = connect();
@@ -108,15 +108,19 @@ void testHttpServerTimeout(TestArg * t) {
     write(fd, request.c_str(), request.size());
 
     uint8_t buf[1024];
-    // 
     int ret = read(fd, buf, 1024);
-    loggerPrintf(LOGGER_TEST, "read ret: %d, errno: %u\n", ret, errno);
-    if (ret == -1 && errno == EDEADLK || errno == ECONNRESET) {
-        t->fail = false;
-    } else if (ret > 0) {
+    loggerPrintf(LOGGER_DEBUG, "read ret: %d, errno: %u\n", ret, errno);
+    if (ret > 0) {
         buf[ret] = 0;
         std::string response((const char *)buf); 
-        loggerPrintf(LOGGER_DEBUG, "Response: \n%s\n", response.c_str());
+        loggerPrintf(LOGGER_TEST, "Actual Response (%ld): \n%s\n\n", response.size(), response.c_str());
+
+        std::string expected_response("HTTP/1.1 500\n");
+        expected_response += "Connection: close\n\n";
+        loggerPrintf(LOGGER_TEST, "Expected Response (%ld): \n%s\n", expected_response.size(), expected_response.c_str());
+        if (response == expected_response) {
+            t->fail = false;
+        }
     }
     close(fd);
 }
@@ -125,7 +129,7 @@ int main(int argc, char * argv[]) {
     Tester t;
 
     t.addTest(testHttpServer);
-    t.addTest(testHttpServerTimeout);
+    t.addTest(testHttpServerSocketTimeout);
 
     if (argc > 1) {
         loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);

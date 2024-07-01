@@ -120,7 +120,12 @@ static void process_sockopts(int fd) {
     uint8_t keep_alive = 1;
     setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &keep_alive, byte_len);
 
+    // close connection immediately
+    uint8_t linger = 0;
+    setsockopt(fd, SOL_SOCKET, SO_LINGER, &linger, byte_len);
+
     // ! IMPORTANT
+    // For reads,
     // should be minimum value greater than max(SO_RCVBUF, READER_BUF_SIZE)/128kbps (aribitrary minimum connection speed)
     //  default RCVBUF == 131072, READER_BUF_SIZE == 8096, so ~1.024 seconds. Let's round to 2 seconds.
     struct timeval timeout = {
@@ -136,6 +141,10 @@ static void process_sockopts(int fd) {
         getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &rcv_buf_size, &uint32_t_len); // why pointer to len? also lame
         uint32_t snd_buf_size = 0;
         getsockopt(fd, SOL_SOCKET, SO_SNDBUF, &snd_buf_size, &uint32_t_len);
+        uint32_t rcv_lo_wat = 0;
+        getsockopt(fd, SOL_SOCKET, SO_RCVLOWAT, &rcv_lo_wat, &uint32_t_len);
+        uint32_t snd_lo_wat = 0;
+        getsockopt(fd, SOL_SOCKET, SO_SNDLOWAT, &snd_lo_wat, &uint32_t_len);
         struct timeval rcv_timeout = {0};
         getsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, &timeval_len);
         struct timeval snd_timeout = {0};
@@ -143,6 +152,10 @@ static void process_sockopts(int fd) {
         uint8_t ret_keep_alive = 1;
         getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &ret_keep_alive, &byte_len);
 
-        loggerPrintf(LOGGER_DEBUG, "SOCK OPTS: KEEP_ALIVE %u, SO_RCVBUF %u, SO_RCVTIMEO %lds %ldus, SO_SNDBUF %u, SO_SNDTIMEO %lds %ldus\n", ret_keep_alive, rcv_buf_size, rcv_timeout.tv_sec, rcv_timeout.tv_usec, snd_buf_size, snd_timeout.tv_sec, snd_timeout.tv_usec);
+        loggerPrintf(LOGGER_DEBUG, "SOCK OPTS: \n KEEP_ALIVE %u\n SO_RCVBUF %u\n SO_RCVLOWAT %u\n SO_SNDLOWAT %u\n SO_RCVTIMEO %lds %ldus\n SO_SNDBUF %u\n SO_SNDTIMEO %lds %ldus\n", 
+            ret_keep_alive, rcv_buf_size, 
+            rcv_lo_wat, snd_lo_wat,
+            rcv_timeout.tv_sec, rcv_timeout.tv_usec, 
+            snd_buf_size, snd_timeout.tv_sec, snd_timeout.tv_usec);
     }
 }

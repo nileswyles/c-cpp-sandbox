@@ -15,6 +15,20 @@ using namespace WylesLibs;
 
 namespace WylesLibs::File {
 
+static void writeFile(std::string file_path, std::string buffer, bool append) {
+    // open every time a problem?
+    std::fstream s{file_path, s.binary | s.out};
+    if (!s.is_open()) {
+    } else {
+        if (append) {
+            s.seekp(0, std::ios_base::end);
+        } else {
+            s.seekp(0);
+        }
+        s.write((const char *)buffer.data(), buffer.size()); // binary output
+    }
+}
+
 static void writeFile(std::string file_path, Array<uint8_t> buffer, bool append) {
     // open every time a problem?
     std::fstream s{file_path, s.binary | s.out};

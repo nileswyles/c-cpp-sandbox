@@ -30,5 +30,5 @@ $ROOT_DIR/lib/reader/reader.cpp
 mkdir $ROOT_DIR/out
 TEST_PATH=$ROOT_DIR/out/key_generator_test.out
 rm $TEST_PATH
-g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT $DEFINES -std=c++23 -o $TEST_PATH
+g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT $DEFINES -std=c++20 -o $TEST_PATH
 exec $TEST_PATH $TEST_ARG

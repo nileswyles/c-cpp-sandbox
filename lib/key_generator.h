@@ -1,6 +1,7 @@
 #ifndef SEQUENCE_ID_GENERATOR_H
 #define SEQUENCE_ID_GENERATOR_H
 
+#include <math.h>
 #include <pthread.h>
 #include <string>
 #include <stdlib.h>
@@ -11,6 +12,14 @@
 #include "file.h"
 #include "reader/reader.h"
 #include "string_utils.h"
+
+#ifndef LOGGER_KEY_GENERATOR
+#define LOGGER_KEY_GENERATOR 1
+#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_KEY_GENERATOR
+#include "logger.h"
 
 namespace WylesLibs {
 
@@ -24,19 +33,19 @@ class UniqueKeyGeneratorStore {
             int fd = open(file_path.c_str(), O_RDONLY);
             if (fd != -1) {
                 Reader r(fd);
-                // for (size_t i = 0; i < 16; i++) {
-                //     current = current << 4;
-                //     uint8_t byte = r.readByte();
-                //     if (isDigit(byte)) {
-                //         current |= r.readByte() - 0x30;
-                //     } else if (isUpperHex(byte)) {
-                //         current |= r.readByte() - 0x41;
-                //     } else {
-                //         std::string msg = "Non-hex character detected.";
-                //         loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
-                //         throw std::runtime_error(msg);
-                //     }
-                // }
+                for (size_t i = 0; i < 16; i++) {
+                    current = current << 4;
+                    uint8_t byte = r.readByte();
+                    if (isDigit(byte)) {
+                        current |= byte - 0x30;
+                    } else if (isUpperHex(byte)) {
+                        current |= (byte - 0x41) + 0xA;
+                    } else {
+                        std::string msg = "Non-hex character detected.";
+                        loggerPrintf(LOGGER_DEBUG, "%s: [0x%x] at iteration %lu\n", msg.c_str(), byte, i);
+                        throw std::runtime_error(msg);
+                    }
+                }
                 close(fd);
             }
         }
@@ -49,76 +58,61 @@ class UniqueKeyGeneratorStore {
 class UniqueKeyGenerator {
     private:
         UniqueKeyGeneratorStore store;
-        pthread_mutex_t * mutex;
+        pthread_mutex_t mutex;
         uint64_t current;
     public:
-        static void valToHexCharArray(Array<uint8_t> data, uint64_t value) {
-            for (size_t i = 0; i < 8; i++) {
-                uint8_t byte = value | 0xFF;
-                uint8_t low = (byte | 0x0F);
+        static void valToHexCharArray(Array<uint8_t> data, uint64_t value, size_t bytes) {
+            if (bytes > 8) {
+                throw std::runtime_error("byte count cannnot exceed 64 bits.");
+            }
+            for (size_t i = 0; i < bytes; i++) {
+                uint8_t low = (value & 0x0F);
                 if (low < 0xA) {
                     low += 0x30;
                 } else {
-                    low += 0x41;
+                    low += 0x41 - 0xA;
                 }
                 data.insert(0, low);
-                uint8_t high = (byte | 0xF0 >> 4);
+                uint8_t high = ((value & 0xF0) >> 4);
                 if (high < 0xA) {
                     high += 0x30;
                 } else {
-                    high += 0x41;
+                    high += 0x41 - 0xA;
                 }
                 data.insert(0, high);
                 value = value >> 8; 
             }
-        }
-        static void valToHexCharArray(Array<uint8_t> data, uint32_t value) {
-            for (size_t i = 0; i < 4; i++) {
-                uint8_t byte = value | 0xFF;
-                uint8_t low = (byte | 0x0F);
-                if (low < 0xA) {
-                    low += 0x30;
-                } else {
-                    low += 0x41;
-                }
-                data.insert(0, low);
-                uint8_t high = (byte | 0xF0 >> 4);
-                if (high < 0xA) {
-                    high += 0x30;
-                } else {
-                    high += 0x41;
-                }
-                data.insert(0, high);
-                value = value >> 8; 
-            }
+            loggerPrintf(LOGGER_DEBUG, "Value: %lu, Hex Char Array: %s\n", value, data.toString().c_str());
         }
         UniqueKeyGenerator() {}
         // There is no correct solution... 
         UniqueKeyGenerator(ServerConfig config, UniqueKeyGeneratorStore store): store(store) {
             current = 0;
             store.refresh(current);
-            pthread_mutex_init(mutex, nullptr);
+            printf("Refreshed store...\n");
+            pthread_mutex_init(&mutex, nullptr);
         }
         ~UniqueKeyGenerator() {
-            pthread_mutex_destroy(mutex);
-
+            pthread_mutex_lock(&this->mutex);
             Array<uint8_t> data;
-            UniqueKeyGenerator::valToHexCharArray(data, current);
+            UniqueKeyGenerator::valToHexCharArray(data, current, 8);
             store.flush(data);
+            pthread_mutex_unlock(&this->mutex);
+            pthread_mutex_destroy(&this->mutex);
         }
         virtual std::string next() {
-            pthread_mutex_lock(this->mutex);
+            pthread_mutex_lock(&this->mutex);
             this->current++;
-            pthread_mutex_unlock(this->mutex);
 
             Array<uint8_t> data;
-            UniqueKeyGenerator::valToHexCharArray(data, current);
+            UniqueKeyGenerator::valToHexCharArray(data, current, 8);
+            pthread_mutex_unlock(&this->mutex);
             return data.toString();
         }
         virtual uint64_t nextAsInteger() {
-            pthread_mutex_lock(this->mutex);
+            pthread_mutex_lock(&this->mutex);
             this->current++;
-            pthread_mutex_unlock(this->mutex);
+            pthread_mutex_unlock(&this->mutex);
             return current;
         }
 };
@@ -138,7 +132,7 @@ class UUIDGeneratorV4: public UniqueKeyGenerator {
             // counter intiuitive, revisit 
             Array<uint8_t> data;
             for (size_t i = 0; i < 4; i++) {
-                UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)random());
+                UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)random(), 4);
             }
 
             return data.toString();
@@ -281,45 +275,19 @@ class UUIDGeneratorV7: public UUIDGeneratorV4 {
             for (size_t i = 0; i <= size; i++) {
                 int select = rand();
 
-                int normalized_select = (int)size * select/RAND_MAX;
+                int normalized_select = (int)round(size * (double)select/RAND_MAX);
                 while (selections.contains(normalized_select)) {
-                    normalized_select = (int)size * select/RAND_MAX;
+                    select = rand();
+                    normalized_select = (int)round(size * (double)select/RAND_MAX);
                 }
                 selections.append(normalized_select);
 
                 if (normalized_select == 0) {
-                    UniqueKeyGenerator::valToHexCharArray(data, (uint64_t)ts.tv_sec);
+                    UniqueKeyGenerator::valToHexCharArray(data, (uint64_t)ts.tv_sec, 8);
                 } else if (normalized_select == 1) {
-                    UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)ts.tv_nsec);
+                    UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)ts.tv_nsec, 4);
                 } else if (normalized_select >= 2) {
-                    // if formula in wikipedia is correct... a single 32-bit random value means, 
-                    // assuming it takes more than a nanosecond to compute this... 
-                    //   up to 77k machines in parallel generating UUID using this solution will result in 50% chance of collision...
-
-                    // we can fix that by cat-ing more randoms... using mac address
-
-                    // or is there some other transformation on the 128-bit data using random?
-                    // hmm... this is interesting... would such a transformation basically make it the same as the completely random solution?
-                    //   does "randomizing distance" from time, encode some useful information, similar to how "randomizing position" sort of does? 
-                    //     yeah, no still bound by max number of permutations..
-
-                    //     in fact, using time removes a bunch of possible options? so, you trade predicability for probablilty of collision...
-                    //        fucking randomness...
-
-                    //    randomizing positions, increases the number of permutations ever so slightly lol.. not really doing much...
-                    //
-                    //    ha, yeah.................................................
-                    //
-                    //    suuuuuuupppppeeeerrrrrr!
-                    //
-                    //  idk, maybe , I don't (think) I understand probabilites enough? hmm....
-
-                    // what does the rfc say?
-
-                    // ahh UUID v7 uses milliseconds... 
-                    //  maximizing the time interval (to maximum where uuid's generated is one) allows us to limit bits, making more room for random bits...
-
-                    UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)random());
+                    UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)random(), 4);
                 }
             }
 

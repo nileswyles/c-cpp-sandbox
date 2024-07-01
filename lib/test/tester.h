@@ -1,8 +1,6 @@
 #ifndef WYLESLIBS_TESTER_H
 #define WYLESLIBS_TESTER_H
 
-#include "result.h"
-
 #include <string>
 #include <vector>
 #include <stddef.h>

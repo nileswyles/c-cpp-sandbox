@@ -13,10 +13,9 @@ using namespace WylesLibs;
 using namespace WylesLibs::Test;
 
 void testUniqueKeyGenerator(TestArg * t) {
+    File::writeFile("sequence_store", std::string("0000000000000000"), false); // clear file store
     ServerConfig config;
-    printf("Test\n");
     UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore("sequence_store"));
-    printf("Test2\n");
 
     bool failed = false;
     for (size_t i = 0; i < 7; i++) {
@@ -31,8 +30,9 @@ void testUniqueKeyGenerator(TestArg * t) {
 }
 
 void testUniqueKeyStringGenerator(TestArg * t) {
+    File::writeFile("sequence_store", std::string("0000000000000000"), false); // clear file store
     ServerConfig config;
-    UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore("sequence_store_string"));
+    UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore("sequence_store"));
 
     Array<std::string> expected_keys{
         "0000000000000000",
@@ -57,8 +57,8 @@ void testUniqueKeyStringGenerator(TestArg * t) {
     for (size_t i = 0; i < 7; i++) {
         std::string key = generator.next();
         loggerPrintf(LOGGER_TEST, "key: %s\n", key.c_str());
-        loggerPrintf(LOGGER_TEST, "expected key: %s\n", expected_keys.buf[0].c_str());
-        if (key != expected_keys.buf[0]) {
+        loggerPrintf(LOGGER_TEST, "expected key: %s\n", expected_keys.buf()[0].c_str());
+        if (key != expected_keys.buf()[0]) {
             failed = true;
         }
     }
@@ -96,23 +96,18 @@ void testUUIDGeneratorV7(TestArg * t) {
 }
 
 int main(int argc, char * argv[]) {
-    // Tester t;
+    Tester t;
 
-    // t.addTest(testUniqueKeyGenerator);
-    // t.addTest(testUUIDGeneratorV4);
-    // t.addTest(testUUIDGeneratorV7);
+    t.addTest(testUniqueKeyGenerator);
+    t.addTest(testUUIDGeneratorV4);
+    t.addTest(testUUIDGeneratorV7);
 
-    TestArg t;
-    testUniqueKeyGenerator(&t);
-    testUUIDGeneratorV4(&t);
-    testUUIDGeneratorV7(&t);
-
-    // if (argc > 1) {
-    //     loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
-    //     t.run(argv[1]);
-    // } else {
-    //     t.run(nullptr);
-    // }
+    if (argc > 1) {
+        loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
+        t.run(argv[1]);
+    } else {
+        t.run(nullptr);
+    }
 
     return 0;
 }

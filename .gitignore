@@ -4,3 +4,4 @@
 **.log
 out/**
 openssl*
+sequence_store

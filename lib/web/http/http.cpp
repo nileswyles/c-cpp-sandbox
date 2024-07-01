@@ -249,7 +249,10 @@ uint8_t HttpConnection::onConnection(int conn_fd) {
                 std::string response_string = response->toString();
                 delete response;
                 free(response);
-                write(conn_fd, response_string.c_str(), response_string.size());
+                int ret = write(conn_fd, response_string.c_str(), response_string.size());
+                if (ret == -1) {
+                    loggerPrintf(LOGGER_DEBUG, "Error writing to connection file descriptor. Did the connection timer expire?: %d\n", errno);
+                }
             }
         }
     } catch (const std::exception& e) {
@@ -259,7 +262,10 @@ uint8_t HttpConnection::onConnection(int conn_fd) {
         // respond with empty HTTP status code 500
         HttpResponse err;
         std::string err_string = err.toString();
-        write(conn_fd, err_string.c_str(), err_string.size());
+        int ret = write(conn_fd, err_string.c_str(), err_string.size());
+        if (ret == -1) {
+            loggerPrintf(LOGGER_DEBUG, "Error writing to connection file descriptor. Did the connection timer expire?: %d\n", errno);
+        }
 
         loggerPrintf(LOGGER_ERROR, "Exception thrown while processing request: %s\n", e.what());
     }

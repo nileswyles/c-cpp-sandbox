@@ -111,11 +111,6 @@ static void * handler_wrapper_func(void * arg) {
     return NULL;
 }
 
-// TODO: this is not what I thought? hmm... need to implement connection timer... though, it's really only a nice to have...
-
-//  as far as terminating an active connection/thread...
-//  setting SO_RCVTIMEO and SO_SNDTIMEO to a very small usec value, 
-//      should cause read errors and a properly implemented application *should* gracefully terminate thread...
 static void process_sockopts(int fd) {
     socklen_t byte_len = sizeof(uint8_t);
     socklen_t uint32_t_len = sizeof(uint32_t);
@@ -124,8 +119,12 @@ static void process_sockopts(int fd) {
     // TODO: set RECVBUFSIZE and SENDBUFSIZE, arg it up?
     uint8_t keep_alive = 1;
     setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &keep_alive, byte_len);
+
+    // ! IMPORTANT
+    // should be minimum value greater than max(SO_RCVBUF, READER_BUF_SIZE)/128kbps (aribitrary minimum connection speed)
+    //  default RCVBUF == 131072, READER_BUF_SIZE == 8096, so ~1.024 seconds. Let's round to 2 seconds.
     struct timeval timeout = {
-        .tv_sec = INITIAL_CONNECTION_TIMEOUT_S,
+        .tv_sec = 2,
         .tv_usec = 0,
     };
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);

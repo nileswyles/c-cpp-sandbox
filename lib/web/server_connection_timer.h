@@ -33,39 +33,25 @@ typedef struct Connection {
 static Connection * start = NULL;
 static Connection * end = NULL;
 
-static uint64_t runtime = 0;
-
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t tick_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static pthread_t tick_thread;
 static pthread_t process_thread;
 
 static bool run = false;
 
-static void timerCloseConnection(int fd);
+static void closeConnection(Connection * connection);
 static int timerStart();
 static void timerStop();
 static void * timerProcess(void * arg);
 static void timerSetTimeout(int fd, uint32_t timeout_s);
 static void timerAddConnection(int fd, uint32_t timeout_s);
+static void timerRemoveConnection(int fd);
+static void removeConnection(Connection * connection);
 
-static void timerCloseConnection(int fd) {
-    socklen_t timeval_len = sizeof(struct timeval);
-    struct timeval timeout = {
-        .tv_sec = 0,
-        .tv_usec = 1,
-    };
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
-    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);
-
-    if (LOGGER_LEVEL >= LOGGER_DEBUG) {
-        struct timeval rcv_timeout = {0};
-        getsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, &timeval_len);
-        loggerPrintf(LOGGER_DEBUG, "SO_RCVTIMEO %lds %ldus\n", rcv_timeout.tv_sec, rcv_timeout.tv_usec);
-        getsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &rcv_timeout, &timeval_len);
-        loggerPrintf(LOGGER_DEBUG, "SO_SNDTIMEO %lds %ldus\n", rcv_timeout.tv_sec, rcv_timeout.tv_usec);
-    }
+static void closeConnection(Connection * connection) {
+    loggerPrintf(LOGGER_DEBUG, "Closing connection (with FD: %d) due to timer expiration.\n", connection->fd);
+    close(connection->fd);
+    removeConnection(connection);
 }
 
 static int timerStart() {
@@ -86,31 +72,17 @@ static void * timerProcess(void * arg) {
         pthread_mutex_lock(&mutex);
         Connection * current = start;
         while (current != NULL) {
-            Connection * prev = current->prev;
             Connection * next = current->next;
             struct timespec ts;
             clock_gettime(CLOCK_MONOTONIC, &ts);
-            if (current->start_s + current->timeout_s >= ts.tv_sec) {
-                timerCloseConnection(current->fd);
-
-                // remove item from linked list.
-                if (prev == NULL) { // if first item in list...
-                    start = next; 
-                } else {
-                    prev->next = next;
-                }
-                if (next == NULL) { // if last item in list...
-                    end = prev;
-                } else {
-                    next->prev = prev;
-                }
-                free(current);
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "fd: %d, start: %lu, timeout: %lu, current_time: %lu\n", current->fd, current->start_s, current->timeout_s, ts.tv_sec);
+            if (current->start_s + current->timeout_s <= ts.tv_sec) {
+                closeConnection(current);
             }
             current = next;
         }
         pthread_mutex_unlock(&mutex);
         sleep(1); // 1s
-        runtime++;
     }
 
     return NULL;
@@ -151,6 +123,37 @@ static void timerAddConnection(int fd, uint32_t timeout_s) {
         end = connection;
         pthread_mutex_unlock(&mutex);
     }
+}
+
+static void timerRemoveConnection(int fd) {
+    pthread_mutex_lock(&mutex);
+    Connection * current = start;
+    while (current != NULL) {
+        if (current->fd == fd) {
+            removeConnection(current);
+            break;
+        } else {
+            current = current->next;
+        }
+    }
+    pthread_mutex_unlock(&mutex);
+}
+
+static void removeConnection(Connection * connection) {
+    Connection * prev = connection->prev;
+    Connection * next = connection->next;
+    // remove item from linked list.
+    if (prev == NULL) { // if first item in list...
+        start = next; 
+    } else {
+        prev->next = next;
+    }
+    if (next == NULL) { // if last item in list...
+        end = prev;
+    } else {
+        next->prev = prev;
+    }
+    free(connection);
 }
 
 #if defined __cplusplus

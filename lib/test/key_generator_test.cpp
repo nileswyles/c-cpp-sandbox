@@ -13,7 +13,7 @@ using namespace WylesLibs;
 using namespace WylesLibs::Test;
 
 void testUniqueKeyGenerator(TestArg * t) {
-    File::writeFile("sequence_store", std::string("0000000000000000"), false); // clear file store
+    File::write("sequence_store", std::string("0000000000000000"), false); // clear file store
     ServerConfig config;
     UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore("sequence_store"));
 
@@ -30,7 +30,7 @@ void testUniqueKeyGenerator(TestArg * t) {
 }
 
 void testUniqueKeyStringGenerator(TestArg * t) {
-    File::writeFile("sequence_store", std::string("0000000000000000"), false); // clear file store
+    File::write("sequence_store", std::string("0000000000000000"), false); // clear file store
     ServerConfig config;
     UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore("sequence_store"));
 

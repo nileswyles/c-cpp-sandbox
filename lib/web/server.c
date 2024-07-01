@@ -60,6 +60,7 @@ extern void serverListen(const char * address, const uint16_t port, connection_h
                     printf("Error listening\n");
                 } else {
                     printf("Listening on %s:%u\n", address, port);
+                    timerStart();
                     pthread_attr_t attr;
                     pthread_attr_init(&attr);
                     pthread_attr_setdetachstate(&attr, 1);
@@ -80,6 +81,7 @@ extern void serverListen(const char * address, const uint16_t port, connection_h
                         }
                         conn = accept(fd, NULL, NULL);
                     }
+                    timerStop();
                     if (conn == -1) {
                         printf("ERROR ACCEPTING connections, errno %d\n", errno);
                     }
@@ -105,6 +107,7 @@ static void * handler_wrapper_func(void * arg) {
     process_sockopts(fd);
     timerAddConnection(fd, INITIAL_CONNECTION_TIMEOUT_S);
     handler(fd);
+    timerRemoveConnection(fd);
     return NULL;
 }
 

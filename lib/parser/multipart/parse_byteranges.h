@@ -64,7 +64,7 @@ static void parse(Reader * r, MultipartFile& file) {
             // [0,0] = 1, [1,0] = 0, [0,1] = 2
             //            [2,0] = -1
             Array<uint8_t> data = r->readBytes(max - min + 1);
-            // WylesLibs::File::writeFile(file.getResourcePath(), data);
+            // WylesLibs::File::write(file.getResourcePath(), data);
         } else {
             throw std::runtime_error("Boundary string expected at start or after read.");
         }

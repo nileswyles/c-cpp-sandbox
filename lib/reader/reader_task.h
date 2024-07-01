@@ -48,7 +48,7 @@ class ReaderTaskChain: public ReaderTask {
     public:
         bool ignored;
         ReaderTaskChain * nextOperation;
-        ReaderTaskChain() {}
+        ReaderTaskChain(): nextOperation(nullptr) {}
         ReaderTaskChain(ReaderTaskChain * next): nextOperation(next) {}
 
         void next(Array<uint8_t>& buffer, uint8_t c) {

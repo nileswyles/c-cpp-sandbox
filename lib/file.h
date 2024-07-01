@@ -10,12 +10,21 @@
 #include <string>
 
 #include <fstream>
+#include <sys/stat.h>
+
+#ifndef LOGGER_FILE
+#define LOGGER_FILE 1
+#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_FILE
+#include "logger.h"
 
 using namespace WylesLibs;
 
 namespace WylesLibs::File {
 
-static void writeFile(std::string file_path, std::string buffer, bool append) {
+static void write(std::string file_path, std::string buffer, bool append) {
     // open every time a problem?
     std::fstream s{file_path, s.binary | s.out};
     if (!s.is_open()) {
@@ -29,7 +38,7 @@ static void writeFile(std::string file_path, std::string buffer, bool append) {
     }
 }
 
-static void writeFile(std::string file_path, Array<uint8_t> buffer, bool append) {
+static void write(std::string file_path, Array<uint8_t> buffer, bool append) {
     // open every time a problem?
     std::fstream s{file_path, s.binary | s.out};
     if (!s.is_open()) {
@@ -42,9 +51,7 @@ static void writeFile(std::string file_path, Array<uint8_t> buffer, bool append)
         s.write((const char *)buffer.buf(), buffer.size()); // binary output
     }
 }
-// TODO: seek... when multipart file support is added?
-//  # ifstream - ed edition lol
-//  Worth creating abstraction around that for files, instead of using reader? 
+
 static WylesLibs::Array<uint8_t> read(std::string file_path) {
     int fd = open(file_path.c_str(), O_RDONLY);
     if (fd == -1) {
@@ -55,9 +62,10 @@ static WylesLibs::Array<uint8_t> read(std::string file_path) {
         // something to keep in mind, I guess... no changes needed at the moment. 
         return WylesLibs::Array<uint8_t>();
     }
+    struct stat stat_info = {};
+    int lol = fstat(fd, &stat_info);
     Reader r(fd);
-    printf("???????\n");
-    Array<uint8_t> file = r.readUntil((char)EOF, true);
+    Array<uint8_t> file = r.readBytes(stat_info.st_size);
     close(fd);
     return file;
 }

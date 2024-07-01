@@ -47,7 +47,7 @@ static void parse(Reader * r, Array<MultipartFile> files, unordered_map<std::str
             r->readUntil("\n"); // consume new line...
         } else if (field_name != "") {
             if (is_file) {
-                WylesLibs::File::writeFile(file.getResourcePath(), line, !new_file);
+                WylesLibs::File::write(file.getResourcePath(), line, !new_file);
                 new_file = false;
             } else {
                 form_content[field_name] += line.toString();

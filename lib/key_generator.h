@@ -50,7 +50,7 @@ class UniqueKeyGeneratorStore {
             }
         }
         void flush(Array<uint8_t> data) {
-            File::writeFile(this->file_path, data, false);
+            File::write(this->file_path, data, false);
         }
 
 };

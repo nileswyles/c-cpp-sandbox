@@ -11,12 +11,26 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// make sure global logger level is initialized...
+#ifndef GLOBAL_LOGGER_LEVEL
+#define GLOBAL_LOGGER_LEVEL 0
+#endif
+
+// if per module logger level not defined, set to global...
+#ifndef LOGGER_LEVEL_READER_TASK
+#define LOGGER_LEVEL_READER_TASK GLOBAL_LOGGER_LEVEL
+#endif
+
+// enable toggle...
 #ifndef LOGGER_READER_TASK
 #define LOGGER_READER_TASK 1
 #endif
 
 #undef LOGGER_MODULE_ENABLED
 #define LOGGER_MODULE_ENABLED LOGGER_READER_TASK
+
+#undef LOGGER_LEVEL
+#define LOGGER_LEVEL LOGGER_LEVEL_READER_TASK
 #include "logger.h"
 
 namespace WylesLibs {

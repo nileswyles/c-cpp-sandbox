@@ -1,5 +1,6 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include "nlognsort.h"
+
+#define GRAPH_ENABLE 1
 
 template<typename T>
 T * merge(T * A, size_t sizeA, T * B, size_t sizeB) {
@@ -8,6 +9,7 @@ T * merge(T * A, size_t sizeA, T * B, size_t sizeB) {
     size_t o = 0;
 
     T * out = new T[sizeA+sizeB];
+    printf("lol\n");
     while (o < sizeA+sizeB) {
         if (A[i] > B[j]) {
             out[o++] = B[j++];
@@ -15,35 +17,11 @@ T * merge(T * A, size_t sizeA, T * B, size_t sizeB) {
             out[o++] = A[i++];
         }
     }
-    delete A;
-    delete B;
+    printf("lol\n");
+    // delete A;
+    // delete B;
+    printf("lol\n");
     return out;
-}
-
-// TODO: sort order...
-template<typename T>
-T * nlognSort(T * e_buf, size_t size) {
-    if (e_buf == nullptr || size <= 1) {
-        return;
-    } else {
-        size_t split_index = size/2;
-        T * A = nlognSort<T>(e_buf, split_index); // left
-        T * B = nlognSort<T>(e_buf + split_index, size - split_index); // right
-        return merge<T>(A, split_index, B, size - split_index);
-    }
-}
-
-void generateRandomArray(int * array, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        array[i] = rand();
-    }
-}
-
-void printArray(int * array, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        printf("[%d]", array[i]);
-    }
-    printf("\n");
 }
 
 #define ARRAY_SIZE 7

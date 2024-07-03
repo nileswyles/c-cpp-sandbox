@@ -19,4 +19,6 @@ system("apt install -y libssl-dev");
 system("apt install -y libcrypto-dev");
 
 system("apt install -y postgresql-common");
+system("apt install -y graphviz")
+system("apt install -y libgraphviz-dev")
 system("/usr/share/postgresql-common/pgdg/apt.postgresql.org.sh");

@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+static size_t nodes_visited = 0;
+
 // TODO: sort order...
 template<typename T>
 void nnSort(T * e_buf, size_t size) {
@@ -15,6 +17,7 @@ void nnSort(T * e_buf, size_t size) {
                     e_buf[j] = e_buf[j+1];
                     e_buf[j+1] = swap;
                 }
+                nodes_visited++;
             }
         }
     }
@@ -33,13 +36,16 @@ void printArray(int * array, size_t size) {
     printf("\n");
 }
 
-#define ARRAY_SIZE 7
+#define ARRAY_SIZE 17
+// #define ARRAY_SIZE 7
 
 int main() {
     int array[ARRAY_SIZE];
     generateRandomArray(array, ARRAY_SIZE);
     printArray(array, ARRAY_SIZE);
+    nodes_visited = 0;
     nnSort<int>(array, ARRAY_SIZE);
+    printf("NODES VISITED: %ld\n", nodes_visited);
     printArray(array, ARRAY_SIZE);
 
     return 1;

@@ -164,7 +164,7 @@ static uint32_t getTimeout(std::string timeout) {
     if (ret > 0) {
         buf[ret] = 0;
         std::string resp(buf);
-        loggerPrintf(LOGGER_DEBUG, "Response (%ld): \n%s\n", resp.size(), resp.c_str());
+        loggerPrintf(LOGGER_DEBUG, "Response (%ld): \n%s\n\n", resp.size(), resp.c_str());
         size_t split_i = resp.find_first_of(":");
         size_t split_j = resp.find_first_of("}");
         
@@ -214,6 +214,7 @@ void testHttpServerConnectionTimeout(TestArg * t) {
     std::string request("GET / HTTP/1.1\n");
     request += "b";
     int fd = connect();
+    loggerPrintf(LOGGER_DEBUG, "Request (%ld): \n%s\n\n", request.size(), request.c_str());
     write(fd, request.c_str(), request.size());
     struct timespec ts_before;
     clock_gettime(CLOCK_MONOTONIC, &ts_before);

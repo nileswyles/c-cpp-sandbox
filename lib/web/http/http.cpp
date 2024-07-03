@@ -302,7 +302,7 @@ bool HttpConnection::handleTimeoutRequests(int conn_fd, HttpRequest * request) {
 
         std::string response_string = response.toString();
         write(conn_fd, response_string.c_str(), response_string.size());
-        loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n", response_string.c_str());
+        loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n\n", response_string.c_str());
 
         handled = true;
     } else if (request->url.path == "/timeout/connection" && request->method == "GET") {
@@ -322,7 +322,7 @@ bool HttpConnection::handleTimeoutRequests(int conn_fd, HttpRequest * request) {
 
         std::string response_string = response.toString();
         write(conn_fd, response_string.c_str(), response_string.size());
-        loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n", response_string.c_str());
+        loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n\n", response_string.c_str());
         handled = true;
     }
     loggerPrintf(LOGGER_DEBUG, "Processed timeout requests: %u\n", handled);

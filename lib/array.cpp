@@ -70,3 +70,17 @@ size_t WylesLibs::arrayFind<const char *>(const char *** e_buf, size_t size, con
     }
     return -1;
 }
+
+template<>
+void arraySort<const char *>(const char *** e_buf, size_t size) {
+    const char * swap;
+    for (size_t i = 0; i < size; i++) {
+        for (size_t j = 0; j < size - i; j++) {
+            if (strcmp((*e_buf)[j],(*e_buf)[j+1]) == 1) {
+                swap = (*e_buf)[j];
+                (*e_buf)[j] = (*e_buf)[j+1];
+                (*e_buf)[j+1] = swap;
+            }
+        }
+    }
+}

@@ -20,6 +20,7 @@
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
 namespace WylesLibs {
+// TODO: leverage RAII, containerize?
 class Reader {
     private:
         int r_fd;

@@ -81,6 +81,35 @@ template<>
 size_t arrayFind<const char *>(const char *** e_buf, size_t size, const char * el);
 
 template<typename T>
+void arrayMerge<T>(T * A, size_t sizeA, T * B, size_t sizeB) {
+    size_t i = 0;
+    size_t j = 0;
+    while (i < sizeA) {
+        if (A[i] > B[j]) {
+
+        } else {
+
+        }
+    }
+}
+
+template<typename T>
+void arraySort<T>(T * e_buf, size_t size) {
+    if (size <= 1) {
+        return;
+    } else {
+        size_t split_index = size/2;
+        arraySort<T>(e_buf, split_index); // left
+
+        // lol, if odd, then this is more interesting...
+        arraySort<T>(e_buf + split_index, split_index); // right
+        arrayMerge<T>(e_buf, split_index, e_buf + split_index, split_index);
+    }
+}
+template<>
+void arraySort<const char *>(const char *** e_buf, size_t size);
+
+template<typename T>
 class Array {
     private:
         T ** e_buf;

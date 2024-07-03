@@ -1,6 +1,6 @@
 #/bin/sh
 
-docker build -t c-cpp-sandbox:latest -f Dockerfile .
+docker build -t c-cpp-sandbox:latest -f .devcontainer/Dockerfile .
 
 # docker run --mount type=bind,src="$(pwd)",target=/src
 RESPONSE=`docker run --mount type=bind,src="$(pwd)",target=/build -p 127.0.0.1:8080:8080/tcp --name c-cpp-sandbox-build -d c-cpp-sandbox:latest 2>&1`

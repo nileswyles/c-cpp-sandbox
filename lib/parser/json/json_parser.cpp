@@ -221,19 +221,11 @@ static void parseImmediate(JsonArray * obj, Reader * r, std::string comp, JsonVa
 static void parseNestedObject(JsonArray * arr, Reader * r) {
     char c = r->peekByte();
     if (c == '{') {
-        loggerPrintf(LOGGER_DEBUG, "Found %c\n", c);
-        // create new object... and update cursor/pointer to object.
         JsonObject * new_obj = new JsonObject(arr->depth + 1);
-        // TODO: this 
-        if (arr != nullptr) {
-            // this should never be null.. but lets
-            arr->addValue((JsonValue *)new_obj);
-        } else {
-            std::string msg = "Parent array null";
-            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-            throw std::runtime_error(msg);
-        }
-        loggerPrintf(LOGGER_DEBUG, "New OBJ\n");
+        // TODO: ! REMINDER 
+        //  this lol... to check or not to check
+        //  I think similar to public vs private class members if function interfaces with other software that you don't control, then protect yourself.
+        arr->addValue((JsonValue *)new_obj);
         parseObject((JsonObject *) new_obj, r);
     }
     loggerPrintf(LOGGER_DEBUG, "Returning object, found %c\n", c);

@@ -96,20 +96,23 @@ Agnode_t * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t siz
         T * right_buf = e_buf + size_left;
 
         // handle middle row properly... no need to include single node twice. If middle row, use this parent_node as parent for left/right_merged.
-        //  unless, it's 2/1 split... let's include the extra node on the right hand side to keep things more symmetrical.
+        //  unless, it's 2/1 split... let's include 2 nodes on the right hand side to keep things more symmetrical.
         Agnode_t * left = parent_node;
         Agnode_t * right = parent_node;
         if (size_left > 1) {
             left = drawNode<T>(g, parent_node, left_buf, size_left);
         }
-        if (size_right > 1 || size_left == 2 && size_right == 1) {
+        if (size_right > 1) {
             right = drawNode<T>(g, parent_node, right_buf, size_right);
+        } else if (size_left == 2 && size_right == 1) {
+            right = drawNode<T>(g, parent_node, right_buf, size_right);
+            right = drawNode<T>(g, right, right_buf, size_right);
         }
-        Agnode_t * left_merged = nlognSort<T>(g, left, left_buf, size_left); // left
-        Agnode_t * right_merged = nlognSort<T>(g, right, right_buf, size_right); // right
+        Agnode_t * left_sorted = nlognSort<T>(g, left, left_buf, size_left); // left
+        Agnode_t * right_sorted = nlognSort<T>(g, right, right_buf, size_right); // right
         merge<T>(left_buf, size_left, right_buf, size_right);
         printf("CALL TRACE merged size: %ld\n", size);
-        return drawMergedNode<T>(g, left_merged, right_merged, e_buf, size);
+        return drawMergedNode<T>(g, left_sorted, right_sorted, e_buf, size);
     }
 }
 

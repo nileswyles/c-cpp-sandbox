@@ -2,190 +2,112 @@
 
 #define GRAPH_ENABLE 1
 
-void leftMerge() {
+template<typename T>
+size_t leftMerge(T * A, size_t sizeA, T * B, size_t sizeB, T *& swap_space, size_t& swap_space_size) {
+    size_t i = 0;
+    size_t j = 0;
     T swap;
     T left_compare;
-    while (i < sizeA) {
+    
+    size_t extension = 0;
+    while (i < sizeA + extension) {
         left_compare = A[i];
         if (swap_space_size > 0) {
             left_compare = swap_space[0];
         }
-        printf("i: %ld, j: %ld, A[i]: %ld, B[j]: %ld, SS[i]: %ld\n", i, j, A[i], B[j], swap_space[0]);
+        printf("i: %ld, swap_space_size(j): %ld, A[i]: %ld, B[j]: %ld, SS[i]: %ld\n", i, swap_space_size, A[i], B[swap_space_size], swap_space[0]);
         if (j < sizeB && left_compare > B[j]) {
             // B wins
-            swap = A[i];
-            A[i] = B[j];
+            if (i < sizeA) {
+                swap = A[i];
+                A[i] = B[j];
+                swap_space[swap_space_size] = swap;
 
-            // if (&(A[i]) == swap_space) {
-            //     // edge case where, start of swap_space == A[i] (output slot)...
-            //     //  B[j] is unoccupied and equals swap_space[swap_space_slot] after incrementing...
-            //     //  so, A[i]/originally swapped element get's added to the end...
-
-            //     //   breaking sorted assumption...
-            //     //  hmm....
-            //     //  
-            //     // but that's not the issue I am seeing here lol...
-            //     //  let's get back to this. it's an issue  introduced by iterating past end of sizeA...
-            //     // so, let's sort sizeB seperatly using nn sort?
-            //     swap_space++;
-            //     swap_space[swap_space_slot] = swap;
-            // } else {
-                swap_space[swap_space_slot++] = swap;
                 swap_space_size++;
-            // }
-            j++;
+                j++;
+            } else {
+                // writing past original A array and into original swap_space/start of B (contiguous)
+
+                // here we just set the "deallocated" value to value at B and increment.
+                // this continues until B wins consecutively - extension number of times
+                // this also implies that when iterating past original A array, swap_space is never empty and the left_compare logic above is still valid... 
+                A[i] = B[j];
+                j++;
+            }
         } else if (swap_space_size > 0) {
-            // swap_space wins
-            swap = A[i];
-            A[i] = swap_space[0];
-            swap_space[swap_space_slot] = swap;
-            swap_space++;
-            // size of swap space remains the same.
+            if (i < sizeA) {
+                // swap_space wins
+                swap = A[i];
+                A[i] = swap_space[0];
+                // hmm...
+                // so, we don't want the gap...
+                //  how do I elimate that? sizeA++ isn't actually fixing that...
+ 
+                // so, if swap_space_wins, we place value at A[i] location at end of swap_space (preserving orderliness LMAO), that's a strict requirement...
+                // so, I guess only really solution is to track gaps...?
+ 
+                // actually, original idea was to continue iterating so that 
+                //  as alternative to explicitly tracking the gaps and passing that info across invocations of this function...
+                //  what if, I check if past original sizeA, and if so, don't swap... just consume swap_space...
+                //  algorithm works as normally expected and 
+                //  then no gap, :)
+                swap_space++;
+                swap_space[swap_space_size] = swap;
+                // size of swap space remains the same.
+            } else {
+                // writing past original A array and into original swap_space/start of B (contiguous)
+
+                // swap space won at some point and need to preserve orderliness, so in order to avoid gap, let's extend iterations and just consume swap space if beyond original sizeA (again, assuming contiguous)
+                // here we just consume swap_space and similiar to the normal case tell the algorithm go even further and write to an extra value past original A (extension++).
+                A[i] = swap_space[0];
+                swap_space++;
+                swap_space_size--;
+            }
+            extension++;
         } // else swap_space empty and A wins
+
+        // okay, now if swap_space is empty....
+        //  will it every empty past original A but before extensions consumed?
         printf("WINNER WINNER: %ld\n", A[i]);
         i++;
         nodes_visited++;
     }
+    return j;
 }
 
 template<typename T>
 // let's assume these are contiguous
 void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
-    size_t i = 0;
-    size_t j = 0;
-
-    T * swap_space = B;
     size_t swap_space_size = 0;
-    size_t swap_space_slot = 0;
-    // so, goal is to not allocate
+    T * swap_space = B;
+    size_t B_index = leftMerge(A, sizeA, B, sizeB, swap_space, swap_space_size);
+    bool first_run = true;
+    // then again. if swap_space isn't empty merge swap_space with remaining B
+    while (first_run || swap_space_size > 1) {
+        first_run = false;
 
-    // output == A[i];
-    // compare A[i] and B[j]
-    //  A[i] == larger/smaller of two...
-    //  if A[i] larger increment i,
-    //  if B[j], A[i] goes into swap space, increment i and j
+        A = swap_space;
+        sizeA = swap_space_size;
 
-    // then going forward...
-    // or rather, also, before comparing with A[i], we check swap space...
-    // so, let's say, left compare = A[i] if swap_space_size == 0;
-    // else left compare = swap_space[swap_space_i];
+        // hmmm... I think that's it...
 
-    // TODO: think about if odd size... in other words, sizeB < sizeA
+        // so, typically, swap_space == B but if swap_space won at some point AND then extended and B won, 
+        //  then there's a gap between end of swap_space and start of unsorted elements...
 
-    // because who knows compiler sstuff... :)
-    // this is the more portable way or better way of making sure a new variable isn't placed on the stack for each iteration?
-    // is this a basic requirement of modern compilers?
+        // now, think about how repeating over and over is affected by this...
+        // we'll iterate over the new swap_space... 
 
-    // back in the day needed to define all variables at start of function.
-    T swap;
-    T left_compare;
-    while (i < sizeA) {
-        left_compare = A[i];
-        if (swap_space_size > 0) {
-            left_compare = swap_space[0];
-        }
-        printf("i: %ld, j: %ld, A[i]: %ld, B[j]: %ld, SS[i]: %ld\n", i, j, A[i], B[j], swap_space[0]);
-        if (j < sizeB && left_compare > B[j]) {
-            // B wins
-            swap = A[i];
-            A[i] = B[j];
+        // hmm... I think this might be it...
 
-            // if (&(A[i]) == swap_space) {
-            //     // edge case where, start of swap_space == A[i] (output slot)...
-            //     //  B[j] is unoccupied and equals swap_space[swap_space_slot] after incrementing...
-            //     //  so, A[i]/originally swapped element get's added to the end...
+        B = &B[B_index];
+        swap_space = B;
+        sizeB -= B_index;
+        swap_space_size = 0;
+        leftMerge(A, sizeA, B, sizeB, swap_space, swap_space_size);
 
-            //     //   breaking sorted assumption...
-            //     //  hmm....
-            //     //  
-            //     // but that's not the issue I am seeing here lol...
-            //     //  let's get back to this. it's an issue  introduced by iterating past end of sizeA...
-            //     // so, let's sort sizeB seperatly using nn sort?
-            //     swap_space++;
-            //     swap_space[swap_space_slot] = swap;
-            // } else {
-                swap_space[swap_space_slot++] = swap;
-                swap_space_size++;
-            // }
-            j++;
-        } else if (swap_space_size > 0) {
-            // swap_space wins
-            swap = A[i];
-            A[i] = swap_space[0];
-            swap_space[swap_space_slot] = swap;
-            swap_space++;
-            // size of swap space remains the same.
-        } // else swap_space empty and A wins
-        printf("WINNER WINNER: %ld\n", A[i]);
-        i++;
-        nodes_visited++;
+        // okay, so repeat until single element in swap_space... hmm... this is increasingly more dumb lol..
+        //  inherent time/space trade-off?
     }
-
-    // hmmm... if can assume swap_space is sorted,, then it's basically same as above... 
-    // if not, the nn sort?
-
-    // AAAA BBBB
-    // AABA ABBB
-    // AABB AABB
-
-    // AA BB
-    // BA1 AB1
-
-    //  A1 > B1
-    // BA 
-    // again, assuming contiguous
-    //      also, A[i] == swap_space[0]...
-    i = 0;
-    A = swap_space;
-    sizeA = swap_space_size;
-    swap_space = &B[j];
-    swap_space_size = 0;
-    swap_space_slot = 0;
-    while (i < sizeA) {
-        left_compare = A[i];
-        if (swap_space_size > 0) {
-            left_compare = swap_space[0];
-        }
-        printf("i: %ld, j: %ld, A[i]: %ld, B[j]: %ld, SS[i]: %ld\n", i, j, A[i], B[j], swap_space[0]);
-        if (j < sizeB && left_compare > B[j]) {
-            // B wins
-            swap = A[i];
-            A[i] = B[j];
-
-            swap_space[swap_space_slot++] = swap;
-            swap_space_size++;
-            j++;
-        } else if (swap_space_size > 0) {
-            // swap_space wins
-            swap = A[i];
-            A[i] = swap_space[0];
-            swap_space[swap_space_slot] = swap;
-            swap_space++;
-            // size of swap space remains the same.
-        } // else swap_space empty and A wins
-        printf("WINNER WINNER: %ld\n", A[i]);
-        i++;
-        nodes_visited++;
-    }
-
-    // while (j < sizeB && swap_space_size > 0) {
-    //     printf("in B/swap space --- i: %ld, j: %ld, A[i]: %ld, B[j]: %ld, SS[i]: %ld\n", i, j, A[i], B[j], swap_space[0]);
-    //     if (swap_space[0] > B[j]) {
-    //         // B wins
-    //         swap = swap_space[0];
-    //         swap_space[0] = B[j];
-    //     } else {
-
-    //     }
-    //     printf("WINNER WINNER: %ld\n", swap_space[0]);
-    //     swap_space[swap_space_slot] = swap;
-    //     printf("swap_space_slot: %ld\n", swap_space_slot);
-    //     printf("swap_space[swap_space_slot]: %ld, B[j]: %ld\n", swap_space[0], B[j]);
-    //     swap_space++;
-    //     // size of swap space remains the same.
-    //     nodes_visited++;
-    // }
-
     // if odd size before split,
     // j may not equal sizeB but that's fine because it should already be sorted... 
 
@@ -194,7 +116,10 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
 }
 
 // #define ARRAY_SIZE 7
-#define ARRAY_SIZE 4
+#define ARRAY_SIZE 10
+//TODO: 
+// random not working?
+
 // #define ARRAY_SIZE 6
 
 int main(int argc, char **argv) {

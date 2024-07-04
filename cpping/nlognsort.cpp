@@ -3,6 +3,7 @@
 #define GRAPH_ENABLE 1
 
 template<typename T>
+// TODO: lol reference of pointer? seems reasonable?
 void leftMerge(T * A, size_t sizeA, T * B, size_t sizeB, T *& swap_space, size_t& swap_space_size) {
     size_t i = 0;
     size_t j = 0;
@@ -13,7 +14,8 @@ void leftMerge(T * A, size_t sizeA, T * B, size_t sizeB, T *& swap_space, size_t
         if (swap_space_size > 0) {
             left_compare = swap_space[0];
         }
-        printf("i: %ld, swap_space_size(j): %ld, A[i]: %ld, B[j]: %ld, SS[i]: %ld\n", i, swap_space_size, A[i], B[swap_space_size], swap_space[0]);
+        // TODO: 65535 when sizeB == 0
+        // printf("i: %ld, j: %ld, A[i]: %ld, B[j]: %ld, SS[i]: %ld, sizeB: %ld\n", i, j, A[i], B[j], swap_space[0], sizeB);
         if (j < sizeB && left_compare > B[j]) {
             // B wins
             swap = A[i];
@@ -37,7 +39,6 @@ void leftMerge(T * A, size_t sizeA, T * B, size_t sizeB, T *& swap_space, size_t
 
             // note, size of swap space remains the same...
         } // else swap_space empty and A wins
-        printf("WINNER WINNER: %ld\n", A[i]);
         i++;
         nodes_visited++;
     }
@@ -62,8 +63,8 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
     }
 }
 
-#define ARRAY_SIZE 27
-// #define ARRAY_SIZE 77
+// #define ARRAY_SIZE 27
+#define ARRAY_SIZE 77
 //TODO: 
 // random not working?
 

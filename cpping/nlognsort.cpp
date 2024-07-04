@@ -26,7 +26,7 @@ void leftMerge(T * A, size_t sizeA, T * B, size_t sizeB, T *& swap_space, size_t
         } else if (swap_space_size > 0) {
             swap = A[i];
             A[i] = swap_space[0];
-            // unnavoidable shifting...
+            // unavoidable shifting...
             size_t index_of_last_element = swap_space_size - 1;
             for (size_t i = 0; i < index_of_last_element; i++) {
                 swap_space[i] = swap_space[i + 1];
@@ -49,11 +49,9 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
     size_t swap_space_size = 0;
     T * swap_space = B;
     leftMerge(A, sizeA, B, sizeB, swap_space, swap_space_size);
-    bool first_run = true;
     // then again. if swap_space isn't empty merge swap_space with remaining B
-    while (first_run || swap_space_size > 1) {
-        first_run = false;
-
+    // and might want to round up in split function in caller function, so that A is always larger than B... otherwise, last value will never be compared
+    while (swap_space_size > 0) {
         A = swap_space;
         sizeA = swap_space_size;
         B = &B[swap_space_size];
@@ -64,8 +62,8 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
     }
 }
 
-// #define ARRAY_SIZE 7
-#define ARRAY_SIZE 77
+#define ARRAY_SIZE 27
+// #define ARRAY_SIZE 77
 //TODO: 
 // random not working?
 

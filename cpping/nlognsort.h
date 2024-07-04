@@ -73,7 +73,8 @@ Agnode_t * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t siz
     if (e_buf == nullptr || size <= 1) {
         return drawNode(g, parent_node, e_buf[0]);
     } else {
-        size_t split_index = size/2;
+        // ensure left always larger than right
+        size_t split_index = round(size/2);
         printf("CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, split_index, size-split_index);
         Agnode_t * left = nullptr;
         Agnode_t * right = nullptr;
@@ -92,7 +93,8 @@ void nlognSort(T * e_buf, size_t size) {
     if (e_buf == nullptr || size <= 1) {
         return;
     } else {
-        size_t split_index = size/2;
+        // ensure left always larger than right
+        size_t split_index = round(size/2);
         printf("CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, split_index, size-split_index);
         nlognSort<T>(e_buf, split_index); // left
         nlognSort<T>(e_buf + split_index, size - split_index); // right
@@ -107,7 +109,8 @@ void nlognSort(T * e_buf, size_t size, T ** merged_container) {
     if (e_buf == nullptr || size <= 1) {
         *merged_container = e_buf;
     } else {
-        size_t split_index = size/2;
+        // ensure left always larger than right
+        size_t split_index = round(size/2);
         T * A;
         nlognSort<T>(e_buf, split_index, &A); // left
         T * B;

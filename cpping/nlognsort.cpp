@@ -37,9 +37,6 @@ void leftMerge(T * A, size_t sizeA, T * B, size_t sizeB, T *& swap_space, size_t
 
             // note, size of swap space remains the same...
         } // else swap_space empty and A wins
-
-        // okay, now if swap_space is empty....
-        //  will it every empty past original A but before extensions consumed?
         printf("WINNER WINNER: %ld\n", A[i]);
         i++;
         nodes_visited++;

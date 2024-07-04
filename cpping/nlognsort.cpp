@@ -71,8 +71,8 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
     }
 }
 
-// #define ARRAY_SIZE 27
-#define ARRAY_SIZE 77
+#define ARRAY_SIZE 27
+// #define ARRAY_SIZE 77
 //TODO: 
 // random not working?
 
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
     /* Create a simple digraph */
     g = agopen("G", Agdirected, nullptr);
     Agnode_t * root;
-    root = drawMultiValueNode(g, nullptr, array, ARRAY_SIZE);
+    root = drawNode<int>(g, nullptr, array, ARRAY_SIZE);
     nodes_visited = 0;
     nlognSort<int>(g, root, array, ARRAY_SIZE);
 #else

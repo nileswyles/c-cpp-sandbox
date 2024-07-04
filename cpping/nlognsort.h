@@ -18,17 +18,49 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB);
 template<typename T>
 void merge(T * A, size_t sizeA, T * B, size_t sizeB, T ** merged_container);
 
+bool nodeWithKeyExists(Agraph_t * g, const char * key) {
+    return agnode(g, (char *)key, 0) != nullptr;
+}
+
+Agnode_t * createUniqueNodeWithKey(Agraph_t * g, std::string key, std::string style) {
+    if (style == "spaces") {
+        printf("spaces...: %s\n", key.c_str());
+        while (nodeWithKeyExists(g, key.c_str())) {
+            key = " " + key + " ";
+            printf("spaces...: %s\n", key.c_str());
+        }
+    } else if (style == "id") {
+        while (nodeWithKeyExists(g, key.c_str())) {
+            size_t id_i = key.find_first_of("_");
+            int id = 0;
+            if (id_i != std::string::npos) {
+                id = atoi(key.substr(id_i + 1).c_str()) + 1;
+            }
+            char newKey[22];
+            sprintf(newKey, "%s_%d", key.substr(0, id_i).c_str(), id);
+            key = newKey;
+        }
+    }
+    return agnode(g, (char *)key.c_str(), 1);
+}
+
 template<typename T>
-Agnode_t * drawMultiValueNode(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size) {
+std::string nodeStringFromBuffer(T * e_buf, size_t size) {
     std::string node_str;
     for (size_t i = 0; i < size; i++) {
         char int_char[10];
         sprintf(int_char, "%d", e_buf[i]);
         node_str += int_char;
         if (i < size - 1)
-            node_str += " ";
+            node_str += ", ";
     }
-    Agnode_t * node = agnode(g, (char *)node_str.c_str(), 1);
+    return node_str;
+}
+
+// lol... huh?
+template<typename T>
+Agnode_t * drawNode(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size) {
+    Agnode_t * node = createUniqueNodeWithKey(g, nodeStringFromBuffer(e_buf, size), "id"); 
     if (parent_node != nullptr) {
         agedge(g, parent_node, node, 0, 1);
     }
@@ -37,15 +69,7 @@ Agnode_t * drawMultiValueNode(Agraph_t * g, Agnode_t * parent_node, T * e_buf, s
 
 template<typename T>
 Agnode_t * drawMergedNode(Agraph_t * g, Agnode_t * left, Agnode_t * right, T * e_buf, size_t size) {
-    std::string node_str;
-    for (size_t i = 0; i < size; i++) {
-        char int_char[10];
-        sprintf(int_char, "%d", e_buf[i]);
-        node_str += int_char;
-        // if (i < size - 1)
-            node_str += " ";
-    }
-    Agnode_t * node = agnode(g, (char *)node_str.c_str(), 1);
+    Agnode_t * node = createUniqueNodeWithKey(g, nodeStringFromBuffer(e_buf, size), "id"); 
     if (left != nullptr) {
         agedge(g, left, node, 0, 1);
     }
@@ -55,34 +79,35 @@ Agnode_t * drawMergedNode(Agraph_t * g, Agnode_t * left, Agnode_t * right, T * e
     return node;
 }
 
-template<typename T>
-Agnode_t * drawNode(Agraph_t * g, Agnode_t * parent_node, T e_buf) {
-    char int_char[11];
-    sprintf(int_char, "%d ", e_buf);
-    std::string node_str(int_char);
-    Agnode_t * node = agnode(g, (char *)node_str.c_str(), 1);
-    agedge(g, parent_node, node, 0, 1);
-    return node;
-}
-
 // TODO: sort order...
-
 // nlognsort
 template<typename T>
 Agnode_t * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size) {
-    if (e_buf == nullptr || size <= 1) {
-        return drawNode(g, parent_node, e_buf[0]);
+    if (e_buf == nullptr || size < 1) {
+        return nullptr;
+    } else if (size == 1) {
+        return drawNode<T>(g, parent_node, e_buf, size);
     } else {
         // ensure left always larger than right
-        size_t split_index = round(size/2);
-        printf("CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, split_index, size-split_index);
-        Agnode_t * left = nullptr;
-        Agnode_t * right = nullptr;
-        left = drawMultiValueNode(g, parent_node, e_buf, split_index);
-        right = drawMultiValueNode(g, parent_node, e_buf + split_index, size - split_index);
-        Agnode_t * left_merged = nlognSort<T>(g, left, e_buf, split_index); // left
-        Agnode_t * right_merged = nlognSort<T>(g, right, e_buf + split_index, size - split_index); // right
-        merge<T>(e_buf, split_index, e_buf + split_index, size - split_index);
+        size_t size_left = ceil(size/2.0);
+        size_t size_right = size - size_left;
+        printf("CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, size_left, size_right);
+        T * left_buf = e_buf;
+        T * right_buf = e_buf + size_left;
+
+        // handle middle row properly... no need to include single node twice. If middle row, use this parent_node as parent for left/right_merged.
+        //  unless, it's 2/1 split... let's include the extra node on the right hand side to keep things more symmetrical.
+        Agnode_t * left = parent_node;
+        Agnode_t * right = parent_node;
+        if (size_left > 1) {
+            left = drawNode<T>(g, parent_node, left_buf, size_left);
+        }
+        if (size_right > 1 || size_left == 2 && size_right == 1) {
+            right = drawNode<T>(g, parent_node, right_buf, size_right);
+        }
+        Agnode_t * left_merged = nlognSort<T>(g, left, left_buf, size_left); // left
+        Agnode_t * right_merged = nlognSort<T>(g, right, right_buf, size_right); // right
+        merge<T>(left_buf, size_left, right_buf, size_right);
         printf("CALL TRACE merged size: %ld\n", size);
         return drawMergedNode<T>(g, left_merged, right_merged, e_buf, size);
     }
@@ -94,11 +119,14 @@ void nlognSort(T * e_buf, size_t size) {
         return;
     } else {
         // ensure left always larger than right
-        size_t split_index = round(size/2);
-        printf("CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, split_index, size-split_index);
-        nlognSort<T>(e_buf, split_index); // left
-        nlognSort<T>(e_buf + split_index, size - split_index); // right
-        merge<T>(e_buf, split_index, e_buf + split_index, size - split_index);
+        size_t size_left = ceil(size/2.0);
+        size_t size_right = size - size_left;
+        T * left_buf = e_buf;
+        T * right_buf = e_buf + size_left;
+        printf("CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, size_left, size_right);
+        nlognSort<T>(left_buf, size_left); // left
+        nlognSort<T>(right_buf, size_right); // right
+        merge<T>(left_buf, size_left, right_buf, size_right);
         printf("CALL TRACE merged size: %ld\n", size);
     }
 }
@@ -110,13 +138,17 @@ void nlognSort(T * e_buf, size_t size, T ** merged_container) {
         *merged_container = e_buf;
     } else {
         // ensure left always larger than right
-        size_t split_index = round(size/2);
+        size_t size_left = ceil(size/2.0);
+        size_t size_right = size - size_left;
+        T * left_buf = e_buf;
+        T * right_buf = e_buf + size_left;
+
         T * A;
-        nlognSort<T>(e_buf, split_index, &A); // left
+        nlognSort<T>(left_buf, size_left, &A); // left
         T * B;
-        nlognSort<T>(e_buf + split_index, size - split_index, &B); // right
+        nlognSort<T>(right_buf, size_right, &B); // right
         printf("invalid pointer\n");
-        merge<T>(A, split_index, B, size - split_index, merged_container);
+        merge<T>(A, size_left, B, size_right, merged_container);
     }
 }
 

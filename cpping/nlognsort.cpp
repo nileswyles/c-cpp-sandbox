@@ -2,6 +2,13 @@
 
 #define GRAPH_ENABLE 1
 
+// TODO: compare with other sorting methods...
+//  I expect this to outpeform the others, on average (ironically enough - trust the simulation?)...
+//  nlognsort-normal might outperform this when there a lot of swap space wins
+
+// another, sort of hybrid approach (which was sort of the direction I was headed in), is to use a statically allocated swap array?
+//  maybe use swap data from this impl to determine size. Downside, locking, static storage for each type? 
+
 template<typename T>
 // TODO: lol reference of pointer? seems reasonable?
 void leftMerge(T * A, size_t sizeA, T * B, size_t sizeB, T *& swap_space, size_t& swap_space_size) {
@@ -26,6 +33,7 @@ void leftMerge(T * A, size_t sizeA, T * B, size_t sizeB, T *& swap_space, size_t
             j++;
             // note, swap space extends further into B space...
         } else if (swap_space_size > 0) {
+            // swap space wins
             swap = A[i];
             A[i] = swap_space[0];
             // unavoidable shifting...

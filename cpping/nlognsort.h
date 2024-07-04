@@ -1,6 +1,7 @@
 #ifndef NLOGNSORT_H
 #define NLOGNSORT_H
 
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -9,11 +10,13 @@
 
 #include <string>
 
-
 static size_t nodes_visited = 0;
 
 template<typename T>
 void merge(T * A, size_t sizeA, T * B, size_t sizeB);
+
+template<typename T>
+void merge(T * A, size_t sizeA, T * B, size_t sizeB, T ** merged_container);
 
 template<typename T>
 Agnode_t * drawMultiValueNode(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size) {
@@ -80,7 +83,7 @@ Agnode_t * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t siz
         Agnode_t * right_merged = nlognSort<T>(g, right, e_buf + split_index, size - split_index); // right
         merge<T>(e_buf, split_index, e_buf + split_index, size - split_index);
         printf("CALL TRACE merged size: %ld\n", size);
-        return drawMergedNode(g, left_merged, right_merged, e_buf, size);
+        return drawMergedNode<T>(g, left_merged, right_merged, e_buf, size);
     }
 }
 
@@ -95,28 +98,30 @@ void nlognSort(T * e_buf, size_t size) {
         nlognSort<T>(e_buf + split_index, size - split_index); // right
         merge<T>(e_buf, split_index, e_buf + split_index, size - split_index);
         printf("CALL TRACE merged size: %ld\n", size);
-        drawMergedNode(e_buf, size);
     }
 }
 
 // nlognsort-normal
 template<typename T>
-T * nlognSort(T * e_buf, size_t size) {
+void nlognSort(T * e_buf, size_t size, T ** merged_container) {
     if (e_buf == nullptr || size <= 1) {
-        return e_buf;
+        *merged_container = e_buf;
     } else {
         size_t split_index = size/2;
-        T * A = nlognSort<T>(e_buf, split_index); // left
-        T * B = nlognSort<T>(e_buf + split_index, size - split_index); // right
+        T * A;
+        nlognSort<T>(e_buf, split_index, &A); // left
+        T * B;
+        nlognSort<T>(e_buf + split_index, size - split_index, &B); // right
         printf("invalid pointer\n");
-        return merge<T>(A, split_index, B, size - split_index);
+        merge<T>(A, split_index, B, size - split_index, merged_container);
     }
 }
 
-
 void generateRandomArray(int * array, size_t size) {
     for (size_t i = 0; i < size; i++) {
-        array[i] = rand();
+        // array[i] = random();
+        // normalized to size of array for easier visualization
+        array[i] = (int)round(size * (double)rand()/RAND_MAX);
     }
 }
 

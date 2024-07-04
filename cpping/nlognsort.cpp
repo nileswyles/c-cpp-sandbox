@@ -68,7 +68,7 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
 }
 
 // #define ARRAY_SIZE 7
-#define ARRAY_SIZE 10
+#define ARRAY_SIZE 77
 //TODO: 
 // random not working?
 

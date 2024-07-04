@@ -3,7 +3,7 @@
 #define GRAPH_ENABLE 1
 
 template<typename T>
-T * merge(T * A, size_t sizeA, T * B, size_t sizeB) {
+void merge(T * A, size_t sizeA, T * B, size_t sizeB, T ** merged_container) {
     size_t i = 0;
     size_t j = 0;
     size_t o = 0;
@@ -21,16 +21,17 @@ T * merge(T * A, size_t sizeA, T * B, size_t sizeB) {
     // delete A;
     // delete B;
     printf("lol\n");
-    return out;
+    *merged_container = out;
 }
 
-#define ARRAY_SIZE 7
+#define ARRAY_SIZE 4
 
 int main() {
     int array[ARRAY_SIZE];
     generateRandomArray(array, ARRAY_SIZE);
     printArray(array, ARRAY_SIZE);
-    int * sorted = nlognSort<int>(array, ARRAY_SIZE);
+    int * sorted;
+    nlognSort<int>(array, ARRAY_SIZE, &sorted);
     printArray(sorted, ARRAY_SIZE);
 
     return 1;

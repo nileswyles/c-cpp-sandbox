@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -25,7 +26,9 @@ void nnSort(T * e_buf, size_t size) {
 
 void generateRandomArray(int * array, size_t size) {
     for (size_t i = 0; i < size; i++) {
-        array[i] = rand();
+        // array[i] = rand();
+        // normalized to size of array for easier visualization
+        array[i] = (int)round(size * (double)rand()/RAND_MAX);
     }
 }
 
@@ -36,7 +39,7 @@ void printArray(int * array, size_t size) {
     printf("\n");
 }
 
-#define ARRAY_SIZE 17
+#define ARRAY_SIZE 77
 // #define ARRAY_SIZE 7
 
 int main() {

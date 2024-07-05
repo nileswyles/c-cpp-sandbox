@@ -1,13 +1,14 @@
 #include "nlognsort.h"
 
-#define GRAPH_ENABLE 1
-
 // TODO: compare with other sorting methods...
 //  I expect this to outpeform the others, on average (ironically enough - trust the simulation?)...
-//  nlognsort-normal might outperform this when there a lot of swap space wins
+//  nlognsort-normal might outperform this when there are a lot of swap space wins
 
 // another, sort of hybrid approach (which was sort of the direction I was headed in), is to use a statically allocated swap array?
 //  maybe use swap data from this impl to determine size. Downside, locking, static storage for each type? 
+
+static size_t SWAP_SPACE_SHIFT_DATA[ARRAY_SIZE];
+static size_t SWAP_SPACE_SHIFT_DATA_IDX = 0;
 
 template<typename T>
 // TODO: lol reference of pointer? seems reasonable?
@@ -38,12 +39,33 @@ void leftMerge(T * A, size_t sizeA, T * B, size_t sizeB, T *& swap_space, size_t
             A[i] = swap_space[0];
             // unavoidable shifting...
             size_t index_of_last_element = swap_space_size - 1;
+            loggerPrintf(LOGGER_DEBUG, "Shifting %lu elements\n", index_of_last_element);
             for (size_t i = 0; i < index_of_last_element; i++) {
                 swap_space[i] = swap_space[i + 1];
                 nodes_visited++;
             }
             // set new value at end of swap space
             swap_space[index_of_last_element] = swap;
+
+            // Compiler should otherwise optimize this out...
+            if (DATA_COLLECTION) {
+                SWAP_SPACE_SHIFT_DATA[SWAP_SPACE_SHIFT_DATA_IDX++] = swap_space_size;
+ 
+                // collect data on shift amounts...
+                //  plot (average?) against length of array?
+                //  linear regression?
+ 
+                // lol... actually, ironically enough, outliers/extremes/worst-case and best-case are what matter
+                // hmm... sstill would be intersting to get the hybrid solution working, how well thought out was the generics feature?
+                //      can just set a hard max on original array size...
+                //      and/or assume swap_space isn't going to be more than half of original array size.... and seet hard limit there
+                //      or or or, account for 1 std deviation? and throw runtime exception?
+ 
+                //  likely the former because it's more predictable (ding ding ding, winner winner), but, still curious what that distribution looks like? heavily reliant on random function? Idk stats...
+
+                // decisions decisions
+            }
+
 
             // note, size of swap space remains the same...
         } // else swap_space empty and A wins
@@ -71,24 +93,65 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
     }
 }
 
-#define ARRAY_SIZE 27
-// #define ARRAY_SIZE 77
-//TODO: 
-// random not working?
+// TODO: sort order...
+// nlognsort
+template<typename T>
+Agnode_t * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size) {
+    if (e_buf == nullptr || size < 1) {
+        return nullptr;
+    } else if (size == 1) {
+        return drawNode<T>(g, parent_node, e_buf, size);
+    } else {
+        // ensure left always larger than right
+        size_t size_left = ceil(size/2.0);
+        size_t size_right = size - size_left;
+        loggerPrintf(LOGGER_DEBUG, "CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, size_left, size_right);
+        T * left_buf = e_buf;
+        T * right_buf = e_buf + size_left;
 
-// #define ARRAY_SIZE 6
+        Agnode_t * left;
+        Agnode_t * right;
+        drawUnsorted<T>(g, parent_node, &left, &right, left_buf, size_left, right_buf, size_right);
+
+        Agnode_t * left_sorted = nlognSort<T>(g, left, left_buf, size_left); // left
+        Agnode_t * right_sorted = nlognSort<T>(g, right, right_buf, size_right); // right
+        merge<T>(left_buf, size_left, right_buf, size_right);
+        loggerPrintf(LOGGER_DEBUG, "CALL TRACE merged size: %ld\n", size);
+        return drawMergedNode<T>(g, left_sorted, right_sorted, e_buf, size);
+    }
+}
+
+template<typename T>
+void nlognSort(T * e_buf, size_t size) {
+    if (e_buf == nullptr || size <= 1) {
+        return;
+    } else {
+        // ensure left always larger than right
+        size_t size_left = ceil(size/2.0);
+        size_t size_right = size - size_left;
+        T * left_buf = e_buf;
+        T * right_buf = e_buf + size_left;
+        loggerPrintf(LOGGER_DEBUG, "CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, size_left, size_right);
+        nlognSort<T>(left_buf, size_left); // left
+        nlognSort<T>(right_buf, size_right); // right
+        merge<T>(left_buf, size_left, right_buf, size_right);
+        loggerPrintf(LOGGER_DEBUG, "CALL TRACE merged size: %ld\n", size);
+    }
+}
 
 int main(int argc, char **argv) {
     int array[ARRAY_SIZE];
     generateRandomArray(array, ARRAY_SIZE);
     printArray(array, ARRAY_SIZE);
+
+    struct timespec ts_before;
+    clock_gettime(CLOCK_MONOTONIC, &ts_before);
 #ifdef GRAPH_ENABLE
     GVC_t * gvc = graphInit(argc, argv);
     Agraph_t * g; 
     /* Create a simple digraph */
     g = agopen("G", Agdirected, nullptr);
-    Agnode_t * root;
-    root = drawNode<int>(g, nullptr, array, ARRAY_SIZE);
+    Agnode_t * root = drawNode<int>(g, nullptr, array, ARRAY_SIZE);
     nodes_visited = 0;
     nlognSort<int>(g, root, array, ARRAY_SIZE);
 #else
@@ -96,8 +159,13 @@ int main(int argc, char **argv) {
     nlognSort<int>(array, ARRAY_SIZE);
 
 #endif
-    printf("NODES VISITED: %ld\n", nodes_visited);
+    loggerPrintf(LOGGER_TEST, "NODES VISITED: %ld\n", nodes_visited);
     printArray(array, ARRAY_SIZE);
+
+    struct timespec ts_after;
+    clock_gettime(CLOCK_MONOTONIC, &ts_after);
+
+    loggerPrintf(LOGGER_TEST, "RUNTIME_s: %lu, RUNTIME_ns: %lu\n", ts_after.tv_sec - ts_before.tv_sec, ts_after.tv_nsec - ts_before.tv_nsec);
 
 #ifdef GRAPH_ENABLE
     /* Compute a layout using layout engine from command line args */

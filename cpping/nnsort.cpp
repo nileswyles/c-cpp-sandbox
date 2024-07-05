@@ -1,6 +1,9 @@
 #include <math.h>
+#include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "logger.h"
 
 static size_t nodes_visited = 0;
 
@@ -46,10 +49,20 @@ int main() {
     int array[ARRAY_SIZE];
     generateRandomArray(array, ARRAY_SIZE);
     printArray(array, ARRAY_SIZE);
+
+    struct timespec ts_before;
+    clock_gettime(CLOCK_MONOTONIC, &ts_before);
+
     nodes_visited = 0;
     nnSort<int>(array, ARRAY_SIZE);
-    printf("NODES VISITED: %ld\n", nodes_visited);
+
+    loggerPrintf(LOGGER_TEST, "NODES VISITED: %ld\n", nodes_visited);
     printArray(array, ARRAY_SIZE);
+
+    struct timespec ts_after;
+    clock_gettime(CLOCK_MONOTONIC, &ts_after);
+
+    loggerPrintf(LOGGER_TEST, "RUNTIME_s: %lu, RUNTIME_ns: %lu\n", ts_after.tv_sec - ts_before.tv_sec, ts_after.tv_nsec - ts_before.tv_nsec);
 
     return 1;
 }

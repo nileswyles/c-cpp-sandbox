@@ -146,6 +146,7 @@ bool compareArrays(T * A, size_t sizeA, T * B, size_t sizeB) {
             if (!removed_indicies.contains(j) && A[i] == B[j]) {
                 removed_indicies.insert(j);
                 found = true;
+                break;
             }
         }
         if (found == false) {

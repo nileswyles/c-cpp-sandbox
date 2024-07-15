@@ -140,7 +140,6 @@ bool compareArrays(T * A, size_t sizeA, T * B, size_t sizeB) {
     // Checks whether array B contains the same number of each unique element in A (order doesn't matter). 
     //  "Same number of each unique element" implies we're accounting for duplicates...
 
-
     if (sizeA == 0 || sizeA != sizeB) {
         return false;
     }

@@ -10,6 +10,7 @@
 #include <cgraph.h>
 
 #include <string>
+#include <set>
 
 #include "logger.h"
 
@@ -132,6 +133,26 @@ GVC_t * graphInit(int argc, char **argv) {
     gvParseArgs(gvc, argc, argv);
 
     return gvc;
+}
+
+template<typename T>
+bool compareArrays(T * A, size_t sizeA, T * B, size_t sizeB) {
+    // Checks whether array B contains the same number of each unique element in A (order doesn't matter). 
+    //  "Same number of each unique element" implies we're accounting for duplicates...
+    std::set<size_t> removed_indicies;
+    for (size_t i = 0; i < sizeA; i++) {
+        bool found = false;
+        for (size_t j = 0; j < sizeB; j++) {
+            if (!removed_indicies.contains(j) && A[i] == B[j]) {
+                removed_indicies.insert(j);
+                found = true;
+            }
+        }
+        if (found == false) {
+            return false;
+        }
+    }
+    return true;
 }
 
 #endif

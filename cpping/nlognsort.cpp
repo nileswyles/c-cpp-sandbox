@@ -32,59 +32,6 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB, T * swap_space) {
         nodes_visited++;
     }
 
-    // if A always wins, 
-    //  then j = 0;
-    //  swap_space == 0;
-    //  i = sizeA
-    //  and so, B is just appended to A... since they are contigious nothing needs to happen...
-
-    // 
-    // okay so, if B wins always
-    //  then j == sizeB
-    //  swap_space == sizeB
-    //  i = sizeA
-    //  and so, swap_space is already sorted and you should be able to assume you can just append to A
-    //  effectively swapping B with A...
-
-    // hybrid, simlilar as above?
-
-    //  B wins twice
-    //  j == 2
-    //  swap_space == 2
-    //  i = sizeA
-    // and so, we want to compare swap_space with B and place in A... 
-    //  by laws of laws... swap_space wins 
-    //  assuming swap space wins twice...
-    //  nothing needs to happen because contigious.
-
-    //  assuming swapspace wins 1 B wins 1 then swap space remaining is then also just B... so, yeah that check works.
-
-    //  S, S
-    //  0, 0, B, B
-
-    //  S
-    //  S, 0, B, B
-
-    // S
-    // S, B, B, B
-
-    // []
-    // S, B, S, B
-
-    //  by laws of laws... this should extend to other array sizes right?
-
-    //  S, S
-    //  0, 0, B, B, B
-
-    //  S
-    //  S, 0, B, B, B
-
-    // S
-    // S, B, B, B, B
-
-    // []
-    // S, B, S, B, B
-
     // merge swap space with remaining B, remember assuming contigious
     while (swap_space_push - swap_space_pop > 0) {
         left_compare = swap_space[swap_space_pop];
@@ -117,15 +64,7 @@ Agnode_t * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t siz
         loggerPrintf(LOGGER_DEBUG, "CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, size_left, size_right);
         T * left_buf = e_buf;
         T * right_buf = e_buf + size_left;
-        // 0 + 2 = 2
 
-        // 0, 1
-        // 2, 3
-
-        // 0 + 3 = 3
-        // 0, 1, 2
-
-        // 3, 4
         Agnode_t * left;
         Agnode_t * right;
         drawUnsorted<T>(g, parent_node, &left, &right, left_buf, size_left, right_buf, size_right);
@@ -164,7 +103,7 @@ void nlognSort(T * e_buf, size_t size, T * ss) {
         nlognSort<T>(right_buf, size_right, swap_space); // right
         merge<T>(left_buf, size_left, right_buf, size_right, swap_space);
         if (ss == nullptr) {
-            // delete[] swap_space;
+            delete[] swap_space;
         }
         loggerPrintf(LOGGER_DEBUG, "CALL TRACE merged size: %ld\n", size);
     }

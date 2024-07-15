@@ -10,7 +10,7 @@
 #include <cgraph.h>
 
 #include <string>
-#include <set>
+#include <unordered_map>
 
 #include "logger.h"
 
@@ -139,21 +139,46 @@ template<typename T>
 bool compareArrays(T * A, size_t sizeA, T * B, size_t sizeB) {
     // Checks whether array B contains the same number of each unique element in A (order doesn't matter). 
     //  "Same number of each unique element" implies we're accounting for duplicates...
-    std::set<size_t> removed_indicies;
+
+
+    if (sizeA == 0 || sizeA != sizeB) {
+        return false;
+    }
+
+    // value, count
+    std::unordered_map<size_t, size_t> A_count;
+    std::unordered_map<size_t, size_t> B_count;
+
+    bool match = true;
+    T prev = B[0];
     for (size_t i = 0; i < sizeA; i++) {
-        bool found = false;
-        for (size_t j = 0; j < sizeB; j++) {
-            if (!removed_indicies.contains(j) && A[i] == B[j]) {
-                removed_indicies.insert(j);
-                found = true;
-                break;
-            }
+        if (!A_count.contains(A[i])) {
+            A_count[A[i]] = 0;
+        } else {
+            A_count[A[i]]++;
         }
-        if (found == false) {
+        // B must be sorted...
+        if (prev > B[i]) {
+            return false;
+        }
+        if (!B_count.contains(B[i])) {
+            B_count[B[i]] = 0;
+        } else {
+            B_count[B[i]]++;
+        }
+        prev = B[i];
+    }
+
+    if (A_count.size() != B_count.size()) {
+        return false;
+    }
+
+    for (const auto& [key, value] : A_count) {
+        if (value != B_count[key]) {
             return false;
         }
     }
-    printf("LOL\n");
+
     return true;
 }
 

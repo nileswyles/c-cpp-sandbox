@@ -32,10 +32,10 @@ bool nodeWithKeyExists(Agraph_t * g, const char * key) {
 
 Agnode_t * createUniqueNodeWithKey(Agraph_t * g, std::string key, std::string style) {
     if (style == "spaces") {
-        loggerPrintf(LOGGER_DEBUG, "spaces...: %s\n", key.c_str());
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "spaces...: %s\n", key.c_str());
         while (nodeWithKeyExists(g, key.c_str())) {
             key = " " + key + " ";
-            loggerPrintf(LOGGER_DEBUG, "spaces...: %s\n", key.c_str());
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "spaces...: %s\n", key.c_str());
         }
     } else if (style == "id") {
         while (nodeWithKeyExists(g, key.c_str())) {
@@ -62,6 +62,7 @@ std::string nodeStringFromBuffer(T * e_buf, size_t size) {
         if (i < size - 1)
             node_str += ", ";
     }
+    loggerPrintf(LOGGER_DEBUG, "%s\n", node_str.c_str());
     return node_str;
 }
 
@@ -86,7 +87,6 @@ Agnode_t * drawMergedNode(Agraph_t * g, Agnode_t * left, Agnode_t * right, T * e
     }
     return node;
 }
-
 
 template<typename T>
 void drawUnsorted(Agraph_t * g, Agnode_t * parent_node, Agnode_t ** left, Agnode_t ** right, T * left_buf, size_t size_left, T * right_buf, size_t size_right) {
@@ -153,6 +153,7 @@ bool compareArrays(T * A, size_t sizeA, T * B, size_t sizeB) {
             return false;
         }
     }
+    printf("LOL\n");
     return true;
 }
 

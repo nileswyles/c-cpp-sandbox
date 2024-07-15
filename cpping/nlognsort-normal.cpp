@@ -1,12 +1,13 @@
 #include "nlognsort.h"
 
 template<typename T>
-T * merge(T * A, size_t sizeA, T * B, size_t sizeB, bool root) {
+T * merge(T * A, size_t sizeA, T * B, size_t sizeB) {
     size_t i = 0;
     size_t j = 0;
     size_t o = 0;
 
     T * out = new T[sizeA+sizeB];
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size A: %lu, SizeB: %lu\n", sizeA, sizeB);
     while (o < sizeA+sizeB) {
         loggerPrintf(LOGGER_DEBUG, "%i, %i\n", A[i], B[j]);
         if (j >= sizeB) {
@@ -21,17 +22,20 @@ T * merge(T * A, size_t sizeA, T * B, size_t sizeB, bool root) {
         loggerPrintf(LOGGER_DEBUG, "winner: %i\n", out[o - 1]);
         nodes_visited++;
     }
-    // if (!root) {
-    //     delete[] A;
-    //     delete[] B;
-    // }
+    
+    if (sizeA > 1) {
+        delete[] A;
+    } else if (sizeB > 1) {
+        delete[] B;
+    }
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "New merged array: %p\n", out);
     return out;
 }
 
 // nlognsort-normal
 // lol, yeah maybe move these to cpp file and forget this reference stuff...
 template<typename T>
-T * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size, Agnode_t ** resulting_node, bool root) {
+T * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size, Agnode_t ** resulting_node) {
     if (e_buf == nullptr || size < 1) {
         return nullptr;
     } else if (size == 1) {
@@ -51,10 +55,10 @@ T * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size, Agno
 
         Agnode_t * left_sorted;
         Agnode_t * right_sorted;
-        T * A = nlognSort<T>(g, left, left_buf, size_left, &left_sorted, false); // left
-        T * B = nlognSort<T>(g, right, right_buf, size_right, &right_sorted, false); // right
+        T * A = nlognSort<T>(g, left, left_buf, size_left, &left_sorted); // left
+        T * B = nlognSort<T>(g, right, right_buf, size_right, &right_sorted); // right
 
-        T * result = merge<T>(A, size_left, B, size_right, root);
+        T * result = merge<T>(A, size_left, B, size_right);
         *resulting_node = drawMergedNode<T>(g, left_sorted, right_sorted, result, size);
         loggerPrintf(LOGGER_DEBUG, "CALL TRACE merged size: %ld\n", size);
         return result;
@@ -62,7 +66,7 @@ T * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size, Agno
 }
 
 template<typename T>
-T * nlognSort(T * e_buf, size_t size, bool root) {
+T * nlognSort(T * e_buf, size_t size) {
     if (e_buf == nullptr || size <= 1) {
         return e_buf;
     } else {
@@ -72,9 +76,9 @@ T * nlognSort(T * e_buf, size_t size, bool root) {
         T * left_buf = e_buf;
         T * right_buf = e_buf + size_left;
 
-        T * A = nlognSort<T>(left_buf, size_left, false); // left
-        T * B = nlognSort<T>(right_buf, size_right, false); // right
-        return merge<T>(A, size_left, B, size_right, root);
+        T * A = nlognSort<T>(left_buf, size_left); // left
+        T * B = nlognSort<T>(right_buf, size_right); // right
+        return merge<T>(A, size_left, B, size_right);
     }
 }
 
@@ -85,7 +89,7 @@ int main(int argc, char **argv) {
 
     struct timespec ts_before;
     clock_gettime(CLOCK_MONOTONIC, &ts_before);
-#ifdef GRAPH_ENABLE
+#if GRAPH_ENABLE
     GVC_t * gvc = graphInit(argc, argv);
     Agraph_t * g; 
     /* Create a simple digraph */
@@ -94,10 +98,10 @@ int main(int argc, char **argv) {
     Agnode_t * resulting_node;
 
     nodes_visited = 0;
-    int * sorted = nlognSort<int>(g, root, array, ARRAY_SIZE, &resulting_node, true);
+    int * sorted = nlognSort<int>(g, root, array, ARRAY_SIZE, &resulting_node);
 #else
     nodes_visited = 0;
-    int * sorted = nlognSort<int>(array, ARRAY_SIZE, true);
+    int * sorted = nlognSort<int>(array, ARRAY_SIZE);
 #endif
     loggerPrintf(LOGGER_TEST, "NODES VISITED: %ld\n", nodes_visited);
     printArray(sorted, ARRAY_SIZE);
@@ -108,7 +112,7 @@ int main(int argc, char **argv) {
     loggerPrintf(LOGGER_TEST, "RUNTIME_s: %lu, RUNTIME_ns: %lu\n", ts_after.tv_sec - ts_before.tv_sec, ts_after.tv_nsec - ts_before.tv_nsec);
 
     loggerPrintf(LOGGER_TEST, "ARRAY MATCH: %s\n", compareArrays<int>(array, ARRAY_SIZE, sorted, ARRAY_SIZE) == 0 ? "FALSE" : "TRUE");
-#ifdef GRAPH_ENABLE
+#if GRAPH_ENABLE
     /* Compute a layout using layout engine from command line args */
     gvLayoutJobs(gvc, g);
     /* Write the graph according to -T and -o options */

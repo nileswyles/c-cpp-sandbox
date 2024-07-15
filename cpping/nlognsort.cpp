@@ -2,10 +2,9 @@
 
 template<typename T>
 // let's assume these are contiguous
-void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
+void merge(T * A, size_t sizeA, T * B, size_t sizeB, T * swap_space) {
     size_t swap_space_push = 0;
     size_t swap_space_pop = 0;
-    T * swap_space = new T[sizeA];
 
     size_t i = 0;
     size_t j = 0;
@@ -92,7 +91,6 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
         if (j < sizeB && left_compare > B[j]) {
             // by law of numbers i will never be more than j lol
             A[i] = B[j];
-            swap_space[swap_space_push++] = swap;
             j++;
         } else {
             // swap space wins
@@ -102,14 +100,12 @@ void merge(T * A, size_t sizeA, T * B, size_t sizeB) {
         i++;
         nodes_visited++;
     }
-
-    delete[] swap_space;
 }
 
 // TODO: sort order...
 // nlognsort
 template<typename T>
-Agnode_t * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size) {
+Agnode_t * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t size, T * ss) {
     if (e_buf == nullptr || size < 1) {
         return nullptr;
     } else if (size == 1) {
@@ -121,21 +117,36 @@ Agnode_t * nlognSort(Agraph_t * g, Agnode_t * parent_node, T * e_buf, size_t siz
         loggerPrintf(LOGGER_DEBUG, "CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, size_left, size_right);
         T * left_buf = e_buf;
         T * right_buf = e_buf + size_left;
+        // 0 + 2 = 2
 
+        // 0, 1
+        // 2, 3
+
+        // 0 + 3 = 3
+        // 0, 1, 2
+
+        // 3, 4
         Agnode_t * left;
         Agnode_t * right;
         drawUnsorted<T>(g, parent_node, &left, &right, left_buf, size_left, right_buf, size_right);
 
-        Agnode_t * left_sorted = nlognSort<T>(g, left, left_buf, size_left); // left
-        Agnode_t * right_sorted = nlognSort<T>(g, right, right_buf, size_right); // right
-        merge<T>(left_buf, size_left, right_buf, size_right);
+        T * swap_space = ss;
+        if (ss == nullptr) {
+            swap_space = new T[size_left];
+        }
+        Agnode_t * left_sorted = nlognSort<T>(g, left, left_buf, size_left, swap_space); // left
+        Agnode_t * right_sorted = nlognSort<T>(g, right, right_buf, size_right, swap_space); // right
+        merge<T>(left_buf, size_left, right_buf, size_right, swap_space);
+        if (ss == nullptr) {
+            delete[] swap_space;
+        }
         loggerPrintf(LOGGER_DEBUG, "CALL TRACE merged size: %ld\n", size);
         return drawMergedNode<T>(g, left_sorted, right_sorted, e_buf, size);
     }
 }
 
 template<typename T>
-void nlognSort(T * e_buf, size_t size) {
+void nlognSort(T * e_buf, size_t size, T * ss) {
     if (e_buf == nullptr || size <= 1) {
         return;
     } else {
@@ -145,9 +156,16 @@ void nlognSort(T * e_buf, size_t size) {
         T * left_buf = e_buf;
         T * right_buf = e_buf + size_left;
         loggerPrintf(LOGGER_DEBUG, "CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, size_left, size_right);
-        nlognSort<T>(left_buf, size_left); // left
-        nlognSort<T>(right_buf, size_right); // right
-        merge<T>(left_buf, size_left, right_buf, size_right);
+        T * swap_space = ss;
+        if (ss == nullptr) {
+            swap_space = new T[size_left];
+        }
+        nlognSort<T>(left_buf, size_left, swap_space); // left
+        nlognSort<T>(right_buf, size_right, swap_space); // right
+        merge<T>(left_buf, size_left, right_buf, size_right, swap_space);
+        if (ss == nullptr) {
+            // delete[] swap_space;
+        }
         loggerPrintf(LOGGER_DEBUG, "CALL TRACE merged size: %ld\n", size);
     }
 }
@@ -164,18 +182,17 @@ int main(int argc, char **argv) {
 
     struct timespec ts_before;
     clock_gettime(CLOCK_MONOTONIC, &ts_before);
-#ifdef GRAPH_ENABLE
+#if GRAPH_ENABLE
     GVC_t * gvc = graphInit(argc, argv);
     Agraph_t * g; 
     /* Create a simple digraph */
     g = agopen("G", Agdirected, nullptr);
     Agnode_t * root = drawNode<int>(g, nullptr, array, ARRAY_SIZE);
     nodes_visited = 0;
-    nlognSort<int>(g, root, array, ARRAY_SIZE);
+    nlognSort<int>(g, root, array, ARRAY_SIZE, nullptr);
 #else
     nodes_visited = 0;
-    nlognSort<int>(array, ARRAY_SIZE);
-
+    nlognSort<int>(array, ARRAY_SIZE, nullptr);
 #endif
     loggerPrintf(LOGGER_TEST, "NODES VISITED: %ld\n", nodes_visited);
     printArray(array, ARRAY_SIZE);
@@ -186,7 +203,7 @@ int main(int argc, char **argv) {
     loggerPrintf(LOGGER_TEST, "RUNTIME_s: %lu, RUNTIME_ns: %lu\n", ts_after.tv_sec - ts_before.tv_sec, ts_after.tv_nsec - ts_before.tv_nsec);
 
     loggerPrintf(LOGGER_TEST, "ARRAY MATCH: %s\n", compareArrays<int>(unsorted, ARRAY_SIZE, array, ARRAY_SIZE) == 0 ? "FALSE" : "TRUE");
-#ifdef GRAPH_ENABLE
+#if GRAPH_ENABLE
     /* Compute a layout using layout engine from command line args */
     gvLayoutJobs(gvc, g);
     /* Write the graph according to -T and -o options */

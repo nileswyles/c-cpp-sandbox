@@ -185,8 +185,8 @@ class Array {
                 if (ss == nullptr) {
                     swap_space = new T[size_left];
                 }
-                nlognSort<T>(left_buf, size_left, swap_space); // left
-                nlognSort<T>(right_buf, size_right, swap_space); // right
+                nlognSort(left_buf, size_left, swap_space); // left
+                nlognSort(right_buf, size_right, swap_space); // right
                 nlognsortMerge<T>(left_buf, size_left, right_buf, size_right, swap_space);
                 if (ss == nullptr) {
                     delete[] swap_space;

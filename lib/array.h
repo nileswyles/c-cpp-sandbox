@@ -139,7 +139,7 @@ class Array {
                 if (swap_space_push - swap_space_pop > 0) {
                     left_compare = swap_space[swap_space_pop];
                 }
-                if (j < size_b && nlognsortCompare<T>(*e_sorted, left_compare, B[j]) > 0) {
+                if (j < size_b && nlognsortCompare<T>(*this->e_sorted, left_compare, B[j]) > 0) {
                     // B wins
                     swap = A[i];
                     A[i] = B[j];
@@ -158,7 +158,7 @@ class Array {
             // merge swap space with remaining B, remember assuming contigious
             while (swap_space_push - swap_space_pop > 0) {
                 left_compare = swap_space[swap_space_pop];
-                if (j < size_b && nlognsortCompare<T>(*e_sorted, left_compare, B[j]) > 0) {
+                if (j < size_b && nlognsortCompare<T>(*this->e_sorted, left_compare, B[j]) > 0) {
                     // by law of numbers i will never be more than j lol
                     A[i] = B[j];
                     j++;
@@ -187,7 +187,7 @@ class Array {
                 }
                 nlognSort<T>(left_buf, size_left, swap_space); // left
                 nlognSort<T>(right_buf, size_right, swap_space); // right
-                merge<T>(left_buf, size_left, right_buf, size_right, swap_space);
+                nlognsortMerge<T>(left_buf, size_left, right_buf, size_right, swap_space);
                 if (ss == nullptr) {
                     delete[] swap_space;
                 }

@@ -87,8 +87,8 @@ typedef enum ArraySort {
 };
 
 template<typename T>
-int8_t nlognsortCompare(ArraySort sortOrder, T A, T B) {
-    int8_t ret = 0;
+int nlognsortCompare(ArraySort sortOrder, T A, T B) {
+    int ret = 0;
     if (A > B) {
         if (sortOrder == ARRAY_SORT_DESCENDING) {
             return -1;
@@ -107,7 +107,7 @@ int8_t nlognsortCompare(ArraySort sortOrder, T A, T B) {
 }
 
 template<>
-int8_t nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const char * B) {
+int nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const char * B) {
     int ret = strcmp(A, B);
     if (sortOrder == ARRAY_SORT_DESCENDING) {
         ret *= -1;

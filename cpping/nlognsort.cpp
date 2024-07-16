@@ -110,11 +110,11 @@ void nlognSort(T * e_buf, size_t size, T * ss) {
 }
 
 int main(int argc, char **argv) {
-    int array[ARRAY_SIZE];
+    int * array = new int[ARRAY_SIZE];
     generateRandomArray(array, ARRAY_SIZE);
     printArray(array, ARRAY_SIZE);
 
-    int unsorted[ARRAY_SIZE];
+    int * unsorted = new int[ARRAY_SIZE];
     for (size_t i = 0; i < ARRAY_SIZE; i++) {
         unsorted[i] = array[i];
     }
@@ -142,6 +142,9 @@ int main(int argc, char **argv) {
     loggerPrintf(LOGGER_TEST, "RUNTIME_s: %lu, RUNTIME_ns: %lu\n", ts_after.tv_sec - ts_before.tv_sec, ts_after.tv_nsec - ts_before.tv_nsec);
 
     loggerPrintf(LOGGER_TEST, "ARRAY MATCH: %s\n", compareArrays<int>(unsorted, ARRAY_SIZE, array, ARRAY_SIZE) == 0 ? "FALSE" : "TRUE");
+
+    delete[] array;
+    delete[] unsorted;
 #if GRAPH_ENABLE
     /* Compute a layout using layout engine from command line args */
     gvLayoutJobs(gvc, g);

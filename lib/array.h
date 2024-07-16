@@ -80,65 +80,174 @@ size_t arrayFind(T ** e_buf, size_t size, const T el) {
 template<>
 size_t arrayFind<const char *>(const char *** e_buf, size_t size, const char * el);
 
+typedef enum ArraySort {
+    ARRAY_SORT_UNSORTED,
+    ARRAY_SORT_ASCENDING,
+    ARRAY_SORT_DESCENDING
+};
+
 template<typename T>
-void arrayMerge<T>(T * A, size_t sizeA, T * B, size_t sizeB) {
-    size_t i = 0;
-    size_t j = 0;
-    while (i < sizeA) {
-        if (A[i] > B[j]) {
-
+int8_t nlognsortCompare(ArraySort sortOrder, T A, T B) {
+    int8_t ret = 0;
+    if (A > B) {
+        if (sortOrder == ARRAY_SORT_DESCENDING) {
+            return -1;
         } else {
-
+            return 1;
+        }
+    } else (A == B) {
+        return 0;
+    } else {
+        if (sortOrder == ARRAY_SORT_DESCENDING) {
+            return 1;
+        } else {
+            return -1;
         }
     }
 }
 
-template<typename T>
-void arraySort<T>(T * e_buf, size_t size) {
-    if (size <= 1) {
-        return;
-    } else {
-        size_t split_index = size/2;
-        arraySort<T>(e_buf, split_index); // left
-
-        // lol, if odd, then this is more interesting...
-        arraySort<T>(e_buf + split_index, split_index); // right
-        arrayMerge<T>(e_buf, split_index, e_buf + split_index, split_index);
-    }
-}
 template<>
-void arraySort<const char *>(const char *** e_buf, size_t size);
+int8_t nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const char * B) {
+    int ret = strcmp(A, B);
+    if (sortOrder == ARRAY_SORT_DESCENDING) {
+        ret *= -1;
+    }
+    return ret;
+}
 
+// TODO: thread safety
 template<typename T>
 class Array {
     private:
+        size_t * instance_count;
+
         T ** e_buf;
         size_t * e_cap;
         size_t * e_size;
-        size_t * instance_count;
+        ArraySort * e_sorted;
+
+        void nlognsortMerge(T * A, size_t size_a, T * B, size_t size_b, T * swap_space) {
+            size_t swap_space_push = 0;
+            size_t swap_space_pop = 0;
+
+            size_t i = 0;
+            size_t j = 0;
+            T swap;
+            T left_compare;
+            while (i < size_a) {
+                left_compare = A[i];
+                if (swap_space_push - swap_space_pop > 0) {
+                    left_compare = swap_space[swap_space_pop];
+                }
+                if (j < size_b && nlognsortCompare<T>(*e_sorted, left_compare, B[j]) > 0) {
+                    // B wins
+                    swap = A[i];
+                    A[i] = B[j];
+                    swap_space[swap_space_push++] = swap;
+                    j++;
+                } else if (swap_space_push - swap_space_pop > 0) {
+                    // swap space wins
+                    swap = A[i];
+                    A[i] = swap_space[swap_space_pop++];
+                    // set new value at end of swap space
+                    swap_space[swap_space_push++] = swap;
+                } // else swap_space empty and A wins
+                i++;
+            }
+
+            // merge swap space with remaining B, remember assuming contigious
+            while (swap_space_push - swap_space_pop > 0) {
+                left_compare = swap_space[swap_space_pop];
+                if (j < size_b && nlognsortCompare<T>(*e_sorted, left_compare, B[j]) > 0) {
+                    // by law of numbers i will never be more than j lol
+                    A[i] = B[j];
+                    j++;
+                } else {
+                    // swap space wins
+                    A[i] = swap_space[swap_space_pop++];
+                    // note, size of swap space remains the same...
+                } // else swap_space empty and A wins
+                i++;
+            }
+        }
+
+        void nlognSort(T * e_buf, size_t size, T * ss) {
+            if (e_buf == nullptr || size <= 1) {
+                return;
+            } else {
+                // ensure left always larger than right
+                size_t size_left = ceil(size/2.0);
+                size_t size_right = size - size_left;
+                T * left_buf = e_buf;
+                T * right_buf = e_buf + size_left;
+                loggerPrintf(LOGGER_DEBUG, "CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, size_left, size_right);
+                T * swap_space = ss;
+                if (ss == nullptr) {
+                    swap_space = new T[size_left];
+                }
+                nlognSort<T>(left_buf, size_left, swap_space); // left
+                nlognSort<T>(right_buf, size_right, swap_space); // right
+                merge<T>(left_buf, size_left, right_buf, size_right, swap_space);
+                if (ss == nullptr) {
+                    delete[] swap_space;
+                }
+                loggerPrintf(LOGGER_DEBUG, "CALL TRACE merged size: %ld\n", size);
+            }
+        }
     public:
         Array(): Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         Array(std::initializer_list<T> list) {
-            e_cap = new size_t(list.size() * UPSIZE_FACTOR);
-            e_size = new size_t(list.size()); 
             instance_count = new size_t(1);
             e_buf = new T *(newCArray<T>(*e_cap));
+            e_cap = new size_t(list.size() * UPSIZE_FACTOR);
+            e_size = new size_t(list.size()); 
+            e_sorted = new ArraySort(ARRAY_SORT_UNSORTED);
 
             size_t i = 0;
             for (auto el: list) {
                 (*e_buf)[i++] = el;
             }
         }
-        Array(const size_t initial_cap): e_cap(new size_t(initial_cap)), e_size(new size_t(0)), e_buf(new T*(newCArray<T>(initial_cap))), instance_count(new size_t(1)) {}
+        Array(const size_t initial_cap) {
+            instance_count = new size_t(1);
+            e_buf = new T*(newCArray<T>(initial_cap));
+            e_cap = new size_t(initial_cap);
+            e_size = new size_t(0);
+            e_sorted = new ArraySort(ARRAY_SORT_UNSORTED);
+        }
         ~Array() {
             (*this->instance_count)--;
             if (*this->instance_count == 0) {
-                deleteCArray<T>(e_buf, *e_size);
+                delete instance_count;
                 delete e_cap;
                 delete e_size;
-                delete instance_count;
+                delete e_sorted;
+                deleteCArray<T>(e_buf, *e_size);
             }
+        }
+        Array<T>& sort(ArraySort sortOrder) {
+            if (sortOrder != ARRAY_SORT_UNSORTED && *e_sorted != sortOrder) {
+                *e_sorted = sortOrder;
+                // see if class member specialization was working then no games of telephone...
+                //  hmm....
+
+                // AH!
+
+                // can telephone or or or or or or or or
+
+                //  eh idk, there is likely a valid argument for telephoning?
+                try {
+                    nlognSort(*this->e_buf, *this->e_size, nullptr);
+                } catch (const std::exception& e) {
+                    loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
+                    // TODO:
+                    // we might want to handle bad_allocs differently?... consider insert and remove when I think about this again.
+                    *e_sorted = ARRAY_SORT_UNSORTED;
+                    throw e;
+                }
+            }
+            return *this;
         }
         T * buf() {
             // use at your own risk, obviously...
@@ -233,6 +342,8 @@ class Array {
                 delete[] *this->e_buf;
                 *this->e_buf = new_buf;
             }
+
+            *e_sorted = ARRAY_SORT_UNSORTED;
 
             return *this;
         }
@@ -350,10 +461,14 @@ class Array {
                 return (*this->e_buf)[i];
             }
         }
-        // copy... 
-        //  Can access private variables?
-        Array(const Array<T>& x): e_cap(x.e_cap), e_size(x.e_size), e_buf(x.e_buf) {
-            instance_count = x.instance_count;
+        // Copy
+        Array(const Array<T>& x) {
+            this->instance_count = x.instance_count;
+            this->e_buf = x.e_buf;
+            this->e_cap = x.e_cap;
+            this->e_size = x.e_size;
+            this->e_sorted = x.e_sorted;
+
             (*this->instance_count)++;
         }
         Array<T>& operator= (const Array<T>& x) {
@@ -361,6 +476,7 @@ class Array {
             this->e_buf = x.e_buf;
             this->e_cap = x.e_cap;
             this->e_size = x.e_size;
+            this->e_sorted = x.e_sorted;
 
             (*this->instance_count)++;
             return *this;

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <math.h>
 #include <stdexcept>
 
 // make sure global logger level is initialized
@@ -84,7 +85,7 @@ typedef enum ArraySort {
     ARRAY_SORT_UNSORTED,
     ARRAY_SORT_ASCENDING,
     ARRAY_SORT_DESCENDING
-};
+} ArraySort;
 
 template<typename T>
 int nlognsortCompare(ArraySort sortOrder, T A, T B) {
@@ -95,7 +96,7 @@ int nlognsortCompare(ArraySort sortOrder, T A, T B) {
         } else {
             return 1;
         }
-    } else (A == B) {
+    } else if (A == B) {
         return 0;
     } else {
         if (sortOrder == ARRAY_SORT_DESCENDING) {
@@ -107,13 +108,7 @@ int nlognsortCompare(ArraySort sortOrder, T A, T B) {
 }
 
 template<>
-int nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const char * B) {
-    int ret = strcmp(A, B);
-    if (sortOrder == ARRAY_SORT_DESCENDING) {
-        ret *= -1;
-    }
-    return ret;
-}
+int nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const char * B);
 
 // TODO: thread safety
 template<typename T>

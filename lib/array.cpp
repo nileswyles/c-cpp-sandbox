@@ -72,15 +72,10 @@ size_t WylesLibs::arrayFind<const char *>(const char *** e_buf, size_t size, con
 }
 
 template<>
-void arraySort<const char *>(const char *** e_buf, size_t size) {
-    const char * swap;
-    for (size_t i = 0; i < size; i++) {
-        for (size_t j = 0; j < size - i; j++) {
-            if (strcmp((*e_buf)[j],(*e_buf)[j+1]) == 1) {
-                swap = (*e_buf)[j];
-                (*e_buf)[j] = (*e_buf)[j+1];
-                (*e_buf)[j+1] = swap;
-            }
-        }
+int WylesLibs::nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const char * B) {
+    int ret = strcmp(A, B);
+    if (sortOrder == ARRAY_SORT_DESCENDING) {
+        ret *= -1;
     }
+    return ret;
 }

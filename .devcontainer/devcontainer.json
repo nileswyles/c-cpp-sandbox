@@ -3,5 +3,16 @@
 	"build": {
 		"dockerfile": "../Dockerfile"
 	},
-	"forwardPorts": [8080]
+	"forwardPorts": [
+		8080
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools-themes",
+				"ms-vscode.cpptools",
+				"ms-vscode.cpptools-extension-pack"
+			]
+		}
+	}
 }

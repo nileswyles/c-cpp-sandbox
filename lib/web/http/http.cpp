@@ -149,33 +149,33 @@ bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) 
                     // not sure what this is doing, but if that's what the browser wants lmao..
                     std::string key_string = request->fields["sec-websocket-key"].toString() + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-                    char message_digest[1024]; // this an issue? TODO: how to calculate buffer size... similarly, validate sec-websocket-key
-                    SHA_CTX context;
-                    int result = SHA1_Init(&context);
-                    result = SHA1_Update(&context, (void *)key_string.c_str(), key_string.size());
-                    result = SHA1_Final((unsigned char *)message_digest, &context);
+                    // char message_digest[1024]; // this an issue? TODO: how to calculate buffer size... similarly, validate sec-websocket-key
+                    // SHA_CTX context;
+                    // int result = SHA1_Init(&context);
+                    // result = SHA1_Update(&context, (void *)key_string.c_str(), key_string.size());
+                    // result = SHA1_Final((unsigned char *)message_digest, &context);
 
-                    BIO *bio, *b64;
-                    b64 = BIO_new(BIO_f_base64());
-                    char base64_encoded[2048];
-                    bio = BIO_new_mem_buf(base64_encoded, 2048);
-                    BIO_push(b64, bio);
-                    BIO_write(b64, message_digest, strlen(message_digest));
+                    // BIO *bio, *b64;
+                    // b64 = BIO_new(BIO_f_base64());
+                    // char base64_encoded[2048];
+                    // bio = BIO_new_mem_buf(base64_encoded, 2048);
+                    // BIO_push(b64, bio);
+                    // BIO_write(b64, message_digest, strlen(message_digest));
 
-                    printf(base64_encoded);
-                    printf(message_digest);
-                    response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
-                    BIO_flush(b64);
-                    printf(base64_encoded);
-                    printf(message_digest);
-                    response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
+                    // printf(base64_encoded);
+                    // printf(message_digest);
+                    // response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
+                    // BIO_flush(b64);
+                    // printf(base64_encoded);
+                    // printf(message_digest);
+                    // response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
 
-                    BIO_free_all(b64);
+                    // BIO_free_all(b64);
 
-                    // API not stable? lol...
-                    // EVP_EncodeBlock((unsigned char *)encodedData, (const unsigned char *)checksum, strlen(checksum));
-                    std::string response_string = response.toString();
-                    write(conn_fd, response_string.c_str(), response_string.size());
+                    // // API not stable? lol...
+                    // // EVP_EncodeBlock((unsigned char *)encodedData, (const unsigned char *)checksum, strlen(checksum));
+                    // std::string response_string = response.toString();
+                    // write(conn_fd, response_string.c_str(), response_string.size());
 
                     upgrader->onConnection(conn_fd);
 

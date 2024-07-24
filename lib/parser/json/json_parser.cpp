@@ -148,7 +148,7 @@ static void parseString(JsonArray * obj, Reader * r) {
     std::string s;
     char prev_c = (char)0x00;
     // TODO: set limit... of strings...
-    while (c != '"') {
+    while (c != '"' || prev_c == '\\') {
         /*
             '"'
             '\'

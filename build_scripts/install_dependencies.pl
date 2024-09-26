@@ -14,6 +14,7 @@
 system("apt update");
 
 system("apt install -y g++");
+system("apt install -y git");
 
 system("apt install -y libssl-dev");
 system("apt install -y libcrypto-dev");

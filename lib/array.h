@@ -89,15 +89,14 @@ typedef enum ArraySort {
 
 template<typename T>
 int nlognsortCompare(ArraySort sortOrder, T A, T B) {
-    int ret = 0;
-    if (A > B) {
+    if (A == B) {
+        return 0;
+    } else if (A > B) {
         if (sortOrder == ARRAY_SORT_DESCENDING) {
             return -1;
         } else {
             return 1;
         }
-    } else if (A == B) {
-        return 0;
     } else {
         if (sortOrder == ARRAY_SORT_DESCENDING) {
             return 1;
@@ -194,8 +193,8 @@ class Array {
         //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         Array(std::initializer_list<T> list) {
             instance_count = new size_t(1);
-            e_buf = new T *(newCArray<T>(*e_cap));
             e_cap = new size_t(list.size() * UPSIZE_FACTOR);
+            e_buf = new T *(newCArray<T>(*e_cap));
             e_size = new size_t(list.size()); 
             e_sorted = new ArraySort(ARRAY_SORT_UNSORTED);
 
@@ -206,8 +205,8 @@ class Array {
         }
         Array(const size_t initial_cap) {
             instance_count = new size_t(1);
-            e_buf = new T*(newCArray<T>(initial_cap));
             e_cap = new size_t(initial_cap);
+            e_buf = new T*(newCArray<T>(*e_cap));
             e_size = new size_t(0);
             e_sorted = new ArraySort(ARRAY_SORT_UNSORTED);
         }

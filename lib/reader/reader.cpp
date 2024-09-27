@@ -112,11 +112,17 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
 
 void Reader::fillBuffer() {
     this->cursor = 0;
-    ssize_t ret = read(this->r_fd, this->buf, this->buf_size);
+
+    ssize_t ret = 0;
+    // TODO: is this extra verification everytime a problem?
+    if (this->ssl == nullptr) {
+        ret = read(this->r_fd, this->buf, this->buf_size);
+    } else {
+        ret = SSL_read(this->ssl, this->buf, this->buf_size);
+    }
     // TODO: retry on EAGAIN?, revisit possible errors...
-    if (ret == -1 || (size_t)ret > this->buf_size) {
+    if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
-        // second should never happen but if we're being thorough...
         loggerPrintf(LOGGER_ERROR, "Read error: %d\n", errno);
         throw std::runtime_error("Read error.");
     } else {

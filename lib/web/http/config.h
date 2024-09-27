@@ -24,6 +24,11 @@ class HttpServerConfig: public ServerConfig {
         std::string root_html_file;
         std::string address;
         uint16_t port;
+        bool tls_enabled;
+        std::string path_to_trust_chain_cert;
+        std::string path_to_cert; // pem to include private key?, or p7/p12 file?
+        std::string path_to_private_key;
+        bool client_auth_enabled;
 
         HttpServerConfig(): static_path("./"), root_html_file("index.html"), address("127.0.0.1"), port(8080) {}
         HttpServerConfig(std::string filepath): HttpServerConfig((JsonObject *)parseFile(filepath)) {}
@@ -42,10 +47,21 @@ class HttpServerConfig: public ServerConfig {
                     port = (uint16_t)setVariableFromJsonValue<double>(value);
                 } else if (key == "root_html_file") {
                     root_html_file = setVariableFromJsonValue<std::string>(value);
+                } else if (key == "tls_enabled") {
+                    tls_enabled = setVariableFromJsonValue<bool>(value);
+                } else if (key == "path_to_trust_chain_cert") {
+                    path_to_trust_chain_cert = setVariableFromJsonValue<std::string>(value);
+                } else if (key == "path_to_cert") {
+                    path_to_cert = setVariableFromJsonValue<std::string>(value);
+                } else if (key == "path_to_private_key") {
+                    path_to_private_key = setVariableFromJsonValue<std::string>(value);
+                } else if (key == "client_auth_enabled") {
+                    client_auth_enabled = setVariableFromJsonValue<bool>(value);
                 }
             }
         }
 
+        // TODO: include parent fields...
         std::string toJsonString() {
             std::string s("{");
             s += "\"static_path\": ";
@@ -62,6 +78,26 @@ class HttpServerConfig: public ServerConfig {
 
             s += "\"root_html_file\": ";
             s += JsonString(this->root_html_file).toJsonString();
+            s += ",";
+            
+            s += "\"tls_enabled\": ";
+            s += JsonBoolean(this->tls_enabled).toJsonString();
+            s += ",";
+
+            s += "\"path_to_trust_chain_cert\": ";
+            s += JsonString(this->path_to_trust_chain_cert).toJsonString();
+            s += ",";
+
+            s += "\"path_to_cert\": ";
+            s += JsonString(this->path_to_cert).toJsonString();
+            s += ",";
+
+            s += "\"path_to_private_key\": ";
+            s += JsonString(this->path_to_private_key).toJsonString();
+            s += ",";
+
+            s += "\"client_auth_enabled\": ";
+            s += JsonBoolean(this->client_auth_enabled).toJsonString();
             s += "}";
 
             return s;
@@ -78,6 +114,15 @@ class HttpServerConfig: public ServerConfig {
                 return false;
             }
             if(this->root_html_file != other.root_html_file) {
+                return false;
+            }
+            if(this->tls_enabled != other.tls_enabled) {
+                return false;
+            }
+            if(this->path_to_cert != other.path_to_cert) {
+                return false;
+            }
+            if(this->path_to_private_key != other.path_to_private_key) {
                 return false;
             }
             return true;

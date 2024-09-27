@@ -126,7 +126,8 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
 }
 
 // might need to change return type...
-bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) {
+// TODO: lol... yeah maybe don't write responses in these functions and return HttpResponse?
+bool HttpConnection::handleWebsocketRequest(SSL * ssl, int conn_fd, HttpRequest * request) {
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
         Array<std::string> protocols = request->fields["sec-websocket-protocol"];
@@ -175,7 +176,7 @@ bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) 
                     // // API not stable? lol...
                     // // EVP_EncodeBlock((unsigned char *)encodedData, (const unsigned char *)checksum, strlen(checksum));
                     // std::string response_string = response.toString();
-                    // write(conn_fd, response_string.c_str(), response_string.size());
+                    // httpWrite(ssl, conn_fd, response_string.c_str(), response_string.size());
 
                     upgrader->onConnection(conn_fd);
 
@@ -188,7 +189,7 @@ bool HttpConnection::handleWebsocketRequest(int conn_fd, HttpRequest * request) 
     return upgraded;
 }
 
-bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
+bool HttpConnection::handleStaticRequest(SSL * ssl, int conn_fd, HttpRequest * request) {
     bool handled = false;
     std::string path;
     if (request->url.path == "/") {
@@ -213,7 +214,9 @@ bool HttpConnection::handleStaticRequest(int conn_fd, HttpRequest * request) {
             response.status_code = "500";
         }
         std::string response_string = response.toString();
-        write(conn_fd, response_string.c_str(), response_string.size());
+
+        // lol... the only thing you certainty is that there is no certainty! telefone it is...
+        httpWrite(ssl, conn_fd, response_string);
         loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n", response_string.c_str());
         handled = true;
 	}
@@ -245,7 +248,7 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
     return response;
 }
 
-bool HttpConnection::handleTimeoutRequests(int conn_fd, HttpRequest * request) {
+bool HttpConnection::handleTimeoutRequests(SSL * ssl, int conn_fd, HttpRequest * request) {
     bool handled = false;
     if (request->url.path == "/timeout" && request->method == "POST") {
         JsonObject * obj = (JsonObject *)request->json_content;
@@ -281,7 +284,7 @@ bool HttpConnection::handleTimeoutRequests(int conn_fd, HttpRequest * request) {
             response.content = content;
      
             std::string response_string = response.toString();
-            write(conn_fd, response_string.c_str(), response_string.size());
+            httpWrite(ssl, conn_fd, response_string);
             loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n", response_string.c_str());
         }
         handled = true;
@@ -301,7 +304,7 @@ bool HttpConnection::handleTimeoutRequests(int conn_fd, HttpRequest * request) {
         response.content = content;
 
         std::string response_string = response.toString();
-        write(conn_fd, response_string.c_str(), response_string.size());
+        httpWrite(ssl, conn_fd, response_string);
         loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n\n", response_string.c_str());
 
         handled = true;
@@ -321,7 +324,7 @@ bool HttpConnection::handleTimeoutRequests(int conn_fd, HttpRequest * request) {
         response.content = content;
 
         std::string response_string = response.toString();
-        write(conn_fd, response_string.c_str(), response_string.size());
+        httpWrite(ssl, conn_fd, response_string);
         loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n\n", response_string.c_str());
         handled = true;
     }
@@ -331,17 +334,29 @@ bool HttpConnection::handleTimeoutRequests(int conn_fd, HttpRequest * request) {
 
 uint8_t HttpConnection::onConnection(int conn_fd) {
     HttpRequest request;
-    Reader reader(conn_fd);
     HttpResponse * response = nullptr;
+
+    Reader reader;
+    SSL * ssl = nullptr;
     try {
+        // TODO: might not need the tls_enabled flag?
+        if (this->config.tls_enabled) {
+            ssl = acceptTLS(conn_fd); // initializes ssl object for connection
+
+            // TODO: this should never be nullptr... but revisit
+            reader = Reader(ssl);
+        } else {
+            reader = Reader(conn_fd);
+        }
+
         parseRequest(&request, &reader);
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
-        bool handled = handleStaticRequest(conn_fd, &request);
+        bool handled = handleStaticRequest(ssl, conn_fd, &request);
         if (!handled) {
-            handled = handleWebsocketRequest(conn_fd, &request);
+            handled = handleWebsocketRequest(ssl, conn_fd, &request);
         }
         if (HTTP_DEBUG && !handled) {
-            handled = handleTimeoutRequests(conn_fd, &request);
+            handled = handleTimeoutRequests(ssl, conn_fd, &request);
         }
         if (!handled) {
             // these should always produce a response, so sig need not include connection file descriptor..
@@ -358,28 +373,78 @@ uint8_t HttpConnection::onConnection(int conn_fd) {
                 std::string response_string = response->toString();
                 delete response;
                 free(response);
-                int ret = write(conn_fd, response_string.c_str(), response_string.size());
+
+                // TODO: SSL write abstraction....
+                int ret = httpWrite(ssl, conn_fd, response_string);
                 if (ret == -1) {
                     loggerPrintf(LOGGER_DEBUG, "Error writing to connection file descriptor. Did the connection timer expire?: %d\n", errno);
                 }
             }
         }
     } catch (const std::exception& e) {
-        delete response;
-        free(response);
-
-        // respond with empty HTTP status code 500
-        HttpResponse err;
-        std::string err_string = err.toString();
-        int ret = write(conn_fd, err_string.c_str(), err_string.size());
-        if (ret == -1) {
-            loggerPrintf(LOGGER_DEBUG, "Error writing to connection file descriptor. Did the connection timer expire?: %d\n", errno);
+        if (ssl == nullptr) {
+            loggerPrintf(LOGGER_DEBUG, "Error accepting and configuring TLS connection.\n");
+        } else {
+            delete response;
+            free(response);
+     
+            // respond with empty HTTP status code 500
+            HttpResponse err;
+            std::string err_string = err.toString();
+            int ret = httpWrite(ssl, conn_fd, err_string);
+            if (ret == -1) {
+                loggerPrintf(LOGGER_DEBUG, "Error writing to connection file descriptor. Did the connection timer expire?: %d\n", errno);
+            }
         }
-
         loggerPrintf(LOGGER_ERROR, "Exception thrown while processing request: %s\n", e.what());
     }
 
+    if (ssl != nullptr) {
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+    }
     close(conn_fd); // doc's say you shouldn't retry close so ignore ret
 
     return 1;
+}
+
+SSL * HttpConnection::acceptTLS(int conn_fd) {
+    if (this->context == nullptr) {
+        throw std::runtime_error("Server SSL Context isn't initialized. Check server configuration.");
+    } else {
+        SSL * ssl = SSL_new(context);
+        if (ssl == nullptr) {
+            throw std::runtime_error("Error initializing SSL object for connection.");
+        }
+
+        int verify_mode = SSL_VERIFY_NONE;
+        if (this->config.client_auth_enabled) {
+            verify_mode = SSL_VERIFY_PEER;
+        }
+        SSL_set_verify(ssl, verify_mode, nullptr);
+        SSL_set_accept_state(ssl);
+
+        SSL_set_fd(ssl, conn_fd);
+        // TODO: log ssl config, 
+        //  ciphers, mode, fd, verify results, certificate, blocking_mode, is_server (accept state), 
+        //  investigate renegotiation, auto retry...
+
+        // TODO: so apparently this is optional lol... SSL_read will perform handshake...
+        int accept_result = SSL_accept(ssl);
+        if (accept_result != 1) {
+            throw std::runtime_error("SSL handshake failed but don't care about specific error at the moment.");
+        } // connection accepted if accepted_result == 1
+
+        return ssl;
+    }
+}
+
+int HttpConnection::httpWrite(SSL * ssl, int conn_fd, std::string data) {
+    int ret;
+    if (ssl != nullptr) {
+        ret = write(conn_fd, data.c_str(), data.size());
+    } else {
+        ret = SSL_write(ssl, data.c_str(), data.size());
+    }
+    return ret;
 }

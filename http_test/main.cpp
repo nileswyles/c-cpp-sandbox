@@ -94,6 +94,7 @@ int main(int argc, char * argv[]) {
     
         // alright, still a shit ton of open questions but this should work?
         connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders); 
+        connection.initialize();
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
         serverListen(config.address.c_str(), (uint16_t)config.port, connectionHandler);
     } catch (const std::exception& e) {

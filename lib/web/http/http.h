@@ -26,6 +26,8 @@
 #include <unordered_map>
 #include <map>
 
+#include <openssl/ssl.h>
+
 #define HTTP_FIELD_MAX 64
 
 using namespace WylesLibs;
@@ -113,14 +115,19 @@ class HttpConnection {
         HttpServerConfig config;
         std::unordered_map<std::string, std::string> static_paths; 
 
+        SSL_CTX * context;
+
         void parseRequest(HttpRequest * request, Reader * reader);
-        bool handleWebsocketRequest(int conn_fd, HttpRequest * request);
-        bool handleStaticRequest(int conn_fd, HttpRequest * request);
-        bool handleTimeoutRequests(int conn_fd, HttpRequest * request);
+        bool handleWebsocketRequest(SSL * ssl, int conn_fd, HttpRequest * request);
+        bool handleStaticRequest(SSL * ssl, int conn_fd, HttpRequest * request);
+        bool handleTimeoutRequests(SSL * ssl, int conn_fd, HttpRequest * request);
 
         HttpResponse * requestDispatcher(HttpRequest * request);
-        // hmm... private static member?
-        static void initializeStaticPaths(HttpServerConfig config, std::unordered_map<std::string, std::string> * static_paths) {
+
+        SSL * acceptTLS(int conn_fd);
+        int httpWrite(SSL * ssl, int conn_fd, std::string data);
+
+        void initializeStaticPaths(HttpServerConfig config, std::unordered_map<std::string, std::string> * static_paths) {
             loggerPrintf(LOGGER_DEBUG, "Static Paths: %s\n", config.static_path.c_str());
                 for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(config.static_path)) {
                     std::string path = dir_entry.path().string();
@@ -136,6 +143,25 @@ class HttpConnection {
                     }
                 }
         }
+        void initializeSSLContext() {
+            if (this->config.tls_enabled) {
+                // context might not be a per connection thing... 
+                this->context = SSL_CTX_new(TLS_method);
+                if (this->context == nullptr) {
+                    loggerPrintf(LOGGER_DEBUG, "Error initializing SSL Context.");
+                } else {
+                    SSL_CTX_load_verify_file(context, this->config.path_to_trust_chain_cert.c_str());
+             
+                    SSL_CTX_use_certificate_chain_file(context, this->config.path_to_trust_chain_cert.c_str()); // TODO: redundant?
+                    SSL_CTX_use_certificate_file(context, this->config.path_to_cert.c_str());
+                    SSL_CTX_use_PrivateKey_file(context, this->config.path_to_private_key.c_str());
+             
+                    // TODO: error check cert stuff...
+                }
+            } else {
+                this->context = nullptr;
+            }
+        }
     public:
         HttpConnection() {}
         // haha, funny how that worked out...
@@ -148,7 +174,6 @@ class HttpConnection {
             response_filters = pResponse_filters;
             upgraders = pUpgraders;
             processor = nullptr;
-            HttpConnection::initializeStaticPaths(config, &static_paths);
         }
         HttpConnection(HttpServerConfig config, RequestProcessor * processor, Array<ConnectionUpgrader *> upgraders): 
             config(config), processor(processor), upgraders(upgraders) {
@@ -157,10 +182,15 @@ class HttpConnection {
                     loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 }
-                HttpConnection::initializeStaticPaths(config, &static_paths);
         }
 
         uint8_t onConnection(int conn_fd);
+
+        // ! IMPORTANT - this needs to be explicitly called by construction caller because CPP.
+        void initialize() {
+            initializeStaticPaths(config, &static_paths);
+            initializeSSLContext();
+        }
 };
 
 };

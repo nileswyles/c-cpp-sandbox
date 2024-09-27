@@ -17,6 +17,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// TODO:
+// compiler flag to enable this...
+#include <openssl/ssl.h>
+
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
 namespace WylesLibs {
@@ -28,10 +32,13 @@ class Reader {
         size_t buf_size;
         size_t cursor;
         size_t bytes_in_buffer;
+        SSL * ssl;
         
         void fillBuffer();
         void cursorCheck();
-    public:
+    public:        
+        // Reader() = default;
+        Reader() {}
         Reader(uint8_t * buf_array, const size_t pBuf_size) {
             buf = buf_array;
             buf_size = pBuf_size;
@@ -39,6 +46,9 @@ class Reader {
             // ! IMPORTANT - an exception is thrown if read past buffer. (see fillBuffer implementation)
             r_fd = -1;
             bytes_in_buffer = pBuf_size;
+        }
+        Reader(SSL * ssl): Reader(0, READER_RECOMMENDED_BUF_SIZE) {
+            ssl = ssl;
         }
         Reader(const int r_fd): Reader(r_fd, READER_RECOMMENDED_BUF_SIZE) {}
         Reader(const int pFd, const size_t pBuf_size) {
@@ -53,6 +63,7 @@ class Reader {
             r_fd = pFd;
             bytes_in_buffer = 0;
             buf = newCArray<uint8_t>(buf_size);
+            ssl = nullptr;
         }
         ~Reader() {
             printf("Deconstructor called...\n");

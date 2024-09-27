@@ -14,24 +14,24 @@ using namespace WylesLibs;
 
 namespace WylesLibs::Parser::Multipart::FormData {
 //
-static void parse(IOStream * r, Array<MultipartFile> files, unordered_map<std::string, std::string> form_content) {
+static void parse(IOStream * io, Array<MultipartFile> files, unordered_map<std::string, std::string> form_content) {
     while (1) {
         std::string field_name;
         bool is_file = false;
         bool new_file = true;
         MultipartFile file;
-        Array<uint8_t> line = r->readUntil("\n"); // read and consume boundary string
+        Array<uint8_t> line = io->readUntil("\n"); // read and consume boundary string
         if (line.buf()[0] == '-' && line.buf()[1] == '-') {
             if (line.buf()[line.size() - 3] == '-') break;
             // assume type then range for now...
-            r->readUntil(";"); // read and consume content disposition type because who cares.
+            io->readUntil(";"); // read and consume content disposition type because who cares.
 
             is_file = false;
             bool has_name = false;
             for (size_t i = 0; i < 2; i++) {
-                std::string field = r->readUntil("=").removeBack().toString();
+                std::string field = io->readUntil("=").removeBack().toString();
                 ReaderTaskExtract extract('"', '"');
-                std::string value = r->readUntil(";", &extract).removeBack().toString();
+                std::string value = io->readUntil(";", &extract).removeBack().toString();
                 if (field == "filename") {
                     is_file = true;
                     file = Service::createMultipartFile(value);
@@ -44,7 +44,7 @@ static void parse(IOStream * r, Array<MultipartFile> files, unordered_map<std::s
             if (!has_name) {
                 throw std::runtime_error("Field name required.");
             }
-            r->readUntil("\n"); // consume new line...
+            io->readUntil("\n"); // consume new line...
         } else if (field_name != "") {
             if (is_file) {
                 WylesLibs::File::write(file.getResourcePath(), line, !new_file);

@@ -145,7 +145,7 @@ void HttpConnection::processRequest(IOStream * io, HttpRequest * request) {
             }
         }
 
-        // these should always produce a response, so sig need not include connection file descriptor..
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING REQUEST\n");
         if (this->processor == nullptr) {
             response = this->requestDispatcher(request);
         } else {
@@ -156,12 +156,13 @@ void HttpConnection::processRequest(IOStream * io, HttpRequest * request) {
             loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         } else {
-               writeResponse(response, io);
-               return;
+            writeResponse(response, io);
+            return;
         }
 }
 
 bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request) {
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING WEBSOCKET REQUEST\n");
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
         Array<std::string> protocols = request->fields["sec-websocket-protocol"];
@@ -223,6 +224,7 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
 }
 
 HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING STATIC REQUEST\n");
     HttpResponse * response = nullptr;
     std::string path;
     if (request->url.path == "/") {
@@ -252,6 +254,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
 }
 
 HttpResponse * HttpConnection::handleTimeoutRequests(IOStream * io, HttpRequest * request) {
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING TIMEOUT REQUEST\n");
     HttpResponse * response = nullptr;
     if (request->url.path == "/timeout" && request->method == "POST") {
         JsonObject * obj = (JsonObject *)request->json_content;
@@ -339,36 +342,29 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
 uint8_t HttpConnection::onConnection(int fd) {
     HttpRequest request;
     HttpResponse * response = nullptr;
-    SSL * ssl = nullptr;
-    IOStream * io = nullptr;
+    IOStream io(fd);
     try {
-        // TODO: might not need the tls_enabled flag?
         if (this->config.tls_enabled) {
-            ssl = this->acceptTLS(fd); // initializes ssl object for connection
-            IOStream sslIO = IOStream(ssl);
-            io = (IOStream *)&sslIO;
-        } else {
-            IOStream regularIO(fd);
-            io = &regularIO;
+            io.ssl = this->acceptTLS(fd); // initializes ssl object for connection
         }
-
-        this->parseRequest(&request, io);
+        this->parseRequest(&request, &io);
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
-        this->processRequest(io, &request);
+        this->processRequest(&io, &request);
     } catch (const std::exception& e) {
-        if (ssl == nullptr) {
+        if (this->config.tls_enabled && io.ssl == nullptr) {
+            // then deduce error occured while initializing ssl
             loggerPrintf(LOGGER_DEBUG, "Error accepting and configuring TLS connection.\n");
         } else {
             // respond with empty HTTP status code 500
             HttpResponse err;
-            this->writeResponse(&err, io);
+            this->writeResponse(&err, &io);
         }
         loggerPrintf(LOGGER_ERROR, "Exception thrown while processing request: %s\n", e.what());
     }
 
-    if (ssl != nullptr) {
-        SSL_shutdown(ssl);
-        SSL_free(ssl);
+    if (io.ssl != nullptr) {
+        SSL_shutdown(io.ssl);
+        SSL_free(io.ssl);
     }
     close(fd); // doc's say you shouldn't retry close so ignore ret
 
@@ -377,11 +373,16 @@ uint8_t HttpConnection::onConnection(int fd) {
 
 void HttpConnection::writeResponse(HttpResponse * response, IOStream * io) {
     std::string data = response->toString();
-    delete response;
-    free(response);
+    #if defined __cplusplus
+        delete response;
+    #else
+        free(response);
+    #endif
 
     if (io->writeBuffer((void *)data.c_str(), data.size()) == -1) {
         loggerPrintf(LOGGER_DEBUG, "Error writing to connection: %d\n", errno);
+    } else {
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Wrote response to connection.\n");
     }
 }
 
@@ -389,7 +390,7 @@ SSL * HttpConnection::acceptTLS(int fd) {
     if (this->context == nullptr) {
         throw std::runtime_error("Server SSL Context isn't initialized. Check server configuration.");
     } else {
-        SSL * ssl = SSL_new(context);
+        SSL * ssl = SSL_new(this->context);
         if (ssl == nullptr) {
             throw std::runtime_error("Error initializing SSL object for connection.");
         }

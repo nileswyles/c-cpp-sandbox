@@ -57,7 +57,7 @@ class IOStream {
             }
             buf_size = p_buf_size;
             cursor = 0;
-            fd = fd;
+            fd = p_fd;
             bytes_in_buffer = 0;
             buf = newCArray<uint8_t>(buf_size);
             ssl = nullptr;

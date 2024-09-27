@@ -425,16 +425,27 @@ SSL * HttpConnection::acceptTLS(int conn_fd) {
         SSL_set_accept_state(ssl);
 
         SSL_set_fd(ssl, conn_fd);
-        // TODO: log ssl config, 
-        //  ciphers, mode, fd, verify results, certificate, blocking_mode, is_server (accept state), 
-        //  investigate renegotiation, auto retry...
 
+        SSL_clear_mode(ssl, 0);
+        // SSL_MODE_AUTO_RETRY
+
+        //  investigate renegotiation, auto retry...
         // TODO: so apparently this is optional lol... SSL_read will perform handshake...
         int accept_result = SSL_accept(ssl);
+        loggerPrintf(LOGGER_DEBUG, "ACCEPT RESULT: %d\n", accept_result);
+        loggerPrintf(LOGGER_DEBUG, "MODE: %lx, VERSION: %s, IS SERVER: %d\n", SSL_get_mode(ssl), SSL_get_version(ssl), SSL_is_server(ssl));
+        loggerExec(LOGGER_DEBUG, SSL_SESSION_print_fp(stdout, SSL_get_session(ssl)););
         if (accept_result != 1) {
             int error_code = SSL_get_error(ssl, accept_result) + 0x30;
+            // SSL_ERROR_NONE
             throw std::runtime_error("SSL handshake failed but don't care about specific error at the moment. ERROR CODE: " + std::string((char *)&error_code));
         } // connection accepted if accepted_result == 1
+        // else {
+            // uint8_t buf[8096];
+            // int ret = SSL_read(ssl, buf, 8096);
+            // loggerPrintf(LOGGER_DEBUG, "WTF is even this?\n");
+            // loggerPrintByteArray(LOGGER_DEBUG, buf, ret);
+        // }
 
         return ssl;
     }

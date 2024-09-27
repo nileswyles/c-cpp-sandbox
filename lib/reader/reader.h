@@ -47,7 +47,12 @@ class Reader {
             r_fd = -1;
             bytes_in_buffer = pBuf_size;
         }
-        Reader(SSL * ssl): Reader(0, READER_RECOMMENDED_BUF_SIZE) {
+        Reader(SSL * ssl) {
+            buf_size = READER_RECOMMENDED_BUF_SIZE;
+            cursor = 0;
+            r_fd = -1;
+            bytes_in_buffer = 0;
+            buf = newCArray<uint8_t>(buf_size);
             ssl = ssl;
         }
         Reader(const int r_fd): Reader(r_fd, READER_RECOMMENDED_BUF_SIZE) {}

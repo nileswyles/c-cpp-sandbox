@@ -45,6 +45,12 @@
         fprintf(file, "\n");\
     }
 
+#undef loggerExec
+#define loggerExec(min, code) \
+    if (LOGGER_MODULE_ENABLED && LOGGER_LEVEL >= min) {\
+        code\
+    }
+
 #ifndef LOGGER_H
 #define LOGGER_H
 typedef enum log_level {

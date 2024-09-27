@@ -114,12 +114,12 @@ void generateRandomArray(int * array, size_t size) {
 }
 
 void printArray(int * array, size_t size) {
-    if (LOGGER_LEVEL >= LOGGER_TEST_VERBOSE) {
+    loggerExec(LOGGER_TEST_VERBOSE, 
         for (size_t i = 0; i < size; i++) {
             printf("[%d]", array[i]);
         }
         printf("\n");
-    }
+    );
 }
 
 GVC_t * graphInit(int argc, char **argv) {

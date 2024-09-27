@@ -112,9 +112,7 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
 
 void Reader::fillBuffer() {
     this->cursor = 0;
-
-    ssize_t ret = 0;
-    // TODO: is this extra verification everytime a problem?
+    ssize_t ret = -1;
     if (this->ssl == nullptr) {
         ret = read(this->r_fd, this->buf, this->buf_size);
     } else {
@@ -127,6 +125,13 @@ void Reader::fillBuffer() {
         throw std::runtime_error("Read error.");
     } else {
         this->bytes_in_buffer = ret;
+        loggerExec(LOGGER_DEBUG_VERBOSE,
+            if (this->ssl == nullptr) {
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
+            } else {
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from tls layer.\n", ret);
+            }
+        );
     }
 }
 

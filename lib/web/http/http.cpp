@@ -373,11 +373,8 @@ uint8_t HttpConnection::onConnection(int fd) {
 
 void HttpConnection::writeResponse(HttpResponse * response, IOStream * io) {
     std::string data = response->toString();
-    #if defined __cplusplus
-        delete response;
-    #else
-        free(response);
-    #endif
+    // ! IMPORTANT - this response pointer will potentially come from an end-user (another developer)... YOU WILL ENCOUNTER PROBLEMS IF THE POINTER IS CREATED USING MALLOC AND NOT NEW
+    delete response;
 
     if (io->writeBuffer((void *)data.c_str(), data.size()) == -1) {
         loggerPrintf(LOGGER_DEBUG, "Error writing to connection: %d\n", errno);

@@ -44,9 +44,9 @@ uint8_t IOStream::readByte() {
 
 ssize_t IOStream::writeBuffer(void * p_buf, size_t size) {
     if (this->ssl == nullptr) {
-        return SSL_write(this->ssl, p_buf, size);
-    } else {
         return write(this->fd, p_buf, size);
+    } else {
+        return SSL_write(this->ssl, p_buf, size);
     }
 }
 

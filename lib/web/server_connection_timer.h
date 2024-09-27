@@ -50,7 +50,6 @@ static void timerRemoveConnection(int fd);
 static void removeConnection(Connection * connection);
 
 static void closeConnection(Connection * connection) {
-    loggerPrintf(LOGGER_DEBUG, "Closing connection (with FD: %d) due to timer expiration.\n", connection->fd);
     close(connection->fd);
     removeConnection(connection);
 }
@@ -78,6 +77,7 @@ static void * timerProcess(void * arg) {
             clock_gettime(CLOCK_MONOTONIC, &ts);
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "fd: %d, start: %lu, timeout: %u, current_time: %lu\n", current->fd, current->start_s, current->timeout_s, ts.tv_sec);
             if (current->start_s + current->timeout_s <= ts.tv_sec) {
+                loggerPrintf(LOGGER_DEBUG, "Closing connection (with FD: %d) due to timer expiration.\n", current->fd);
                 closeConnection(current);
             }
             current = next;
@@ -144,7 +144,7 @@ static void timerRemoveConnection(int fd) {
     Connection * current = start;
     while (current != NULL) {
         if (current->fd == fd) {
-            removeConnection(current);
+            closeConnection(current);
             break;
         } else {
             current = current->next;

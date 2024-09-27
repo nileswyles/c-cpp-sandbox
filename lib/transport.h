@@ -1,5 +1,5 @@
-#ifndef WYLESLIBS_TRANSPORT_IO_H
-#define WYLESLIBS_TRANSPORT_IO_H
+#ifndef WYLESLIBS_TRANSPORT_H
+#define WYLESLIBS_TRANSPORT_H
 
 #include <openssl/ssl.h>
 
@@ -17,23 +17,25 @@ class Transport {
             conn_fd = conn_fd;
             ssl = nullptr;
         }
-        int32_t ioRead(void * buf, size_t size) {
+        ssize_t readBuffer(void * buf, size_t size) {
             return read(this->conn_fd, buf, size);
         }
-        int32_t ioWrite(void * buf, size_t size) {
+        ssize_t writeBuffer(void * buf, size_t size) {
             return write(this->conn_fd, buf, size);
         }
 };
 
 class SSLTransport: Transport {
     public:
-        SSLTransport(SSL * ssl): Transport(conn_fd) {
+        SSLTransport(SSL * ssl): SSLTransport(ssl, -1) {}
+        SSLTransport(SSL * ssl, int conn_fd): Transport(conn_fd) {
             ssl = ssl;
+            conn_fd = conn_fd;
         }
-        int32_t ioRead(void * buf, size_t size) {
+        ssize_t readBuffer(void * buf, size_t size) {
             return SSL_read(this->ssl, buf, size);
         }
-        int32_t ioWrite(void * buf, size_t size) {
+        ssize_t writeBuffer(void * buf, size_t size) {
             return SSL_write(this->ssl, buf, size);
         }
 };

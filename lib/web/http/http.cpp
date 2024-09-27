@@ -184,28 +184,28 @@ bool HttpConnection::handleWebsocketRequest(Transport * io, HttpRequest * reques
                     // not sure what this is doing, but if that's what the browser wants lmao..
                     std::string key_string = request->fields["sec-websocket-key"].toString() + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-                    // char message_digest[1024]; // this an issue? TODO: how to calculate buffer size... similarly, validate sec-websocket-key
-                    // SHA_CTX context;
-                    // int result = SHA1_Init(&context);
-                    // result = SHA1_Update(&context, (void *)key_string.c_str(), key_string.size());
-                    // result = SHA1_Final((unsigned char *)message_digest, &context);
+                    char message_digest[20];
+                    SHA_CTX context;
+                    int result = SHA1_Init(&context);
+                    result = SHA1_Update(&context, (void *)key_string.c_str(), key_string.size());
+                    result = SHA1_Final((unsigned char *)message_digest, &context);
 
-                    // BIO *bio, *b64;
-                    // b64 = BIO_new(BIO_f_base64());
-                    // char base64_encoded[2048];
-                    // bio = BIO_new_mem_buf(base64_encoded, 2048);
-                    // BIO_push(b64, bio);
-                    // BIO_write(b64, message_digest, strlen(message_digest));
+                    BIO *bio, *b64;
+                    b64 = BIO_new(BIO_f_base64());
+                    char base64_encoded[2048];
+                    bio = BIO_new_mem_buf(base64_encoded, 2048);
+                    BIO_push(b64, bio);
+                    BIO_write(b64, message_digest, strlen(message_digest));
 
-                    // printf(base64_encoded);
-                    // printf(message_digest);
+                    printf(base64_encoded);
+                    printf(message_digest);
+                    response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
+                    BIO_flush(b64);
+                    printf(base64_encoded);
+                    printf(message_digest);
                     // response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
-                    // BIO_flush(b64);
-                    // printf(base64_encoded);
-                    // printf(message_digest);
-                    // response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
 
-                    // BIO_free_all(b64);
+                    BIO_free_all(b64);
 
                     // // API not stable? lol...
                     // // EVP_EncodeBlock((unsigned char *)encodedData, (const unsigned char *)checksum, strlen(checksum));
@@ -347,7 +347,7 @@ uint8_t HttpConnection::onConnection(int conn_fd) {
         // TODO: might not need the tls_enabled flag?
         if (this->config.tls_enabled) {
             ssl = this->acceptTLS(conn_fd); // initializes ssl object for connection
-            SSLTransport sslIO(ssl);
+            SSLTransport sslIO(ssl, conn_fd);
             io = (Transport *)&sslIO;
         } else {
             Transport regularIO(conn_fd);
@@ -383,8 +383,8 @@ void HttpConnection::writeResponse(HttpResponse * response, Transport * io) {
     delete response;
     free(response);
 
-    if (io->ioWrite((void *)data.c_str(), data.size()) == -1) {
-        loggerPrintf(LOGGER_DEBUG, "Error writing to connection file descriptor. Did the connection timer expire?: %d\n", errno);
+    if (io->writeBuffer((void *)data.c_str(), data.size()) == -1) {
+        loggerPrintf(LOGGER_DEBUG, "Error writing to connection: %d\n", errno);
     }
 }
 

@@ -58,7 +58,8 @@ void assert(std::string result, std::string expected) {
 
 // void testReadUntil(TestArg * t) {
 void testReadUntil() {
-    Reader reader(1, READER_RECOMMENDED_BUF_SIZE);
+    Transport io(1);
+    Reader reader(&io, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
@@ -72,13 +73,14 @@ void testReadUntil() {
 }
 
 void testReadUntilUpperCase() {
-    Reader reader(1, READER_RECOMMENDED_BUF_SIZE);
+    Transport io(1);
+    Reader reader(&io, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
 
-    ByteOperationUC uppercase;
-    std::string result = reader.readUntil(' ', (ByteOperation *)&uppercase).toString();
+    ReaderTaskUC uppercase;
+    std::string result = reader.readUntil(' ', (ReaderTaskUC *)&uppercase).toString();
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
@@ -87,13 +89,14 @@ void testReadUntilUpperCase() {
 }
 
 void testReadUntilLowerCase() {
-    Reader reader(1, READER_RECOMMENDED_BUF_SIZE);
+    Transport io(1);
+    Reader reader(&io, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
 
-    ByteOperationLC lowercase;
-    std::string result = reader.readUntil(' ', (ByteOperation *)&lowercase).toString();
+    ReaderTaskLC lowercase;
+    std::string result = reader.readUntil(' ', (ReaderTask *)&lowercase).toString();
     std::string expected = "teststringwithspace ";
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);

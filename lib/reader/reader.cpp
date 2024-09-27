@@ -111,19 +111,19 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
 
 void Reader::fillBuffer() {
     this->cursor = 0;
-    int32_t ret = this->e_io->ioRead(this->buf, this->buf_size);
+    ssize_t ret = this->e_io->readBuffer(this->buf, this->buf_size);
     // TODO: retry on EAGAIN?, revisit possible errors...
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
-        loggerPrintf(LOGGER_ERROR, "Read error: %d\n", errno);
+        loggerPrintf(LOGGER_ERROR, "Read error: %d, ret: %ld\n", errno, ret);
         throw std::runtime_error("Read error.");
     } else {
         this->bytes_in_buffer = ret;
         loggerExec(LOGGER_DEBUG_VERBOSE,
             if (this->e_io->ssl == nullptr) {
-                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %d bytes from transport layer.\n", ret);
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
             } else {
-                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %d bytes from tls layer.\n", ret);
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from tls layer.\n", ret);
             }
         );
     }

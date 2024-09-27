@@ -413,7 +413,7 @@ SSL * HttpConnection::acceptTLS(int fd) {
         if (accept_result != 1) {
             int error_code = SSL_get_error(ssl, accept_result) + 0x30;
             // SSL_ERROR_NONE
-            throw std::runtime_error("SSL handshake failed but don't care about specific error at the moment. ERROR CODE: " + std::string((char *)&error_code));
+            throw std::runtime_error("SSL handshake failed. ERROR CODE: " + std::string((char *)&error_code));
         } // connection accepted if accepted_result == 1
         // else {
             // uint8_t buf[8096];

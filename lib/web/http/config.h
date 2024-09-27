@@ -47,6 +47,7 @@ class HttpServerConfig: public ServerConfig {
                     port = (uint16_t)setVariableFromJsonValue<double>(value);
                 } else if (key == "root_html_file") {
                     root_html_file = setVariableFromJsonValue<std::string>(value);
+                // TODO: These aren't required... so implement defaults?
                 } else if (key == "tls_enabled") {
                     tls_enabled = setVariableFromJsonValue<bool>(value);
                 } else if (key == "path_to_trust_chain_cert") {

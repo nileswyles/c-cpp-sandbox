@@ -432,7 +432,8 @@ SSL * HttpConnection::acceptTLS(int conn_fd) {
         // TODO: so apparently this is optional lol... SSL_read will perform handshake...
         int accept_result = SSL_accept(ssl);
         if (accept_result != 1) {
-            throw std::runtime_error("SSL handshake failed but don't care about specific error at the moment.");
+            int error_code = SSL_get_error(ssl, accept_result) + 0x30;
+            throw std::runtime_error("SSL handshake failed but don't care about specific error at the moment. ERROR CODE: " + std::string((char *)&error_code));
         } // connection accepted if accepted_result == 1
 
         return ssl;

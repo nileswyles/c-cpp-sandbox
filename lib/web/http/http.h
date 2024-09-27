@@ -146,15 +146,15 @@ class HttpConnection {
         void initializeSSLContext() {
             if (this->config.tls_enabled) {
                 // context might not be a per connection thing... 
-                this->context = SSL_CTX_new(TLS_method);
+                this->context = SSL_CTX_new(TLS_method());
                 if (this->context == nullptr) {
                     loggerPrintf(LOGGER_DEBUG, "Error initializing SSL Context.");
                 } else {
                     SSL_CTX_load_verify_file(context, this->config.path_to_trust_chain_cert.c_str());
              
                     SSL_CTX_use_certificate_chain_file(context, this->config.path_to_trust_chain_cert.c_str()); // TODO: redundant?
-                    SSL_CTX_use_certificate_file(context, this->config.path_to_cert.c_str());
-                    SSL_CTX_use_PrivateKey_file(context, this->config.path_to_private_key.c_str());
+                    SSL_CTX_use_certificate_file(context, this->config.path_to_cert.c_str(), SSL_FILETYPE_PEM);
+                    SSL_CTX_use_PrivateKey_file(context, this->config.path_to_private_key.c_str(), SSL_FILETYPE_PEM);
              
                     // TODO: error check cert stuff...
                 }

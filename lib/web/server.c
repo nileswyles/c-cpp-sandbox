@@ -169,7 +169,7 @@ static void process_sockopts(int fd) {
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);
 
     // read and print relevant options, ignore any error's reading... this is a nice to have...
-    if (LOGGER_LEVEL >= LOGGER_DEBUG) {
+    if (LOGGER_LEVEL >= LOGGER_DEBUG_VERBOSE) {
         uint32_t rcv_buf_size = 0;
         getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &rcv_buf_size, &uint32_t_len); // why pointer to len? also lame
         uint32_t snd_buf_size = 0;
@@ -185,7 +185,7 @@ static void process_sockopts(int fd) {
         uint8_t ret_keep_alive = 1;
         getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &ret_keep_alive, &byte_len);
 
-        loggerPrintf(LOGGER_DEBUG, "SOCK OPTS: \n KEEP_ALIVE %u\n SO_RCVBUF %u\n SO_RCVLOWAT %u\n SO_SNDLOWAT %u\n SO_RCVTIMEO %lds %ldus\n SO_SNDBUF %u\n SO_SNDTIMEO %lds %ldus\n", 
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "SOCK OPTS: \n KEEP_ALIVE %u\n SO_RCVBUF %u\n SO_RCVLOWAT %u\n SO_SNDLOWAT %u\n SO_RCVTIMEO %lds %ldus\n SO_SNDBUF %u\n SO_SNDTIMEO %lds %ldus\n", 
             ret_keep_alive, rcv_buf_size, 
             rcv_lo_wat, snd_lo_wat,
             rcv_timeout.tv_sec, rcv_timeout.tv_usec, 

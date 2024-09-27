@@ -7,6 +7,8 @@
 #include "json_array.h"
 #include "json_object.h"
 
+#include "transport.h"
+
 #ifndef LOGGER_JSON_PARSER
 #define LOGGER_JSON_PARSER 1
 #endif
@@ -365,7 +367,8 @@ extern JsonValue * WylesLibs::Parser::Json::parseFile(std::string file_path) {
         throw std::runtime_error(msg);
     }
     size_t i = 0;
-    Reader r(fd);
+    Transport io(fd);
+    Reader r(&io);
     JsonValue * json = parse(&r, i);
     close(fd);
     return json;

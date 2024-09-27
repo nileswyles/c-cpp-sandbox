@@ -12,14 +12,14 @@ class Connection {
         virtual uint8_t onConnection(int conn_fd) = 0;
 };
 
-class ConnectionUpgrader: public Connection {
+class ConnectionUpgrader {
     public:
         std::string path;
         std::string protocol;
 
         ConnectionUpgrader(std::string path, std::string protocol): path(path), protocol(protocol) {}
 
-        virtual uint8_t onConnection(int conn_fd) = 0;
+        virtual uint8_t onConnection(Transport * io) = 0;
 };
 
 }

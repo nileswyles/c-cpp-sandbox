@@ -12,6 +12,8 @@
 #include <fstream>
 #include <sys/stat.h>
 
+#include "transport.h"
+
 #ifndef LOGGER_FILE
 #define LOGGER_FILE 1
 #endif
@@ -64,7 +66,8 @@ static WylesLibs::Array<uint8_t> read(std::string file_path) {
     }
     struct stat stat_info = {};
     int lol = fstat(fd, &stat_info);
-    Reader r(fd);
+    Transport io(fd);
+    Reader r(&io);
     Array<uint8_t> file = r.readBytes(stat_info.st_size);
     close(fd);
     return file;

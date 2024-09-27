@@ -1,6 +1,5 @@
 #include "reader.h"
 
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -112,12 +111,7 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
 
 void Reader::fillBuffer() {
     this->cursor = 0;
-    ssize_t ret = -1;
-    if (this->ssl == nullptr) {
-        ret = read(this->r_fd, this->buf, this->buf_size);
-    } else {
-        ret = SSL_read(this->ssl, this->buf, this->buf_size);
-    }
+    int32_t ret = this->e_io->ioRead(this->buf, this->buf_size);
     // TODO: retry on EAGAIN?, revisit possible errors...
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
@@ -126,10 +120,10 @@ void Reader::fillBuffer() {
     } else {
         this->bytes_in_buffer = ret;
         loggerExec(LOGGER_DEBUG_VERBOSE,
-            if (this->ssl == nullptr) {
-                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
+            if (this->e_io->ssl == nullptr) {
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %d bytes from transport layer.\n", ret);
             } else {
-                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from tls layer.\n", ret);
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %d bytes from tls layer.\n", ret);
             }
         );
     }

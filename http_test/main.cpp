@@ -23,7 +23,7 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
 
         // this makes more sense extension of some Connection class?
         //  alright, I know I "c@n'T gr@MM@R" but definetly not that bad...
-        uint8_t onConnection(int conn_fd) {
+        uint8_t onConnection(Transport * io) {
             printf("Established websocket connection...\n");
 
             return 1;

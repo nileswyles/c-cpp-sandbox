@@ -116,7 +116,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
             // at 128Kb/s can transfer just under 2Mb (bits...) in 15s.
             //  if set min transfer rate at 128Kb/s, 
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
-            serverSetConnectionTimeout(reader->fd(), request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
+            serverSetConnectionTimeout(reader->io()->conn_fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
             Multipart::FormData::parse(reader, request->files, request->form_content);
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
@@ -125,9 +125,43 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
     }
 }
 
-// might need to change return type...
-// TODO: lol... yeah maybe don't write responses in these functions and return HttpResponse?
-bool HttpConnection::handleWebsocketRequest(SSL * ssl, int conn_fd, HttpRequest * request) {
+void HttpConnection::processRequest(Transport * io, HttpRequest * request) {
+        bool upgradedConnectionToWebsocket = this->handleWebsocketRequest(io, request);
+        if (upgradedConnectionToWebsocket) {
+            return;
+        }
+
+        HttpResponse * response = this->handleStaticRequest(request); 
+        if (response != nullptr) {
+            this->writeResponse(response, io);
+            return;
+        } 
+
+        if (HTTP_DEBUG) {
+            response = this->handleTimeoutRequests(io, request);
+            if (response != nullptr) {
+                this->writeResponse(response, io);
+                return;
+            }
+        }
+
+        // these should always produce a response, so sig need not include connection file descriptor..
+        if (this->processor == nullptr) {
+            response = this->requestDispatcher(request);
+        } else {
+            response = this->processor(request);
+        }
+        if (response == nullptr) {
+            std::string msg = "HttpResponse object is a nullptr.";
+            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
+        } else {
+               writeResponse(response, io);
+               return;
+        }
+}
+
+bool HttpConnection::handleWebsocketRequest(Transport * io, HttpRequest * request) {
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
         Array<std::string> protocols = request->fields["sec-websocket-protocol"];
@@ -175,10 +209,9 @@ bool HttpConnection::handleWebsocketRequest(SSL * ssl, int conn_fd, HttpRequest 
 
                     // // API not stable? lol...
                     // // EVP_EncodeBlock((unsigned char *)encodedData, (const unsigned char *)checksum, strlen(checksum));
-                    // std::string response_string = response.toString();
-                    // httpWrite(ssl, conn_fd, response_string.c_str(), response_string.size());
+                    this->writeResponse(&response, io);
 
-                    upgrader->onConnection(conn_fd);
+                    upgrader->onConnection(io);
 
                     // NOTE: the upgrade function should indefinetly block until the connection is intended to be closed.
                     upgraded = 1;
@@ -189,8 +222,8 @@ bool HttpConnection::handleWebsocketRequest(SSL * ssl, int conn_fd, HttpRequest 
     return upgraded;
 }
 
-bool HttpConnection::handleStaticRequest(SSL * ssl, int conn_fd, HttpRequest * request) {
-    bool handled = false;
+HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
+    HttpResponse * response = nullptr;
     std::string path;
     if (request->url.path == "/") {
 	    path = Paths::join(this->config.static_path, this->config.root_html_file);
@@ -199,29 +232,84 @@ bool HttpConnection::handleStaticRequest(SSL * ssl, int conn_fd, HttpRequest * r
     }
     std::string content_type = this->static_paths[path];
 	if (content_type != "") {
-        HttpResponse response;
+        response = new HttpResponse;
 		if (request->method == "HEAD" || request->method == "GET") {
             Array<uint8_t> file_data = File::read(path);
             char content_length[17];
 			sprintf(content_length, "%ld", file_data.size());
-            response.fields["Content-Length"] = std::string(content_length);
-			response.fields["Content-Type"] = content_type;
+            response->fields["Content-Length"] = std::string(content_length);
+			response->fields["Content-Type"] = content_type;
 			if (request->method == "GET") {
-				response.content = file_data;
+				response->content = file_data;
             }
-			response.status_code = "200";
+			response->status_code = "200";
 		} else {
-            response.status_code = "500";
+            response->status_code = "500";
         }
-        std::string response_string = response.toString();
-
-        // lol... the only thing you certainty is that there is no certainty! telefone it is...
-        httpWrite(ssl, conn_fd, response_string);
-        loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n", response_string.c_str());
-        handled = true;
 	}
 
-    return handled;
+    return response;
+}
+
+HttpResponse * HttpConnection::handleTimeoutRequests(Transport * io, HttpRequest * request) {
+    HttpResponse * response = nullptr;
+    if (request->url.path == "/timeout" && request->method == "POST") {
+        JsonObject * obj = (JsonObject *)request->json_content;
+        if (obj != nullptr) {
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
+            for (size_t i = 0; i < obj->keys.size(); i++) {
+                std::string key = obj->keys.at(i);
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
+                JsonValue * value = obj->values.at(i);
+                if (key == "socket") {
+                    serverSetInitialSocketTimeout(io->conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
+                } else if (key == "connection") {
+                    serverSetInitialConnectionTimeout(io->conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
+                }
+            }
+
+            std::string responseJson("{\"socket\":");
+            char timeout[11];
+            sprintf(timeout, "%d", serverGetSocketTimeout(io->conn_fd));
+            responseJson += timeout;
+
+            responseJson += ",\"connection\":";
+            sprintf(timeout, "%d", serverGetConnectionTimeout(io->conn_fd));
+            responseJson += timeout;
+            responseJson += "}";
+     
+            response = new HttpResponse;
+            response->status_code = "200";
+            Array<uint8_t> content;
+            content.append((uint8_t *)responseJson.data(), responseJson.size());
+            response->content = content;
+        }
+    } else if (request->url.path == "/timeout/socket" && request->method == "GET") {
+        std::string responseJson("{\"socket\":");
+        char timeout[11];
+        sprintf(timeout, "%d", serverGetSocketTimeout(io->conn_fd));
+        responseJson += timeout;
+        responseJson += "}";
+
+        response = new HttpResponse;
+        response->status_code = "200";
+        Array<uint8_t> content;
+        content.append((uint8_t *)responseJson.data(), responseJson.size());
+        response->content = content;
+    } else if (request->url.path == "/timeout/connection" && request->method == "GET") {
+        std::string responseJson("{\"connection\":");
+        char timeout[11];
+        sprintf(timeout, "%d", serverGetConnectionTimeout(io->conn_fd));
+        responseJson += timeout;
+        responseJson += "}";
+
+        response = new HttpResponse;
+        response->status_code = "200";
+        Array<uint8_t> content;
+        content.append((uint8_t *)responseJson.data(), responseJson.size());
+        response->content = content;
+    }
+    return response;
 }
 
 HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
@@ -248,153 +336,35 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
     return response;
 }
 
-bool HttpConnection::handleTimeoutRequests(SSL * ssl, int conn_fd, HttpRequest * request) {
-    bool handled = false;
-    if (request->url.path == "/timeout" && request->method == "POST") {
-        JsonObject * obj = (JsonObject *)request->json_content;
-        if (obj != nullptr) {
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
-            for (size_t i = 0; i < obj->keys.size(); i++) {
-                std::string key = obj->keys.at(i);
-                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
-                JsonValue * value = obj->values.at(i);
-                if (key == "socket") {
-                    serverSetInitialSocketTimeout(conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
-                } else if (key == "connection") {
-                    serverSetInitialConnectionTimeout(conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
-                }
-            }
-
-            std::string responseJson("{\"socket\":");
-            char timeout[11];
-            sprintf(timeout, "%d", serverGetSocketTimeout(conn_fd));
-            responseJson += timeout;
-
-            responseJson += ",\"connection\":";
-            sprintf(timeout, "%d", serverGetConnectionTimeout(conn_fd));
-            responseJson += timeout;
-            responseJson += "}";
-     
-            HttpResponse response;
-            response.status_code = "200";
-     
-            Array<uint8_t> content;
-            content.append((uint8_t *)responseJson.data(), responseJson.size());
-     
-            response.content = content;
-     
-            std::string response_string = response.toString();
-            httpWrite(ssl, conn_fd, response_string);
-            loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n", response_string.c_str());
-        }
-        handled = true;
-    } else if (request->url.path == "/timeout/socket" && request->method == "GET") {
-        std::string responseJson("{\"socket\":");
-        char timeout[11];
-        sprintf(timeout, "%d", serverGetSocketTimeout(conn_fd));
-        responseJson += timeout;
-        responseJson += "}";
-
-        HttpResponse response;
-        response.status_code = "200";
-
-        Array<uint8_t> content;
-        content.append((uint8_t *)responseJson.data(), responseJson.size());
-
-        response.content = content;
-
-        std::string response_string = response.toString();
-        httpWrite(ssl, conn_fd, response_string);
-        loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n\n", response_string.c_str());
-
-        handled = true;
-    } else if (request->url.path == "/timeout/connection" && request->method == "GET") {
-        std::string responseJson("{\"connection\":");
-        char timeout[11];
-        sprintf(timeout, "%d", serverGetConnectionTimeout(conn_fd));
-        responseJson += timeout;
-        responseJson += "}";
-
-        HttpResponse response;
-        response.status_code = "200";
-
-        Array<uint8_t> content;
-        content.append((uint8_t *)responseJson.data(), responseJson.size());
-
-        response.content = content;
-
-        std::string response_string = response.toString();
-        httpWrite(ssl, conn_fd, response_string);
-        loggerPrintf(LOGGER_DEBUG, "Wrote static response: \n%s\n\n", response_string.c_str());
-        handled = true;
-    }
-    loggerPrintf(LOGGER_DEBUG, "Processed timeout requests: %u\n", handled);
-    return handled;
-}
-
 uint8_t HttpConnection::onConnection(int conn_fd) {
     HttpRequest request;
     HttpResponse * response = nullptr;
 
     Reader reader;
     SSL * ssl = nullptr;
+    Transport * io = nullptr;
     try {
         // TODO: might not need the tls_enabled flag?
         if (this->config.tls_enabled) {
-            ssl = acceptTLS(conn_fd); // initializes ssl object for connection
-
-            // TODO: this should never be nullptr... but revisit
-            reader = Reader(ssl);
+            ssl = this->acceptTLS(conn_fd); // initializes ssl object for connection
+            SSLTransport sslIO(ssl);
+            io = (Transport *)&sslIO;
         } else {
-            reader = Reader(conn_fd);
+            Transport regularIO(conn_fd);
+            io = &regularIO;
         }
 
-        parseRequest(&request, &reader);
+        reader = Reader(io);
+        this->parseRequest(&request, &reader);
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
-        bool handled = handleStaticRequest(ssl, conn_fd, &request);
-        if (!handled) {
-            handled = handleWebsocketRequest(ssl, conn_fd, &request);
-        }
-        if (HTTP_DEBUG && !handled) {
-            handled = handleTimeoutRequests(ssl, conn_fd, &request);
-        }
-        if (!handled) {
-            // these should always produce a response, so sig need not include connection file descriptor..
-            if (this->processor == nullptr) {
-                response = this->requestDispatcher(&request);
-            } else {
-                response = this->processor(&request);
-            }
-            if (response == nullptr) {
-                std::string msg = "HttpResponse object is a nullptr.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-                throw std::runtime_error(msg);
-            } else {
-                std::string response_string = response->toString();
-                delete response;
-                free(response);
-
-                // TODO: SSL write abstraction....
-                int ret = httpWrite(ssl, conn_fd, response_string);
-                if (ret == -1) {
-                    loggerPrintf(LOGGER_DEBUG, "Error writing to connection file descriptor. Did the connection timer expire?: %d\n", errno);
-                }
-            }
-        }
+        this->processRequest(io, &request);
     } catch (const std::exception& e) {
         if (ssl == nullptr) {
             loggerPrintf(LOGGER_DEBUG, "Error accepting and configuring TLS connection.\n");
         } else {
-            delete response;
-            free(response);
-     
             // respond with empty HTTP status code 500
             HttpResponse err;
-            std::string err_string = err.toString();
-            int ret = httpWrite(ssl, conn_fd, err_string);
-            if (ret == -1) {
-                loggerPrintf(LOGGER_DEBUG, "Error writing to connection file descriptor. Did the connection timer expire?: %d\n", errno);
-            }
+            this->writeResponse(&err, io);
         }
         loggerPrintf(LOGGER_ERROR, "Exception thrown while processing request: %s\n", e.what());
     }
@@ -406,6 +376,16 @@ uint8_t HttpConnection::onConnection(int conn_fd) {
     close(conn_fd); // doc's say you shouldn't retry close so ignore ret
 
     return 1;
+}
+
+void HttpConnection::writeResponse(HttpResponse * response, Transport * io) {
+    std::string data = response->toString();
+    delete response;
+    free(response);
+
+    if (io->ioWrite((void *)data.c_str(), data.size()) == -1) {
+        loggerPrintf(LOGGER_DEBUG, "Error writing to connection file descriptor. Did the connection timer expire?: %d\n", errno);
+    }
 }
 
 SSL * HttpConnection::acceptTLS(int conn_fd) {
@@ -449,14 +429,4 @@ SSL * HttpConnection::acceptTLS(int conn_fd) {
 
         return ssl;
     }
-}
-
-int HttpConnection::httpWrite(SSL * ssl, int conn_fd, std::string data) {
-    int ret;
-    if (ssl != nullptr) {
-        ret = write(conn_fd, data.c_str(), data.size());
-    } else {
-        ret = SSL_write(ssl, data.c_str(), data.size());
-    }
-    return ret;
 }

@@ -4,7 +4,7 @@
 // TODO:
 //  lol... 
 //  revisit this... might be better to reader/reader_task.h and not include reader directory in build script...
-
+#include "transport.h"
 #include "reader_task.h"
 
 #include "array.h"
@@ -17,22 +17,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// TODO:
-// compiler flag to enable this...
-#include <openssl/ssl.h>
-
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
 namespace WylesLibs {
 // TODO: leverage RAII, containerize?
 class Reader {
     private:
-        int r_fd;
+        Transport * e_io;
         uint8_t * buf;
         size_t buf_size;
         size_t cursor;
         size_t bytes_in_buffer;
-        SSL * ssl;
         
         void fillBuffer();
         void cursorCheck();
@@ -44,37 +39,25 @@ class Reader {
             buf_size = pBuf_size;
             cursor = 0;
             // ! IMPORTANT - an exception is thrown if read past buffer. (see fillBuffer implementation)
-            r_fd = -1;
             bytes_in_buffer = pBuf_size;
+            e_io = nullptr;
         }
-        Reader(SSL * ssl) {
-            buf_size = READER_RECOMMENDED_BUF_SIZE;
-            cursor = 0;
-            r_fd = -1;
-            bytes_in_buffer = 0;
-            buf = newCArray<uint8_t>(buf_size);
-            ssl = ssl;
-        }
-        Reader(const int r_fd): Reader(r_fd, READER_RECOMMENDED_BUF_SIZE) {}
-        Reader(const int pFd, const size_t pBuf_size) {
-            if (pFd < 0) {
-                throw std::runtime_error("Invalid file descriptor provided.");
-            }
+        Reader(Transport * io): Reader(io, READER_RECOMMENDED_BUF_SIZE) {}
+        Reader(Transport * io, const size_t pBuf_size) {
             if (pBuf_size < 1) {
                 throw std::runtime_error("Invalid buffer size provided.");
             }
             buf_size = pBuf_size;
             cursor = 0;
-            r_fd = pFd;
             bytes_in_buffer = 0;
             buf = newCArray<uint8_t>(buf_size);
-            ssl = nullptr;
+            e_io = io;
         }
         ~Reader() {
             printf("Deconstructor called...\n");
             // delete[] buf;
         }
-        int fd() { return r_fd; }
+        Transport * io() { return e_io; }
         uint8_t peekByte();
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...
         // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...

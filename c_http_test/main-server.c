@@ -8,7 +8,7 @@
 #include <stdbool.h>
 
 #include "../c_lib/server.h"
-#include "../c_lib/reader.h"
+#include "../c_lib/iostream.h"
 
 // TODO: how to keep imports clean? don't want to rely on preprocessor stuff.?
 

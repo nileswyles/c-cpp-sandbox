@@ -41,13 +41,13 @@ using namespace WylesLibs::Parser;
 #define LOGGER_LEVEL LOGGER_LEVEL_HTTP
 #include "logger.h"
 
-static Url parseUrl(Reader * reader) {
+static Url parseUrl(IOStream * io) {
     Url url;
     // path = /aklmdla/aslmlamk(?)
-    Array<uint8_t> path = reader->readUntil("? ");
+    Array<uint8_t> path = io->readUntil("? ");
     if ((char)path.back() == '?') {
         // query = key=value&key2=value2
-        url.query_map = KeyValue::parse(reader, '&');
+        url.query_map = KeyValue::parse(io, '&');
     }
     // TODO: same as other comments... need to fix this...
     url.path = path.removeBack().removeBack().toString();
@@ -55,13 +55,13 @@ static Url parseUrl(Reader * reader) {
     return url;
 }
 
-void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
-    if (request == NULL || reader == NULL) {
+void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
+    if (request == NULL || io == NULL) {
         throw std::runtime_error("lol....");
     }
-    request->method = reader->readUntil(" ").removeBack().removeBack().toString();
-    request->url = parseUrl(reader);
-    request->version = reader->readUntil("\n").removeBack().removeBack().toString();
+    request->method = io->readUntil(" ").removeBack().removeBack().toString();
+    request->url = parseUrl(io);
+    request->version = io->readUntil("\n").removeBack().removeBack().toString();
 
     request->content_length = -1;
     int field_idx = 0; 
@@ -69,7 +69,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
     ReaderTaskLC lowercase;
     name_operation.nextOperation = &lowercase;
     while (field_idx < HTTP_FIELD_MAX) {
-        Array<uint8_t> field_name_array = reader->readUntil(":\n", &name_operation);
+        Array<uint8_t> field_name_array = io->readUntil(":\n", &name_operation);
         // if (field_name_array.back() == '\n') {
         //     break;
         // }
@@ -87,7 +87,7 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
         std::string field_value;
         char delimeter = 0x00;
         while (delimeter != '\n') {
-            Array<uint8_t> field_value_array = reader->readUntil(",\n", &value_operation);
+            Array<uint8_t> field_value_array = io->readUntil(",\n", &value_operation);
             delimeter = field_value_array.back();
             // TODO: this makes no sense...
             // lol... 
@@ -109,23 +109,23 @@ void HttpConnection::parseRequest(HttpRequest * request, Reader * reader) {
         loggerPrintf(LOGGER_DEBUG, "Content-Type: %s, Content-Length: %ld\n", request->fields["content-type"].front().c_str(), request->content_length);
         if ("application/json" == request->fields["content-type"].front()) {
             size_t i = 0;
-            request->json_content = Json::parse(reader, i);
+            request->json_content = Json::parse(io, i);
         } else if ("application/x-www-form-urlencoded" == request->fields["content-type"].front()) {
-            request->form_content = KeyValue::parse(reader, '&');
+            request->form_content = KeyValue::parse(io, '&');
         } else if ("multipart/formdata" == request->fields["content-type"].front()) {
             // at 128Kb/s can transfer just under 2Mb (bits...) in 15s.
             //  if set min transfer rate at 128Kb/s, 
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
-            serverSetConnectionTimeout(reader->io()->conn_fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
-            Multipart::FormData::parse(reader, request->files, request->form_content);
+            serverSetConnectionTimeout(io->fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
+            Multipart::FormData::parse(io, request->files, request->form_content);
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
-            request->content = reader->readBytes(request->content_length);
+            request->content = io->readBytes(request->content_length);
         }
     }
 }
 
-void HttpConnection::processRequest(Transport * io, HttpRequest * request) {
+void HttpConnection::processRequest(IOStream * io, HttpRequest * request) {
         bool upgradedConnectionToWebsocket = this->handleWebsocketRequest(io, request);
         if (upgradedConnectionToWebsocket) {
             return;
@@ -161,7 +161,7 @@ void HttpConnection::processRequest(Transport * io, HttpRequest * request) {
         }
 }
 
-bool HttpConnection::handleWebsocketRequest(Transport * io, HttpRequest * request) {
+bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request) {
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
         Array<std::string> protocols = request->fields["sec-websocket-protocol"];
@@ -251,7 +251,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
     return response;
 }
 
-HttpResponse * HttpConnection::handleTimeoutRequests(Transport * io, HttpRequest * request) {
+HttpResponse * HttpConnection::handleTimeoutRequests(IOStream * io, HttpRequest * request) {
     HttpResponse * response = nullptr;
     if (request->url.path == "/timeout" && request->method == "POST") {
         JsonObject * obj = (JsonObject *)request->json_content;
@@ -262,19 +262,19 @@ HttpResponse * HttpConnection::handleTimeoutRequests(Transport * io, HttpRequest
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if (key == "socket") {
-                    serverSetInitialSocketTimeout(io->conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
+                    serverSetInitialSocketTimeout(io->fd, (uint32_t)setVariableFromJsonValue<double>(value));
                 } else if (key == "connection") {
-                    serverSetInitialConnectionTimeout(io->conn_fd, (uint32_t)setVariableFromJsonValue<double>(value));
+                    serverSetInitialConnectionTimeout(io->fd, (uint32_t)setVariableFromJsonValue<double>(value));
                 }
             }
 
             std::string responseJson("{\"socket\":");
             char timeout[11];
-            sprintf(timeout, "%d", serverGetSocketTimeout(io->conn_fd));
+            sprintf(timeout, "%d", serverGetSocketTimeout(io->fd));
             responseJson += timeout;
 
             responseJson += ",\"connection\":";
-            sprintf(timeout, "%d", serverGetConnectionTimeout(io->conn_fd));
+            sprintf(timeout, "%d", serverGetConnectionTimeout(io->fd));
             responseJson += timeout;
             responseJson += "}";
      
@@ -287,7 +287,7 @@ HttpResponse * HttpConnection::handleTimeoutRequests(Transport * io, HttpRequest
     } else if (request->url.path == "/timeout/socket" && request->method == "GET") {
         std::string responseJson("{\"socket\":");
         char timeout[11];
-        sprintf(timeout, "%d", serverGetSocketTimeout(io->conn_fd));
+        sprintf(timeout, "%d", serverGetSocketTimeout(io->fd));
         responseJson += timeout;
         responseJson += "}";
 
@@ -299,7 +299,7 @@ HttpResponse * HttpConnection::handleTimeoutRequests(Transport * io, HttpRequest
     } else if (request->url.path == "/timeout/connection" && request->method == "GET") {
         std::string responseJson("{\"connection\":");
         char timeout[11];
-        sprintf(timeout, "%d", serverGetConnectionTimeout(io->conn_fd));
+        sprintf(timeout, "%d", serverGetConnectionTimeout(io->fd));
         responseJson += timeout;
         responseJson += "}";
 
@@ -336,26 +336,23 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
     return response;
 }
 
-uint8_t HttpConnection::onConnection(int conn_fd) {
+uint8_t HttpConnection::onConnection(int fd) {
     HttpRequest request;
     HttpResponse * response = nullptr;
-
-    Reader reader;
     SSL * ssl = nullptr;
-    Transport * io = nullptr;
+    IOStream * io = nullptr;
     try {
         // TODO: might not need the tls_enabled flag?
         if (this->config.tls_enabled) {
-            ssl = this->acceptTLS(conn_fd); // initializes ssl object for connection
-            SSLTransport sslIO(ssl, conn_fd);
-            io = (Transport *)&sslIO;
+            ssl = this->acceptTLS(fd); // initializes ssl object for connection
+            IOStream sslIO = IOStream(ssl);
+            io = (IOStream *)&sslIO;
         } else {
-            Transport regularIO(conn_fd);
+            IOStream regularIO(fd);
             io = &regularIO;
         }
 
-        reader = Reader(io);
-        this->parseRequest(&request, &reader);
+        this->parseRequest(&request, io);
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
         this->processRequest(io, &request);
     } catch (const std::exception& e) {
@@ -373,12 +370,12 @@ uint8_t HttpConnection::onConnection(int conn_fd) {
         SSL_shutdown(ssl);
         SSL_free(ssl);
     }
-    close(conn_fd); // doc's say you shouldn't retry close so ignore ret
+    close(fd); // doc's say you shouldn't retry close so ignore ret
 
     return 1;
 }
 
-void HttpConnection::writeResponse(HttpResponse * response, Transport * io) {
+void HttpConnection::writeResponse(HttpResponse * response, IOStream * io) {
     std::string data = response->toString();
     delete response;
     free(response);
@@ -388,7 +385,7 @@ void HttpConnection::writeResponse(HttpResponse * response, Transport * io) {
     }
 }
 
-SSL * HttpConnection::acceptTLS(int conn_fd) {
+SSL * HttpConnection::acceptTLS(int fd) {
     if (this->context == nullptr) {
         throw std::runtime_error("Server SSL Context isn't initialized. Check server configuration.");
     } else {
@@ -404,7 +401,7 @@ SSL * HttpConnection::acceptTLS(int conn_fd) {
         SSL_set_verify(ssl, verify_mode, nullptr);
         SSL_set_accept_state(ssl);
 
-        SSL_set_fd(ssl, conn_fd);
+        SSL_set_fd(ssl, fd);
 
         SSL_clear_mode(ssl, 0);
         // SSL_MODE_AUTO_RETRY

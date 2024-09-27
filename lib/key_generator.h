@@ -10,10 +10,8 @@
 #include "web/server_config.h"
 #include "paths.h"
 #include "file.h"
-#include "reader/reader.h"
+#include "iostream/iostream.h"
 #include "string_utils.h"
-
-#include "transport.h"
 
 // make sure global logger level is initialized
 #ifndef GLOBAL_LOGGER_LEVEL
@@ -47,8 +45,7 @@ class UniqueKeyGeneratorStore {
             // read value from existing file...
             int fd = open(file_path.c_str(), O_RDONLY);
             if (fd != -1) {
-                Transport io(fd);
-                Reader r(&io);
+                IOStream r(fd);
                 for (size_t i = 0; i < 16; i++) {
                     current = current << 4;
                     uint8_t byte = r.readByte();

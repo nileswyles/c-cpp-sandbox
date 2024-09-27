@@ -7,8 +7,6 @@
 #include "json_array.h"
 #include "json_object.h"
 
-#include "transport.h"
-
 #ifndef LOGGER_JSON_PARSER
 #define LOGGER_JSON_PARSER 1
 #endif
@@ -21,27 +19,27 @@ using namespace WylesLibs::Parser::Json;
 using namespace WylesLibs::Parser;
 using namespace WylesLibs;
 
-static void readWhiteSpaceUntil(Reader * r, std::string until);
+static void readWhiteSpaceUntil(IOStream * r, std::string until);
 
 // tree base
-static void parseNumber(JsonArray * obj, Reader * r);
-static void parseString(JsonArray * obj, Reader * r);
-static void parseImmediate(JsonArray * obj, Reader * r, std::string comp, JsonValue * value);
+static void parseNumber(JsonArray * obj, IOStream * r);
+static void parseString(JsonArray * obj, IOStream * r);
+static void parseImmediate(JsonArray * obj, IOStream * r, std::string comp, JsonValue * value);
 
 // base-ish (base and 1 at same time)...
-static void parseNestedObject(JsonArray * obj, Reader * r);
-static void parseArray(JsonArray * obj, Reader * r);
+static void parseNestedObject(JsonArray * obj, IOStream * r);
+static void parseArray(JsonArray * obj, IOStream * r);
 
 // 2 
-static void parseValue(JsonArray * obj, Reader * r);
-static bool parseKey(JsonObject * obj, Reader * r);
+static void parseValue(JsonArray * obj, IOStream * r);
+static bool parseKey(JsonObject * obj, IOStream * r);
 
 // 1
-static void parseObject(JsonObject * obj, Reader * r);
+static void parseObject(JsonObject * obj, IOStream * r);
 
 // TODO: move to reader? but extend further? 
 //  ignore/allow and strict options...
-static void readWhiteSpaceUntil(Reader * r, std::string until) {
+static void readWhiteSpaceUntil(IOStream * r, std::string until) {
     char c = r->peekByte();
     loggerPrintf(LOGGER_DEBUG, "Reading Whitespace Until: %s, %c\n", until.c_str(), c);
     if (until.find(c) != std::string::npos) {
@@ -59,7 +57,7 @@ static void readWhiteSpaceUntil(Reader * r, std::string until) {
     // cursor == until...
 }
 
-static void parseNumber(JsonArray * obj, Reader * r) {
+static void parseNumber(JsonArray * obj, IOStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number\n");
     int8_t sign = 1;
     int8_t exponential_sign = 0;
@@ -140,7 +138,7 @@ static void parseNumber(JsonArray * obj, Reader * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsed Number\n");
 }
 
-static void parseString(JsonArray * obj, Reader * r) {
+static void parseString(JsonArray * obj, IOStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing String\n");
 
     r->readByte(); // consume starting quote
@@ -206,7 +204,7 @@ static void parseString(JsonArray * obj, Reader * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
 }
 
-static void parseImmediate(JsonArray * obj, Reader * r, std::string comp, JsonValue * value) {
+static void parseImmediate(JsonArray * obj, IOStream * r, std::string comp, JsonValue * value) {
     loggerPrintf(LOGGER_DEBUG, "Parsing %s\n", comp.c_str());
 
     std::string actual = r->readBytes(comp.size()).toString();
@@ -220,7 +218,7 @@ static void parseImmediate(JsonArray * obj, Reader * r, std::string comp, JsonVa
     }
 }
 
-static void parseNestedObject(JsonArray * arr, Reader * r) {
+static void parseNestedObject(JsonArray * arr, IOStream * r) {
     char c = r->peekByte();
     if (c == '{') {
         JsonObject * new_obj = new JsonObject(arr->depth + 1);
@@ -233,7 +231,7 @@ static void parseNestedObject(JsonArray * arr, Reader * r) {
     loggerPrintf(LOGGER_DEBUG, "Returning object, found %c\n", c);
 }
 
-static void parseArray(JsonArray * arr, Reader * r) {
+static void parseArray(JsonArray * arr, IOStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array\n");
 
     char c = r->readByte();
@@ -250,7 +248,7 @@ static void parseArray(JsonArray * arr, Reader * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsed Array\n");
 }
 
-static void parseValue(JsonArray * obj, Reader * r) {
+static void parseValue(JsonArray * obj, IOStream * r) {
     char c = r->peekByte();
     bool parsed = false;
     // read until , or } or parsed token...
@@ -306,7 +304,7 @@ static void parseValue(JsonArray * obj, Reader * r) {
     }
 }
 
-static bool parseKey(JsonObject * obj, Reader * r) {
+static bool parseKey(JsonObject * obj, IOStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Key. %c\n", r->peekByte());
 
     ReaderTaskExtract extract('"', '"');
@@ -342,7 +340,7 @@ static bool parseKey(JsonObject * obj, Reader * r) {
     return true;
 }
 
-static void parseObject(JsonObject * obj, Reader * r) {
+static void parseObject(JsonObject * obj, IOStream * r) {
     char c = r->readByte();
     while (c != '}') {
         if (c == '{' || c == ',') {
@@ -367,8 +365,7 @@ extern JsonValue * WylesLibs::Parser::Json::parseFile(std::string file_path) {
         throw std::runtime_error(msg);
     }
     size_t i = 0;
-    Transport io(fd);
-    Reader r(&io);
+    IOStream r(fd);
     JsonValue * json = parse(&r, i);
     close(fd);
     return json;
@@ -383,7 +380,7 @@ extern JsonValue * WylesLibs::Parser::Json::parse(std::string json) {
         throw std::runtime_error(msg);
     }
     size_t i = 0;
-    Reader r((uint8_t *)json.data(), json.size());
+    IOStream r((uint8_t *)json.data(), json.size());
     return parse(&r, i);
 }
 
@@ -394,7 +391,7 @@ extern JsonValue * WylesLibs::Parser::Json::parse(Array<uint8_t> json) {
         throw std::runtime_error(msg);
     }
     size_t i = 0;
-    Reader r(json.buf(), json.size());
+    IOStream r(json.buf(), json.size());
     return parse(&r, i);
 }
 
@@ -404,7 +401,7 @@ extern JsonValue * WylesLibs::Parser::Json::parse(Array<uint8_t> json) {
 //      and .at() bounds checks (exceptions), [] doesn't
     // string construction? iterates over string to get length? that might be reason enough to change back to pointers lol... or maybe copy constructor is optimized? yeah
     //  but still that initial creation... 
-extern JsonValue * WylesLibs::Parser::Json::parse(Reader * r, size_t& i) {
+extern JsonValue * WylesLibs::Parser::Json::parse(IOStream * r, size_t& i) {
     readWhiteSpaceUntil(r, "{[");
 
     JsonValue * obj = nullptr;

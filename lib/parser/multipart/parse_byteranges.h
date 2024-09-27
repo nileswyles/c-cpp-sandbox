@@ -12,7 +12,7 @@ using WylesLibs::Parser;
 
 namespace WylesLibs::Parser::Multipart::ByteRanges {
 // lol, still valid for client code...
-static void parse(Reader * r, MultipartFile& file) {
+static void parse(IOStream * r, MultipartFile& file) {
     while (1) {
         Array<uint8_t> potential_boundary = r->readUntil("\n"); // read and consume boundary string
         if (potential_boundary.buf[0] == '-' && potential_boundary.buf[1] == '-') {

@@ -30,7 +30,7 @@ $ROOT_DIR/lib/parser/json/json_mapper.cpp
 $ROOT_DIR/lib/parser/json/json_object.cpp
 $ROOT_DIR/lib/parser/json/json_array.cpp
 $ROOT_DIR/lib/test/tester.cpp
-$ROOT_DIR/lib/reader/reader.cpp
+$ROOT_DIR/lib/iostream/iostream.cpp
 "
 
 mkdir $ROOT_DIR/out

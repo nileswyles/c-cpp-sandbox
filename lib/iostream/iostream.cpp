@@ -1,7 +1,9 @@
-#include "reader.h"
+#include "iostream.h"
 
 #include <stdlib.h>
 #include <string.h>
+
+#include <unistd.h>
 
 #include "global_consts.h"
 
@@ -29,18 +31,26 @@
 
 using namespace WylesLibs;
 
-uint8_t Reader::peekByte() {
+uint8_t IOStream::peekByte() {
     this->cursorCheck();
     return this->buf[this->cursor];
 }
 
-uint8_t Reader::readByte() {
+uint8_t IOStream::readByte() {
     uint8_t byte = peekByte();
     this->cursor++;
     return byte;
 }
 
-Array<uint8_t> Reader::readBytes(const size_t n) {
+ssize_t IOStream::writeBuffer(void * p_buf, size_t size) {
+    if (this->ssl == nullptr) {
+        return SSL_write(this->ssl, p_buf, size);
+    } else {
+        return write(this->fd, p_buf, size);
+    }
+}
+
+Array<uint8_t> IOStream::readBytes(const size_t n) {
     this->cursorCheck();
 
     Array<uint8_t> data;
@@ -65,7 +75,7 @@ Array<uint8_t> Reader::readBytes(const size_t n) {
     return data;
 }
 
-Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
+Array<uint8_t> IOStream::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
     // # less clunky
     if (operation != nullptr) {
         operation->read_until = until;
@@ -109,9 +119,14 @@ Array<uint8_t> Reader::readUntil(std::string until, ReaderTask * operation, bool
     return data;
 }
 
-void Reader::fillBuffer() {
+void IOStream::fillBuffer() {
     this->cursor = 0;
-    ssize_t ret = this->e_io->readBuffer(this->buf, this->buf_size);
+    ssize_t ret = -1;
+    if (this->ssl == nullptr) {
+        ret = read(this->fd, this->buf, this->buf_size);
+    } else {
+        ret = SSL_read(this->ssl, this->buf, this->buf_size);
+    }
     // TODO: retry on EAGAIN?, revisit possible errors...
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
@@ -120,7 +135,7 @@ void Reader::fillBuffer() {
     } else {
         this->bytes_in_buffer = ret;
         loggerExec(LOGGER_DEBUG_VERBOSE,
-            if (this->e_io->ssl == nullptr) {
+            if (this->ssl == nullptr) {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
             } else {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from tls layer.\n", ret);
@@ -129,7 +144,7 @@ void Reader::fillBuffer() {
     }
 }
 
-void Reader::cursorCheck() {
+void IOStream::cursorCheck() {
     if (this->cursor >= this->bytes_in_buffer) {
         fillBuffer();
     }
@@ -139,7 +154,7 @@ void Reader::cursorCheck() {
 //  streamify, these as well.
 //  also, think about what other generalizations can be made - think map/reduce/filter/collect
 //  some of the afforementioned operations are already accounted for.
-void Reader::readDecimal(double& value, size_t& digit_count) {
+void IOStream::readDecimal(double& value, size_t& digit_count) {
     double decimal_divisor = 10;
     char c = this->peekByte();
     while (isDigit(c)) {
@@ -156,7 +171,7 @@ void Reader::readDecimal(double& value, size_t& digit_count) {
     }
 }
 
-void Reader::readNatural(double& value, size_t& digit_count) {
+void IOStream::readNatural(double& value, size_t& digit_count) {
     char c = this->peekByte();
     while (isDigit(c)) {
         this->readByte();

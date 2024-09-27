@@ -14,7 +14,7 @@ using namespace WylesLibs;
 
 namespace WylesLibs::Parser::Multipart::FormData {
 //
-static void parse(Reader * r, Array<MultipartFile> files, unordered_map<std::string, std::string> form_content) {
+static void parse(IOStream * r, Array<MultipartFile> files, unordered_map<std::string, std::string> form_content) {
     while (1) {
         std::string field_name;
         bool is_file = false;

@@ -1,5 +1,5 @@
 #include "tester.h"
-#include "reader.h"
+#include "iostream.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -58,8 +58,7 @@ void assert(std::string result, std::string expected) {
 
 // void testReadUntil(TestArg * t) {
 void testReadUntil() {
-    Transport io(1);
-    Reader reader(&io, READER_RECOMMENDED_BUF_SIZE);
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
@@ -73,8 +72,7 @@ void testReadUntil() {
 }
 
 void testReadUntilUpperCase() {
-    Transport io(1);
-    Reader reader(&io, READER_RECOMMENDED_BUF_SIZE);
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
@@ -89,8 +87,7 @@ void testReadUntilUpperCase() {
 }
 
 void testReadUntilLowerCase() {
-    Transport io(1);
-    Reader reader(&io, READER_RECOMMENDED_BUF_SIZE);
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;

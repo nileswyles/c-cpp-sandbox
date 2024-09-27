@@ -19,7 +19,7 @@ class ConnectionUpgrader {
 
         ConnectionUpgrader(std::string path, std::string protocol): path(path), protocol(protocol) {}
 
-        virtual uint8_t onConnection(Transport * io) = 0;
+        virtual uint8_t onConnection(IOStream * io) = 0;
 };
 
 }

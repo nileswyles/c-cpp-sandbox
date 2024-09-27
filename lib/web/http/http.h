@@ -12,8 +12,7 @@
 
 #include <filesystem>
 
-#include "reader/reader.h"
-#include "transport.h"
+#include "iostream/iostream.h"
 #include "web/server.h"
 #include "config.h"
 #include "connection.h"
@@ -118,17 +117,17 @@ class HttpConnection {
 
         SSL_CTX * context;
 
-        void parseRequest(HttpRequest * request, Reader * reader);
-        void processRequest(Transport * io, HttpRequest * request);
+        void parseRequest(HttpRequest * request, IOStream * reader);
+        void processRequest(IOStream * io, HttpRequest * request);
 
-        bool handleWebsocketRequest(Transport * io, HttpRequest * request);
+        bool handleWebsocketRequest(IOStream * io, HttpRequest * request);
         HttpResponse * handleStaticRequest(HttpRequest * request);
-        HttpResponse * handleTimeoutRequests(Transport * io, HttpRequest * request);
+        HttpResponse * handleTimeoutRequests(IOStream * io, HttpRequest * request);
 
         HttpResponse * requestDispatcher(HttpRequest * request);
 
         SSL * acceptTLS(int conn_fd);
-        void writeResponse(HttpResponse * response, Transport * io);
+        void writeResponse(HttpResponse * response, IOStream * io);
 
         void initializeStaticPaths(HttpServerConfig config, std::unordered_map<std::string, std::string> * static_paths) {
             loggerPrintf(LOGGER_DEBUG, "Static Paths: %s\n", config.static_path.c_str());

@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "array.h"
-#include "reader/reader.h"
+#include "iostream/iostream.h"
 
 #include "global_consts.h"
 
@@ -132,7 +132,7 @@ class JsonString: public JsonValue {
 extern JsonValue * parseFile(std::string file_path);
 extern JsonValue * parse(std::string json);
 extern JsonValue * parse(Array<uint8_t> json);
-extern JsonValue * parse(Reader * r, size_t& i);
+extern JsonValue * parse(IOStream * r, size_t& i);
 
 extern std::string pretty(std::string json);
 

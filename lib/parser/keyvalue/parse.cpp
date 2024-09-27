@@ -8,12 +8,12 @@ std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
-    Reader r((uint8_t *)s.data(), s.size());
+    IOStream r((uint8_t *)s.data(), s.size());
     return parse(&r, key_delim, delim);
 }
 
 // ! IMPORTANT - Newline after kv string is required.
-std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(Reader * reader, char key_delim, char delim) {
+std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(IOStream * reader, char key_delim, char delim) {
     std::unordered_map<std::string, std::string> data;
 
     std::string delim_string = "\n";

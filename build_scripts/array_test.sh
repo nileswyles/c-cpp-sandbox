@@ -25,7 +25,7 @@ QUOTE_INCLUDE_ROOT=$ROOT_DIR/lib
 SRC_FILES="
 $ROOT_DIR/lib/test/array_test.cpp
 $ROOT_DIR/lib/test/tester.cpp
-$ROOT_DIR/lib/reader/reader.cpp
+$ROOT_DIR/lib/iostream/iostream.cpp
 $ROOT_DIR/lib/array.cpp
 "
 

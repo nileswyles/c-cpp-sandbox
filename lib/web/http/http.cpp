@@ -49,7 +49,12 @@ static Url parseUrl(IOStream * io) {
         // query = key=value&key2=value2
         url.query_map = KeyValue::parse(io, '&');
     }
-    url.path = path.removeBack().toString();
+
+    // TODO: because removeBack functionality of the array class isn't working...
+    //  IOStream can probably use string for readuntil but let's roll with this for now.
+    //  Hesitant for obvious reasons...
+    std::string pathString = path.toString();
+    url.path = pathString.substr(0, pathString.size()-1);
 
     return url;
 }
@@ -59,8 +64,12 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
         throw std::runtime_error("lol....");
     }
     request->method = io->readUntil(" ").removeBack().toString();
+    request->method = request->method.substr(0, request->method.size()-1);
+
     request->url = parseUrl(io);
+
     request->version = io->readUntil("\n").removeBack().toString();
+    request->version = request->version.substr(0, request->version.size()-1);
 
     request->content_length = -1;
     int field_idx = 0; 
@@ -68,26 +77,35 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
     ReaderTaskLC lowercase;
     name_operation.nextOperation = &lowercase;
     while (field_idx < HTTP_FIELD_MAX) {
-        Array<uint8_t> field_name_array = io->readUntil(":\n", &name_operation);
-        if (field_name_array.back() == (uint8_t)'\n') {
+        std::string field_name = io->readUntil(":\n", &name_operation).toString();
+        if (field_name[field_name.size()-1] == '\n') {
             printf("FOUND EMPTY NEW LINE AFTER PARSING FIELDS\n");
             break;
         }
-        std::string field_name = field_name_array.removeBack().toString();
+        field_name = field_name.substr(0, field_name.size()-1);
+
+        loggerPrintf(LOGGER_DEBUG, "field_name: '%s'\n", field_name.c_str());
+
         ReaderTaskDisallow value_operation("\t ");
         if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name.c_str())) {
             value_operation.nextOperation = &lowercase;
         }
         field_idx++;
-        std::string field_value;
         char delimeter = 0x00;
         while (delimeter != '\n') {
-            Array<uint8_t> field_value_array = io->readUntil(",\n", &value_operation);
-            delimeter = field_value_array.back();
-            field_value = field_value_array.removeBack().toString();
-            request->fields[field_name].append(field_value);
-            if (field_name == "content-length") {
-                request->content_length = atoi(field_value.c_str());
+            std::string field_value = io->readUntil(",\n", &value_operation).toString();
+            // if size == 0, throw an exception idc...
+            delimeter = (char)field_value[field_value.size()-1];
+            // only process field if it's an actual field, else check delimeter in while loop...
+            if (field_value.size() >= 2) {
+                field_value = field_value.substr(0, field_value.size()-1);
+
+                loggerPrintf(LOGGER_DEBUG, "delimeter: '%c', field_value: '%s'\n", delimeter, field_value.c_str());
+         
+                request->fields[field_name].append(field_value);
+                if (field_name == "content-length") {
+                    request->content_length = atoi(field_value.c_str());
+                }
             }
         }
     }
@@ -116,16 +134,16 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
 }
 
 void HttpConnection::processRequest(IOStream * io, HttpRequest * request) {
-        bool upgradedConnectionToWebsocket = this->handleWebsocketRequest(io, request);
-        if (upgradedConnectionToWebsocket) {
-            return;
-        }
-
         HttpResponse * response = this->handleStaticRequest(request); 
         if (response != nullptr) {
             this->writeResponse(response, io);
             return;
         } 
+
+        bool upgradedConnectionToWebsocket = this->handleWebsocketRequest(io, request);
+        if (upgradedConnectionToWebsocket) {
+            return;
+        }
 
         if (HTTP_DEBUG) {
             response = this->handleTimeoutRequests(io, request);

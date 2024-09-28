@@ -476,12 +476,23 @@ class Array {
             return *this;
         }
         // Move
-        // Array(T&& x) : e_cap(x.cap()), e_size(x.size()), buf(x.buf) {}
-        // T& operator= (T&& x) {
-        //     this->buf = x.buf; // lol.. this seems like not the right way to do this?
-        //     //  let's find out...
-        //     this->cap() = x.cap();
-        //     this->size() = x.size();
+        // Array(Array<T>&& x) {
+        //     this->instance_count = x.instance_count;
+        //     this->e_buf = x.e_buf;
+        //     this->e_cap = x.e_cap;
+        //     this->e_size = x.e_size;
+        //     this->e_sorted = x.e_sorted;
+
+        //     (*this->instance_count)++;
+        // }
+        // Array<T>& operator= (Array<T>&& x) {
+        //     this->instance_count = x.instance_count;
+        //     this->e_buf = x.e_buf;
+        //     this->e_cap = x.e_cap;
+        //     this->e_size = x.e_size;
+        //     this->e_sorted = x.e_sorted;
+
+        //     (*this->instance_count)++;
         //     return *this;
         // }
 };

@@ -310,13 +310,16 @@ static bool parseKey(JsonObject * obj, IOStream * r) {
     ReaderTaskExtract extract('"', '"');
     Array<uint8_t> key = r->readUntil(":}", &extract);
 
+    std::string key_string = key.toString();
+    loggerPrintf(LOGGER_DEBUG, "Parsed Key String with delimeter: %s|\n", key_string.c_str());
+
     uint8_t until_match = key.back();
     if (until_match == (uint8_t)'}') {
         loggerPrintf(LOGGER_DEBUG, "Found end of object. %s\n", key.toString().c_str());
         return false;
     }
-    std::string key_string = key.removeBack().toString();
     size_t size = key_string.size();
+    key_string = key_string.substr(0, size-1);
     if (size == 0) {
         std::string msg = "Empty key string found.";
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
@@ -327,7 +330,7 @@ static bool parseKey(JsonObject * obj, IOStream * r) {
         throw std::runtime_error(msg);
     }
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s\n", key_string.c_str());
+    loggerPrintf(LOGGER_DEBUG, "Parsed Key String: %s|\n", key_string.c_str());
 
     obj->addKey(key_string);
 

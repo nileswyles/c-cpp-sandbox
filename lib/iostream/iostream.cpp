@@ -135,6 +135,9 @@ void IOStream::fillBuffer() {
 #else 
     ret = read(this->fd, this->buf, this->buf_size);
 #endif
+    // Example error
+    // EAGAIN
+
     // TODO: retry on EAGAIN?, revisit possible errors...
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;

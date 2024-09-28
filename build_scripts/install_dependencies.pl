@@ -11,6 +11,13 @@
 #     }
 # }
 
+# assumes ubuntu jammy
+
+# important dependencies
+# https://packages.ubuntu.com/jammy/libssl-dev - current version of openssl is 3.0.2
+#   should be fine if major stays at 3.
+
+# 
 system("apt update");
 
 system("apt install -y g++");

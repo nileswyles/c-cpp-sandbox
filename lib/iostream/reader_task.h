@@ -62,19 +62,19 @@ class ReaderTaskChain: public ReaderTask {
     public:
         bool ignored;
         ReaderTaskChain * nextOperation;
-        ReaderTaskChain(): nextOperation(nullptr) {}
-        ReaderTaskChain(ReaderTaskChain * next): nextOperation(next) {}
+        ReaderTaskChain(): nextOperation(nullptr), ignored(false) {}
+        ReaderTaskChain(ReaderTaskChain * next): nextOperation(next), ignored(false) {}
 
         void next(Array<uint8_t>& buffer, uint8_t c) {
             if (this->nextOperation == nullptr) {
                 if (!this->ignored) {
                     buffer.append(c);
-                } else {
-                    this->ignored = false;
                 }
             } else {
+                this->nextOperation->ignored = this->ignored; // order in chain shouldn't matter... project ignored onto next task.
                 this->nextOperation->perform(buffer, c);
             }
+            this->ignored = false;
         }
         void flush(Array<uint8_t>& buffer) {}
         virtual void perform(Array<uint8_t>& buffer, uint8_t c) = 0;

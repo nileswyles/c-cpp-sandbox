@@ -80,19 +80,11 @@ int main(int argc, char * argv[]) {
         Array<ConnectionUpgrader *> upgraders;
         WebsocketJsonRpcConnection upgrader("/testpath", "jsonrpc");
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created upgrader object.\n");
-        // WebsocketCastProtobufConnection upgrader("/testpath", "cast-protobuf"); LOL
-        // WebsocketCastJsonRpcConnection upgrader("/testpath", "cast-jsonrpc"); LOL
+
+        ConnectionUpgrader * upgrader_ptr = &upgrader;
+        upgraders.append(upgrader_ptr);
+        // upgraders.append(&upgrader_ptr, 1);
     
-        // WebsocketCastProtobufConnection upgrader("/test-cast-protobuf"); LOL
-        // WebsocketCastJsonRpcConnection upgrader("/test-cast-jsonrpc"); LOL
-    
-        // hmmmmm... if only this weren't so................
-        // ConnectionUpgrader * lame = &upgrader;
-        // upgraders.append(lame);
-        // upgraders.append((ConnectionUpgrader *)&upgrader);
-        // lol...
-    
-        // alright, still a shit ton of open questions but this should work?
         connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders); 
         connection.initialize();
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");

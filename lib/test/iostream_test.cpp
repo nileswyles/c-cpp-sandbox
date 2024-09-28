@@ -182,6 +182,11 @@ int main(int argc, char * argv[]) {
     // Tester t;
 
     testReadUntil();
+
+    // TODO: bug fix/feature needed... if we reach an "until" character while r_trimming (when open, before right_most_char is reached), then we will exit.
+    //  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ":": should yield :: not :. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
+    // make sure to write a test.
+
     // testReadUntilUpperCase();
     // testReadUntilLowerCase();
     // t.addTest(testReadUntil);

@@ -49,8 +49,7 @@ static Url parseUrl(IOStream * io) {
         // query = key=value&key2=value2
         url.query_map = KeyValue::parse(io, '&');
     }
-    // TODO: same as other comments... need to fix this...
-    url.path = path.removeBack().removeBack().toString();
+    url.path = path.removeBack().toString();
 
     return url;
 }
@@ -59,9 +58,9 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
     if (request == NULL || io == NULL) {
         throw std::runtime_error("lol....");
     }
-    request->method = io->readUntil(" ").removeBack().removeBack().toString();
+    request->method = io->readUntil(" ").removeBack().toString();
     request->url = parseUrl(io);
-    request->version = io->readUntil("\n").removeBack().removeBack().toString();
+    request->version = io->readUntil("\n").removeBack().toString();
 
     request->content_length = -1;
     int field_idx = 0; 
@@ -74,11 +73,11 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
         //     break;
         // }
         // TODO: again this makes no sense.
-        if (field_name_array.size() >= 2 && field_name_array.buf()[field_name_array.size()-2] == '\n') {
+        if (field_name_array.back() == (uint8_t)'\n') {
             printf("FOUND EMPTY NEW LINE AFTER PARSING FIELDS\n");
             break;
         }
-        std::string field_name = field_name_array.removeBack().removeBack().toString();
+        std::string field_name = field_name_array.removeBack().toString();
         ReaderTaskDisallow value_operation("\t ");
         if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name.c_str())) {
             value_operation.nextOperation = &lowercase;
@@ -89,12 +88,7 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
         while (delimeter != '\n') {
             Array<uint8_t> field_value_array = io->readUntil(",\n", &value_operation);
             delimeter = field_value_array.back();
-            // TODO: this makes no sense...
-            // lol... 
-            if (field_value_array.size() >= 2) {
-                delimeter = field_value_array.buf()[field_value_array.size()-2];
-            }
-            field_value = field_value_array.removeBack().removeBack().toString();
+            field_value = field_value_array.removeBack().toString();
             request->fields[field_name].append(field_value);
             if (field_name == "content-length") {
                 request->content_length = atoi(field_value.c_str());
@@ -165,22 +159,23 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING WEBSOCKET REQUEST\n");
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
+        printf("IS WEBSOCKET UPGRADE REQUEST!\n");
         Array<std::string> protocols = request->fields["sec-websocket-protocol"];
         for (size_t i = 0; i < protocols.size(); i++) {
             for (size_t x = 0; i < this->upgraders.size(); i++) {
                 std::string protocol = protocols[i];
                 ConnectionUpgrader * upgrader = this->upgraders[i];
-
+                printf("Searching configured upgraders\n");
                 if (upgrader->path == request->url.path && protocol == upgrader->protocol) {
-                    printf("Websocket upgrade request...");
-                    HttpResponse response;
+                    printf("Is valid Websocket upgrade request...");
+                    HttpResponse * response = new HttpResponse;
 
-                    response.status_code = "101"; 
-                    response.fields["Upgrade"] = "websocket";
-                    response.fields["Connection"] = "upgrade";
-                    response.fields["Sec-Websocket-Protocol"] = protocol;
-                    response.fields["Sec-WebSocket-Version"] = "13";
-                    response.fields["Sec-WebSocket-Extensions"] = "";
+                    response->status_code = "101"; 
+                    response->fields["Upgrade"] = "websocket";
+                    response->fields["Connection"] = "upgrade";
+                    response->fields["Sec-Websocket-Protocol"] = protocol;
+                    response->fields["Sec-WebSocket-Version"] = "13";
+                    response->fields["Sec-WebSocket-Extensions"] = "";
 
                     // not sure what this is doing, but if that's what the browser wants lmao..
                     std::string key_string = request->fields["sec-websocket-key"].toString() + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -200,7 +195,7 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
 
                     printf(base64_encoded);
                     printf(message_digest);
-                    response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
+                    response->fields["Sec-WebSocket-Accept"] = std::string(message_digest);
                     BIO_flush(b64);
                     printf(base64_encoded);
                     printf(message_digest);
@@ -210,7 +205,7 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
 
                     // // API not stable? lol...
                     // // EVP_EncodeBlock((unsigned char *)encodedData, (const unsigned char *)checksum, strlen(checksum));
-                    this->writeResponse(&response, io);
+                    this->writeResponse(response, io);
 
                     upgrader->onConnection(io);
 
@@ -341,7 +336,6 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
 
 uint8_t HttpConnection::onConnection(int fd) {
     HttpRequest request;
-    HttpResponse * response = nullptr;
     IOStream io(fd);
     try {
         if (this->config.tls_enabled) {
@@ -351,15 +345,15 @@ uint8_t HttpConnection::onConnection(int fd) {
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
         this->processRequest(&io, &request);
     } catch (const std::exception& e) {
+        loggerPrintf(LOGGER_ERROR, "Exception thrown while processing request: %s\n", e.what());
         if (this->config.tls_enabled && io.ssl == nullptr) {
             // then deduce error occured while initializing ssl
             loggerPrintf(LOGGER_DEBUG, "Error accepting and configuring TLS connection.\n");
         } else {
             // respond with empty HTTP status code 500
-            HttpResponse err;
-            this->writeResponse(&err, &io);
+            HttpResponse * err = new HttpResponse;
+            writeResponse(err, &io);
         }
-        loggerPrintf(LOGGER_ERROR, "Exception thrown while processing request: %s\n", e.what());
     }
 
     if (io.ssl != nullptr) {

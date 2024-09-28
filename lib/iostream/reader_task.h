@@ -220,6 +220,8 @@ class ReaderTaskExtract: public ReaderTask {
             this->r_trimming = false;
         }
 
+        // TODO: bug fix/feature needed... if we reach an "until" character while r_trimming (when open, before right_most_char is reached), then we will exit.
+        //  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ":": should yield :: not :. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
         void perform(Array<uint8_t>& buffer, uint8_t c) {
             if (!this->l_trimming) {
                 if (this->right_most_char == c) {
@@ -230,7 +232,7 @@ class ReaderTaskExtract: public ReaderTask {
                         // if extracting token and right_most_char found, flush and include right_most
                         // "blablbl" bblbnlbl    | == exception 
                         // "blablbl"    | == blablbl 
-                        // "blablbl" " alknla| == blablbl 
+                        // "blablbl" " alknla| == blablbl - SEE TODO above... this might change.
                         rTrimFlush(buffer);
                         this->r_trim.append(c);
                         // buffer.append(c);

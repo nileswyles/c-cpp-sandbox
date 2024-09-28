@@ -1,4 +1,30 @@
 <!doctype html>
+<script>
+  var s
+  function wsConnect(path, protocol) {
+    let ws_protocol = "wss:";
+    if (location.protocol === "http:") {
+        ws_protocol = "ws:";
+    }
+    let socket = new WebSocket(`${ws_protocol}//${location.host}${path}`, protocol);
+    socket.addEventListener("open", (event) => {
+        console.log(event);
+        socket.send("\0\0\x01");
+    });
+    socket.addEventListener("closed", (event) => {
+         console.log(event)
+         s = wsConnect("/testpath", "jsonrpc")
+    });
+    socket.addEventListener("error", (event) => {
+        console.log("WebSocket error: ", event);
+        console.log("WebSocket error: ", event.message);
+    });
+    return socket
+  }
+
+  s = wsConnect("/testpath", ["jsonrpc"])
+</script>
+
 <html>
   <head>
     <title>This is the title of the webpage!</title>

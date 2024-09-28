@@ -13,20 +13,20 @@
 #endif
 
 // if per module logger level not defined, set to global...
-#ifndef LOGGER_LEVEL_READER
-#define LOGGER_LEVEL_READER GLOBAL_LOGGER_LEVEL
+#ifndef LOGGER_LEVEL_IOSTREAM
+#define LOGGER_LEVEL_IOSTREAM GLOBAL_LOGGER_LEVEL
 #endif
 
 // enable toggle...
-#ifndef LOGGER_READER
-#define LOGGER_READER 1
+#ifndef LOGGER_IOSTREAM
+#define LOGGER_IOSTREAM 1
 #endif
 
 #undef LOGGER_MODULE_ENABLED
-#define LOGGER_MODULE_ENABLED LOGGER_READER
+#define LOGGER_MODULE_ENABLED LOGGER_IOSTREAM
 
 #undef LOGGER_LEVEL
-#define LOGGER_LEVEL LOGGER_LEVEL_READER
+#define LOGGER_LEVEL LOGGER_LEVEL_IOSTREAM
 #include "logger.h"
 
 using namespace WylesLibs;

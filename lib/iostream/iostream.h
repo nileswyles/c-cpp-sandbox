@@ -74,6 +74,7 @@ class IOStream {
         // ! IMPORTANT - inclusive means we read and consume the until character. 
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, Array provides a method to cleanly remove the until character after the fact.
+        //      The default value for the inclusive field is TRUE.
         Array<uint8_t> readUntil(const char until) {
             return readUntil(std::string(&until));
         }

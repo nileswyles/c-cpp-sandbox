@@ -28,8 +28,8 @@
 
 #include <openssl/ssl.h>
 
-// #ifndef HTTP_DEBUG
-// #define HTTP_DEBUG 0
+// #ifndef WYLESLIBS_HTTP_DEBUG
+// #define WYLESLIBS_HTTP_DEBUG 0
 // #endif
 
 #define HTTP_FIELD_MAX 64
@@ -126,7 +126,7 @@ class HttpConnection {
 
         HttpResponse * handleStaticRequest(HttpRequest * request);
         bool handleWebsocketRequest(IOStream * io, HttpRequest * request);
-#ifdef HTTP_DEBUG
+#ifdef WYLESLIBS_HTTP_DEBUG
         HttpResponse * handleTimeoutRequests(IOStream * io, HttpRequest * request);
 #endif
         HttpResponse * requestDispatcher(HttpRequest * request);

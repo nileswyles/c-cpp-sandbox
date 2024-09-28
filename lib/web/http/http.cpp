@@ -13,9 +13,6 @@ using namespace WylesLibs;
 using namespace WylesLibs::Http;
 using namespace WylesLibs::Parser;
 
-
-#define HTTP_FIELD_MAX 64
-
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL
 #define GLOBAL_LOGGER_LEVEL 0
@@ -142,7 +139,7 @@ void HttpConnection::processRequest(IOStream * io, HttpRequest * request) {
             return;
         }
 
-#if HTTP_DEBUG == 1
+#ifdef WYLESLIBS_HTTP_DEBUG
         response = this->handleTimeoutRequests(io, request);
         if (response != nullptr) {
             this->writeResponse(response, io);
@@ -244,7 +241,7 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
     return upgraded;
 }
 
-#ifdef HTTP_DEBUG
+#ifdef WYLESLIBS_HTTP_DEBUG
 HttpResponse * HttpConnection::handleTimeoutRequests(IOStream * io, HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING TIMEOUT REQUEST\n");
     HttpResponse * response = nullptr;

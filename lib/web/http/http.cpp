@@ -13,9 +13,6 @@ using namespace WylesLibs;
 using namespace WylesLibs::Http;
 using namespace WylesLibs::Parser;
 
-#ifndef HTTP_DEBUG
-#define HTTP_DEBUG 0
-#endif
 
 #define HTTP_FIELD_MAX 64
 
@@ -145,13 +142,13 @@ void HttpConnection::processRequest(IOStream * io, HttpRequest * request) {
             return;
         }
 
-        if (HTTP_DEBUG) {
-            response = this->handleTimeoutRequests(io, request);
-            if (response != nullptr) {
-                this->writeResponse(response, io);
-                return;
-            }
+#if HTTP_DEBUG == 1
+        response = this->handleTimeoutRequests(io, request);
+        if (response != nullptr) {
+            this->writeResponse(response, io);
+            return;
         }
+#endif
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING REQUEST\n");
         if (this->processor == nullptr) {
@@ -167,6 +164,36 @@ void HttpConnection::processRequest(IOStream * io, HttpRequest * request) {
             writeResponse(response, io);
             return;
         }
+}
+
+HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING STATIC REQUEST\n");
+    HttpResponse * response = nullptr;
+    std::string path;
+    if (request->url.path == "/") {
+	    path = Paths::join(this->config.static_path, this->config.root_html_file);
+	} else {
+        path = Paths::join(this->config.static_path, request->url.path);
+    }
+    std::string content_type = this->static_paths[path];
+	if (content_type != "") {
+        response = new HttpResponse;
+		if (request->method == "HEAD" || request->method == "GET") {
+            Array<uint8_t> file_data = File::read(path);
+            char content_length[17];
+			sprintf(content_length, "%ld", file_data.size());
+            response->fields["Content-Length"] = std::string(content_length);
+			response->fields["Content-Type"] = content_type;
+			if (request->method == "GET") {
+				response->content = file_data;
+            }
+			response->status_code = "200";
+		} else {
+            response->status_code = "500";
+        }
+	}
+
+    return response;
 }
 
 bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request) {
@@ -217,36 +244,7 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
     return upgraded;
 }
 
-HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
-    loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING STATIC REQUEST\n");
-    HttpResponse * response = nullptr;
-    std::string path;
-    if (request->url.path == "/") {
-	    path = Paths::join(this->config.static_path, this->config.root_html_file);
-	} else {
-        path = Paths::join(this->config.static_path, request->url.path);
-    }
-    std::string content_type = this->static_paths[path];
-	if (content_type != "") {
-        response = new HttpResponse;
-		if (request->method == "HEAD" || request->method == "GET") {
-            Array<uint8_t> file_data = File::read(path);
-            char content_length[17];
-			sprintf(content_length, "%ld", file_data.size());
-            response->fields["Content-Length"] = std::string(content_length);
-			response->fields["Content-Type"] = content_type;
-			if (request->method == "GET") {
-				response->content = file_data;
-            }
-			response->status_code = "200";
-		} else {
-            response->status_code = "500";
-        }
-	}
-
-    return response;
-}
-
+#ifdef HTTP_DEBUG
 HttpResponse * HttpConnection::handleTimeoutRequests(IOStream * io, HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING TIMEOUT REQUEST\n");
     HttpResponse * response = nullptr;
@@ -308,6 +306,7 @@ HttpResponse * HttpConnection::handleTimeoutRequests(IOStream * io, HttpRequest 
     }
     return response;
 }
+#endif
 
 HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
     // for login filters, initializing auth context, etc
@@ -331,6 +330,43 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
         this->response_filters[i](response);
     }
     return response;
+}
+
+SSL * HttpConnection::acceptTLS(int fd) {
+    if (this->context == nullptr) {
+        throw std::runtime_error("Server SSL Context isn't initialized. Check server configuration.");
+    } else {
+        SSL * ssl = SSL_new(this->context);
+        if (ssl == nullptr) {
+            throw std::runtime_error("Error initializing SSL object for connection.");
+        }
+
+        int verify_mode = SSL_VERIFY_NONE;
+        if (this->config.client_auth_enabled) {
+            verify_mode = SSL_VERIFY_PEER;
+        }
+        SSL_set_verify(ssl, verify_mode, nullptr);
+        SSL_set_accept_state(ssl);
+
+        SSL_set_fd(ssl, fd);
+
+        SSL_clear_mode(ssl, 0);
+        // SSL_MODE_AUTO_RETRY
+
+        // TODO: so apparently this is optional lol... SSL_read will perform handshake...
+        //  also, investigate renegotiation, auto retry...
+        int accept_result = SSL_accept(ssl);
+        loggerPrintf(LOGGER_DEBUG, "ACCEPT RESULT: %d\n", accept_result);
+        loggerPrintf(LOGGER_DEBUG, "MODE: %lx, VERSION: %s, IS SERVER: %d\n", SSL_get_mode(ssl), SSL_get_version(ssl), SSL_is_server(ssl));
+        loggerExec(LOGGER_DEBUG, SSL_SESSION_print_fp(stdout, SSL_get_session(ssl)););
+        if (accept_result != 1) {
+            int error_code = SSL_get_error(ssl, accept_result) + 0x30;
+            // SSL_ERROR_NONE
+            throw std::runtime_error("SSL handshake failed. ERROR CODE: " + std::string((char *)&error_code));
+        } // connection accepted if accepted_result == 1
+
+        return ssl;
+    }
 }
 
 uint8_t HttpConnection::onConnection(int fd) {
@@ -373,48 +409,5 @@ void HttpConnection::writeResponse(HttpResponse * response, IOStream * io) {
         loggerPrintf(LOGGER_DEBUG, "Error writing to connection: %d\n", errno);
     } else {
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Wrote response to connection: \n%s\n", data.c_str());
-    }
-}
-
-SSL * HttpConnection::acceptTLS(int fd) {
-    if (this->context == nullptr) {
-        throw std::runtime_error("Server SSL Context isn't initialized. Check server configuration.");
-    } else {
-        SSL * ssl = SSL_new(this->context);
-        if (ssl == nullptr) {
-            throw std::runtime_error("Error initializing SSL object for connection.");
-        }
-
-        int verify_mode = SSL_VERIFY_NONE;
-        if (this->config.client_auth_enabled) {
-            verify_mode = SSL_VERIFY_PEER;
-        }
-        SSL_set_verify(ssl, verify_mode, nullptr);
-        SSL_set_accept_state(ssl);
-
-        SSL_set_fd(ssl, fd);
-
-        SSL_clear_mode(ssl, 0);
-        // SSL_MODE_AUTO_RETRY
-
-        //  investigate renegotiation, auto retry...
-        // TODO: so apparently this is optional lol... SSL_read will perform handshake...
-        int accept_result = SSL_accept(ssl);
-        loggerPrintf(LOGGER_DEBUG, "ACCEPT RESULT: %d\n", accept_result);
-        loggerPrintf(LOGGER_DEBUG, "MODE: %lx, VERSION: %s, IS SERVER: %d\n", SSL_get_mode(ssl), SSL_get_version(ssl), SSL_is_server(ssl));
-        loggerExec(LOGGER_DEBUG, SSL_SESSION_print_fp(stdout, SSL_get_session(ssl)););
-        if (accept_result != 1) {
-            int error_code = SSL_get_error(ssl, accept_result) + 0x30;
-            // SSL_ERROR_NONE
-            throw std::runtime_error("SSL handshake failed. ERROR CODE: " + std::string((char *)&error_code));
-        } // connection accepted if accepted_result == 1
-        // else {
-            // uint8_t buf[8096];
-            // int ret = SSL_read(ssl, buf, 8096);
-            // loggerPrintf(LOGGER_DEBUG, "WTF is even this?\n");
-            // loggerPrintByteArray(LOGGER_DEBUG, buf, ret);
-        // }
-
-        return ssl;
     }
 }

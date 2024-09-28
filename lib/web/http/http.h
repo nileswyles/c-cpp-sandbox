@@ -28,6 +28,10 @@
 
 #include <openssl/ssl.h>
 
+// #ifndef HTTP_DEBUG
+// #define HTTP_DEBUG 0
+// #endif
+
 #define HTTP_FIELD_MAX 64
 
 using namespace WylesLibs;
@@ -120,10 +124,11 @@ class HttpConnection {
         void parseRequest(HttpRequest * request, IOStream * reader);
         void processRequest(IOStream * io, HttpRequest * request);
 
-        bool handleWebsocketRequest(IOStream * io, HttpRequest * request);
         HttpResponse * handleStaticRequest(HttpRequest * request);
+        bool handleWebsocketRequest(IOStream * io, HttpRequest * request);
+#ifdef HTTP_DEBUG
         HttpResponse * handleTimeoutRequests(IOStream * io, HttpRequest * request);
-
+#endif
         HttpResponse * requestDispatcher(HttpRequest * request);
 
         SSL * acceptTLS(int conn_fd);

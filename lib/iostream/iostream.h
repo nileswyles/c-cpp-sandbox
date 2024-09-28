@@ -16,7 +16,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef WYLESLIBS_SSL_ENABLED
 #include <openssl/ssl.h>
+#endif 
 
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
@@ -32,7 +34,9 @@ class IOStream {
         void fillBuffer();
         void cursorCheck();
     public:        
+#ifdef WYLESLIBS_SSL_ENABLED
         SSL * ssl;
+#endif
         int fd;
         // Reader() = default;
         IOStream() {}
@@ -44,9 +48,11 @@ class IOStream {
             fd = -1;
             bytes_in_buffer = p_buf_size;
         }
+#ifdef WYLESLIBS_SSL_ENABLED
         IOStream(SSL * ssl): IOStream(0) {
             ssl = ssl;
         }
+#endif
         IOStream(const int fd): IOStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
         IOStream(const int p_fd, const size_t p_buf_size) {
             if (p_fd < 0) {
@@ -60,7 +66,9 @@ class IOStream {
             fd = p_fd;
             bytes_in_buffer = 0;
             buf = newCArray<uint8_t>(buf_size);
+#ifdef WYLESLIBS_SSL_ENABLED
             ssl = nullptr;
+#endif
         }
         ~IOStream() {
             delete[] buf;

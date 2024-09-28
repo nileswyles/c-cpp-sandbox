@@ -80,7 +80,6 @@ int main(int argc, char * argv[]) {
         Array<ConnectionUpgrader *> upgraders;
         WebsocketJsonRpcConnection upgrader("/testpath", "jsonrpc");
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created upgrader object.\n");
-
         ConnectionUpgrader * upgrader_ptr = &upgrader;
         upgraders.append(upgrader_ptr);
         // upgraders.append(&upgrader_ptr, 1);

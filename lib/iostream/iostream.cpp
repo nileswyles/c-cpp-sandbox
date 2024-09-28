@@ -43,11 +43,15 @@ uint8_t IOStream::readByte() {
 }
 
 ssize_t IOStream::writeBuffer(void * p_buf, size_t size) {
+#ifdef WYLESLIBS_SSL_ENABLED
     if (this->ssl == nullptr) {
         return write(this->fd, p_buf, size);
     } else {
         return SSL_write(this->ssl, p_buf, size);
     }
+#else 
+    return write(this->fd, p_buf, size);
+#endif
 }
 
 Array<uint8_t> IOStream::readBytes(const size_t n) {
@@ -122,11 +126,15 @@ Array<uint8_t> IOStream::readUntil(std::string until, ReaderTask * operation, bo
 void IOStream::fillBuffer() {
     this->cursor = 0;
     ssize_t ret = -1;
+#ifdef WYLESLIBS_SSL_ENABLED
     if (this->ssl == nullptr) {
         ret = read(this->fd, this->buf, this->buf_size);
     } else {
         ret = SSL_read(this->ssl, this->buf, this->buf_size);
     }
+#else 
+    ret = read(this->fd, this->buf, this->buf_size);
+#endif
     // TODO: retry on EAGAIN?, revisit possible errors...
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
@@ -135,11 +143,15 @@ void IOStream::fillBuffer() {
     } else {
         this->bytes_in_buffer = ret;
         loggerExec(LOGGER_DEBUG_VERBOSE,
+#ifdef WYLESLIBS_SSL_ENABLED
             if (this->ssl == nullptr) {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
             } else {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from tls layer.\n", ret);
             }
+#else 
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
+#endif
         );
     }
 }

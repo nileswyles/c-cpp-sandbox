@@ -69,10 +69,6 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
     name_operation.nextOperation = &lowercase;
     while (field_idx < HTTP_FIELD_MAX) {
         Array<uint8_t> field_name_array = io->readUntil(":\n", &name_operation);
-        // if (field_name_array.back() == '\n') {
-        //     break;
-        // }
-        // TODO: again this makes no sense.
         if (field_name_array.back() == (uint8_t)'\n') {
             printf("FOUND EMPTY NEW LINE AFTER PARSING FIELDS\n");
             break;

@@ -29,6 +29,10 @@ typedef struct thread_arg {
 static void * handler_wrapper_func(void * arg);
 static void process_sockopts(int fd);
 
+extern void serverDisableTimeout(int fd) {
+    timerRemoveConnection(fd, false);
+}
+
 extern void serverSetConnectionTimeout(int fd, uint32_t timeout_s) {
     if (timeout_s > INITIAL_CONNECTION_TIMEOUT_S) {
         timerSetTimeout(fd, timeout_s);
@@ -139,7 +143,7 @@ static void * handler_wrapper_func(void * arg) {
     process_sockopts(fd);
     timerAddConnection(fd, INITIAL_CONNECTION_TIMEOUT_S);
     handler(fd);
-    timerRemoveConnection(fd);
+    timerRemoveConnection(fd, true);
     return NULL;
 }
 

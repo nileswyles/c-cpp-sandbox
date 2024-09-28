@@ -398,7 +398,7 @@ class Array {
             return arrayFind<T>(this->e_buf, this->size(), el) != -1;
         }
         T& at(const size_t pos) {
-            if (pos > 0 && pos < this->size()) {
+            if (pos >= 0 && pos < this->size()) {
                 return (*this->e_buf)[pos];
             } else {
                 throw std::runtime_error("Invalid position.");

@@ -46,7 +46,7 @@ static void * timerProcess(void * arg);
 static void timerSetTimeout(int fd, uint32_t timeout_s);
 static uint32_t timerGetTimeout(int fd);
 static void timerAddConnection(int fd, uint32_t timeout_s);
-static void timerRemoveConnection(int fd);
+static void timerRemoveConnection(int fd, bool close);
 static void removeConnection(Connection * connection);
 
 static void closeConnection(Connection * connection) {
@@ -139,12 +139,14 @@ static void timerAddConnection(int fd, uint32_t timeout_s) {
     }
 }
 
-static void timerRemoveConnection(int fd) {
+static void timerRemoveConnection(int fd, bool close) {
     pthread_mutex_lock(&mutex);
     Connection * current = start;
     while (current != NULL) {
         if (current->fd == fd) {
-            closeConnection(current);
+            if (close) {
+                closeConnection(current);
+            }
             break;
         } else {
             current = current->next;

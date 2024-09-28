@@ -98,9 +98,9 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
             delimeter = (char)field_value[field_value.size()-1];
             // only process field if it's an actual field, else check delimeter in while loop...
             if (field_value.size() >= 2) {
-                field_value = field_value.substr(0, field_value.size()-1);
+                field_value = field_value.substr(0, field_value.size()-2);
 
-                loggerPrintf(LOGGER_DEBUG, "delimeter: '%c', field_value: '%s'\n", delimeter, field_value.c_str());
+                loggerPrintf(LOGGER_DEBUG, "delimeter: '0x%x', field_value: '%s'\n", delimeter, field_value.c_str());
          
                 request->fields[field_name].append(field_value);
                 if (field_name == "content-length") {
@@ -173,15 +173,12 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING WEBSOCKET REQUEST\n");
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
-        printf("IS WEBSOCKET UPGRADE REQUEST!\n");
         Array<std::string> protocols = request->fields["sec-websocket-protocol"];
         for (size_t i = 0; i < protocols.size(); i++) {
             for (size_t x = 0; i < this->upgraders.size(); i++) {
                 std::string protocol = protocols[i];
                 ConnectionUpgrader * upgrader = this->upgraders[i];
-                printf("Searching configured upgraders\n");
                 if (upgrader->path == request->url.path && protocol == upgrader->protocol) {
-                    printf("Is valid Websocket upgrade request...");
                     HttpResponse * response = new HttpResponse;
 
                     response->status_code = "101"; 
@@ -192,7 +189,8 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
                     response->fields["Sec-WebSocket-Extensions"] = "";
 
                     // not sure what this is doing, but if that's what the browser wants lmao..
-                    std::string key_string = request->fields["sec-websocket-key"].toString() + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+                    printf("sec-websocket-key: %s\n", request->fields["sec-websocket-key"][0].c_str());
+                    std::string key_string = request->fields["sec-websocket-key"].at(0) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
                     char message_digest[20];
                     SHA_CTX context;
@@ -200,27 +198,14 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
                     result = SHA1_Update(&context, (void *)key_string.c_str(), key_string.size());
                     result = SHA1_Final((unsigned char *)message_digest, &context);
 
-                    BIO *bio, *b64;
-                    b64 = BIO_new(BIO_f_base64());
-                    char base64_encoded[2048];
-                    bio = BIO_new_mem_buf(base64_encoded, 2048);
-                    BIO_push(b64, bio);
-                    BIO_write(b64, message_digest, strlen(message_digest));
+                    char base64_encoded[32] = {0};
+                    EVP_EncodeBlock((unsigned char *)base64_encoded, (unsigned char *)message_digest, 20);
 
-                    printf(base64_encoded);
-                    printf(message_digest);
-                    response->fields["Sec-WebSocket-Accept"] = std::string(message_digest);
-                    BIO_flush(b64);
-                    printf(base64_encoded);
-                    printf(message_digest);
-                    // response.fields["Sec-WebSocket-Accept"] = std::string(message_digest);
+                    response->fields["Sec-WebSocket-Accept"] = std::string(base64_encoded);
 
-                    BIO_free_all(b64);
-
-                    // // API not stable? lol...
-                    // // EVP_EncodeBlock((unsigned char *)encodedData, (const unsigned char *)checksum, strlen(checksum));
                     this->writeResponse(response, io);
 
+                    serverDisableTimeout(io->fd);
                     upgrader->onConnection(io);
 
                     // NOTE: the upgrade function should indefinetly block until the connection is intended to be closed.
@@ -387,7 +372,7 @@ void HttpConnection::writeResponse(HttpResponse * response, IOStream * io) {
     if (io->writeBuffer((void *)data.c_str(), data.size()) == -1) {
         loggerPrintf(LOGGER_DEBUG, "Error writing to connection: %d\n", errno);
     } else {
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Wrote response to connection.\n");
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Wrote response to connection: \n%s\n", data.c_str());
     }
 }
 

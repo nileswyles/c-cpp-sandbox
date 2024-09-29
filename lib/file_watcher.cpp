@@ -38,9 +38,15 @@ FileWatcher::~FileWatcher() {
 void FileWatcher::initialize(std::shared_ptr<FileWatcher> ptr) {
     pthread_mutex_lock(&mutex);
     for (auto w: this->paths_wd_map) {
-        int wd = inotify_add_watch(fd, w.first.c_str(), access_mask);
+        // TODO:
+        // okay, so this needs absolute paths?
+        // std::string path = "/workspaces/c-cpp-sandbox/http_test/" + w.first;
+        std::string path = w.first;
+        int wd = inotify_add_watch(fd, path.c_str(), access_mask);
+        printf("!!!!!!FD: %d, ERRNO: %d, path: %s\n", fd, errno, path.c_str());
         if (wd == -1) {
-            throw std::runtime_error("Cannot watch path: " + w.first);
+            printf("ERROR! FD: %d, ERRNO: %d, path: %s\n", fd, errno, path.c_str());
+            throw std::runtime_error("Cannot watch path: " + path);
         }
         paths_wd_map[w.first] = wd;
         registeredWatchers[wd] = ptr;

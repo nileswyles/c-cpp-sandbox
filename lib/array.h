@@ -70,7 +70,7 @@ void deleteCArrayElement<void *>(void ** e_buf, size_t pos);
 // TODO: again, member function specialization didn't work, so...
 //  revisit in future.
 template<typename T>
-size_t arrayFind(T ** e_buf, size_t size, const T el) {
+ssize_t arrayFind(T ** e_buf, size_t size, const T el) {
     for (size_t i = 0; i < size; i++) {
         if ((*e_buf)[i] == el) {
             return i;
@@ -79,7 +79,7 @@ size_t arrayFind(T ** e_buf, size_t size, const T el) {
     return -1;
 }
 template<>
-size_t arrayFind<const char *>(const char *** e_buf, size_t size, const char * el);
+ssize_t arrayFind<const char *>(const char *** e_buf, size_t size, const char * el);
 
 typedef enum ArraySort {
     ARRAY_SORT_UNSORTED,
@@ -402,7 +402,10 @@ class Array {
             return *this;
         }
         bool contains(const T& el) {
-            return arrayFind<T>(this->e_buf, this->size(), el) != -1;
+            return this->find(el) != -1;
+        }
+        ssize_t find(const T& el) {
+            return arrayFind<T>(this->e_buf, this->size(), el);
         }
         T& at(const size_t pos) {
             if (pos >= 0 && pos < this->size()) {

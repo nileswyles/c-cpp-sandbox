@@ -36,6 +36,7 @@ $ROOT_DIR/http_test/controllers/example.cpp
 $ROOT_DIR/http_test/services/example.cpp
 $ROOT_DIR/lib/iostream/iostream.cpp
 $ROOT_DIR/lib/web/server.c
+$ROOT_DIR/lib/file_watcher.cpp
 $ROOT_DIR/lib/array.cpp
 "
 

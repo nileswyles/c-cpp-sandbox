@@ -1,6 +1,8 @@
 #ifndef WYLESLIB_HTTP_H
 #define WYLESLIB_HTTP_H
 
+#include "web/http/http_file_watcher.h"
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -121,6 +123,9 @@ class HttpConnection {
 
         SSL_CTX * context;
 
+        HttpFileWatcher * file_watcher;
+        pthread_mutex_t static_paths_mutex;
+
         void parseRequest(HttpRequest * request, IOStream * reader);
         void processRequest(IOStream * io, HttpRequest * request);
 
@@ -190,6 +195,11 @@ class HttpConnection {
                     throw std::runtime_error(msg);
                 }
         }
+        ~HttpConnection() {
+            fileWatcherUnregister(file_watcher);
+            pthread_mutex_destroy(&static_paths_mutex);
+            delete file_watcher;
+        }
 
         uint8_t onConnection(int conn_fd);
 
@@ -197,6 +207,9 @@ class HttpConnection {
         void initialize() {
             initializeStaticPaths(config, &static_paths);
             initializeSSLContext();
+            pthread_mutex_init(&static_paths_mutex, nullptr);
+            file_watcher = new HttpFileWatcher(config, &static_paths, {config.static_path}, &static_paths_mutex);
+            fileWatcherRegister(file_watcher);
         }
 };
 

@@ -172,6 +172,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
 	} else {
         path = Paths::join(this->config.static_path, request->url.path);
     }
+    pthread_mutex_lock(&this->static_paths_mutex);
     std::string content_type = this->static_paths[path];
 	if (content_type != "") {
         response = new HttpResponse;
@@ -189,7 +190,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
             response->status_code = "500";
         }
 	}
-
+    pthread_mutex_unlock(&this->static_paths_mutex);
     return response;
 }
 

@@ -6,6 +6,8 @@
 
 #include "controllers/example.h"
 
+#include "file_watcher.h"
+
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1
 #endif
@@ -32,7 +34,16 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
 
 static Array<RequestFilter> requestFilters{};
 static Array<ResponseFilter> responseFilters{};
+// TODO:
 // hmm... unordered maps here?
+// and yes you're all crazy this should and was working?
+//  maybe move the initialization of this to constructor of each controller class?
+//      something like Controller classes initialized in main function and receive reference to this map...
+//      and constructor populates... worse because controller initialization still needed? also this? ("because instance functions can't be passed to function pointer args?")
+
+//      alternatively,
+//      define a map in each controller file and main function gets and merges before intializing http server?
+//      maybe that pattern is only required on larger projects?
 static map<std::string, map<std::string, RequestProcessor *>> requestMap{
     {"/example", {{"application/json", Controller::example }}},
     {"/example2", {{"multipart/byteranges", Controller::example2 }}},
@@ -84,6 +95,8 @@ int main(int argc, char * argv[]) {
         upgraders.append(upgrader_ptr);
         // upgraders.append(&upgrader_ptr, 1);
     
+        fileWatcherThreadStart();
+
         connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders); 
         connection.initialize();
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");

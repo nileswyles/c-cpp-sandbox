@@ -341,6 +341,12 @@ class Array {
 
             return *this;
         }
+        Array<T>& remove(const T& el) {
+            size_t i = this->find(el);
+            if (i != -1) {
+                remove(i);
+            }
+        }
         Array<T>& remove(const size_t pos) {
             return this->remove(pos, 1);
         }

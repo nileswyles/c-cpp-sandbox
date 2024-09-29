@@ -30,6 +30,8 @@
 
 #include <openssl/ssl.h>
 
+#include <memory>
+
 // #ifndef WYLESLIBS_HTTP_DEBUG
 // #define WYLESLIBS_HTTP_DEBUG 0
 // #endif
@@ -123,7 +125,7 @@ class HttpConnection {
 
         SSL_CTX * context;
 
-        HttpFileWatcher * file_watcher;
+        std::shared_ptr<HttpFileWatcher> file_watcher;
         pthread_mutex_t static_paths_mutex;
 
         void parseRequest(HttpRequest * request, IOStream * reader);
@@ -196,9 +198,9 @@ class HttpConnection {
                 }
         }
         ~HttpConnection() {
-            fileWatcherUnregister(file_watcher);
+            // TODO:
+            // I've got to read into this further but I think shared_ptr destructor, and by extension HttpFileWatcher destructor, is called implicitly.
             pthread_mutex_destroy(&static_paths_mutex);
-            delete file_watcher;
         }
 
         uint8_t onConnection(int conn_fd);
@@ -208,8 +210,9 @@ class HttpConnection {
             initializeStaticPaths(config, &static_paths);
             initializeSSLContext();
             pthread_mutex_init(&static_paths_mutex, nullptr);
-            file_watcher = new HttpFileWatcher(config, &static_paths, {config.static_path}, &static_paths_mutex);
-            fileWatcherRegister(file_watcher);
+            Array<std::string> paths{config.static_path};
+            file_watcher = std::make_shared<HttpFileWatcher>(config, &static_paths, paths, &static_paths_mutex);
+            file_watcher->initialize(file_watcher);
         }
 };
 

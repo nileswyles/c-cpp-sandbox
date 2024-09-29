@@ -139,6 +139,13 @@ void IOStream::fillBuffer() {
     // EAGAIN
 
     // TODO: retry on EAGAIN?, revisit possible errors...
+    //  if we get EAGAIN then fd is non-blocking? so spin wheels for X seconds or until no more EAGAIN? 
+    //    server socket and open fds are blocking by default? so this functionality hasnt been required?
+    //    
+    //   what this does is basically make non-blocking reads blocking... so, maybe just make that a requirement fir usung the reader?
+    //   otherwise and alternatively, we can return from readUntil (for example) as the read function would? hmm... idk.
+    // 
+    //   
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
         loggerPrintf(LOGGER_ERROR, "Read error: %d, ret: %ld\n", errno, ret);

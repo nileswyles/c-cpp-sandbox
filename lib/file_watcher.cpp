@@ -6,6 +6,8 @@
 
 using namespace WylesLibs;
 
+// TODO: log toggles.
+
 static std::map<int, std::weak_ptr<FileWatcher>> registeredWatchers{};
 static pthread_t watcher_thread;
 static bool thread_run;

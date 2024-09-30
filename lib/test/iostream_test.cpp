@@ -11,7 +11,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-// lol?
 #include <filesystem>
 
 #include "file.h"
@@ -44,20 +43,19 @@ ssize_t read(int fd, void *buf, size_t nbytes) {
     return ret; 
 }
 
-void assert(std::string result, std::string expected) {
+void assert(TestArg * t, std::string result, std::string expected) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", result.c_str());
     loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected.c_str());
 
     if (result == expected) {
         printf("TEST PASSED!\n");
-        // t->fail = false;
+        t->fail = false;
     } else {
         printf("TEST FAILED!\n");
     }
 }
 
-// void testReadUntil(TestArg * t) {
-void testReadUntil() {
+void testReadUntil(TestArg * t) {
     IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
@@ -68,25 +66,25 @@ void testReadUntil() {
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    assert(result, expected);
+    assert(t, result, expected);
 }
 
-void testReadUntilUpperCase() {
+void testReadUntilUpperCase(TestArg * t) {
     IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
 
     ReaderTaskUC uppercase;
-    std::string result = reader.readUntil(' ', (ReaderTaskUC *)&uppercase).toString();
+    std::string result = reader.readUntil(' ', (ReaderTask *)&uppercase).toString();
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    assert(result, expected);
+    assert(t, result, expected);
 }
 
-void testReadUntilLowerCase() {
+void testReadUntilLowerCase(TestArg * t) {
     IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
@@ -98,7 +96,22 @@ void testReadUntilLowerCase() {
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    assert(result, expected);
+    assert(t, result, expected);
+}
+
+void testReadUntilExtract(TestArg * t) {
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    const char * test_string = "\"TESTSTRINGWITHSPACE BLAH";
+    buffer = test_string;
+
+    ReaderTaskExtract extract;
+    std::string result = reader.readUntil(' ', (ReaderTask *)&lowercase).toString();
+    std::string expected = "teststringwithspace ";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(t, result, expected);
 }
 
 // void testReadUntilCursorAtUntil() {
@@ -179,9 +192,9 @@ void testReadUntilLowerCase() {
 // }
 
 int main(int argc, char * argv[]) {
-    // Tester t;
+    Tester t;
 
-    testReadUntil();
+    // testReadUntil(t);
 
     // TODO: bug fix/feature needed... if we reach an "until" character while r_trimming (when open, before right_most_char is reached), then we will exit.
     //  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ":": should yield :: not :. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
@@ -189,17 +202,20 @@ int main(int argc, char * argv[]) {
 
     // testReadUntilUpperCase();
     // testReadUntilLowerCase();
-    // t.addTest(testReadUntil);
+    t.addTest(testReadUntil);
+    t.addTest(testReadUntilUpperCase);
+    t.addTest(testReadUntilLowerCase);
+    t.addTest(testReadUntilLowerCase);
     // addTest(testReadUntilCursorAtUntil);
     // addTest(testReadUntilFillBufferOnce);
     // addTest(testReadUntilFillBufferTwice);
 
-    // if (argc > 1) {
-    //     loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
-    //     t.run(argv[1]);
-    // } else {
-    //     t.run(nullptr);
-    // }
+    if (argc > 1) {
+        loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
+        t.run(argv[1]);
+    } else {
+        t.run(nullptr);
+    }
 
     return 0;
 }

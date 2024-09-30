@@ -48,6 +48,7 @@ namespace WylesLibs {
 class ReaderTask {
     public:
         std::string read_until;
+
         ReaderTask() {}
         // good example of "dynamic dispatch"?
         //  As I understand it, calls to ReaderTask->flush (not virtual) will call this function regardless of how it's defined in sub-classes?
@@ -62,6 +63,7 @@ class ReaderTaskChain: public ReaderTask {
     public:
         bool ignored;
         ReaderTaskChain * nextOperation;
+
         ReaderTaskChain(): nextOperation(nullptr), ignored(false) {}
         ReaderTaskChain(ReaderTaskChain * next): nextOperation(next), ignored(false) {}
 
@@ -104,8 +106,10 @@ class ReaderTaskDisallow: public ReaderTaskChain {
     public:
         std::string to_disallow;
         bool strict;
+
         ReaderTaskDisallow(std::string to_disallow): to_disallow(to_disallow), strict(false) {}
         ReaderTaskDisallow(std::string to_disallow, bool strict): to_disallow(to_disallow), strict(strict) {}
+
         void perform(Array<uint8_t>& buffer, uint8_t c) {
             if (this->to_disallow.find(c) != std::string::npos) { 
                 if (strict) {
@@ -124,8 +128,10 @@ class ReaderTaskAllow: public ReaderTaskChain {
     public:
         std::string to_allow;
         bool strict;
+
         ReaderTaskAllow(std::string to_allow): to_allow(to_allow), strict(false) {}
         ReaderTaskAllow(std::string to_allow, bool strict): to_allow(to_allow), strict(strict) {}
+
         void perform(Array<uint8_t>& buffer, uint8_t c) {
             if (this->to_allow.find(c) == std::string::npos) { 
                 if (strict) {
@@ -149,36 +155,8 @@ class ReaderTaskTrim: public ReaderTask {
 
         ReaderTaskTrim(): l_trimming(true), r_trimming(false) {}
 
-        void rTrimFlush(Array<uint8_t>& buffer) {
-            if (this->r_trim.size() > 0) {
-                buffer.append(this->r_trim.buf(), this->r_trim.size());
-            }
-            r_trimming = false;
-        }
-
-        void perform(Array<uint8_t>& buffer, uint8_t c) {
-            if (!this->l_trimming) {
-                if (STRING_UTILS_WHITESPACE.find(c) != std::string::npos) {
-                    // if just trimming whitespace...
-                    this->r_trimming = true;
-                    this->r_trim.append(c);
-                } else if (this->r_trimming) {
-                    if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
-                        rTrimFlush(buffer);
-                        buffer.append(c);
-                        this->r_trimming = false;
-                    } else {
-                        this->r_trim.append(c);
-                    }
-                } else {
-                    buffer.append(c);
-                }
-            } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
-                // if just trimming whitespace...
-                this->l_trimming = false;
-                buffer.append(c);
-            }
-        }
+        void rTrimFlush(Array<uint8_t>& buffer);
+        void perform(Array<uint8_t>& buffer, uint8_t c);
 };
 
 class ReaderTaskExtract: public ReaderTask {
@@ -198,71 +176,9 @@ class ReaderTaskExtract: public ReaderTask {
             left_most_char(left_most_char), right_most_char(right_most_char), 
             r_trim_non_whitespace(0), r_trim_read_until(0) {}
 
-        void flush(Array<uint8_t>& buffer) {
-            // if extracting token and non whitespace after token throw an exception...
-            if (r_trim_non_whitespace != 0) {
-                std::string msg = "Found non-whitespace char right of token.";
-                loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), r_trim_non_whitespace);
-                throw std::runtime_error(msg);
-            } else if (!this->l_trimming && !this->r_trimming) {
-                std::string msg = "Found open ended token.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-                throw std::runtime_error(msg);
-            } else if (this->r_trim_read_until != 0) {
-                buffer.append(this->r_trim_read_until);
-            }
-        }
-
-        void rTrimFlush(Array<uint8_t>& buffer) {
-            if (this->r_trim.size() > 0) {
-                buffer.append(this->r_trim.buf(), this->r_trim.size());
-            }
-            this->r_trimming = false;
-        }
-
-        // TODO: bug fix/feature needed... if we reach an "until" character while r_trimming (when open, before right_most_char is reached), then we will exit.
-        //  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ":": should yield :: not :. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
-        void perform(Array<uint8_t>& buffer, uint8_t c) {
-            if (!this->l_trimming) {
-                if (this->right_most_char == c) {
-                    this->r_trimming = true;
-                    this->r_trim.append(c);
-                } else if (this->r_trimming) {
-                    if (this->right_most_char == c) {
-                        // if extracting token and right_most_char found, flush and include right_most
-                        // "blablbl" bblbnlbl    | == exception 
-                        // "blablbl"    | == blablbl 
-                        // "blablbl" " alknla| == blablbl - SEE TODO above... this might change.
-                        rTrimFlush(buffer);
-                        this->r_trim.append(c);
-                        // buffer.append(c);
-                        // this->r_trimming = false;
-                        this->r_trim_non_whitespace = 0;
-                    } else {
-                        this->r_trim.append(c);
-                        if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos && read_until.find(c) == std::string::npos) {
-                            this->r_trim_non_whitespace = c;
-                        } else if (read_until.find(c) != std::string::npos) {
-                            this->r_trim_read_until = c;
-                        }
-                    }
-                } else {
-                    buffer.append(c);
-                }
-            } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
-                if (c == left_most_char) {
-                    this->l_trimming = false;
-                } else if (read_until.find(c) != std::string::npos) {
-                    // include until string if that's all... because decided that why peek if can just read and return until match.
-                    //  more clunky non-sense?
-                    buffer.append(c);
-                } else {
-                    std::string msg = "Found non-whitespace char left of token.";
-                    loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
-                    throw std::runtime_error(msg);
-                }
-            }
-        }
+        void flush(Array<uint8_t>& buffer);
+        void rTrimFlush(Array<uint8_t>& buffer);
+        void perform(Array<uint8_t>& buffer, uint8_t c);
 };
 }
 

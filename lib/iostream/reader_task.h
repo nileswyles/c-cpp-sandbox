@@ -51,7 +51,7 @@ class ReaderTask {
 
         ReaderTask() {}
         // good example of "dynamic dispatch"?
-        //  As I understand it, calls to ReaderTask->flush (not virtual) will call this function regardless of how it's defined in sub-classes?
+        //  As I understand it, calls to ReaderTaskChain->flush (not virtual) will call this function regardless of how it's defined in sub-classes?
         //  By contrast, calls to perform call the function defined by the class-type at creation. Regardless of any casting along the way lol.
         //  Also, the compiler throws an error if perform isn't defined in sub-classes. 
         //     *** Then there's {} vs. = 0, which is effectively the same thing? At least when return type == void? ***
@@ -62,23 +62,24 @@ class ReaderTask {
 class ReaderTaskChain: public ReaderTask {
     public:
         bool ignored;
-        ReaderTaskChain * nextOperation;
+        ReaderTask * nextOperation;
 
         ReaderTaskChain(): nextOperation(nullptr), ignored(false) {}
         ReaderTaskChain(ReaderTaskChain * next): nextOperation(next), ignored(false) {}
 
         void next(Array<uint8_t>& buffer, uint8_t c) {
-            if (this->nextOperation == nullptr) {
-                if (!this->ignored) {
+            if (!this->ignored) {
+                if (this->nextOperation == nullptr) {
                     buffer.append(c);
+                } else {
+                    this->nextOperation->perform(buffer, c);
                 }
-            } else {
-                this->nextOperation->ignored = this->ignored; // order in chain shouldn't matter... project ignored onto next task.
-                this->nextOperation->perform(buffer, c);
             }
             this->ignored = false;
         }
-        void flush(Array<uint8_t>& buffer) {}
+        void flush(Array<uint8_t>& buffer) {
+            this->nextOperation->flush(buffer);
+        }
         virtual void perform(Array<uint8_t>& buffer, uint8_t c) = 0;
 };
 

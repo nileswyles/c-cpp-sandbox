@@ -22,8 +22,6 @@ class MultipartFile {
 
         MultipartFile(ServerContext * context, std::string name) {
             resource_root = context->config.resources_root;
-            // TODO: generate ID, for now, we'll just overwrite file...
-            //      hmmm... yeah, think about this... again.
             id = context->key_generator.next();
             name = name;
         }

@@ -75,11 +75,11 @@ extern void serverListen(const char * address, const uint16_t port, connection_h
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
         // check errno for error
-        printf("error creating socket\n");
+        loggerPrintf(LOGGER_DEBUG, "Error creating socket.\n");
     } else {
         struct in_addr addr; 
         if (inet_aton(address, &addr) == 0) {
-            printf("Error parsing address string, %s\n", address);
+            loggerPrintf(LOGGER_DEBUG, "Error parsing address string, %s\n", address);
         } else {
             struct sockaddr_in a = {
                 AF_INET,
@@ -88,14 +88,14 @@ extern void serverListen(const char * address, const uint16_t port, connection_h
             };
             if (bind(fd, (struct sockaddr *)(&a), sizeof(struct sockaddr_in)) == -1) {
                 // check errno for error
-                printf("error binding, %d\n", errno);
+                loggerPrintf(LOGGER_DEBUG, "error binding, %d\n", errno);
                 return;
             } else {
                 // queue up to MAX_CONNECTIONS before refusing connections.
                 if (listen(fd, MAX_CONNECTIONS) == -1) {
-                    printf("Error listening\n");
+                    loggerPrintf(LOGGER_DEBUG, "Error listening\n");
                 } else {
-                    printf("Listening on %s:%u\n", address, port);
+                    loggerPrintf(LOGGER_DEBUG, "Listening on %s:%u\n", address, port);
                     timerStart();
                     pthread_attr_t attr;
                     pthread_attr_init(&attr);
@@ -112,14 +112,14 @@ extern void serverListen(const char * address, const uint16_t port, connection_h
                         int ret = pthread_create(&thread, &attr, handler_wrapper_func, arg);
                         while (ret != 0) {
                             usleep(1000); // sleep for 1 ms
-                            // TODO: is it safe to assume this will eventually return 0?
                             ret = pthread_create(&thread, &attr, handler_wrapper_func, arg);
                         }
+                        loggerPrintf(LOGGER_DEBUG, "Failed to create thread! Trying again.\n");
                         conn = accept(fd, NULL, NULL);
                     }
                     timerStop();
                     if (conn == -1) {
-                        printf("ERROR ACCEPTING connections, errno %d\n", errno);
+                        loggerPrintf(LOGGER_DEBUG, "ERROR ACCEPTING connections, errno %d\n", errno);
                     }
                 }
             }
@@ -147,12 +147,18 @@ static void * handler_wrapper_func(void * arg) {
     return NULL;
 }
 
+#define RCV_SND_BUF_DEFAULTS 131072
+
+// TODO: review openssl and socket documentation as well as throughly test this code because uncertainty is a thing.
 static void process_sockopts(int fd) {
     socklen_t byte_len = sizeof(uint8_t);
     socklen_t uint32_t_len = sizeof(uint32_t);
     socklen_t timeval_len = sizeof(struct timeval);
 
-    // TODO: set RECVBUFSIZE and SENDBUFSIZE, arg it up?
+    uint32_t buf_size = RCV_SND_BUF_DEFAULTS;
+    setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &buf_size, uint32_t_len);
+    setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &buf_size, uint32_t_len);
+
     uint8_t keep_alive = 1;
     setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &keep_alive, byte_len);
 

@@ -7,6 +7,8 @@
 
 #include "global_consts.h"
 
+#define ARBITRARY_LIMIT_BECAUSE_DUMB 4294967296
+
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL
 #define GLOBAL_LOGGER_LEVEL 0
@@ -57,9 +59,12 @@ ssize_t IOStream::writeBuffer(void * p_buf, size_t size) {
 Array<uint8_t> IOStream::readBytes(const size_t n) {
     this->cursorCheck();
 
+    if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
+        throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
+    }
+
     Array<uint8_t> data;
     size_t bytes_read = 0;
-    // TODO: limit size of this->buffer?
     while (bytes_read < n) {
         size_t bytes_left_to_read = n - bytes_read;
         size_t bytes_left_in_buffer = this->bytes_in_buffer - this->cursor;
@@ -135,17 +140,7 @@ void IOStream::fillBuffer() {
 #else 
     ret = read(this->fd, this->buf, this->buf_size);
 #endif
-    // Example error
-    // EAGAIN
-
-    // TODO: retry on EAGAIN?, revisit possible errors...
-    //  if we get EAGAIN then fd is non-blocking? so spin wheels for X seconds or until no more EAGAIN? 
-    //    server socket and open fds are blocking by default? so this functionality hasnt been required?
-    //    
-    //   what this does is basically make non-blocking reads blocking... so, maybe just make that a requirement fir usung the reader?
-    //   otherwise and alternatively, we can return from readUntil (for example) as the read function would? hmm... idk.
-    // 
-    //   
+    // IMPORTANT - STRICTLY NON-BLOCKING FILE DESCRIPTORS! if you want to poll/select then you're on your own.
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
         loggerPrintf(LOGGER_ERROR, "Read error: %d, ret: %ld\n", errno, ret);

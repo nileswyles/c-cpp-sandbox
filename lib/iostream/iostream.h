@@ -1,9 +1,6 @@
 #ifndef WYLESLIBS_IOSTREAM_H
 #define WYLESLIBS_IOSTREAM_H
 
-// TODO:
-//  lol... 
-//  revisit this... might be better to reader/reader_task.h and not include reader directory in build script...
 #include "reader_task.h"
 
 #include "array.h"
@@ -23,7 +20,6 @@
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
 namespace WylesLibs {
-// TODO: leverage RAII, containerize?
 class IOStream {
     private:
         uint8_t * buf;

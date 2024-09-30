@@ -12,7 +12,6 @@
 namespace WylesLibs::Parser::Json {
 class JsonObject: public JsonValue {
     public:
-        // TODO: hide this? make interface better...
         std::vector<std::string> keys; 
         JsonArray values;
         size_t depth;

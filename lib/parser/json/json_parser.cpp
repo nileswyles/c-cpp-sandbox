@@ -37,8 +37,9 @@ static bool parseKey(JsonObject * obj, IOStream * r);
 // 1
 static void parseObject(JsonObject * obj, IOStream * r);
 
-// TODO: move to reader? but extend further? 
-//  ignore/allow and strict options...
+// LMAO ! IMPORTANT - design choice no unnecessary checks because not exposed to the world and code within this module should be trusted.
+//      SO, know what your doing if you edit this file.
+
 static void readWhiteSpaceUntil(IOStream * r, std::string until) {
     char c = r->peekByte();
     loggerPrintf(LOGGER_DEBUG, "Reading Whitespace Until: %s, %c\n", until.c_str(), c);
@@ -147,8 +148,8 @@ static void parseString(JsonArray * obj, IOStream * r) {
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string s;
     char prev_c = (char)0x00;
-    // TODO: set limit... of strings...
-    while (c != '"' || prev_c == '\\') {
+    uint16_t string_count = 0;
+    while (c != '"' || prev_c == '\\' && JSON_STRING_SIZE_LIMIT > string_count) {
         /*
             '"'
             '\'
@@ -160,7 +161,6 @@ static void parseString(JsonArray * obj, IOStream * r) {
             't'
             'u' hex hex hex hex    
         */
-       // lol....
         if (prev_c == '\\') {
             if (c == 'b') { // backspace
                 s += '\b';
@@ -173,15 +173,11 @@ static void parseString(JsonArray * obj, IOStream * r) {
             } else if (c == 't') { // tab
                 s += '\t';
             } else if (c == 'u') { // unicode
-                // TODO:
-                // this can be better
                 for (size_t x = 0; x < 4; x = x + 2) {
                     // so, this takes a hex string and converts to it's binary value.
                     //  i.e. "0F" -> 0x0F;
-                    // s += hexToChar(r.at(i + x));
+                    s += hexToChar(r->readBytes(2).toString());
                 }
-                // because indexing starts at 0 and x < 4 lol...
-                r->readBytes(3);
             } else {
                 // actual characters can just be appended.
                 s += c;
@@ -189,6 +185,7 @@ static void parseString(JsonArray * obj, IOStream * r) {
         } else {
             s += c;
         }
+        string_count++;
         prev_c = c;
         c = r->readByte();
     }
@@ -222,9 +219,6 @@ static void parseNestedObject(JsonArray * arr, IOStream * r) {
     char c = r->peekByte();
     if (c == '{') {
         JsonObject * new_obj = new JsonObject(arr->depth + 1);
-        // TODO: ! REMINDER 
-        //  this lol... to check or not to check
-        //  I think similar to public vs private class members if function interfaces with other software that you don't control, then protect yourself.
         arr->addValue((JsonValue *)new_obj);
         parseObject((JsonObject *) new_obj, r);
     }

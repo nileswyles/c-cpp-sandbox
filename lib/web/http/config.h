@@ -34,20 +34,34 @@ class HttpServerConfig: public ServerConfig {
         HttpServerConfig(std::string filepath): HttpServerConfig((JsonObject *)parseFile(filepath)) {}
         HttpServerConfig(JsonObject * obj): ServerConfig(obj) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
+            // Defaults for optional fields...
+            // string defaults are already "" but let's be explicit....
+            tls_enabled = false;
+            path_to_trust_chain_cert = "";
+            path_to_cert = "";
+            path_to_private_key = "";
+            client_auth_enabled = false;
+
+            bool static_path_required = true;
+            bool address_required = true;
+            bool port_required = true;
+            bool root_html_file_required = true;
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
-                // TODO: validation... these are all required fields
                 if (key == "static_path") {
                     static_path = setVariableFromJsonValue<std::string>(value);
+                    static_path_required = false;
                 } else if (key == "address") {
                     address = setVariableFromJsonValue<std::string>(value);
+                    address_required = false;
                 } else if (key == "port") {
                     port = (uint16_t)setVariableFromJsonValue<double>(value);
+                    port_required = false;
                 } else if (key == "root_html_file") {
                     root_html_file = setVariableFromJsonValue<std::string>(value);
-                // TODO: These aren't required... so implement defaults?
+                    root_html_file_required = false;
                 } else if (key == "tls_enabled") {
                     tls_enabled = setVariableFromJsonValue<bool>(value);
                 } else if (key == "path_to_trust_chain_cert") {
@@ -60,12 +74,17 @@ class HttpServerConfig: public ServerConfig {
                     client_auth_enabled = setVariableFromJsonValue<bool>(value);
                 }
             }
+
+            if (static_path_required 
+                    || address_required
+                    || port_required
+                    || root_html_file_required) {
+                std::runtime_error("One of the required fields were missing... Check the configuration file.");
+            }
         }
 
-        // TODO: include parent fields...
-        std::string toJsonString() {
-            std::string s("{");
-            s += "\"static_path\": ";
+        std::string toJsonElements() {
+            std::string s("\"static_path\": ");
             s += JsonString(this->static_path).toJsonString();
             s += ",";
 
@@ -99,9 +118,8 @@ class HttpServerConfig: public ServerConfig {
 
             s += "\"client_auth_enabled\": ";
             s += JsonBoolean(this->client_auth_enabled).toJsonString();
-            s += "}";
-
             return s;
+
         }
 
         bool operator ==(const HttpServerConfig& other) {

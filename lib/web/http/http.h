@@ -1,7 +1,6 @@
 #ifndef WYLESLIB_HTTP_H
 #define WYLESLIB_HTTP_H
 
-#include "web/http/http_file_watcher.h"
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -11,26 +10,23 @@
 #include <pthread.h>
 #include <errno.h>
 #include <stdbool.h>
-
 #include <filesystem>
+#include <unordered_map>
+#include <map>
+#include <openssl/ssl.h>
+#include <memory>
 
 #include "iostream/iostream.h"
 #include "web/server.h"
 #include "config.h"
 #include "connection.h"
 #include "web/authorization.h"
-
 #include "parser/multipart/parse_formdata.h"
 #include "parser/multipart/multipart_file.h"
-
+#include "web/http/http_file_watcher.h"
+#include "thread_safe_map.h"
 #include "file.h"
-
-#include <unordered_map>
-#include <map>
-
-#include <openssl/ssl.h>
-
-#include <memory>
+#include "paths.h"
 
 // #ifndef WYLESLIBS_HTTP_DEBUG
 // #define WYLESLIBS_HTTP_DEBUG 0
@@ -40,6 +36,7 @@
 
 using namespace WylesLibs;
 using namespace WylesLibs::Parser::Multipart;
+using namespace WylesLibs::Paths;
 
 namespace WylesLibs::Http {
 
@@ -104,7 +101,6 @@ class HttpResponse {
         }
 };
 
-// TODO: func ptr types... 
 // typedef HttpResponse *(RequestProcessor)(HttpRequest *);
 //  vs.
 // typedef HttpResponse *(* RequestProcessor)(HttpRequest *);
@@ -121,13 +117,11 @@ class HttpConnection {
         Array<ResponseFilter> response_filters;
         Array<ConnectionUpgrader *> upgraders;
         HttpServerConfig config;
-        std::unordered_map<std::string, std::string> static_paths; 
+        ThreadSafeMap<std::string, std::string> static_paths; 
 
         SSL_CTX * context;
 
         std::shared_ptr<HttpFileWatcher> file_watcher;
-        pthread_mutex_t static_paths_mutex;
-
         void parseRequest(HttpRequest * request, IOStream * reader);
         void processRequest(IOStream * io, HttpRequest * request);
 
@@ -141,20 +135,11 @@ class HttpConnection {
         SSL * acceptTLS(int conn_fd);
         void writeResponse(HttpResponse * response, IOStream * io);
 
-        void initializeStaticPaths(HttpServerConfig config, std::unordered_map<std::string, std::string> * static_paths) {
+        void initializeStaticPaths(HttpServerConfig config, ThreadSafeMap<std::string, std::string> static_paths) {
             loggerPrintf(LOGGER_DEBUG, "Static Paths: %s\n", config.static_path.c_str());
                 for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(config.static_path)) {
                     std::string path = dir_entry.path().string();
-                    std::string ext = dir_entry.path().extension().string();
-					if (ext == ".html") {
-						(*static_paths)[path] = "text/html";
-					} else if (ext == ".js") {
-						(*static_paths)[path] = "text/javascript";
-					} else if (ext == ".css") {
-						(*static_paths)[path] = "text/css";
-                    } else {
-						(*static_paths)[path] = "none";
-                    }
+                    static_paths[path] = contentTypeFromPath(path);
                 }
         }
         void initializeSSLContext() {
@@ -164,13 +149,35 @@ class HttpConnection {
                 if (this->context == nullptr) {
                     loggerPrintf(LOGGER_DEBUG, "Error initializing SSL Context.");
                 } else {
-                    SSL_CTX_load_verify_file(context, this->config.path_to_trust_chain_cert.c_str());
-             
-                    SSL_CTX_use_certificate_chain_file(context, this->config.path_to_trust_chain_cert.c_str()); // TODO: redundant?
-                    SSL_CTX_use_certificate_file(context, this->config.path_to_cert.c_str(), SSL_FILETYPE_PEM);
-                    SSL_CTX_use_PrivateKey_file(context, this->config.path_to_private_key.c_str(), SSL_FILETYPE_PEM);
-             
-                    // TODO: error check cert stuff...
+                    int result = -1;
+                    if (this->config.client_auth_enabled) {
+                        result = SSL_CTX_load_verify_file(context, this->config.path_to_trust_chain_cert.c_str());
+                        if (result != 1) {
+                            std::string msg = "Failed configuration of verify file."; 
+                            loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                            throw std::runtime_error(msg);
+                        }
+                        result = SSL_CTX_use_certificate_chain_file(context, this->config.path_to_trust_chain_cert.c_str()); // TODO: redundant? create client auth test to confirm.
+                        if (result != 1) {
+                            std::string msg = "Failed configuration of certificate chain file."; 
+                            loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                            throw std::runtime_error(msg);
+                        }
+                    }
+                    result = -1;
+                    result = SSL_CTX_use_certificate_file(context, this->config.path_to_cert.c_str(), SSL_FILETYPE_PEM);
+                    if (result != 1) {
+                        std::string msg = "Failed configuration of certificate file.";
+                        loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                        throw std::runtime_error(msg);
+                    }
+                    result = -1;
+                    result = SSL_CTX_use_PrivateKey_file(context, this->config.path_to_private_key.c_str(), SSL_FILETYPE_PEM);
+                    if (result != 1) {
+                        std::string msg = "Failed configuration of private key file.";
+                        loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                        throw std::runtime_error(msg);
+                    }
                 }
             } else {
                 this->context = nullptr;
@@ -197,22 +204,16 @@ class HttpConnection {
                     throw std::runtime_error(msg);
                 }
         }
-        ~HttpConnection() {
-            // TODO:
-            // I've got to read into this further but I think shared_ptr destructor, and by extension HttpFileWatcher destructor, is called implicitly.
-            pthread_mutex_destroy(&static_paths_mutex);
-        }
 
         uint8_t onConnection(int conn_fd);
 
         // ! IMPORTANT - this needs to be explicitly called by construction caller because CPP.
         void initialize() {
-            initializeStaticPaths(config, &static_paths);
+            initializeStaticPaths(config, static_paths);
             initializeSSLContext();
-            pthread_mutex_init(&static_paths_mutex, nullptr);
-            Array<std::string> paths{config.static_path};
-            file_watcher = std::make_shared<HttpFileWatcher>(config, &static_paths, paths, &static_paths_mutex);
-            file_watcher->initialize(file_watcher);
+            // Array<std::string> paths{config.static_path};
+        //     file_watcher = std::make_shared<HttpFileWatcher>(config, &static_paths, paths, &static_paths_mutex);
+        //     file_watcher->initialize(file_watcher);
         }
 };
 

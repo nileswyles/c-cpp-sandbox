@@ -37,5 +37,20 @@ static string join(string path1, string path2) {
     return path1 + path2;
 }
 
+static string contentTypeFromPath(string path) {
+    string contentType;
+    string ext = getExtension(path);
+    if (ext == ".html") {
+       contentType = "text/html";
+    } else if (ext == ".js") {
+       contentType = "text/javascript";
+    } else if (ext == ".css") {
+       contentType = "text/css";
+    } else {
+       contentType = "none";
+    }
+    return contentType;
+}
+
 }
 #endif

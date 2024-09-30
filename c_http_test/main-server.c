@@ -23,7 +23,6 @@ typedef struct http_request {
     char * method;
     char * path;
     char * version;
-    // TODO: does static array contribute to stack usage?
     http_field fields[FIELD_MAX];
     int content_length;
     uint8_t * content;

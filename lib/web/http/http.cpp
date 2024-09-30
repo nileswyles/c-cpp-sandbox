@@ -172,7 +172,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
 	} else {
         path = Paths::join(this->config.static_path, request->url.path);
     }
-    pthread_mutex_lock(&this->static_paths_mutex);
+    pthread_mutex_lock(this->static_paths.getMutex());
     std::string content_type = this->static_paths[path];
 	if (content_type != "") {
         response = new HttpResponse;
@@ -190,7 +190,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
             response->status_code = "500";
         }
 	}
-    pthread_mutex_unlock(&this->static_paths_mutex);
+    pthread_mutex_unlock(this->static_paths.getMutex());
     return response;
 }
 
@@ -368,7 +368,6 @@ SSL * HttpConnection::acceptTLS(int fd) {
 }
 
 uint8_t HttpConnection::onConnection(int fd) {
-    // TODO: similarly will I run into stack limits? definetly avoid new if don't need to... I'm pretty sure stack limits are per thread
     HttpRequest request;
     IOStream io(fd);
     try {
@@ -399,7 +398,6 @@ uint8_t HttpConnection::onConnection(int fd) {
     return 1;
 }
 
-// TODO: can unique_ptr simplify resource management of HttpResponse? Definetly still valid here probably...
 void HttpConnection::writeResponse(HttpResponse * response, IOStream * io) {
     std::string data = response->toString();
     // ! IMPORTANT - this response pointer will potentially come from an end-user (another developer)... YOU WILL ENCOUNTER PROBLEMS IF THE POINTER IS CREATED USING MALLOC AND NOT NEW

@@ -1,11 +1,10 @@
 #ifndef WYLESLIBS_STRING_UTILS_H
 #define WYLESLIBS_STRING_UTILS_H
 
-// TODO:
 #include <string>
 #include <stdbool.h>
+#include <stdexcept>
 
-// TODO: actually yeah, I wanted to remove cpp dependency from this file...
 static std::string STRING_UTILS_WHITESPACE = "\r\n\t ";
 
 static bool isAlpha(char c) {
@@ -40,21 +39,10 @@ static bool isHexDigit(char c) {
     return isDigit(c) || isLowerHex(c) || isUpperHex(c);
 }
 
-static char hexToChar(std::string * buf) {
+static char hexToChar(std::string buf) {
     char ret = 0x00;
     for (size_t i = 0; i < 2; i++) {
-        char c = buf->at(i);
-        if (isDigit(c)) {
-            c = c - 0x30;
-        } else if (isLowerHex(c)) {
-            c = c - 0x61;
-        } else if (isUpperHex(c)) {
-            c = c - 0x41;
-        } else {
-            // TODO:
-            //  freak out! exception... something...
-        }
-        ret = ret << 4 | c;
+        ret = ret << 4 | buf.at(i);
     }
     return ret;
 }

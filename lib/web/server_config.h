@@ -27,12 +27,9 @@ class ServerConfig: public JsonBase {
             }
         }
 
-        std::string toJsonString() {
-            std::string s("{");
-            s += "\"resources_root\": ";
+        std::string toJsonElements() {
+            std::string s("\"resources_root\": ");
             s += JsonString(this->resources_root).toJsonString();
-            s += "}";
-
             return s;
         }
 

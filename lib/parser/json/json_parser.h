@@ -24,6 +24,8 @@ static constexpr size_t JSON_NUMBER_MAX_DIGITS = NUMBER_MAX_DIGITS * 2 + 2;
 // %NUM_MAX_DIGITS.NUM_MAX_DIGITSf<NUL>
 static constexpr size_t JSON_NUMBER_FORMAT_STRING_SIZE = 4 + 2 + 2;
 
+static constexpr size_t JSON_STRING_SIZE_LIMIT = 65536;
+
 // single precision == exp is 8-bits... [-126, 127] (255, but centered around zero because decimal point can move in both directions.)
 //  I am using double precision types (double) throughout the program so this shouldn't be an issue.
 static constexpr size_t FLT_MAX_EXP_ABS = 127;
@@ -43,7 +45,13 @@ class JsonBase {
         //  Doesn't make much sense to me... but need to declare virtual destructor in base classes as such for derived destructors to be called.
         //  Revisit this... 
         virtual ~JsonBase() {};
-        virtual std::string toJsonString() = 0;
+        virtual std::string toJsonElements() {};
+        std::string toJsonString() {
+            std::string s("{");
+            s += toJsonElements();
+            s += "}";
+            return s;
+        };
 };
 
 class JsonValue: public JsonBase {

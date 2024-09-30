@@ -45,7 +45,9 @@ class JsonBase {
         //  Doesn't make much sense to me... but need to declare virtual destructor in base classes as such for derived destructors to be called.
         //  Revisit this... 
         virtual ~JsonBase() {};
-        virtual std::string toJsonElements() {};
+        virtual std::string toJsonElements() {
+            return "";
+        };
         std::string toJsonString() {
             std::string s("{");
             s += toJsonElements();

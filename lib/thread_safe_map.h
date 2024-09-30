@@ -9,7 +9,7 @@ class ThreadSafeMap: public std::map<T, L> {
         // TODO: think about whether I want to atomicize (atomize?), the operations specific to map or also related operations?
         //   can I support both? Do I need multiple mutexes?
         ThreadSafeMap(): std::map<T, L>() {
-            pthread_mutex_init(&mutex);
+            pthread_mutex_init(&mutex, nullptr);
         }
         ~ThreadSafeMap() {
             pthread_mutex_destroy(&mutex);

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+# run all of the test suites... 

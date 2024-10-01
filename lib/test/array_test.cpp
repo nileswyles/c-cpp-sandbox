@@ -91,7 +91,7 @@ static void testArrayRemoveConsecutiveRecapped(TestArg * t);
 // static void testArrayInsertConsecutiveRecapped(TestArg * t);
 
 int main(int argc, char * argv[]) {
-    Tester t;
+    Tester t("Array Tests");
 
     t.addTest(testArrayAppendCstrings);
     t.addTest(testArrayAppend);
@@ -105,14 +105,15 @@ int main(int argc, char * argv[]) {
     t.addTest(testArrayRemoveRecapped);
     t.addTest(testArrayRemoveConsecutiveRecapped);
 
+    bool passed = false;
     if (argc > 1) {
         loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
-        t.run(argv[1]);
+        passed = t.run(argv[1]);
     } else {
-        t.run(nullptr);
+        passed = t.run(nullptr);
     }
 
-    return 0;
+    return passed ? 0 : 1;
 }
 
 static void testArrayAppendCstrings(TestArg * t) {

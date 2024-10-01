@@ -246,18 +246,19 @@ void testHttpServerConnectionTimeout(TestArg * t) {
 }
 
 int main(int argc, char * argv[]) {
-    Tester t;
+    Tester t("HTTP Server Tests");
     
     t.addTest(testHttpServer);
     t.addTest(testHttpServerSocketTimeout);
     t.addTest(testHttpServerConnectionTimeout);
 
+    bool passed = false;
     if (argc > 1) {
         loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
-        t.run(argv[1]);
+        passed = t.run(argv[1]);
     } else {
-        t.run(nullptr);
+        passed = t.run(nullptr);
     }
 
-    return 0;
+    return passed ? 0 : 1;
 }

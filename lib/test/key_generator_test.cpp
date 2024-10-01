@@ -96,18 +96,19 @@ void testUUIDGeneratorV7(TestArg * t) {
 }
 
 int main(int argc, char * argv[]) {
-    Tester t;
+    Tester t("Key Generator Tests");
 
     t.addTest(testUniqueKeyGenerator);
     t.addTest(testUUIDGeneratorV4);
     t.addTest(testUUIDGeneratorV7);
 
+    bool passed = false;
     if (argc > 1) {
         loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
-        t.run(argv[1]);
+        passed = t.run(argv[1]);
     } else {
-        t.run(nullptr);
+        passed = t.run(nullptr);
     }
 
-    return 0;
+    return passed ? 0 : 1;
 }

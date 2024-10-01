@@ -140,7 +140,7 @@ void IOStream::fillBuffer() {
 #else 
     ret = read(this->fd, this->buf, this->buf_size);
 #endif
-    // IMPORTANT - STRICTLY NON-BLOCKING FILE DESCRIPTORS! if you want to poll/select then you're on your own.
+    // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
         loggerPrintf(LOGGER_ERROR, "Read error: %d, ret: %ld\n", errno, ret);

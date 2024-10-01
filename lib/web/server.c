@@ -109,6 +109,10 @@ extern void serverListen(const char * address, const uint16_t port, connection_h
                         arg->fd = conn;
                         arg->handler = handler;
                         // wrapper func is responsible for freeing... 
+
+                        // TODO: performance profiling...
+                        //  Can multiplex/thread only for websocket upgrades? This means using poll on these file descriptors to start parsing.
+                        //  but again, this complicates the api handler/controller code...
                         int ret = pthread_create(&thread, &attr, handler_wrapper_func, arg);
                         while (ret != 0) {
                             usleep(1000); // sleep for 1 ms

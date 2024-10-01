@@ -34,7 +34,8 @@ using namespace WylesLibs::Test;
 
 static const char * buffer;
 
-ssize_t read(int fd, void *buf, size_t nbytes) {
+// ! IMPORTANT - overriding stdlib's implementation of read (which is apparently weakly linked...)... IOStream's calls to read use this function. 
+extern ssize_t read(int fd, void *buf, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
     memcpy(buf, buffer, ret);
     loggerPrintf(LOGGER_DEBUG, "READ RETURNED (%ld): \n", ret);
@@ -43,19 +44,16 @@ ssize_t read(int fd, void *buf, size_t nbytes) {
     return ret; 
 }
 
-void assert(TestArg * t, std::string result, std::string expected) {
+static void assert(TestArg * t, std::string result, std::string expected) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", result.c_str());
     loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected.c_str());
 
     if (result == expected) {
-        printf("TEST PASSED!\n");
         t->fail = false;
-    } else {
-        printf("TEST FAILED!\n");
     }
 }
 
-void testReadUntil(TestArg * t) {
+static void testReadUntil(TestArg * t) {
     IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
@@ -69,7 +67,7 @@ void testReadUntil(TestArg * t) {
     assert(t, result, expected);
 }
 
-void testReadUntilUpperCase(TestArg * t) {
+static void testReadUntilUpperCase(TestArg * t) {
     IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
@@ -84,7 +82,7 @@ void testReadUntilUpperCase(TestArg * t) {
     assert(t, result, expected);
 }
 
-void testReadUntilLowerCase(TestArg * t) {
+static void testReadUntilLowerCase(TestArg * t) {
     IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
@@ -99,123 +97,213 @@ void testReadUntilLowerCase(TestArg * t) {
     assert(t, result, expected);
 }
 
-void testReadUntilExtract(TestArg * t) {
+static void testReadUntilAllow(TestArg * t) {
     IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "\"TESTSTRINGWITHSPACE BLAH";
+    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
     buffer = test_string;
 
-    ReaderTaskExtract extract;
-    std::string result = reader.readUntil(' ', (ReaderTask *)&lowercase).toString();
-    std::string expected = "teststringwithspace ";
+    ReaderTaskExtract extract('"','"');
+    std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
+    std::string expected = "TESTSTRINGWITHSPACE";
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
     assert(t, result, expected);
 }
 
-// void testReadUntilCursorAtUntil() {
-//     reader * reader = reader_constructor(-1, READER_RECOMMENDED_BUF_SIZE);
-//     printf("\nTest Func: testReadUntilCursorAtUntil\n");
-//     buffer = " BLAH";
-//     char * result = (char *)reader_read_until(reader, ' ');
-//     printf("Test String:\n BLAH\n"); // lol
-//     printf("Until char:\n[%x]\n", ' ');
-//     printf("Result:\n%s\n", result);
-//     printf("Expected:\n%s\n", "");
-//     if (strcmp(result, "") == 0) {
-//         printf("Test Passed!\n");
-//     } else {
-//         printf("Test Failed!\n");
-//     }
-//     reader_destructor(reader);
-// }
+static void testReadUntilDisallow(TestArg * t) {
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-// void testReadUntilFillBufferOnce() {
-//     reader * reader = reader_constructor(-1, 7);
-//     int size = reader->buf_size + 7;
-//     char buf[size];
-//     int i = 0;
-//     for (i = 0; i < size; i++) {
-//         buf[i] = '$';
-//     }
-//     buf[size - 3] = ' ';
-//     buf[size] = 0; // TODO: still puzzled by why this is necessary and whether or not compiler ensures it's safe.
-//     buffer = buf;
+    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
+    buffer = test_string;
 
-//     char expected[size-3]; // until char should == NUL
-//     strncpy(expected, buf, size-3); // more lame std lib stuff? lol
-//     expected[size-3] = 0;
+    ReaderTaskExtract extract('"','"');
+    std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
+    std::string expected = "TESTSTRINGWITHSPACE";
 
-//     char * result = (char *)reader_read_until(reader, ' ');
-//     printf("Test String:\n%s\n", buf);
-//     printf("Until char:\n[%x]\n", ' ');
-//     printf("Result:\n%s\n", result);
-//     printf("Expected:\n%s\n", expected);
-//     if (strcmp(result, (char *)expected) == 0) {
-//         printf("Test Passed!\n");
-//     } else {
-//         printf("Expected:\n%s\n", expected);
-//         printf("Test Failed!\n");
-//     }
-//     reader_destructor(reader);
-// }
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(t, result, expected);
+}
 
-// void testReadUntilFillBufferTwice() {
-//     reader * reader = reader_constructor(-1, 7);
-//     printf("\nTest Func: testReadUntilFillBufferTwice\n");
-//     int size = (reader->buf_size * 2) + 7;
-//     char buf[size];
-//     int i = 0;
-//     for (i = 0; i < size; i++) {
-//         buf[i] = '$';
-//     }
-//     buf[size - 3] = ' ';
-//     buf[size] = 0;
-//     buffer = buf;
+static void testReadUntilTrim(TestArg * t) {
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-//     char expected[size-3]; // until char should == NUL
-//     strncpy(expected, buf, size-3); // more lame std lib stuff? lol
-//     expected[size-3] = 0;
+    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
+    buffer = test_string;
 
-//     char * result = (char *)reader_read_until(reader, ' ');
-//     printf("Test String:\n%s\n", buf);
-//     printf("Until char:\n[%x]\n", ' ');
-//     printf("Result:\n%s\n", result);
-//     printf("Expected:\n%s\n", expected);
-//     if (strcmp(result, expected) == 0) {
-//         printf("Test Passed!\n");
-//     } else {
-//         printf("Test Failed!\n");
-//     }
-//     reader_destructor(reader);
-// }
+    ReaderTaskExtract extract('"','"');
+    std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
+    std::string expected = "TESTSTRINGWITHSPACE";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(t, result, expected);
+}
+
+static void testReadUntilDisallowSpaceTrim(TestArg * t) {
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
+    buffer = test_string;
+
+    ReaderTaskExtract extract('"','"');
+    std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
+    std::string expected = "TESTSTRINGWITHSPACE";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(t, result, expected);
+}
+
+static void testReadUntilExtract(TestArg * t) {
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
+    buffer = test_string;
+
+    ReaderTaskExtract extract('"','"');
+    std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
+    std::string expected = "TESTSTRINGWITHSPACE";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(t, result, expected);
+}
+
+static void testReadUntilAllowExtract(TestArg * t) {
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
+    buffer = test_string;
+
+    ReaderTaskExtract extract('"','"');
+    std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
+    std::string expected = "TESTSTRINGWITHSPACE";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(t, result, expected);
+}
+
+static void testReadUntilDisallowExtract(TestArg * t) {
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
+    buffer = test_string;
+
+    ReaderTaskExtract extract('"','"');
+    std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
+    std::string expected = "TESTSTRINGWITHSPACE";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(t, result, expected);
+}
+
+static void testReadUntilLowerCaseExtract(TestArg * t) {
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
+    buffer = test_string;
+
+    ReaderTaskExtract extract('"','"');
+    std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
+    std::string expected = "TESTSTRINGWITHSPACE";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(t, result, expected);
+}
+
+static void testReadUntilUpperCaseExtract(TestArg * t) {
+    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
+    buffer = test_string;
+
+    ReaderTaskExtract extract('"','"');
+    std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
+    std::string expected = "TESTSTRINGWITHSPACE";
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    assert(t, result, expected);
+}
+
+static void testReadUntilCursorAtUntil(TestArg * t) {
+    size_t buf_size = READER_RECOMMENDED_BUF_SIZE;
+    IOStream reader(1, buf_size);
+    buffer = " BLAH";
+
+    std::string result = reader.readUntil(' ').toString();
+    assert(t, result, "");
+}
+
+static void testReadUntilFillBufferOnce(TestArg * t) {
+    size_t buf_size = 7;
+    IOStream reader(1, buf_size);
+
+    size_t expected_size = buf_size + 7;
+    std::string expected;
+    for (size_t i = 0; i < expected_size; i++) {
+        expected += '$';
+    }
+    expected[expected_size - 3] = ' ';
+    buffer = expected.c_str();
+    
+    std::string result = reader.readUntil(' ').toString();
+    assert(t, result, expected);
+}
+
+static void testReadUntilFillBufferTwice(TestArg * t) {
+    size_t buf_size = 7;
+    IOStream reader(1, buf_size);
+
+    size_t expected_size = (buf_size * 2) + 7;
+    std::string expected;
+    for (size_t i = 0; i < expected_size; i++) {
+        expected += '$';
+    }
+    expected[expected_size - 3] = ' ';
+    buffer = expected.c_str();
+
+    std::string result = reader.readUntil(' ').toString();
+    assert(t, result, expected);
+}
 
 int main(int argc, char * argv[]) {
-    Tester t;
-
-    // testReadUntil(t);
-
+    Tester t("IOStream Tests");
     // TODO: bug fix/feature needed... if we reach an "until" character while r_trimming (when open, before right_most_char is reached), then we will exit.
     //  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ":": should yield :: not :. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
     // make sure to write a test.
-
-    // testReadUntilUpperCase();
-    // testReadUntilLowerCase();
     t.addTest(testReadUntil);
     t.addTest(testReadUntilUpperCase);
     t.addTest(testReadUntilLowerCase);
-    t.addTest(testReadUntilLowerCase);
-    // addTest(testReadUntilCursorAtUntil);
-    // addTest(testReadUntilFillBufferOnce);
-    // addTest(testReadUntilFillBufferTwice);
+    t.addTest(testReadUntilAllow);
+    t.addTest(testReadUntilDisallow);
 
+    t.addTest(testReadUntilTrim);
+    t.addTest(testReadUntilDisallowSpaceTrim);
+
+    t.addTest(testReadUntilExtract);
+    t.addTest(testReadUntilAllowExtract);
+    t.addTest(testReadUntilDisallowExtract);
+    t.addTest(testReadUntilLowerCaseExtract);
+    t.addTest(testReadUntilUpperCaseExtract);
+
+    t.addTest(testReadUntilCursorAtUntil);
+    t.addTest(testReadUntilFillBufferOnce);
+    t.addTest(testReadUntilFillBufferTwice);
+
+    bool passed = false;
     if (argc > 1) {
         loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
-        t.run(argv[1]);
+        passed = t.run(argv[1]);
     } else {
-        t.run(nullptr);
+        passed = t.run(nullptr);
     }
 
-    return 0;
+    return passed ? 0 : 1;
 }

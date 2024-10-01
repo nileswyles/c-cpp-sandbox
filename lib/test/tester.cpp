@@ -3,9 +3,12 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "logger.h"
+
 using namespace WylesLibs::Test;
 
-void Tester::run(const char * name) {
+bool Tester::run(const char * name) {
+    printf("\n-------------------- %s --------------------\n", this->suite_name.c_str());
     if (this->before != nullptr) {
         this->before();
     }
@@ -33,33 +36,40 @@ void Tester::run(const char * name) {
             }
         }
     }
-    printf("\n#######################################\n");
 
+    loggerExec(LOGGER_TEST,
+        printf("\n#######################################\n");
+    );
     if (num_failed > 0) {
         printf("\n Failed Tests: \n\n");
         printf("%s", failed_names.c_str());
     }
-
     printf("\n Results: %lu passed, %lu failed\n", num_passed, num_failed);
+
     if (this->after != nullptr) {
         this->after();
     }
 
     printf("\n---------------------------------------\n");
+    return num_failed == 0;
 }
 
 void Tester::runTest(Test * test) {
-    printf("\n#######################################\n");
-    printf("\nTest Func: %s\n\n", test->name.c_str());
+    loggerExec(LOGGER_TEST,
+        printf("\n#######################################\n");
+        printf("\nTest Func: %s\n\n", test->name.c_str());
+    );
     if (this->before_each != nullptr) {
         this->before_each(&test->arg);
     }
     test->func(&test->arg);
-    if (test->arg.fail) {
-        printf("\n\nTest Failed!\n");
-    } else {
-        printf("\n\nTest Passed!\n");
-    }
+    loggerExec(LOGGER_TEST,
+        if (test->arg.fail) {
+            printf("\n\nTest Failed!\n");
+        } else {
+            printf("\n\nTest Passed!\n");
+        }
+    );
     if (this->after_each != nullptr) {
         this->after_each(&test->arg);
     }

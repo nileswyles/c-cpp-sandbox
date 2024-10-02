@@ -25,23 +25,8 @@ typedef struct Test {
     TestArg arg;
 } Test;
 
-extern void ASSERT_STRING(TestArg * t, std::string result, std::string expected) {
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", result.c_str());
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected.c_str());
-
-    if (result == expected) {
-        t->fail = false;
-    }
-}
-
-extern void ASSERT_BOOLEAN(TestArg * t, bool result, bool expected) {
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", result ? "true": "false");
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected ? "true" : "false");
-
-    if (result == expected) {
-        t->fail = false;
-    }
-}
+extern void ASSERT_STRING(TestArg * t, std::string result, std::string expected);
+extern void ASSERT_BOOLEAN(TestArg * t, bool result, bool expected);
 
 class Tester {
     private:

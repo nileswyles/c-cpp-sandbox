@@ -44,6 +44,11 @@ extern ssize_t read(int fd, void *buf, size_t nbytes) {
     return ret; 
 }
 
+static void readUntilAssert(TestArg * t, std::string result, std::string expected) {
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", buffer);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    ASSERT_STRING(t, result, expected);
+}
 
 static void testReadUntil(TestArg * t) {
     IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
@@ -54,9 +59,7 @@ static void testReadUntil(TestArg * t) {
     std::string result = reader.readUntil(' ').toString();
     std::string expected = "TESTSTRINGWITHSPACE ";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilUpperCase(TestArg * t) {
@@ -69,9 +72,7 @@ static void testReadUntilUpperCase(TestArg * t) {
     std::string result = reader.readUntil(' ', (ReaderTask *)&uppercase).toString();
     std::string expected = "TESTSTRINGWITHSPACE ";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilLowerCase(TestArg * t) {
@@ -84,9 +85,7 @@ static void testReadUntilLowerCase(TestArg * t) {
     std::string result = reader.readUntil(' ', (ReaderTask *)&lowercase).toString();
     std::string expected = "teststringwithspace ";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilAllow(TestArg * t) {
@@ -101,9 +100,7 @@ static void testReadUntilAllow(TestArg * t) {
 
     // LOL
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilAllowStrict(TestArg * t) {
@@ -135,9 +132,7 @@ static void testReadUntilDisallow(TestArg * t) {
     std::string result = reader.readUntil(' ', (ReaderTask *)&disallow).toString();
     std::string expected = "TESTSTRNG";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilDisallowStrict(TestArg * t) {
@@ -169,9 +164,7 @@ static void testReadUntilTrim(TestArg * t) {
     std::string result = reader.readUntil(' ', (ReaderTask *)&trim).toString();
     std::string expected = "TESTSTRINGWITHSPACE";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilDisallowSpaceTrim(TestArg * t) {
@@ -186,9 +179,7 @@ static void testReadUntilDisallowSpaceTrim(TestArg * t) {
     std::string result = reader.readUntil(' ', (ReaderTask *)&disallow).toString();
     std::string expected = "TESTSTRINGWITHSPACE";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilExtract(TestArg * t) {
@@ -201,9 +192,7 @@ static void testReadUntilExtract(TestArg * t) {
     std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
     std::string expected = "TESTSTRINGWITHSPACE";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilAllowExtract(TestArg * t) {
@@ -218,9 +207,7 @@ static void testReadUntilAllowExtract(TestArg * t) {
     std::string result = reader.readUntil(' ', (ReaderTask *)&allow).toString();
     std::string expected = "AC";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilDisallowExtract(TestArg * t) {
@@ -235,9 +222,7 @@ static void testReadUntilDisallowExtract(TestArg * t) {
     std::string result = reader.readUntil(' ', (ReaderTask *)&disallow).toString();
     std::string expected = "TESTSTRINGWTHSPACE";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilLowerCaseExtract(TestArg * t) {
@@ -252,9 +237,7 @@ static void testReadUntilLowerCaseExtract(TestArg * t) {
     std::string result = reader.readUntil(' ', (ReaderTask *)&lowercase).toString();
     std::string expected = "teststringwithspace";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilUpperCaseExtract(TestArg * t) {
@@ -269,9 +252,7 @@ static void testReadUntilUpperCaseExtract(TestArg * t) {
     std::string result = reader.readUntil(' ', (ReaderTask *)&uppercase).toString();
     std::string expected = "TESTSTRINGWITHSPACE";
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilCursorAtUntil(TestArg * t) {
@@ -280,7 +261,7 @@ static void testReadUntilCursorAtUntil(TestArg * t) {
     buffer = " BLAH";
 
     std::string result = reader.readUntil(' ').toString();
-    ASSERT_STRING(t, result, "");
+    readUntilAssert(t, result, "");
 }
 
 static void testReadUntilFillBufferOnce(TestArg * t) {
@@ -296,7 +277,7 @@ static void testReadUntilFillBufferOnce(TestArg * t) {
     buffer = expected.c_str();
     
     std::string result = reader.readUntil(' ').toString();
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 static void testReadUntilFillBufferTwice(TestArg * t) {
@@ -312,7 +293,7 @@ static void testReadUntilFillBufferTwice(TestArg * t) {
     buffer = expected.c_str();
 
     std::string result = reader.readUntil(' ').toString();
-    ASSERT_STRING(t, result, expected);
+    readUntilAssert(t, result, expected);
 }
 
 int main(int argc, char * argv[]) {

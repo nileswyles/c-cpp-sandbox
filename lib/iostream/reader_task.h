@@ -156,6 +156,7 @@ class ReaderTaskTrim: public ReaderTask {
 
         ReaderTaskTrim(): l_trimming(true), r_trimming(false) {}
 
+        void flush(Array<uint8_t>& buffer) {}
         void rTrimFlush(Array<uint8_t>& buffer);
         void perform(Array<uint8_t>& buffer, uint8_t c);
 };

@@ -3,8 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "logger.h"
-
 using namespace WylesLibs::Test;
 
 bool Tester::run(const char * name) {

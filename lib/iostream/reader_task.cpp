@@ -8,6 +8,7 @@ void ReaderTaskTrim::rTrimFlush(Array<uint8_t>& buffer) {
     }
     r_trimming = false;
 }
+
 void ReaderTaskTrim::perform(Array<uint8_t>& buffer, uint8_t c) {
     if (!this->l_trimming) {
         if (STRING_UTILS_WHITESPACE.find(c) != std::string::npos) {
@@ -20,6 +21,7 @@ void ReaderTaskTrim::perform(Array<uint8_t>& buffer, uint8_t c) {
                 buffer.append(c);
                 this->r_trimming = false;
             } else {
+                // store whitespaces in r_trim buffer for flushing if we see non-whitespace.
                 this->r_trim.append(c);
             }
         } else {

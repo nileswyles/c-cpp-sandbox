@@ -276,7 +276,10 @@ static void testReadUntilFillBufferTwice(TestArg * t) {
 int main(int argc, char * argv[]) {
     Tester t("IOStream Tests");
     // TODO: bug fix/feature needed... if we reach an "until" character while r_trimming (when open, before right_most_char is reached), then we will exit.
-    //  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ":": should yield :: not :. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
+    //  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ": ": ' should yield ': ' not ':'. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
+    
+    // lol, this is wrong but the sentiment was that behaviour should be defined and documented regardless of direction.
+
     // make sure to write a test.
     t.addTest(testReadUntil);
     t.addTest(testReadUntilUpperCase);

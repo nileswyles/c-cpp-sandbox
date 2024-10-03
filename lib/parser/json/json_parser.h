@@ -41,16 +41,16 @@ typedef enum JsonType {
 
 class JsonBase {
     public:
-        virtual ~JsonBase() = 0; // # abstract
+        virtual ~JsonBase() {}
         virtual std::string toJsonElements() {
             return "";
-        };
+        }
         virtual std::string toJsonString() {
             std::string s("{");
             s += toJsonElements();
             s += "}";
             return s;
-        };
+        }
 };
 
 class JsonValue: public JsonBase {

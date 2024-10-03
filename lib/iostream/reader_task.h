@@ -49,7 +49,7 @@ class ReaderTask {
     public:
         std::string read_until;
 
-        virtual ~ReaderTask() = 0;
+        virtual ~ReaderTask() {}
         // Good example of CPP OOP
 
         // good example of "dynamic dispatch"?

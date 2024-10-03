@@ -28,7 +28,7 @@ class JsonObject: public JsonValue {
             loggerPrintf(LOGGER_DEBUG, "Added json key! @ %s\n", key.c_str());
         }
 
-        std::string toJsonString();
+        std::string toJsonString() final override;
 };
 
 }

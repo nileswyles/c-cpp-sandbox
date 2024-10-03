@@ -40,7 +40,7 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
             loggerPrintf(LOGGER_DEBUG, "Added json value object! @ %p\n", value);
         }
 
-        std::string toJsonString();
+        std::string toJsonString() final override;
 };
 
 }

@@ -41,14 +41,11 @@ typedef enum JsonType {
 
 class JsonBase {
     public:
-        // TODO:
-        //  Doesn't make much sense to me... but need to declare virtual destructor in base classes as such for derived destructors to be called.
-        //  Revisit this... 
-        virtual ~JsonBase() {};
+        virtual ~JsonBase() = 0; // # abstract
         virtual std::string toJsonElements() {
             return "";
         };
-        std::string toJsonString() {
+        virtual std::string toJsonString() {
             std::string s("{");
             s += toJsonElements();
             s += "}";
@@ -61,7 +58,7 @@ class JsonValue: public JsonBase {
         JsonType type;
         JsonValue(): type(NULL_TYPE) {}
         JsonValue(JsonType derived_type): type(derived_type) {}
-        std::string toJsonString() {
+        std::string toJsonString() final override {
             return "";
         }
 };
@@ -79,7 +76,7 @@ class JsonBoolean: public JsonValue {
             return this->boolean;
         }
 
-        std::string toJsonString() {
+        std::string toJsonString() final override {
             if (boolean) {
                 return std::string("true");
             } else {
@@ -101,7 +98,7 @@ class JsonNumber: public JsonValue {
             return this->number;
         }
 
-        std::string toJsonString() {
+        std::string toJsonString() final override {
             char format_i[JSON_NUMBER_FORMAT_STRING_SIZE] = {};
             if (natural_digit_count == -1 || decimal_digit_count == -1) {
                 sprintf(format_i, "%ld.%ldf", NUMBER_MAX_DIGITS, NUMBER_MAX_DIGITS);
@@ -128,7 +125,7 @@ class JsonString: public JsonValue {
             return this->s;
         }
 
-        std::string toJsonString() {
+        std::string toJsonString() final override {
             std::string ret("\"");
             ret += this->getValue();
             ret += "\"";

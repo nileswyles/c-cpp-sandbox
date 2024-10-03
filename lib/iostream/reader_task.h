@@ -49,12 +49,30 @@ class ReaderTask {
     public:
         std::string read_until;
 
-        ReaderTask() {}
+        virtual ~ReaderTask() = 0;
+        // Good example of CPP OOP
+
         // good example of "dynamic dispatch"?
-        //  As I understand it, calls to ReaderTaskChain->flush (not virtual) will call this function regardless of how it's defined in sub-classes?
-        //  By contrast, calls to perform call the function defined by the class-type at creation. Regardless of any casting along the way lol.
-        //  Also, the compiler throws an error if perform isn't defined in sub-classes. 
-        //     *** Then there's {} vs. = 0, which is effectively the same thing? At least when return type == void? ***
+        // Virtual allows calling function defined in original type during object creation. Functions without virtual will call the function defined in the "current type".
+        //
+        //  Common example is to define and use a base class to cleanly select different functionality...
+        //      This means that you might cast a sub-class pointer to it's base class... Virtual is required to call the functionality in the sub-class after casting to base class.
+        //  Calls to ReaderTaskChain->flush (if not virtual) would call this function regardless of how it's defined in sub-classes.
+        //  By contrast, calls to perform (if virtual) call the function defined by the class-type at creation. *** Regardless of any casting/type-conversion along the way ***.
+
+        // good example of pure functions
+        //     There's {} (no-op) vs. =0, 
+        //      a class with a pure function (=0) is abstract and cannot be instantiated, but can be used as a pointer type.
+        //  This means the compiler throws an error if it doesn't find an implementation of the pure function in sub-classes. 
+
+        // override and final
+        // These appear to be optional and more a formality thing... Restrict behaviour as much as possible if not strictly necessary...
+
+        //  override says that function is virtual (supports dynamic dispatch) and overrides a virtual class.
+        //      - enables compiler check to ensure base class function is virtual...  
+        //  final says that function is virtual (supports dynamic dispatch) and cannot be overridden.
+        //      - compiler error is generated if user tries to override. 
+
         virtual void flush(Array<uint8_t>& buffer) = 0;
         virtual void perform(Array<uint8_t>& buffer, uint8_t c) = 0;
 };
@@ -66,6 +84,7 @@ class ReaderTaskChain: public ReaderTask {
 
         ReaderTaskChain(): nextOperation(nullptr), ignored(false) {}
         ReaderTaskChain(ReaderTaskChain * next): nextOperation(next), ignored(false) {}
+        ~ReaderTaskChain() { if (nextOperation != nullptr) delete nextOperation; }
 
         void next(Array<uint8_t>& buffer, uint8_t c) {
             if (!this->ignored) {
@@ -77,15 +96,15 @@ class ReaderTaskChain: public ReaderTask {
             }
             this->ignored = false;
         }
-        void flush(Array<uint8_t>& buffer) {
+        void flush(Array<uint8_t>& buffer) override {
             this->nextOperation->flush(buffer);
         }
-        virtual void perform(Array<uint8_t>& buffer, uint8_t c) = 0;
+        void perform(Array<uint8_t>& buffer, uint8_t c) override {};
 };
 
 class ReaderTaskLC: public ReaderTaskChain {
     public:
-        void perform(Array<uint8_t>& buffer, uint8_t c) {
+        void perform(Array<uint8_t>& buffer, uint8_t c) final override {
             if (c >= 0x41 && c <= 0x5A) { // lowercase flag set and is upper case
         		c += 0x20; // lower case the char
         	}
@@ -95,7 +114,7 @@ class ReaderTaskLC: public ReaderTaskChain {
 
 class ReaderTaskUC: public ReaderTaskChain {
     public:
-        void perform(Array<uint8_t>& buffer, uint8_t c) {
+        void perform(Array<uint8_t>& buffer, uint8_t c) final override {
             if (c >= 0x61 && c <= 0x7A) {
         		c -= 0x20;
         	}
@@ -111,7 +130,7 @@ class ReaderTaskDisallow: public ReaderTaskChain {
         ReaderTaskDisallow(std::string to_disallow): to_disallow(to_disallow), strict(false) {}
         ReaderTaskDisallow(std::string to_disallow, bool strict): to_disallow(to_disallow), strict(strict) {}
 
-        void perform(Array<uint8_t>& buffer, uint8_t c) {
+        void perform(Array<uint8_t>& buffer, uint8_t c) final override {
             if (this->to_disallow.find(c) != std::string::npos) { 
                 if (strict) {
                     std::string msg = "Banned character found:";
@@ -133,7 +152,7 @@ class ReaderTaskAllow: public ReaderTaskChain {
         ReaderTaskAllow(std::string to_allow): to_allow(to_allow), strict(false) {}
         ReaderTaskAllow(std::string to_allow, bool strict): to_allow(to_allow), strict(strict) {}
 
-        void perform(Array<uint8_t>& buffer, uint8_t c) {
+        void perform(Array<uint8_t>& buffer, uint8_t c) final override {
             if (this->to_allow.find(c) == std::string::npos) { 
                 if (strict) {
                     std::string msg = "Banned character found:";
@@ -156,9 +175,9 @@ class ReaderTaskTrim: public ReaderTask {
 
         ReaderTaskTrim(): l_trimming(true), r_trimming(false) {}
 
-        void flush(Array<uint8_t>& buffer) {}
+        void flush(Array<uint8_t>& buffer) final override {}
         void rTrimFlush(Array<uint8_t>& buffer);
-        void perform(Array<uint8_t>& buffer, uint8_t c);
+        void perform(Array<uint8_t>& buffer, uint8_t c) final override;
 };
 
 class ReaderTaskExtract: public ReaderTask {
@@ -178,9 +197,9 @@ class ReaderTaskExtract: public ReaderTask {
             left_most_char(left_most_char), right_most_char(right_most_char), 
             r_trim_non_whitespace(0), r_trim_read_until(0) {}
 
-        void flush(Array<uint8_t>& buffer);
+        void flush(Array<uint8_t>& buffer) final override;
         void rTrimFlush(Array<uint8_t>& buffer);
-        void perform(Array<uint8_t>& buffer, uint8_t c);
+        void perform(Array<uint8_t>& buffer, uint8_t c) final override;
 };
 }
 

@@ -1,14 +1,13 @@
 #!/bin/sh
 
 TEST_ARG=""
+DEFINES=""
 LOG_LEVEL=0
 while true; do
 	case "$1" in
 		-l|--log) LOG_LEVEL="$2"; shift 2 ;;
-		-t|--test) TEST_ARG="-t $2"; shift 2 ;;
-		-D) DEFINES="$DEFINES -D$2"; shift 2 ;;
-		# --) shift; break ;;
-		*) break;;
+		-D) DEFINES="$DEFINES -D $2 "; shift 2 ;;
+		*) TEST_ARG=$@; break;;
 	esac
 done
 
@@ -21,4 +20,6 @@ SRC_FILES="
 -s $ROOT_DIR/lib/array.cpp
 "
 
-exec "$ROOT_DIR/build_scripts/build_common.sh -n array_test $SRC_FILES -l $LOG_LEVEL $TEST_ARG $DEFINES"
+CMD="$ROOT_DIR/build_scripts/build_common.sh -n array_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"
+echo $CMD
+exec $CMD

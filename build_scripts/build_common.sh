@@ -34,11 +34,9 @@ rm $PROGRAM_PATH 2> /dev/null
 echo "\nBuild: "
 BUILD_CMD="g++ $SRC_FILES-iquote $QUOTE_INCLUDE_ROOT $DEFINES$LD_FLAGS-std=c++20 -o $PROGRAM_PATH"
 echo $BUILD_CMD
-exec $BUILD_CMD
-echo $?
+eval $BUILD_CMD
 
 echo "\nExecuting Program: "
 EXEC_CMD="$PROGRAM_PATH $PROGRAM_ARG"
 echo $EXEC_CMD
-exec $EXEC_CMD
-echo $?
+eval $EXEC_CMD

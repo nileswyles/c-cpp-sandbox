@@ -35,7 +35,7 @@ LD_FLAGS="
 -lcrypto
 "
 
-mkdir $ROOT_DIR/out
+mkdir $ROOT_DIR/out 2> /dev/null
 TEST_PATH=$ROOT_DIR/out/iostream_test.out
 rm $TEST_PATH
 g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT -iquote $QUOTE_INCLUDE_ROOT/iostream $LD_FLAGS $DEFINES -Wno-pointer-arith -std=c++23 -o $TEST_PATH

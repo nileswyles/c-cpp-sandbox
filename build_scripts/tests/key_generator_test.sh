@@ -28,7 +28,7 @@ $ROOT_DIR/lib/test/tester.cpp
 $ROOT_DIR/lib/iostream/iostream.cpp
 "
 
-mkdir $ROOT_DIR/out
+mkdir $ROOT_DIR/out 2> /dev/null
 TEST_PATH=$ROOT_DIR/out/key_generator_test.out
 rm $TEST_PATH
 g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT $DEFINES -std=c++20 -o $TEST_PATH

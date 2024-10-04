@@ -28,6 +28,7 @@ static void write(std::string file_path, std::string buffer, bool append) {
     // open every time a problem?
     std::fstream s{file_path, s.binary | s.out};
     if (!s.is_open()) {
+        throw std::runtime_error("Unable to open file at: " + file_path);
     } else {
         if (append) {
             s.seekp(0, std::ios_base::end);
@@ -42,6 +43,7 @@ static void write(std::string file_path, Array<uint8_t> buffer, bool append) {
     // open every time a problem?
     std::fstream s{file_path, s.binary | s.out};
     if (!s.is_open()) {
+        throw std::runtime_error("Unable to open file at: " + file_path);
     } else {
         if (append) {
             s.seekp(0, std::ios_base::end);
@@ -55,12 +57,7 @@ static void write(std::string file_path, Array<uint8_t> buffer, bool append) {
 static WylesLibs::Array<uint8_t> read(std::string file_path) {
     int fd = open(file_path.c_str(), O_RDONLY);
     if (fd == -1) {
-        //  value in distinguishing between size == 0 vs uninitialized...?
-        //      or return pointers to array and nullptr?
-        //  in other words, non-existing file == empty file?
-
-        // something to keep in mind, I guess... no changes needed at the moment. 
-        return WylesLibs::Array<uint8_t>();
+        throw std::runtime_error("Unable to read file at: " + file_path);
     }
     struct stat stat_info = {};
     int lol = fstat(fd, &stat_info);

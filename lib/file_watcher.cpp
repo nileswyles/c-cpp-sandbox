@@ -43,10 +43,8 @@ void FileWatcher::initialize(std::shared_ptr<FileWatcher> ptr) {
         // okay, so this needs absolute paths?
         // std::string path = "/workspaces/c-cpp-sandbox/http_test/" + w.first;
         std::string path = w.first;
-        int wd = inotify_add_watch(fd, path.c_str(), access_mask);
-        printf("!!!!!!FD: %d, ERRNO: %d, path: %s\n", fd, errno, path.c_str());
+        int wd = inotify_add_watch(fd, path.c_str(), IN_CREATE);
         if (wd == -1) {
-            printf("ERROR! FD: %d, ERRNO: %d, path: %s\n", fd, errno, path.c_str());
             throw std::runtime_error("Cannot watch path: " + path);
         }
         paths_wd_map[w.first] = wd;

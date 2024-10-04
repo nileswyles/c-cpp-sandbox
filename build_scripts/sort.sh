@@ -25,7 +25,7 @@ SRC_FILES="
 $ROOT_DIR/cpping/$SORT_FILE.cpp
 "
 
-mkdir $ROOT_DIR/out
+mkdir $ROOT_DIR/out 2> /dev/null
 TEST_PATH=$ROOT_DIR/out/$SORT_FILE.out
 GRAPH_OUT=$ROOT_DIR/out/$SORT_FILE.gif
 rm $TEST_PATH

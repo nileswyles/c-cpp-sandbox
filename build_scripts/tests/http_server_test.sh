@@ -27,7 +27,7 @@ $ROOT_DIR/lib/test/http_server_test.cpp
 $ROOT_DIR/lib/test/tester.cpp
 "
 
-mkdir $ROOT_DIR/out
+mkdir $ROOT_DIR/out 2> /dev/null
 TEST_PATH=$ROOT_DIR/out/http_server_test.out
 rm $TEST_PATH
 g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT $DEFINES -std=c++20 -o $TEST_PATH

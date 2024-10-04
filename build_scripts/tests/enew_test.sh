@@ -15,7 +15,7 @@ DEFINES="
 -DLOGGER_LEVEL=$1
 "
 
-mkdir $ROOT_DIR/out
+mkdir $ROOT_DIR/out 2> /dev/null
 TEST_PATH=$ROOT_DIR/out/enew_test.out
 
 g++ $SRC_FILES -iquote $ROOT_DIR/lib -iquote $ROOT_DIR/lib/memory $DEFINES -std=c++23 -o $TEST_PATH

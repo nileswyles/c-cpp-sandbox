@@ -1,6 +1,6 @@
 #!/bin/sh
 
-NAME="something"
+NAME="program"
 SRC_FILES=""
 DEFINES=""
 LD_FLAGS=""
@@ -21,6 +21,7 @@ done
 # see logger.h for log level values
 DEFINES=$DEFINES"-D GLOBAL_LOGGER_LEVEL=$LOG_LEVEL -D LOGGER_LEVEL=$LOG_LEVEL "
 
+# TODO: I think I left this here because need would like to support different cwd paths eventually? (other than project root)
 ROOT_DIR="."
 
 # Standardize this
@@ -33,9 +34,11 @@ rm $PROGRAM_PATH 2> /dev/null
 echo "\nBuild: "
 BUILD_CMD="g++ $SRC_FILES-iquote $QUOTE_INCLUDE_ROOT $DEFINES$LD_FLAGS-std=c++20 -o $PROGRAM_PATH"
 echo "$BUILD_CMD"
-exec "$BUILD_CMD"
+exec $BUILD_CMD
+echo $?
 
 echo "\nExecuting Program: "
-EXEC_CMD="exec $PROGRAM_PATH $PROGRAM_ARG"
+EXEC_CMD="$PROGRAM_PATH $PROGRAM_ARG"
 echo "$EXEC_CMD"
 exec $EXEC_CMD
+echo $?

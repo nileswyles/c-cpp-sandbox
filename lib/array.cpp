@@ -3,12 +3,12 @@
 using namespace WylesLibs;
 
 template<>
-void WylesLibs::addElement<const char *>(const char ** buffer, const size_t pos, const char * el) {
+void WylesLibs::addElement<const char *>(const char ** buf, const size_t pos, const char * el) {
     char * new_cstring = newCArray<char>(strlen(el) + 1);
     strcpy(new_cstring, el);
-    loggerPrintf(LOGGER_DEBUG, "String copied: %p, %s\n", el, el);
-    loggerPrintf(LOGGER_DEBUG, "New String: %p, %s\n", new_cstring, new_cstring);
-    buffer[pos] = new_cstring;
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "String copied: %p, '%s'\n", el, el);
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "New String: %p, '%s'\n", new_cstring, new_cstring);
+    buf[pos] = new_cstring;
 }
 
 // const char value...
@@ -17,9 +17,10 @@ void WylesLibs::addElement<const char *>(const char ** buffer, const size_t pos,
 // T ** == const char ***
 template<>
 void WylesLibs::deleteCArray<const char *>(const char *** e_buf, size_t size) {
-    loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'const char *'\n");
+    loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'const char *' of size: %u\n", size);
     for (size_t i = 0; i < size; i++) {
-        // deletes string...
+        // deletes string. see allocation in addElement function above...
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "String being deleted: '%s'\n", (*e_buf)[i]);
         delete[] (*e_buf)[i];
     }
     // deletes array of string pointers
@@ -27,10 +28,13 @@ void WylesLibs::deleteCArray<const char *>(const char *** e_buf, size_t size) {
     // deletes container (pointer to array deleted above) 
     delete e_buf;
 }
+
 template<>
-void WylesLibs::deleteCArrayElement<const char *>(const char ** el, size_t pos) {
-    loggerPrintf(LOGGER_DEBUG, "Deleting element of ptr type 'const char *'\n");
-    delete[] el[pos];
+void WylesLibs::deleteCArrayElement<const char *>(const char ** buf, size_t pos) {
+    loggerPrintf(LOGGER_DEBUG, "Deleting element of ptr type 'const char *' at %u\n", pos);
+    // deletes string. see allocation in addElement function above...
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "String being deleted: '%s'\n", buf[pos]);
+    delete[] buf[pos];
 }
 
 template<>

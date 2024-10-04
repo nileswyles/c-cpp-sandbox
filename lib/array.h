@@ -42,32 +42,28 @@ static inline T * newCArray(size_t size) {
 }
 
 template<typename T>
-void addElement(T * e_buf, const size_t pos, T el) {
-    e_buf[pos] = el;
+void addElement(T * buf, const size_t pos, T el) {
+    buf[pos] = el;
     // loggerPrintf(LOGGER_DEBUG, "%p, NEW BUFFER ELEMENT: [%x], OLD BUFFER ELEMENT: [%x]\n", e_buf + pos, e_buf[pos], el);
 }
 template<>
-void addElement<const char *>(const char ** buffer, const size_t pos, const char * el);
+void addElement<const char *>(const char ** buf, const size_t pos, const char * el);
 
 template<typename T>
 void deleteCArray(T ** e_buf, size_t size) {
-    loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'generic'\n");
+    loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'generic' of size: %u\n", size);
     // deletes array of pointers to object of type T
     delete[] *e_buf;
     // deletes container (pointer to array deleted above) 
     delete e_buf;
 }
 template<>
-void deleteCArray<void *>(void *** e_buf, size_t size);
-template<>
 void deleteCArray<const char *>(const char *** e_buf, size_t size);
 
 template<typename T>
-void deleteCArrayElement(T * el, size_t pos) {}
+void deleteCArrayElement(T * buf, size_t pos) {}
 template<>
-void deleteCArrayElement<const char *>(const char ** el, size_t pos);
-template<>
-void deleteCArrayElement<void *>(void ** el, size_t pos);
+void deleteCArrayElement<const char *>(const char ** buf, size_t pos);
 
 // TODO: again, member function specialization didn't work, so...
 //  revisit in future.
@@ -216,11 +212,11 @@ class Array {
         ~Array() {
             (*this->instance_count)--;
             if (*this->instance_count == 0) {
+                deleteCArray<T>(e_buf, *e_size);
                 delete instance_count;
                 delete e_cap;
                 delete e_size;
                 delete e_sorted;
-                deleteCArray<T>(e_buf, *e_size);
             }
         }
         Array<T>& sort(ArraySort sortOrder) {
@@ -344,11 +340,12 @@ class Array {
 
             return *this;
         }
-        Array<T>& remove(const T& el) {
+        Array<T>& removeEl(const T& el) {
             size_t i = this->find(el);
             if (i != -1) {
-                remove(i);
+                remove(i, 1);
             }
+            return *this;
         }
         Array<T>& remove(const size_t pos) {
             return this->remove(pos, 1);

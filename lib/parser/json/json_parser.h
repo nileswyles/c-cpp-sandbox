@@ -58,7 +58,7 @@ class JsonValue: public JsonBase {
         JsonType type;
         JsonValue(): type(NULL_TYPE) {}
         JsonValue(JsonType derived_type): type(derived_type) {}
-        std::string toJsonString() final override {
+        std::string toJsonString() {
             return "";
         }
 };

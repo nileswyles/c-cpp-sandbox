@@ -1,10 +1,17 @@
 #!/bin/sh
 
+NAME="something"
+SRC_FILES=""
+DEFINES=""
+LD_FLAGS=""
 LOG_LEVEL=0
 while true; do
 	case "$1" in
+        -n|--name) NAME="$2"; shift 2 ;;
 		-l|--log) LOG_LEVEL="$2"; shift 2 ;;
 		-t|--test) TEST_ARG="$2"; shift 2 ;;
+		-s|--source) SRC_FILES="$SRC_FILES $2"; shift 2 ;;
+		-l) LD_FLAGS="$LD_FLAGS -l$2"; shift 2 ;;
 		-D) DEFINES="$DEFINES -D$2"; shift 2 ;;
 		# --) shift; break ;;
 		*) break;;
@@ -22,20 +29,8 @@ ROOT_DIR="."
 # Standardize this
 QUOTE_INCLUDE_ROOT=$ROOT_DIR/lib
 
-# $ROOT_DIR/lib/json/json_mapper.cpp
-SRC_FILES="
-$ROOT_DIR/lib/test/json_test.cpp
-$ROOT_DIR/lib/parser/json/json_parser.cpp
-$ROOT_DIR/lib/parser/json/json_mapper.cpp
-$ROOT_DIR/lib/parser/json/json_object.cpp
-$ROOT_DIR/lib/parser/json/json_array.cpp
-$ROOT_DIR/lib/test/tester.cpp
-$ROOT_DIR/lib/iostream/iostream.cpp
-$ROOT_DIR/lib/iostream/reader_task.cpp
-"
-
 mkdir $ROOT_DIR/out 2> /dev/null
-TEST_PATH=$ROOT_DIR/out/json_test.out
+TEST_PATH=$ROOT_DIR/out/$NAME.out
 rm $TEST_PATH 2> /dev/null
-g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT $DEFINES -std=c++23 -o $TEST_PATH
+g++ $SRC_FILES -iquote $QUOTE_INCLUDE_ROOT $DEFINES $LD_FLAGS -std=c++20 -o $TEST_PATH
 exec $TEST_PATH $TEST_ARG

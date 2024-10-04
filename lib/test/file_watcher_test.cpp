@@ -24,20 +24,25 @@ static void createFile(std::string path) {
 }
 
 bool riskyCreateBool = false;
-bool riskyMoveBool = false;
+bool riskyMoveOutBool = false;
+bool riskyMoveInBool = false;
 bool riskyDeleteBool = false;
 
 class TestFileWatcher: public FileWatcher {
     public:
         TestFileWatcher(Array<std::string> paths): FileWatcher(paths, IN_CREATE | IN_MOVE | IN_DELETE) {}
         void handle(const struct inotify_event * event) {
-            if (event->mask == IN_CREATE) {
+            loggerPrintf(LOGGER_DEBUG, "MASK: %x\n", event->mask);
+            if (event->mask&IN_CREATE) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "CREATE EVENT FOUND!\n");
                 riskyCreateBool = true;
-            } else if (event->mask == IN_MOVE) {
-                loggerPrintf(LOGGER_TEST_VERBOSE, "MOVE EVENT FOUND!\n");
-                riskyMoveBool = true;
-            } else if (event->mask == IN_DELETE) {
+            } else if (event->mask&IN_MOVED_FROM) {
+                loggerPrintf(LOGGER_TEST_VERBOSE, "MOVE OUT EVENT FOUND!\n");
+                riskyMoveOutBool = true;
+            } else if (event->mask&IN_MOVED_TO) {
+                loggerPrintf(LOGGER_TEST_VERBOSE, "MOVE IN EVENT FOUND!\n");
+                riskyMoveInBool = true;
+            } else if (event->mask&IN_DELETE) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "DELETE EVENT FOUND!\n");
                 riskyDeleteBool = true;
             }
@@ -53,8 +58,9 @@ static std::shared_ptr<TestFileWatcher> file_watcher;
 
 static void testFileWatcherFileCreated(TestArg * t) {
     riskyCreateBool = false;
-    std::string test_create_file = Paths::join(test_directory, "created_file");
-    createFile(test_create_file);
+    std::string test_file = Paths::join(test_directory, "created_file");
+    system(("rm " + test_file + " 2> /dev/null").c_str());
+    createFile(test_file);
     size_t i = 10;
     // lol, this 
     while (!riskyCreateBool && i-- > 0) {
@@ -70,7 +76,7 @@ static void testFileWatcherFileRemoved(TestArg * t) {
     std::string test_file = Paths::join(test_directory, "file_to_remove");
     createFile(test_file);
     sleep(10);
-    system(("rm " + test_file).c_str());
+    system(("rm " + test_file + " 2> /dev/null").c_str());
     size_t i = 10;
     while (!riskyDeleteBool && i-- > 0) {
         sleep(1);
@@ -81,29 +87,31 @@ static void testFileWatcherFileRemoved(TestArg * t) {
 }
 
 static void testFileWatcherFileMovedIn(TestArg * t) {
-    riskyMoveBool = false;
+    riskyMoveInBool = false;
     std::string test_file = Paths::join(test_directory_other, "moved_file");
+    system(("rm " + test_file + " 2> /dev/null").c_str());
     createFile(test_file);
     system(("mv " + test_file + " " + Paths::join(test_directory, "moved_file")).c_str());
     size_t i = 10;
-    while (!riskyMoveBool && i-- > 0) {
+    while (!riskyMoveInBool && i-- > 0) {
         sleep(1);
     }
-    if (riskyMoveBool) {
+    if (riskyMoveInBool) {
         t->fail = false;
     }
 }
 
 static void testFileWatcherFileMovedOut(TestArg * t) {
-    riskyMoveBool = false;
+    riskyMoveOutBool = false;
     std::string test_file = Paths::join(test_directory, "moved_file");
+    system(("rm " + test_file + " 2> /dev/null").c_str());
     createFile(test_file);
     system(("mv " + test_file + " " + Paths::join(test_directory_other, "moved_file")).c_str());
     size_t i = 10;
-    while (!riskyMoveBool && i-- > 0) {
+    while (!riskyMoveOutBool && i-- > 0) {
         sleep(1);
     }
-    if (riskyMoveBool) {
+    if (riskyMoveOutBool) {
         t->fail = false;
     }
 }
@@ -127,8 +135,8 @@ static void beforeSuite() {
 
 static void afterSuite() {
     printf("AFTER CALLED\n");
-    // TODO: cleanup, if needed
     fileWatcherThreadStop();
+    file_watcher.reset();
 
     system(("rm -r " + test_directory).c_str());
     system(("rm -r " + test_directory_other).c_str());

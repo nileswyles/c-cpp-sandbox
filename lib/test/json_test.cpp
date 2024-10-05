@@ -324,7 +324,7 @@ int main(int argc, char * argv[]) {
 
     bool passed = false;
     if (argc > 1) {
-        loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);
+        loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[1]: %s\n", argc, argv[1]);
         passed = t.run(argv[1]);
     } else {
         passed = t.run(nullptr);

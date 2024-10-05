@@ -34,6 +34,7 @@ bool Tester::run(const char * name) {
     std::string failed_names;
     for (auto test: this->tests) {
         bool ran_test = false;
+        // TODO: test selection pattern matching?
         if (name == nullptr) {
             runTest(&test);
             ran_test = true;

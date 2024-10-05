@@ -35,11 +35,8 @@
 
 namespace WylesLibs {
 
-// TODO: If I do end up using CPP's, stream stuff it will be to replace fd read calls from the c standard library... 
-//  and should encapsulate ReaderTask behavior for readUntil?
-//  maybe extend and overwrite readline?
-//
-//  Also, maybe implement include filtering too...
+//  TODO:
+//  Maybe implement include filtering...
 //      can go as far as to support pseudo-regex syntax? (character class) [A-Za-z0-9\s] etc...
 //      i.e. 7e[0-5] should expand to "7e012345" then just string::find(match)
 //          idk, seems useful?

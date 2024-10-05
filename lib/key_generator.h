@@ -63,9 +63,9 @@ class UniqueKeyGeneratorStore {
             }
         }
         void flush(Array<uint8_t> data) {
+            loggerPrintf(LOGGER_DEBUG, "Flushing sequence to data store at %s\n", this->file_path.c_str());
             File::write(this->file_path, data, false);
         }
-
 };
 
 class UniqueKeyGenerator {
@@ -105,7 +105,7 @@ class UniqueKeyGenerator {
             printf("Refreshed store...\n");
             pthread_mutex_init(&mutex, nullptr);
         }
-        ~UniqueKeyGenerator() {
+        virtual ~UniqueKeyGenerator() {
             pthread_mutex_lock(&this->mutex);
             Array<uint8_t> data;
             UniqueKeyGenerator::valToHexCharArray(data, current, 8);
@@ -138,7 +138,8 @@ class UUIDGeneratorV4: public UniqueKeyGenerator {
     protected:
    public:
         UUIDGeneratorV4() {}
-        virtual std::string next() {
+        virtual ~UUIDGeneratorV4() {}
+        std::string next() override {
             // random, independent variables, (1/2^128 * 1/2^128) 
             //   better?
 
@@ -147,7 +148,6 @@ class UUIDGeneratorV4: public UniqueKeyGenerator {
             for (size_t i = 0; i < 4; i++) {
                 UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)random(), 4);
             }
-
             return data.toString();
         }
 };
@@ -164,7 +164,7 @@ class UUIDGeneratorV7: public UUIDGeneratorV4 {
                 num_randoms = pNum_randoms;
             }
         }
-        std::string next() {
+        std::string next() final override {
             // Think about common SIG... 
 
             // okay, so we can take timestamp, machine specific and random value...
@@ -303,12 +303,9 @@ class UUIDGeneratorV7: public UUIDGeneratorV4 {
                     UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)random(), 4);
                 }
             }
-
             // In conclusion, be a keen developer and gracefully handle duplicates regardless of which UUID method is used?
             return data.toString();
         }
 };
-
 }
-
 #endif 

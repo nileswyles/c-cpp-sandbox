@@ -21,5 +21,5 @@ SRC_FILES="
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n file_watcher_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"
-echo $CMD
+echo "\t"$CMD
 exec $CMD

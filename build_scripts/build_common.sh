@@ -31,12 +31,12 @@ mkdir $ROOT_DIR/out 2> /dev/null
 PROGRAM_PATH=$ROOT_DIR/out/$NAME.out
 rm $PROGRAM_PATH 2> /dev/null
 
-echo "\nBuild: "
+echo "\n~Build: "
 BUILD_CMD="g++ $SRC_FILES-iquote $QUOTE_INCLUDE_ROOT $DEFINES$LD_FLAGS-std=c++20 -o $PROGRAM_PATH"
-echo $BUILD_CMD
+echo "\t$BUILD_CMD"
 eval $BUILD_CMD
 
-echo "\nExecuting Program: "
+echo "\n~Executing Program: "
 EXEC_CMD="$PROGRAM_PATH $PROGRAM_ARG"
-echo $EXEC_CMD
+echo "\t$EXEC_CMD"
 eval $EXEC_CMD

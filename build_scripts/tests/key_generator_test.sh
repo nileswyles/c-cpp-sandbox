@@ -20,5 +20,5 @@ SRC_FILES="
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n key_generator_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"
-echo $CMD
+echo "\t"$CMD
 exec $CMD

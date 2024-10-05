@@ -27,5 +27,5 @@ LD_FLAGS="
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n iostream_test $SRC_FILES -l $LOG_LEVEL $LD_FLAGS $DEFINES$TEST_ARG"
-echo $CMD
+echo "\t"$CMD
 exec $CMD

@@ -63,8 +63,10 @@ class UniqueKeyGeneratorStore {
             }
         }
         void flush(Array<uint8_t> data) {
-            loggerPrintf(LOGGER_DEBUG, "Flushing sequence to data store at %s\n", this->file_path.c_str());
-            File::write(this->file_path, data, false);
+            if (this->file_path.size() > 0) {
+                loggerPrintf(LOGGER_DEBUG, "Flushing sequence to data store at %s\n", this->file_path.c_str());
+                File::write(this->file_path, data, false);
+            }
         }
 };
 

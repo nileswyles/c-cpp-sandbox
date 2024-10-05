@@ -6,7 +6,7 @@ LOG_LEVEL=0
 while true; do
 	case "$1" in
 		-l|--log) LOG_LEVEL="$2"; shift 2 ;;
-		-D) DEFINES="$DEFINES -D$2 "; shift 2 ;;
+		-D) DEFINES="$DEFINES-D $2 "; shift 2 ;;
 		*) PROGRAM_ARG=$@; break;;
 	esac
 done

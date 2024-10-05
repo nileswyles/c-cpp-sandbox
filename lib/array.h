@@ -385,10 +385,14 @@ class Array {
                 selected_buf = *this->e_buf;
             }
             for (size_t i = pos; i < this->size(); i++) {
-                if (i + num_els < this->size()) {
-                    // if removing last element, just leave it... decrementing size should be enough...
-                    selected_buf[i] = (*this->e_buf)[i + num_els];
+                if (i < pos + num_els) {
+                    printf("lol... close enough? %d\n", i);
+                    // make sure to deallocate memory for elements being removed.
                     deleteCArrayElement<T>(*this->e_buf, i);
+                }
+                // if removing last element, no shifting needed... decrementing size should be enough...
+                if (i + num_els < this->size()) {
+                    selected_buf[i] = (*this->e_buf)[i + num_els];
                 }
             }
             if (recapped) {

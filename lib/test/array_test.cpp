@@ -79,6 +79,7 @@ static void testArrayAppendRecapped(TestArg * t);
 static void testArrayAppendConsecutive(TestArg * t);
 static void testArrayAppendConsecutiveRecapped(TestArg * t);
 static void testArrayRemoveCstrings(TestArg * t);
+static void testArrayRemoveCstringsLastElement(TestArg * t);
 static void testArrayRemove(TestArg * t);
 static void testArrayRemoveConsecutive(TestArg * t);
 static void testArrayRemoveRecapped(TestArg * t);
@@ -100,6 +101,7 @@ int main(int argc, char * argv[]) {
     t.addTest(testArrayAppendConsecutiveRecapped);
 
     t.addTest(testArrayRemoveCstrings);
+    t.addTest(testArrayRemoveCstringsLastElement); // because why not?
     t.addTest(testArrayRemove);
     t.addTest(testArrayRemoveConsecutive);
     t.addTest(testArrayRemoveRecapped);
@@ -211,6 +213,31 @@ static void testArrayRemoveCstrings(TestArg * t) {
     };
     size_t initial_size = actual.size();
     actual.remove(1);
+    t->fail = !assert<const char *>(actual, expected, expected_size, initial_size * 1.75);
+}
+
+static void testArrayRemoveCstringsLastElement(TestArg * t) {
+    #undef expected_size
+    #define expected_size 6
+    const char * expected[expected_size] = {
+        "STRING 1",
+        "STRING 2",
+        "STRING 3",
+        "STRING 4",
+        "STRING 5",
+        "STRING 6",
+    };
+    Array<const char *> actual{
+        "STRING 1",
+        "STRING 2",
+        "STRING 3",
+        "STRING 4",
+        "STRING 5",
+        "STRING 6",
+        "STRING 7"
+    };
+    size_t initial_size = actual.size();
+    actual.remove(6); // last element
     t->fail = !assert<const char *>(actual, expected, expected_size, initial_size * 1.75);
 }
 

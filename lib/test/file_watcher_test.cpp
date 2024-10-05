@@ -143,7 +143,7 @@ static void afterSuite() {
 }
 
 int main(int argc, char * argv[]) {
-    Tester t("Key Generator Tests", beforeSuite, nullptr, afterSuite, nullptr);
+    Tester t("File Watcher Tests", beforeSuite, nullptr, afterSuite, nullptr);
 
     t.addTest(testFileWatcherFileCreated);
     t.addTest(testFileWatcherFileRemoved);

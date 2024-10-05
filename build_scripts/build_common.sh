@@ -12,7 +12,7 @@ while true; do
 		-l|--log) LOG_LEVEL="$2"; shift 2 ;;
 		-s|--source) SRC_FILES="$SRC_FILES$2 "; shift 2 ;;
 		-f) LD_FLAGS="$LD_FLAGS-l$2 "; shift 2 ;;
-		-D) DEFINES="$DEFINES-D$2 "; shift 2 ;;
+		-D) DEFINES="$DEFINES-D $2 "; shift 2 ;;
 		# --) echo "PROGRAM ARG: $@"; break ;;
 		*) PROGRAM_ARG=$@; break;;
 	esac

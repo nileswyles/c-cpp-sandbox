@@ -12,7 +12,7 @@ for (my $i = 0; $i < scalar(@ARGV); $i++) {
 	} elsif ($ARGV[$i] eq "-l" || $ARGV[$i] eq "--log") {
         $LOG_LEVEL = $ARGV[++$i];
 	} elsif ($ARGV[$i] eq "-D") {
-        $DEFINES .= $ARGV[++$i];
+        $DEFINES .= "-D $ARGV[++$i] ";
 	}
 }
 my @TEST_SUITES = split(' ', `ls $PATH_TO_TEST_DIRECTORY`);

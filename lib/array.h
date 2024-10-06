@@ -51,7 +51,7 @@ void addElement<const char *>(const char ** buf, const size_t pos, const char * 
 
 template<typename T>
 void deleteCArray(T ** e_buf, size_t size) {
-    loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'generic' of size: %u\n", size);
+    loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'generic' of size: %lu\n", size);
     if (e_buf != nullptr) {
         if (*e_buf != nullptr) {
             // deletes array of pointers to object of type T

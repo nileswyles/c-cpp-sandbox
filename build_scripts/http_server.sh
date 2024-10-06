@@ -37,6 +37,6 @@ LD_FLAGS="
 -f crypto
 "
 
-CMD="$ROOT_DIR/build_scripts/build_common.sh -n iostream_test $SRC_FILES -l $LOG_LEVEL $LD_FLAGS $DEFINES$PROGRAM_ARG"
+CMD="$ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -l $LOG_LEVEL $LD_FLAGS $DEFINES$PROGRAM_ARG"
 echo "\t"$CMD
 exec $CMD

@@ -17,7 +17,7 @@ void WylesLibs::addElement<const char *>(const char ** buf, const size_t pos, co
 // T ** == const char ***
 template<>
 void WylesLibs::deleteCArray<const char *>(const char *** e_buf, size_t size) {
-    loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'const char *' of size: %u\n", size);
+    loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'const char *' of size: %lu\n", size);
     if (e_buf != nullptr) {
         if (*e_buf != nullptr) {
             for (size_t i = 0; i < size; i++) {
@@ -37,7 +37,7 @@ void WylesLibs::deleteCArray<const char *>(const char *** e_buf, size_t size) {
 
 template<>
 void WylesLibs::deleteCArrayElement<const char *>(const char ** buf, size_t pos) {
-    loggerPrintf(LOGGER_DEBUG, "Deleting element of ptr type 'const char *' at %u\n", pos);
+    loggerPrintf(LOGGER_DEBUG, "Deleting element of ptr type 'const char *' at %lu\n", pos);
     // deletes string. see allocation in addElement function above...
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "String being deleted: '%s'\n", buf[pos]);
     if (buf != nullptr && buf[pos] != nullptr) {

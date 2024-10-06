@@ -11,8 +11,9 @@ class ThreadSafeMap: public std::map<T, L> {
         ThreadSafeMap(): std::map<T, L>() {
             pthread_mutex_init(&mutex, nullptr);
         }
+        // TODO:
         // dun dun dun, is it virtual?
-        ~ThreadSafeMap() override {
+        ~ThreadSafeMap() {
             pthread_mutex_destroy(&mutex);
         }
         pthread_mutex_t * getMutex() {

@@ -52,10 +52,14 @@ void addElement<const char *>(const char ** buf, const size_t pos, const char * 
 template<typename T>
 void deleteCArray(T ** e_buf, size_t size) {
     loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'generic' of size: %u\n", size);
-    // deletes array of pointers to object of type T
-    delete[] *e_buf;
-    // deletes container (pointer to array deleted above) 
-    delete e_buf;
+    if (e_buf != nullptr) {
+        if (*e_buf != nullptr) {
+            // deletes array of pointers to object of type T
+            delete[] *e_buf;
+        }
+        // deletes container (pointer to array deleted above) 
+        delete e_buf;
+    }
 }
 template<>
 void deleteCArray<const char *>(const char *** e_buf, size_t size);
@@ -219,10 +223,18 @@ class Array {
             (*this->instance_count)--;
             if (*this->instance_count == 0) {
                 deleteCArray<T>(e_buf, *e_size);
-                delete instance_count;
-                delete e_cap;
-                delete e_size;
-                delete e_sorted;
+                if (instance_count != nullptr) {
+                    delete instance_count;
+                }
+                if (e_cap != nullptr) {
+                    delete e_cap;
+                } 
+                if (e_size != nullptr) {
+                    delete e_size;
+                }
+                if (e_sorted != nullptr) {
+                    delete e_sorted;
+                }
             }
         }
         Array<T>& sort(ArraySort sortOrder) {

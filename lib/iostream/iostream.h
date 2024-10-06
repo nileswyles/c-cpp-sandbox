@@ -67,7 +67,9 @@ class IOStream {
 #endif
         }
         ~IOStream() {
-            delete[] buf;
+            if (buf != nullptr) {
+                delete[] buf;
+            }
         }
         ssize_t writeBuffer(void * p_buf, size_t size);
         uint8_t peekByte();

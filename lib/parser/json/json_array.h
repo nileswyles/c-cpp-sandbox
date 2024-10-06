@@ -31,7 +31,9 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
             for (size_t i = 0; i < this->size(); i++) {
                 loggerPrintf(LOGGER_DEBUG, "Making sure to free pointer! @ %p\n", this->at(i));
                 // because this->[] isn't valid :)
-                delete this->at(i);
+                if (this->at(i) != nullptr) {
+                    delete this->at(i);
+                }
             }
         }
 

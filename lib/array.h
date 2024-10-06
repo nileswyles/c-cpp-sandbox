@@ -61,7 +61,13 @@ template<>
 void deleteCArray<const char *>(const char *** e_buf, size_t size);
 
 template<typename T>
-void deleteCArrayElement(T * buf, size_t pos) {}
+void deleteCArrayElement(T * buf, size_t pos) {
+    // ! IMPORTANT - these types are presumably non-pointer types... if not, then the developer needs to create specialization and write tests (see cstrings).
+    //  Not as easy to detect the need for this with functional testing, 
+    //      so developer should add a specialization of this if a specialization of addElement is implemented...
+
+    //  TODO: Compiler or lint check for this?
+}
 template<>
 void deleteCArrayElement<const char *>(const char ** buf, size_t pos);
 
@@ -386,7 +392,6 @@ class Array {
             }
             for (size_t i = pos; i < this->size(); i++) {
                 if (i < pos + num_els) {
-                    printf("lol... close enough? %d\n", i);
                     // make sure to deallocate memory for elements being removed.
                     deleteCArrayElement<T>(*this->e_buf, i);
                 }

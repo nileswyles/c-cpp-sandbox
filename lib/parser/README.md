@@ -1,10 +1,15 @@
-Policy for deciding parser strictness.
-It depends but, let's define some rules to follow:
-    - Does specification require it?
-    - if ambiguous, prioritize as follows:
-    -   strictness
-    -   performance
-    -   simplicity
-    -   (generalize only as much as it doesn't affect performance)
+# Parsers
+ 1. JSON
+ 2. Key-Value
+ 3. Multipart
+ 4. Http Requests
 
--  as opposed to getting it working first? LOL, idk something to keep in mind. non-strict to strict might be part of the process. # pro-upgrades...
+## Policy for deciding parser strictness.
+It depends but, let's define some rules to follow:
+1. Does specification require it?
+    - if ambiguous (not-strictly defined), prioritize as follows:
+        - performance
+        - simplicity
+        - strictness
+2. Generalize create and use abstractions only as much as it doesn't affect performance.
+3. Be aware non-strict to strict might be part of the process. #pro-upgrades.

@@ -1,6 +1,6 @@
 # Build Instructions
 
-This project (mostly) uses shell scripts for building and executing these projects. The scripts are located under the <i>build_scripts</i> directory. Docker development container configuration and dependency installation scripts are located under the <i>.devcontainer</i> directory. 
+This project (mostly) uses shell scripts for building and executing these projects. The scripts are located under the <i>build_scripts</i> directory. Development container configuration files and dependency installation scripts are located under the <i>.devcontainer</i> directory. 
 
 ## To run individual programs and tests: 
 Usage:

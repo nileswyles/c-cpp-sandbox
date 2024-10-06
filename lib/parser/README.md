@@ -11,5 +11,5 @@ It depends but, let's define some rules to follow:
         - performance
         - simplicity
         - strictness
-2. Generalize create and use abstractions only as much as it doesn't affect performance.
-3. Be aware non-strict to strict might be part of the process. #pro-upgrades.
+2. Generalize, create and use abstractions only as much as it doesn't affect performance.
+3. Simplfy the problem. Be aware that non-strict to strict might be part of the process. #pro-upgrades.

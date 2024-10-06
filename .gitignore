@@ -6,3 +6,4 @@ out/**
 openssl*
 sequence_store
 file_watcher*/**
+**.pem

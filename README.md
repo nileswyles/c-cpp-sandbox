@@ -8,7 +8,7 @@ Usage:
 	-l|--log        Log level.
 	-D              Preprocessor Defines.
 
-    *               Positional arguments after are passed as program arguments and are specific to the program.
+	*               Positional arguments after are passed as program arguments and are specific to the program.
 ```
 
 The following example runs the http_server application:

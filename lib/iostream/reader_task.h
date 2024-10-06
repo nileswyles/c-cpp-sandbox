@@ -46,7 +46,7 @@ class ReaderTask {
     public:
         std::string read_until;
 
-        virtual ~ReaderTask() {}
+        virtual ~ReaderTask() = default;
         // Good example of CPP OOP
 
         // good example of "dynamic dispatch"?
@@ -81,7 +81,7 @@ class ReaderTaskChain: public ReaderTask {
 
         ReaderTaskChain(): nextOperation(nullptr), ignored(false) {}
         ReaderTaskChain(ReaderTaskChain * next): nextOperation(next), ignored(false) {}
-        ~ReaderTaskChain() { if (nextOperation != nullptr) delete nextOperation; }
+        ~ReaderTaskChain() override = default;
 
         void next(Array<uint8_t>& buffer, uint8_t c) {
             if (!this->ignored) {
@@ -101,6 +101,7 @@ class ReaderTaskChain: public ReaderTask {
 
 class ReaderTaskLC: public ReaderTaskChain {
     public:
+        ~ReaderTaskLC() override = default;
         void perform(Array<uint8_t>& buffer, uint8_t c) final override {
             if (c >= 0x41 && c <= 0x5A) { // lowercase flag set and is upper case
         		c += 0x20; // lower case the char
@@ -111,6 +112,7 @@ class ReaderTaskLC: public ReaderTaskChain {
 
 class ReaderTaskUC: public ReaderTaskChain {
     public:
+        ~ReaderTaskUC() override = default;
         void perform(Array<uint8_t>& buffer, uint8_t c) final override {
             if (c >= 0x61 && c <= 0x7A) {
         		c -= 0x20;
@@ -126,6 +128,7 @@ class ReaderTaskDisallow: public ReaderTaskChain {
 
         ReaderTaskDisallow(std::string to_disallow): to_disallow(to_disallow), strict(false) {}
         ReaderTaskDisallow(std::string to_disallow, bool strict): to_disallow(to_disallow), strict(strict) {}
+        ~ReaderTaskDisallow() override = default;
 
         void perform(Array<uint8_t>& buffer, uint8_t c) final override {
             if (this->to_disallow.find(c) != std::string::npos) { 
@@ -148,6 +151,7 @@ class ReaderTaskAllow: public ReaderTaskChain {
 
         ReaderTaskAllow(std::string to_allow): to_allow(to_allow), strict(false) {}
         ReaderTaskAllow(std::string to_allow, bool strict): to_allow(to_allow), strict(strict) {}
+        ~ReaderTaskAllow() override = default;
 
         void perform(Array<uint8_t>& buffer, uint8_t c) final override {
             if (this->to_allow.find(c) == std::string::npos) { 
@@ -171,6 +175,7 @@ class ReaderTaskTrim: public ReaderTask {
         bool r_trimming;
 
         ReaderTaskTrim(): l_trimming(true), r_trimming(false) {}
+        ~ReaderTaskTrim() override = default;
 
         void flush(Array<uint8_t>& buffer) final override {}
         void rTrimFlush(Array<uint8_t>& buffer);
@@ -193,6 +198,7 @@ class ReaderTaskExtract: public ReaderTask {
             l_trimming(true), r_trimming(false), 
             left_most_char(left_most_char), right_most_char(right_most_char), 
             r_trim_non_whitespace(0), r_trim_read_until(0) {}
+        ~ReaderTaskExtract() override = default;
 
         void flush(Array<uint8_t>& buffer) final override;
         void rTrimFlush(Array<uint8_t>& buffer);

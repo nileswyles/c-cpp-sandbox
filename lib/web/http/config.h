@@ -82,6 +82,7 @@ class HttpServerConfig: public ServerConfig {
                 std::runtime_error("One of the required fields were missing... Check the configuration file.");
             }
         }
+        ~HttpServerConfig() override = default;
 
         std::string toJsonElements() {
             std::string s("\"static_path\": ");

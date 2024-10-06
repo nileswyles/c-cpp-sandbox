@@ -16,7 +16,7 @@ namespace WylesLibs {
             std::map<std::string, int> paths_wd_map;
             uint32_t access_mask;
             FileWatcher(Array<std::string> paths, uint32_t access_mask);
-            ~FileWatcher();
+            virtual ~FileWatcher();
             virtual void handle(const struct inotify_event *event) = 0;
             void initialize(std::shared_ptr<FileWatcher> ptr);
     };

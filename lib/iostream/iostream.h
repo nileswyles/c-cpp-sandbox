@@ -34,7 +34,6 @@ class IOStream {
         SSL * ssl;
 #endif
         int fd;
-        // Reader() = default;
         IOStream() {}
         IOStream(uint8_t * p_buf, const size_t p_buf_size) {
             buf = p_buf;
@@ -66,11 +65,7 @@ class IOStream {
             ssl = nullptr;
 #endif
         }
-        ~IOStream() {
-            if (buf != nullptr) {
-                delete[] buf;
-            }
-        }
+        ~IOStream() = default;
         ssize_t writeBuffer(void * p_buf, size_t size);
         uint8_t peekByte();
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...

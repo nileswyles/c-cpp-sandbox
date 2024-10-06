@@ -22,6 +22,7 @@ class JsonObject: public JsonValue {
             }
             values.depth = depth;
         }
+        ~JsonObject() override = default;
 
         void addKey(std::string key) {
             this->keys.push_back(key);

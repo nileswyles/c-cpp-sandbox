@@ -25,7 +25,7 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
                 throw std::runtime_error("JsonArray: creation error... TOO MUCH DEPTH!");
             }
         }
-        ~JsonArray() {
+        ~JsonArray() override {
             // TODO. let cpp do it's magic... and don't use pointers here?.... 
             //  Is that okay? think about limits... and how they actually work. 
             for (size_t i = 0; i < this->size(); i++) {
@@ -44,7 +44,6 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
 
         std::string toJsonString() final override;
 };
-
 }
 
 #endif

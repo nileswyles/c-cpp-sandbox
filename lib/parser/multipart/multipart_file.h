@@ -19,12 +19,12 @@ class MultipartFile {
         std::string name;
 
         MultipartFile(): resource_root("./") {}
-
         MultipartFile(ServerContext * context, std::string name) {
             resource_root = context->config.resources_root;
             id = context->key_generator.next();
             name = name;
         }
+        ~MultipartFile() = default;
 
         std::string getResourcePath() {
             return Paths::join(this->resource_root, this->id);

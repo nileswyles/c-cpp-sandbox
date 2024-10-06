@@ -51,6 +51,7 @@ class Url {
         std::unordered_map<std::string, std::string> query_map;
         
         Url() {}
+        ~Url() = default;
 };
 
 class HttpRequest {
@@ -71,6 +72,7 @@ class HttpRequest {
         Authorization auth;
 
         HttpRequest(): json_content(nullptr) {}
+        ~HttpRequest() = default;
 };
 
 class HttpResponse {
@@ -85,6 +87,7 @@ class HttpResponse {
         HttpResponse(): version("HTTP/1.1"), status_code("500") {
 			fields["Connection"].append("close");
         }
+        ~HttpResponse() = default;
 
         std::string toString() {
             // header = this->version + " " + strconv.Itoa(status_code) + " " + status_map[r.StatusCode] + "\n";
@@ -204,6 +207,7 @@ class HttpConnection {
                     throw std::runtime_error(msg);
                 }
         }
+        ~HttpConnection() = default;
 
         uint8_t onConnection(int conn_fd);
 

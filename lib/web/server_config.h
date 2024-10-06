@@ -26,6 +26,7 @@ class ServerConfig: public JsonBase {
                 }
             }
         }
+        ~ServerConfig() override = default;
 
         std::string toJsonElements() {
             std::string s("\"resources_root\": ");

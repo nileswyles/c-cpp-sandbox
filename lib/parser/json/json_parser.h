@@ -41,7 +41,7 @@ typedef enum JsonType {
 
 class JsonBase {
     public:
-        virtual ~JsonBase() {}
+        virtual ~JsonBase() = default;
         virtual std::string toJsonElements() {
             return "";
         }
@@ -58,6 +58,8 @@ class JsonValue: public JsonBase {
         JsonType type;
         JsonValue(): type(NULL_TYPE) {}
         JsonValue(JsonType derived_type): type(derived_type) {}
+        // TODO: odd syntax but...
+        ~JsonValue() override = default;
         std::string toJsonString() {
             return "";
         }
@@ -71,6 +73,7 @@ class JsonBoolean: public JsonValue {
         bool boolean;
     public:
         JsonBoolean(bool boolean): boolean(boolean), JsonValue(BOOLEAN) {}
+        ~JsonBoolean() override = default;
 
         bool getValue() {
             return this->boolean;
@@ -93,6 +96,7 @@ class JsonNumber: public JsonValue {
     public:
         JsonNumber(double number): number(number), natural_digit_count(-1), decimal_digit_count(-1), JsonValue(NUMBER) {}
         JsonNumber(double number, size_t natural_digit_count, size_t decimal_digit_count): number(number), natural_digit_count(natural_digit_count), decimal_digit_count(decimal_digit_count), JsonValue(NUMBER) {}
+        ~JsonNumber() override = default;
 
         double getValue() {
             return this->number;
@@ -120,6 +124,7 @@ class JsonString: public JsonValue {
         std::string s;
     public:
         JsonString(std::string s): s(s), JsonValue(STRING) {}
+        ~JsonString() override = default;
         
         std::string getValue() {
             return this->s;

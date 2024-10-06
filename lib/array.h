@@ -240,14 +240,6 @@ class Array {
         Array<T>& sort(ArraySort sortOrder) {
             if (sortOrder != ARRAY_SORT_UNSORTED && *e_sorted != sortOrder) {
                 *e_sorted = sortOrder;
-                // see if class member specialization was working then no games of telephone...
-                //  hmm....
-
-                // AH!
-
-                // can telephone or or or or or or or or
-
-                //  eh idk, there is likely a valid argument for telephoning?
                 try {
                     nlognSort(*this->e_buf, *this->e_size, nullptr);
                 } catch (const std::exception& e) {
@@ -505,26 +497,6 @@ class Array {
             (*this->instance_count)++;
             return *this;
         }
-        // Move
-        // Array(Array<T>&& x) {
-        //     this->instance_count = x.instance_count;
-        //     this->e_buf = x.e_buf;
-        //     this->e_cap = x.e_cap;
-        //     this->e_size = x.e_size;
-        //     this->e_sorted = x.e_sorted;
-
-        //     (*this->instance_count)++;
-        // }
-        // Array<T>& operator= (Array<T>&& x) {
-        //     this->instance_count = x.instance_count;
-        //     this->e_buf = x.e_buf;
-        //     this->e_cap = x.e_cap;
-        //     this->e_size = x.e_size;
-        //     this->e_sorted = x.e_sorted;
-
-        //     (*this->instance_count)++;
-        //     return *this;
-        // }
 };
 }
 #endif 

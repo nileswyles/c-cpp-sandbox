@@ -12,6 +12,7 @@ class ServerContext {
         UniqueKeyGenerator key_generator;
         ServerContext(ServerConfig config): config(config), 
             key_generator(UniqueKeyGenerator(config, UniqueKeyGeneratorStore(Paths::join(config.resources_root, "sequence_store")))) {}
+        ~ServerContext() = default;
 };
 
 extern ServerContext * getServerContext();

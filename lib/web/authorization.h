@@ -12,6 +12,7 @@ class Authorization {
     public:
         Authorization() {}
         Authorization(std::string token): token(token) {}
+        ~Authorization() = default;
 };
 
 }

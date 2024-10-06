@@ -105,7 +105,6 @@ class UniqueKeyGenerator {
         UniqueKeyGenerator(ServerConfig config, UniqueKeyGeneratorStore store): store(store) {
             current = 0;
             store.refresh(current);
-            printf("Refreshed store...\n");
             pthread_mutex_init(&mutex, nullptr);
         }
         virtual ~UniqueKeyGenerator() {
@@ -133,22 +132,21 @@ class UniqueKeyGenerator {
         }
 };
 
-// # BIG O! UniqueKeyGenerator for optimal performance!
-// In this case, for file resources the file-based sequential stuff pairs nicely.
-//  for almost everything else probably not LMAO
-//  
 class UUIDGeneratorV4: public UniqueKeyGenerator {
-    protected:
-   public:
-        UUIDGeneratorV4() {}
+    public:
+        uint8_t num_randoms;
+        UUIDGeneratorV4(): UUIDGeneratorV4(4) {}
+        UUIDGeneratorV4(uint8_t num_randoms): num_randoms(num_randoms) {
+            if (num_randoms < 4 || num_randoms > 6) {
+                throw std::runtime_error("Yeah, have you considered counseling? LOL...");
+            } else {
+                num_randoms = num_randoms;
+            }
+        }
         ~UUIDGeneratorV4() override = default;
         std::string next() override {
-            // random, independent variables, (1/2^128 * 1/2^128) 
-            //   better?
-
-            // counter intiuitive, revisit 
             Array<uint8_t> data;
-            for (size_t i = 0; i < 4; i++) {
+            for (size_t i = 0; i < num_randoms; i++) {
                 UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)random(), 4);
             }
             return data.toString();
@@ -156,15 +154,13 @@ class UUIDGeneratorV4: public UniqueKeyGenerator {
 };
 
 class UUIDGeneratorV7: public UUIDGeneratorV4 {
-    private:
-        uint8_t num_randoms;
     public:
-        UUIDGeneratorV7(): num_randoms(2) {}
-        UUIDGeneratorV7(uint8_t pNum_randoms) {
-            if (pNum_randoms < 2) {
+        UUIDGeneratorV7(): UUIDGeneratorV7(2) {}
+        UUIDGeneratorV7(uint8_t num_randoms) {
+            if (num_randoms < 2 || num_randoms > 4) {
                 throw std::runtime_error("Yeah, just use UUIDGeneratorV4 LOL...");
             } else {
-                num_randoms = pNum_randoms;
+                num_randoms = num_randoms;
             }
         }
         ~UUIDGeneratorV7() override = default;

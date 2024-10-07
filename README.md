@@ -5,10 +5,10 @@ This project (mostly) uses shell scripts for building and executing programs. Th
 ## To run individual programs and tests: 
 Usage:
 ```
--l|--log        Log level.
--D              Preprocessor Defines.
+	-l|--log        Log level.
+	-D              Preprocessor Defines.
 
-*               Positional arguments after are passed as program arguments and are specific to the program.
+	*               Positional arguments after are passed as program arguments and are specific to the program.
 ```
 
 The following example runs the http_server application:
@@ -22,9 +22,9 @@ The following example executes the iostream::testReadUntil test with log level 4
 ## To run all tests: 
 Usage:
 ```
--p|--path       Path to tests directory. Default to build_scripts/tests.
--l|--log        Log level.
--D              Preprocessor Defines.
+	-p|--path       Path to tests directory. Default to build_scripts/tests.
+	-l|--log        Log level.
+	-D              Preprocessor Defines.
 ```
 
 The following example runs the http_server application:

@@ -28,7 +28,7 @@ static void parse(IOStream * io, Array<MultipartFile> files, unordered_map<std::
 
             is_file = false;
             bool has_name = false;
-            for (size_t i = 0; i < 2; i++) {
+            for (uint8_t i = 0; i < 2; i++) {
                 std::string field = io->readUntil("=").removeBack().toString();
                 ReaderTaskExtract extract('"', '"');
                 std::string value = io->readUntil(";", &extract).removeBack().toString();

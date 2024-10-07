@@ -129,7 +129,7 @@ class Array {
         size_t * e_size;
         ArraySort * e_sorted;
 
-        void nlognsortMerge(T * A, size_t size_a, T * B, size_t size_b, T * swap_space) {
+        inline void nlognsortMerge(T * A, size_t size_a, T * B, size_t size_b, T * swap_space) {
             size_t swap_space_push = 0;
             size_t swap_space_pop = 0;
 
@@ -174,27 +174,37 @@ class Array {
             }
         }
 
-        void nlognSort(T * e_buf, size_t size, T * ss) {
+        void nlognSort(T * e_buf, size_t size) {
             if (e_buf == nullptr || size <= 1) {
                 return;
             } else {
-                // ensure left always larger than right
+                // reduce memory usage size, recursion is generally frownd upon!
                 size_t size_left = ceil(size/2.0);
-                size_t size_right = size - size_left;
-                T * left_buf = e_buf;
-                T * right_buf = e_buf + size_left;
-                loggerPrintf(LOGGER_DEBUG, "CALL TRACE: size: %ld, left: %ld, right: %ld\n", size, size_left, size_right);
-                T * swap_space = ss;
-                if (ss == nullptr) {
-                    swap_space = new T[size_left];
+                T * swap_space = new T[size_left];
+                size_t span = 1;
+                T * left_buf;
+                T * right_buf;
+                // so, this basically skips the first half of the tree... let's not bother updating other sort stuff with visualization..
+                while (span < size) {
+                    size_t i = 0;
+                    while (i < size) {
+                        left_buf = e_buf + i;
+                        if (i + span < size) {
+                            // if right buf is within bounds... 
+                            //  else it's the odd element out (last element, so adhocly bring in the last odd element in later iterations.) 
+                            right_buf = e_buf + i + span;
+                            size_t right_size = span;
+                            if (i + span + right_size > size) {
+                                right_size = size - (i + span);
+                            }
+                            // left must always be larger or equal to right
+                            merge(left_buf, span, right_buf, right_size, swap_space);
+                        }
+                        i += (2*span);
+                    }
+                    span *= 2;
                 }
-                nlognSort(left_buf, size_left, swap_space); // left
-                nlognSort(right_buf, size_right, swap_space); // right
-                nlognsortMerge<T>(left_buf, size_left, right_buf, size_right, swap_space);
-                if (ss == nullptr) {
-                    delete[] swap_space;
-                }
-                loggerPrintf(LOGGER_DEBUG, "CALL TRACE merged size: %ld\n", size);
+                delete[] swap_space;
             }
         }
     public:
@@ -241,7 +251,7 @@ class Array {
             if (sortOrder != ARRAY_SORT_UNSORTED && *e_sorted != sortOrder) {
                 *e_sorted = sortOrder;
                 try {
-                    nlognSort(*this->e_buf, *this->e_size, nullptr);
+                    nlognSort(*this->e_buf, *this->e_size);
                 } catch (const std::exception& e) {
                     loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
                     // TODO:
@@ -468,6 +478,11 @@ class Array {
         T& operator[] (const size_t pos) {
             return (*this->e_buf)[pos];
         }
+        // TODO: so, passing a literal to this is defined by the language? 
+        //      even though the literal will never be used again. lol
+        //      I've seen this everywhere but if undefined by spec? then maybe not a good idea...
+        //      
+        //      it at least works for this compiler lol...
         T& operator[] (const T& el) {
             size_t i = this->find(el);
             if (i == -1) {

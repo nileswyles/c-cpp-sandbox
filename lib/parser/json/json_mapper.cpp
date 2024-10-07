@@ -63,7 +63,7 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue(JsonValue * value, 
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         JsonArray * array = (JsonArray *)value;
-        for (int i = 0; i < array->size(); i++) {
+        for (size_t i = 0; i < array->size(); i++) {
             JsonValue * array_value = array->at(i);
             JsonType array_type = array_value->type;
             if (array_type == OBJECT) {
@@ -82,7 +82,7 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<bool>(JsonValue * v
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         JsonArray * array = (JsonArray *)value;
-        for (int i = 0; i < array->size(); i++) {
+        for (size_t i = 0; i < array->size(); i++) {
             JsonValue * array_value = (*array)[i];
             JsonType array_type = array_value->type;
             if (array_type == BOOLEAN) {
@@ -101,7 +101,7 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<double>(JsonValue *
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         JsonArray * array = (JsonArray *)value;
-        for (int i = 0; i < array->size(); i++) {
+        for (size_t i = 0; i < array->size(); i++) {
             JsonValue * array_value = array->at(i);
             JsonType array_type = array_value->type;
             if (array_type == NUMBER) {
@@ -120,7 +120,7 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<std::string>(JsonVa
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
         JsonArray * array = (JsonArray *)value;
-        for (int i = 0; i < array->size(); i++) {
+        for (size_t i = 0; i < array->size(); i++) {
             JsonValue * array_value = array->at(i);
             JsonType array_type = array_value->type;
             if (array_type == STRING) {

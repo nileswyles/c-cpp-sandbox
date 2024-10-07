@@ -114,7 +114,7 @@ static void parseNumber(JsonArray * obj, IOStream * r) {
             loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }
-        for (size_t x = 0; x < exp; x++) {
+        for (size_t x = 0; x < (size_t)exp; x++) {
             exponential_multiplier *= 10;
         }
         loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
@@ -173,7 +173,7 @@ static void parseString(JsonArray * obj, IOStream * r) {
             } else if (c == 't') { // tab
                 s += '\t';
             } else if (c == 'u') { // unicode
-                for (size_t x = 0; x < 4; x = x + 2) {
+                for (uint8_t x = 0; x < 4; x = x + 2) {
                     // so, this takes a hex string and converts to it's binary value.
                     //  i.e. "0F" -> 0x0F;
                     s += hexToChar(r->readBytes(2).toString());
@@ -425,7 +425,7 @@ extern JsonValue * WylesLibs::Parser::Json::parse(IOStream * r, size_t& i) {
 
 extern std::string WylesLibs::Parser::Json::pretty(std::string json) {
     std::string pretty;
-    size_t depth = 0;
+    uint8_t depth = 0;
 
     // LOL... allow spaces in between quotes!
     bool allow_spaces = false;
@@ -434,20 +434,20 @@ extern std::string WylesLibs::Parser::Json::pretty(std::string json) {
             pretty += c;
             pretty += '\n';
             depth++;
-            for (size_t i = 0; i < depth; i++) {
+            for (uint8_t i = 0; i < depth; i++) {
                 pretty += '\t';
             }
         } else if (c == '}' || c == ']') {
             pretty += '\n';
             depth--;
-            for (size_t i = 0; i < depth; i++) {
+            for (uint8_t i = 0; i < depth; i++) {
                 pretty += '\t';
             }
             pretty += c;
         } else if (c == ',') {
             pretty += c;
             pretty += '\n';
-            for (size_t i = 0; i < depth; i++) {
+            for (uint8_t i = 0; i < depth; i++) {
                 pretty += '\t';
             }
         } else if (c == ':') {

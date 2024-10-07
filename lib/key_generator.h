@@ -47,7 +47,7 @@ class UniqueKeyGeneratorStore {
             int fd = open(file_path.c_str(), O_RDONLY);
             if (fd != -1) {
                 IOStream r(fd);
-                for (size_t i = 0; i < 16; i++) {
+                for (uint8_t i = 0; i < 16; i++) {
                     current = current << 4;
                     uint8_t byte = r.readByte();
                     if (isDigit(byte)) {
@@ -77,11 +77,11 @@ class UniqueKeyGenerator {
         pthread_mutex_t mutex;
         uint64_t current;
     public:
-        static void valToHexCharArray(Array<uint8_t> data, uint64_t value, size_t bytes) {
+        static void valToHexCharArray(Array<uint8_t> data, uint64_t value, uint8_t bytes) {
             if (bytes > 8) {
                 throw std::runtime_error("byte count cannnot exceed 64 bits.");
             }
-            for (size_t i = 0; i < bytes; i++) {
+            for (uint8_t i = 0; i < bytes; i++) {
                 uint8_t low = (value & 0x0F);
                 if (low < 0xA) {
                     low += 0x30;
@@ -146,7 +146,7 @@ class UUIDGeneratorV4: public UniqueKeyGenerator {
         ~UUIDGeneratorV4() override = default;
         std::string next() override {
             Array<uint8_t> data;
-            for (size_t i = 0; i < num_randoms; i++) {
+            for (uint8_t i = 0; i < num_randoms; i++) {
                 UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)random(), 4);
             }
             return data.toString();
@@ -170,8 +170,15 @@ class UUIDGeneratorV7: public UUIDGeneratorV4 {
 
             Array<int> selections;
             Array<uint8_t> data;
-            size_t size = 1 + this->num_randoms;
-            for (size_t i = 0; i <= size; i++) {
+            uint8_t size = 1 + this->num_randoms;
+            printf("randoms: %d\n", this->num_randoms);
+            for (uint8_t i = 0; i <= size; i++) {
+#ifdef KEY_GENERATOR_DEBUG
+                if (i != 0) {
+                    // insert dash before every iteration, except first...
+                    data.insert(0, '-');
+                }
+#endif
                 int select = rand();
 
                 int normalized_select = (int)round(size * (double)select/RAND_MAX);
@@ -182,10 +189,34 @@ class UUIDGeneratorV7: public UUIDGeneratorV4 {
                 selections.append(normalized_select);
 
                 if (normalized_select == 0) {
-                    UniqueKeyGenerator::valToHexCharArray(data, (uint64_t)ts.tv_sec, 8);
+                    uint64_t seconds = (uint64_t)ts.tv_sec;
+                    uint64_t random_mask = 0;
+                    bool whitespacing = true;
+                    for (uint8_t i = 0; i < 64; i++) {
+                        uint8_t bit = ((seconds << i) >> 63) & 0x01;
+                        // shift in new bit indiscriminently 
+                        random_mask = random_mask << 1;
+                        if (whitespacing) {
+                            if (bit != 0) {
+                                // found non-zero bit, no longer whitespacing!
+                                whitespacing = false;
+                            } else {
+                                random_mask |= 0x1;
+                            }
+                        }
+                    }
+                    // printf("random_mask: %lx\n", random_mask);
+                    random_mask &= (uint64_t)random() << 32 | (uint32_t)random();
+                    UniqueKeyGenerator::valToHexCharArray(data, seconds ^ random_mask, 8);
                 } else if (normalized_select == 1) {
+#ifdef KEY_GENERATOR_DEBUG
+                    data.insert(0, 't');
+#endif
                     UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)ts.tv_nsec, 4);
                 } else if (normalized_select >= 2) {
+#ifdef KEY_GENERATOR_DEBUG
+                    data.insert(0, 'r');
+#endif
                     UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)random(), 4);
                 }
             }

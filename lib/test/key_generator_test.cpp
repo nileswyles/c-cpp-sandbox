@@ -75,6 +75,12 @@ void testUUIDGeneratorV4(TestArg * t) {
         loggerPrintf(LOGGER_TEST, "key: %s\n", key.c_str());
         if (key.size() != 32) {
             failed = true;
+            // TODO: test random function? for randomness lol?
+            //      maybe have applications run test at startup?
+            //      lol, seems a bit much...
+            //      
+            //      and by randomness test, I mean detect any patterns, regularities?
+            //       
         }
     }
     t->fail = failed;

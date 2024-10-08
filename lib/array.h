@@ -273,13 +273,13 @@ class Array {
             // this is really only useful for testing.
             return *this->e_cap;
         }
-        Array<T>& uniqueAppend(T& el) {
+        Array<T>& uniqueAppend(const T& el) {
             if (this->contains(el)) { 
             } else {
                 return this->append(&el, 1);
             }
         }
-        Array<T>& append(T& el) {
+        Array<T>& append(const T& el) {
             return this->append(&el, 1);
         }
         Array<T>& append(const T * els, const size_t num_els) {
@@ -476,21 +476,30 @@ class Array {
             return std::string((char *)(*this->e_buf));
         }
         T& operator[] (const size_t pos) {
-            return (*this->e_buf)[pos];
+            // TODO: check if exists... else, append...
+            // like other overload... at, checks if exist i belive already.
+            size_t i = pos;
+            if (pos >= this->size()) {
+                T el;
+                this->append(el); 
+                i = this->size()-1;
+            }
+            return (*this->e_buf)[i];
         }
         // TODO: so, passing a literal to this is defined by the language? 
         //      even though the literal will never be used again. lol
         //      I've seen this everywhere but if undefined by spec? then maybe not a good idea...
         //      
         //      it at least works for this compiler lol...
+
+        // lol, also const reference? I'm pretty sure I looked into but think about this again... too lazy right now..
         T& operator[] (const T& el) {
             size_t i = this->find(el);
             if (i == -1) {
                 this->append(el); 
-                (*this->e_buf)[this->size()-1];
-            } else {
-                return (*this->e_buf)[i];
+                i = this->size() - 1;
             }
+            return (*this->e_buf)[i];
         }
         // Copy
         Array(const Array<T>& x) {

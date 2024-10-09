@@ -501,6 +501,9 @@ class Array {
             }
             return (*this->e_buf)[i];
         }
+        T& operator+= (const T& el) {
+            this->append(el); 
+        }
         // Copy
         Array(const Array<T>& x) {
             this->instance_count = x.instance_count;

@@ -3,7 +3,7 @@
 
 #include "reader_task.h"
 
-#include "array.h"
+#include "datastructures/array.h"
 #include "string_utils.h"
 
 #include <string>

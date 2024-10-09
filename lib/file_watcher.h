@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_FILE_WATCHER_H
 #define WYLESLIBS_FILE_WATCHER_H
 
-#include "array.h"
+#include "datastructures/array.h"
 
 #include <poll.h>
 #include <sys/inotify.h>

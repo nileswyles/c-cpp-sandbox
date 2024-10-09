@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "array.h"
+#include "datastructures/array.h"
 #include "iostream/iostream.h"
 
 #include "global_consts.h"

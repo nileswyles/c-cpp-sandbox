@@ -3,7 +3,7 @@
 
 #include "file_watcher.h"
 #include "thread_safe_map.h"
-#include "array.h"
+#include "datastructures/array.h"
 #include "web/http/config.h"
 
 #include <poll.h>

@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_READER_TASK_H
 #define WYLESLIBS_READER_TASK_H
 
-#include "array.h"
+#include "datastructures/array.h"
 #include "string_utils.h"
 
 #include <string>

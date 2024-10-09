@@ -6,7 +6,7 @@
 #include <string>
 #include <stdlib.h>
 
-#include "array.h"
+#include "datastructures/array.h"
 #include "web/server_config.h"
 #include "paths.h"
 #include "file.h"

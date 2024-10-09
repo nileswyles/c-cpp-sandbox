@@ -1,4 +1,4 @@
-#include "array.h"
+#include "datastructures/array.h"
 #include "tester.h"
 
 #include <stdint.h>

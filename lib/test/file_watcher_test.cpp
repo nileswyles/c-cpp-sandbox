@@ -1,6 +1,6 @@
 #include "tester.h"
 
-#include "array.h"
+#include "datastructures/array.h"
 #include "file_watcher.h"
 #include "paths.h"
 

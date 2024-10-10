@@ -102,7 +102,7 @@ namespace WylesLibs::Algo {
         template<typename T>
         static Matrix<ALGO_UNSIGNED_INT> euclidean(const Matrix<T>& v1, const Matrix<T>& v2) {
             size_t rows = v1.rows();
-            Array<T> euclidean;
+            Matrix<T> euclidean;
             for (size_t i = 0; i < rows; i++) {
                 euclidean[i] = euclidean<T>(v1[i], v2[i]);
             } 
@@ -120,9 +120,9 @@ namespace WylesLibs::Algo {
             return sqrt(sum);
         }
         template<typename T>
-        static Array<ALGO_UNSIGNED_INT> manhattan(const Matrix<T>& v1, const Matrix<T>& v2) {
+        static Matrix<ALGO_UNSIGNED_INT> manhattan(const Matrix<T>& v1, const Matrix<T>& v2) {
             size_t rows = v1.rows();
-            Array<ALGO_UNSIGNED_INT> manhattan;
+            Matrix<ALGO_UNSIGNED_INT> manhattan;
             for (size_t i = 0; i < rows; i++) {
                 manhattan[i] = manhattan<T>(v1[i], v2[i]);
             } 
@@ -319,7 +319,7 @@ namespace WylesLibs::Algo {
             return add;
         }
         template<typename T>
-        static Array<T> sub(const Matrix<T>& m) {
+        static Matrix<T> sub(const Matrix<T>& m) {
             size_t size = m.size();
             Matrix<T> sub;
             for (size_t x = 0; x < m.rows(); x++) {

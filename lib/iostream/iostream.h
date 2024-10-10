@@ -67,10 +67,10 @@ class IOStream {
         }
         ~IOStream() = default;
         ssize_t writeBuffer(void * p_buf, size_t size);
-        uint8_t peekByte();
+        inline uint8_t peekByte();
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...
         // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...
-        uint8_t readByte();
+        inline uint8_t readByte();
         Array<uint8_t> readBytes(const size_t n);
         // ! IMPORTANT - inclusive means we read and consume the until character. 
         //      inclusive value of false means the until character stays in the read buffer for the next read.

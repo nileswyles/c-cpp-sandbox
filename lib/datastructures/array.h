@@ -121,7 +121,7 @@ int nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const ch
 //  also, this is probably the more correct way of doing this but could have alternatively used unique_ptr instead of containerizing?
 template<typename T>
 class Array {
-    private:
+    protected:
         size_t * instance_count;
 
         T ** e_buf;
@@ -229,7 +229,7 @@ class Array {
             e_size = new size_t(0);
             e_sorted = new ArraySort(ARRAY_SORT_UNSORTED);
         }
-        ~Array() {
+        virtual ~Array() {
             (*this->instance_count)--;
             if (*this->instance_count == 0) {
                 deleteCArray<T>(e_buf, *e_size);

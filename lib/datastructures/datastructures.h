@@ -140,6 +140,7 @@ namespace WylesLibs {
             // TODO: should be fine right? no unnecessary overhead?
             MatrixVector<T>& operator= (const MatrixVector<T>& other)  {
                 return MatrixVector<T>(other);
+                // return *this;
             }
     };
     template<typename T>

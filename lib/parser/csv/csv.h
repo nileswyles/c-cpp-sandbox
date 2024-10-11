@@ -18,8 +18,10 @@ namespace WylesLibs {
             }
             std::string toString() {
                 // assuming T == std::string for now...
+                printf("???????\n");
                 std::string s;
                 for (size_t i = 0; i < this->header.size(); i++) {
+                printf("???????\n");
                     s += this->header[i];
                     if (i + 1 == this->header.size()) {
                         s += "\n";
@@ -29,6 +31,7 @@ namespace WylesLibs {
                 }
                 for (size_t i = 0; i < this->rows(); i++) {
                     for (size_t j = 0; j < this->columns(); j++) {
+                printf("???????\n");
                         s += (*this)[i][j];
                         if (i + 1 == this->columns()) {
                             s += "\n";

@@ -104,6 +104,7 @@ class Test: public Base {
 //  - Base constructor and destructor are indeed called regardless of how it's initialized... 
 //      - default if not explicitly called..
 //  - This means, the default isn't required... lol, as I thought?
+//  - Base assignment operator is not called implicitly...
 int main() {
     printf("Stack variable of Test class\n");
     Test t;

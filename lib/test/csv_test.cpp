@@ -22,7 +22,7 @@ static void testCSVParser(TestArg * t) {
     std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
     CSVParser p(io);
     CSV csv = p.read(true);
-    // printf("%s\n", csv.toString().c_str());
+    printf("%s\n", csv.toString().c_str());
     // for (size_t i = 0; i < csv.header.size(); i++) {
     //     printf("%s\n", csv.header[i].c_str());
     // }

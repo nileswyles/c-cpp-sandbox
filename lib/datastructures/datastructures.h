@@ -37,19 +37,6 @@ namespace WylesLibs {
                 }
                 // ~Array() is called...
             }
-            // copy constructor - containerization code remains here
-            MatrixVector(const MatrixVector<T>& other) {
-                // TODO: since when can you include this-> in constructor? but whatever works...
-                this->instance_count = other.instance_count;
-                this->e_buf = other.e_buf;
-                this->e_cap = other.e_cap;
-                this->e_size = other.e_size;
-                this->e_sorted = other.e_sorted;
-                this->e_start = other.e_start;
-                this->e_end = other.e_end;
-
-                (*this->instance_count)++;
-            }
             size_t size() {
                 size_t size = *this->e_end - *this->e_start;
                 if (false == size > 0) {
@@ -144,18 +131,15 @@ namespace WylesLibs {
                 }
                 return (*this->e_buf)[i];
             }
-            // copy assignment - containerization code remains here
-            MatrixVector<T>& operator= (const MatrixVector<T>& other) {
-                this->instance_count = other.instance_count;
-                this->e_buf = other.e_buf;
-                this->e_cap = other.e_cap;
-                this->e_size = other.e_size;
-                this->e_sorted = other.e_sorted;
+            // copy constructor - containerization code remains here
+            MatrixVector(const MatrixVector<T>& other): Array<T>((Array<T> *)&other) {
                 this->e_start = other.e_start;
                 this->e_end = other.e_end;
-
-                (*this->instance_count)++;
-                return *this;
+            }
+            // copy assignment - containerization code remains here
+            // TODO: should be fine right? no unnecessary overhead?
+            MatrixVector<T>& operator= (const MatrixVector<T>& other)  {
+                return MatrixVector<T>(other);
             }
     };
     template<typename T>

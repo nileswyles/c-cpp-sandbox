@@ -228,14 +228,14 @@ class Array {
         }
         Array(Array * other) {
             if (other == nullptr || other->instance_count == nullptr || other->e_cap == nullptr || other-> e_size == nullptr || other->e_sorted == nullptr) {
-                // lol
-                Array();
+                std::runtime_error("Make sure the array is initialized before trying to create");
             } else {
                 instance_count = other->instance_count;
                 e_buf = other->e_buf;
                 e_cap = other->e_cap;
                 e_size = other->e_size;
                 e_sorted = other->e_sorted;
+                (*instance_count)++;
             }
         }
         virtual ~Array() {
@@ -514,24 +514,9 @@ class Array {
             this->append(el); 
         }
         // Copy
-        Array(const Array<T>& x) {
-            this->instance_count = x.instance_count;
-            this->e_buf = x.e_buf;
-            this->e_cap = x.e_cap;
-            this->e_size = x.e_size;
-            this->e_sorted = x.e_sorted;
-         
-            (*this->instance_count)++;
-        }
+        Array(const Array<T>& x): Array<T>((Array<T> *)&x) {}
         Array<T>& operator= (const Array<T>& x) {
-            this->instance_count = x.instance_count;
-            this->e_buf = x.e_buf;
-            this->e_cap = x.e_cap;
-            this->e_size = x.e_size;
-            this->e_sorted = x.e_sorted;
-         
-            (*this->instance_count)++;
-            return *this;
+            return Array<T>(x);
         }
 };
 }

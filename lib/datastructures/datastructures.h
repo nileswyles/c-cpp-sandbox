@@ -15,7 +15,7 @@ namespace WylesLibs {
             size_t * e_end;
         public:
             MatrixVector(): Array<T>(), e_start(new size_t(0)), e_end(new size_t(0)) {}
-            MatrixVector(const MatrixVector<T>& other, size_t start, size_t end): Array<T>(other.instance_count, other.e_buf, other.e_cap, other.e_size, other.e_sorted) {
+            MatrixVector(const MatrixVector<T>& other, size_t start, size_t end): Array<T>((Array<T> *)&other) {
                 // view...
                 (*other.instance_count)++;
 
@@ -26,55 +26,29 @@ namespace WylesLibs {
                 e_start = new size_t(start); 
                 e_end = new size_t(end); 
             }
-            virtual ~MatrixVector() {
-                if (false == this->destructed) {
-                    (*this->instance_count)--;
-                    if (*this->instance_count == 0) {
-                        deleteCArray<T>(this->e_buf, *this->e_size);
-                        if (this->instance_count != nullptr) {
-                            delete this->instance_count;
-                        }
-                        if (this->e_cap != nullptr) {
-                            delete this->e_cap;
-                        } 
-                        if (this->e_size != nullptr) {
-                            delete this->e_size;
-                        }
-                        if (this->e_sorted != nullptr) {
-                            delete this->e_sorted;
-                        }
-                        if (this->e_start != nullptr) {
-                            delete this->e_start;
-                        } 
-                        if (this->e_end != nullptr) {
-                            delete this->e_end;
-                        }
+            ~MatrixVector() override {
+                if (*this->instance_count == 1) {
+                    if (this->e_start != nullptr) {
+                        delete this->e_start;
+                    } 
+                    if (this->e_end != nullptr) {
+                        delete this->e_end;
                     }
-                    this->destructed = true;
                 }
                 // ~Array() is called...
             }
             // copy constructor - containerization code remains here
             MatrixVector(const MatrixVector<T>& other) {
-                printf("lkanslsndlkasnln ARRAY COPY ASSIGNMENT COPYING MATRIX VECTOR!!!! LOL\n");
-                printf("ankslnklasnCONSTRUCTED ARRAY COPY ASSIGNMENT COPYING MATRIX VECTOR!!!! LOL\n");
                 // TODO: since when can you include this-> in constructor? but whatever works...
                 this->instance_count = other.instance_count;
                 this->e_buf = other.e_buf;
                 this->e_cap = other.e_cap;
-                printf("???\n");
                 this->e_size = other.e_size;
                 this->e_sorted = other.e_sorted;
                 this->e_start = other.e_start;
                 this->e_end = other.e_end;
-                printf("???\n");
 
-                this->destructed = false;
-                if (false == this->constructed) {
-                    // lol? what?
-                    (*this->instance_count)++;
-                    this->constructed = true;
-                }
+                (*this->instance_count)++;
             }
             size_t size() {
                 size_t size = *this->e_end - *this->e_start;
@@ -172,7 +146,6 @@ namespace WylesLibs {
             }
             // copy assignment - containerization code remains here
             MatrixVector<T>& operator= (const MatrixVector<T>& other) {
-                printf("MatrixVector ARRAY COPY ASSIGNMENT COPYING MATRIX VECTOR!!!! LOL\n");
                 this->instance_count = other.instance_count;
                 this->e_buf = other.e_buf;
                 this->e_cap = other.e_cap;
@@ -180,15 +153,8 @@ namespace WylesLibs {
                 this->e_sorted = other.e_sorted;
                 this->e_start = other.e_start;
                 this->e_end = other.e_end;
-                printf("????\n");
 
-                this->destructed = false;
-                if (false == this->constructed) {
-                    // lol? what?
-                    (*this->instance_count)++;
-                    this->constructed = true;
-                }
-                printf("WHAT's the issue?\n");
+                (*this->instance_count)++;
                 return *this;
             }
     };

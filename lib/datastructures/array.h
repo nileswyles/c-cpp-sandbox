@@ -127,9 +127,6 @@ class Array {
         size_t * e_cap;
         size_t * e_size;
         ArraySort * e_sorted;
-        // TODO: kind of annoying (yet another unknown?) but let's assume these are defaulted to false == 0.
-        bool destructed;
-        bool constructed;
 
         void nlognsortMerge(T * A, size_t size_a, T * B, size_t size_b, T * swap_space) {
             size_t swap_space_push = 0;
@@ -208,11 +205,7 @@ class Array {
             return;
         }
     public:
-        Array(): Array(ARRAY_RECOMMENDED_INITIAL_CAP) {
-            // Only care about implicit compiler fooooooo when copying... so only in default constructor...
-            constructed = true;
-            destructed = false;
-        }
+        Array(): Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         Array(std::initializer_list<T> list) {
             instance_count = new size_t(1);
@@ -225,8 +218,6 @@ class Array {
             for (auto el: list) {
                 (*e_buf)[i++] = el;
             }
-            constructed = true;
-            destructed = false;
         }
         Array(const size_t initial_cap) {
             instance_count = new size_t(1);
@@ -234,37 +225,35 @@ class Array {
             e_buf = new T*(newCArray<T>(*e_cap));
             e_size = new size_t(0);
             e_sorted = new ArraySort(ARRAY_SORT_UNSORTED);
-            constructed = true;
-            destructed = false;
         }
-         Array(size_t * instance_count, size_t * e_buf, size_t * e_cap, size_t * e_size, size_t * e_sorted) {
-            instance_count = instance_count;
-            e_buf = e_buf;
-            e_cap = e_cap;
-            e_size = e_size;
-            e_sorted = e_sorted;
-            constructed = true;
-            destructed = false;
+        Array(Array * other) {
+            if (other == nullptr || other->instance_count == nullptr || other->e_cap == nullptr || other-> e_size == nullptr || other->e_sorted == nullptr) {
+                // lol
+                Array();
+            } else {
+                instance_count = other->instance_count;
+                e_buf = other->e_buf;
+                e_cap = other->e_cap;
+                e_size = other->e_size;
+                e_sorted = other->e_sorted;
+            }
         }
         virtual ~Array() {
-            if (false == this->destructed) {
-                (*this->instance_count)--;
-                if (*this->instance_count == 0) {
-                    deleteCArray<T>(e_buf, *e_size);
-                    if (instance_count != nullptr) {
-                        delete instance_count;
-                    }
-                    if (e_cap != nullptr) {
-                        delete e_cap;
-                    } 
-                    if (e_size != nullptr) {
-                        delete e_size;
-                    }
-                    if (e_sorted != nullptr) {
-                        delete e_sorted;
-                    }
+            (*this->instance_count)--;
+            if (*this->instance_count == 0) {
+                deleteCArray<T>(e_buf, *e_size);
+                if (instance_count != nullptr) {
+                    delete instance_count;
                 }
-                this->destructed = true;
+                if (e_cap != nullptr) {
+                    delete e_cap;
+                } 
+                if (e_size != nullptr) {
+                    delete e_size;
+                }
+                if (e_sorted != nullptr) {
+                    delete e_sorted;
+                }
             }
         }
 
@@ -526,32 +515,22 @@ class Array {
         }
         // Copy
         Array(const Array<T>& x) {
-            printf("ARRAY COPY CONSTRUCTOR COPYING MATRIX VECTOR!!!! LOL\n");
             this->instance_count = x.instance_count;
             this->e_buf = x.e_buf;
             this->e_cap = x.e_cap;
             this->e_size = x.e_size;
             this->e_sorted = x.e_sorted;
          
-            this->destructed = false;
-            if (false == this->constructed) {
-                (*this->instance_count)++;
-                this->constructed = true;
-            }
+            (*this->instance_count)++;
         }
         Array<T>& operator= (const Array<T>& x) {
-            printf("ARRAY COPY ASSIGNMENT COPYING MATRIX VECTOR!!!! LOL\n");
             this->instance_count = x.instance_count;
             this->e_buf = x.e_buf;
             this->e_cap = x.e_cap;
             this->e_size = x.e_size;
             this->e_sorted = x.e_sorted;
          
-            this->destructed = false;
-            if (false == this->constructed) {
-                (*this->instance_count)++;
-                this->constructed = true;
-            }
+            (*this->instance_count)++;
             return *this;
         }
 };

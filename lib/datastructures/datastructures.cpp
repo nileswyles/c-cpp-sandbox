@@ -97,7 +97,7 @@ Matrix<T> Matrix<T>::view(size_t x_start, size_t x_end, size_t y_start, size_t y
     if (*this->matrix.e_end == 0) {
         *this->matrix.e_end = this->rows();
     }
-    for (size_t i = *other.matrix.e_start; i < *other.matrix.e_end; i++) {
+    for (size_t i = *this->matrix.e_start; i < *this->matrix.e_end; i++) {
         MatrixVector<T> x_vector(this->matrix[i], x_start, x_end);
         y_vector[i] = x_vector;
     }

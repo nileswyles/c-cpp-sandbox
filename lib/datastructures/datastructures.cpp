@@ -70,7 +70,10 @@ template<typename T>
 Matrix<T> Matrix<T>::copy(const Matrix<T>& other) {
     Matrix<T> copy;
     MatrixVector<MatrixVector<T>> y_vector;
-    for (size_t i = *y_vector.e_start; i < *y_vector.e_end; i++) {
+    if (*other.matrix.e_end == 0) {
+        *other.matrix.e_end = other.size();
+    }
+    for (size_t i = *other.matrix.e_start; i < *other.matrix.e_end; i++) {
         y_vector[i] = other.matrix[i].copy();
     }
     copy.matrix = y_vector;
@@ -91,7 +94,10 @@ Matrix<T> Matrix<T>::view(size_t x_start, size_t x_end, size_t y_start, size_t y
     }
     Matrix<T> view;
     MatrixVector<MatrixVector<T>> y_vector(this->matrix, y_start, y_end);
-    for (size_t i = y_start; i < y_end; i++) {
+    if (*this->matrix.e_end == 0) {
+        *this->matrix.e_end = this->rows();
+    }
+    for (size_t i = *other.matrix.e_start; i < *other.matrix.e_end; i++) {
         MatrixVector<T> x_vector(this->matrix[i], x_start, x_end);
         y_vector[i] = x_vector;
     }

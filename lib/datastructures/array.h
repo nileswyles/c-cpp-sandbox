@@ -128,11 +128,17 @@ class Array {
         size_t * e_cap;
         size_t * e_size;
         ArraySort * e_sorted;
+        // TODO: kind of annoying (yet another unknown?) but let's assume these are defaulted to false == 0.
+        bool destructed;
+        bool constructed;
 
         inline void nlognsortMerge(T * A, size_t size_a, T * B, size_t size_b, T * swap_space);
         void nlognSort(T * e_buf, size_t size);
     public:
-        Array(): Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
+        Array(): Array(ARRAY_RECOMMENDED_INITIAL_CAP) {
+            // Only care about implicit compiler fooooooo when copying... so only in default constructor...
+            this->constructed = true;
+        }
         //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         Array(std::initializer_list<T> list) {
             instance_count = new size_t(1);
@@ -161,21 +167,24 @@ class Array {
             e_sorted = e_sorted;
         }
         virtual ~Array() {
-            (*this->instance_count)--;
-            if (*this->instance_count == 0) {
-                deleteCArray<T>(e_buf, *e_size);
-                if (instance_count != nullptr) {
-                    delete instance_count;
+            if (false == this->destructed) {
+                (*this->instance_count)--;
+                if (*this->instance_count == 0) {
+                    deleteCArray<T>(e_buf, *e_size);
+                    if (instance_count != nullptr) {
+                        delete instance_count;
+                    }
+                    if (e_cap != nullptr) {
+                        delete e_cap;
+                    } 
+                    if (e_size != nullptr) {
+                        delete e_size;
+                    }
+                    if (e_sorted != nullptr) {
+                        delete e_sorted;
+                    }
                 }
-                if (e_cap != nullptr) {
-                    delete e_cap;
-                } 
-                if (e_size != nullptr) {
-                    delete e_size;
-                }
-                if (e_sorted != nullptr) {
-                    delete e_sorted;
-                }
+                this->destructed = true;
             }
         }
         Array<T>& sort(ArraySort sortOrder);
@@ -300,22 +309,28 @@ class Array {
         }
         // Copy
         Array(const Array<T>& x) {
-            this->instance_count = x.instance_count;
-            this->e_buf = x.e_buf;
-            this->e_cap = x.e_cap;
-            this->e_size = x.e_size;
-            this->e_sorted = x.e_sorted;
-
-            (*this->instance_count)++;
+            if (false == this->constructed) {
+                this->instance_count = x.instance_count;
+                this->e_buf = x.e_buf;
+                this->e_cap = x.e_cap;
+                this->e_size = x.e_size;
+                this->e_sorted = x.e_sorted;
+         
+                (*this->instance_count)++;
+                this->constructed = true;
+            }
         }
         Array<T>& operator= (const Array<T>& x) {
-            this->instance_count = x.instance_count;
-            this->e_buf = x.e_buf;
-            this->e_cap = x.e_cap;
-            this->e_size = x.e_size;
-            this->e_sorted = x.e_sorted;
-
-            (*this->instance_count)++;
+            if (false == this->constructed) {
+                this->instance_count = x.instance_count;
+                this->e_buf = x.e_buf;
+                this->e_cap = x.e_cap;
+                this->e_size = x.e_size;
+                this->e_sorted = x.e_sorted;
+         
+                (*this->instance_count)++;
+                this->constructed = true;
+            }
             return *this;
         }
 };

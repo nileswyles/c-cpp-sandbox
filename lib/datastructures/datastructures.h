@@ -27,47 +27,46 @@ namespace WylesLibs {
                 e_end = new size_t(end); 
             }
             virtual ~MatrixVector() {
-                // TODO:
-                // Does it get called for sure? For constructors does it call the default?
-                //  How about assignment operator?
-                //  Maybe one can infer that it needs to be called explictly because undefined behaviour is a sin and this seems like a very specific detail...
-                //  at least this way we know for sure these are deleted... #null checks    
-                //  
-                // ~Array();
-                (*this->instance_count)--;
-                if (*this->instance_count == 0) {
-                    deleteCArray<T>(this->e_buf, *this->e_size);
-                    if (this->instance_count != nullptr) {
-                        delete this->instance_count;
+                if (false == this->destructed) {
+                    (*this->instance_count)--;
+                    if (*this->instance_count == 0) {
+                        deleteCArray<T>(this->e_buf, *this->e_size);
+                        if (this->instance_count != nullptr) {
+                            delete this->instance_count;
+                        }
+                        if (this->e_cap != nullptr) {
+                            delete this->e_cap;
+                        } 
+                        if (this->e_size != nullptr) {
+                            delete this->e_size;
+                        }
+                        if (this->e_sorted != nullptr) {
+                            delete this->e_sorted;
+                        }
+                        if (this->e_start != nullptr) {
+                            delete this->e_start;
+                        } 
+                        if (this->e_end != nullptr) {
+                            delete this->e_end;
+                        }
                     }
-                    if (this->e_cap != nullptr) {
-                        delete this->e_cap;
-                    } 
-                    if (this->e_size != nullptr) {
-                        delete this->e_size;
-                    }
-                    if (this->e_sorted != nullptr) {
-                        delete this->e_sorted;
-                    }
-                    if (this->e_start != nullptr) {
-                        delete this->e_start;
-                    } 
-                    if (this->e_end != nullptr) {
-                        delete this->e_end;
-                    }
+                    this->destructed = true;
                 }
             }
             // copy constructor - containerization code remains here
             MatrixVector(const MatrixVector<T>& other) {
-                this->instance_count = other.instance_count;
-                this->e_buf = other.e_buf;
-                this->e_cap = other.e_cap;
-                this->e_size = other.e_size;
-                this->e_sorted = other.e_sorted;
-                this->e_start = other.e_start;
-                this->e_end = other.e_end;
-         
-                (*this->instance_count)++;
+                if (false == this->constructed) {
+                    this->instance_count = other.instance_count;
+                    this->e_buf = other.e_buf;
+                    this->e_cap = other.e_cap;
+                    this->e_size = other.e_size;
+                    this->e_sorted = other.e_sorted;
+                    this->e_start = other.e_start;
+                    this->e_end = other.e_end;
+             
+                    (*this->instance_count)++;
+                    this->constructed = true;
+                }
             }
             // because not same as copy constructor
             MatrixVector<T> copy(const MatrixVector<T>& other);
@@ -78,15 +77,19 @@ namespace WylesLibs {
             T& operator[] (const size_t pos);
             // copy assignment - containerization code remains here
             MatrixVector<T>& operator= (const MatrixVector<T>& other) {
-                this->instance_count = other.instance_count;
-                this->e_buf = other.e_buf;
-                this->e_cap = other.e_cap;
-                this->e_size = other.e_size;
-                this->e_sorted = other.e_sorted;
-                this->e_start = other.e_start;
-                this->e_end = other.e_end;
-         
-                (*this->instance_count)++;
+                if (false == this->constructed) {
+                    this->instance_count = other.instance_count;
+                    this->e_buf = other.e_buf;
+                    this->e_cap = other.e_cap;
+                    this->e_size = other.e_size;
+                    this->e_sorted = other.e_sorted;
+                    this->e_start = other.e_start;
+                    this->e_end = other.e_end;
+             
+                    // TODO: so, if default constructor of parent is called after this than that's an issue... and need to implement some extra check...
+                    (*this->instance_count)++;
+                    this->constructed = true;
+                }
 
                 return *this;
             }

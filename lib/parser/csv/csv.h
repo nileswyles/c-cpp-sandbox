@@ -13,29 +13,8 @@ namespace WylesLibs {
             MatrixVector<std::string> header;
             CSV() = default;
             ~CSV() override final = default;
-            // copy constructor
-            CSV(const CSV<T>& other) {
-                this->instance_count = other.instance_count;
-                this->e_x_start = other.e_y_start;
-                this->e_x_end = other.e_y_end;
-                this->e_y_start = other.e_x_start;
-                this->e_y_end = other.e_x_end;
-     
-                (*this->instance_count)++;
-            }
             MatrixVector<T>& operator[] (const size_t pos) {
                 return this->matrix[pos];
-            }
-            // copy assignment
-            CSV<T>& operator= (const CSV<T>& other) {
-                this->instance_count = other.instance_count;
-                this->e_x_start = other.e_y_start;
-                this->e_x_end = other.e_y_end;
-                this->e_y_start = other.e_x_start;
-                this->e_y_end = other.e_x_end;
-     
-                (*this->instance_count)++;
-                return *this;
             }
             std::string toString() {
                 // assuming T == std::string for now...
@@ -63,20 +42,17 @@ namespace WylesLibs {
     };
     class CSVParser {
         private:
-            /// TODO: const reference?
-            //  
-            // hmm...
-            void read(CSV<std::string>& csv, size_t r_count, bool is_header, const MatrixVector<std::string>& header) {
+            void read(CSV<std::string> * csv, size_t r_count, MatrixVector<std::string> * header) {
                 bool quoted = false;
                 uint8_t b = (*io).readByte();
                 size_t r_i = 0;
                 size_t f_i = 0;
                 MatrixVector<std::string> r;
-                if (is_header) {
+                if (header != nullptr) {
                     r_count = 1;
-                    r = header;
+                    r = *header;
                 } else {
-                    r = csv[r_i];
+                    r = (*csv)[r_i];
                 }
                 while (r_i < r_count) {
                     if (b == EOF) {
@@ -95,7 +71,7 @@ namespace WylesLibs {
                         // end of field
                         if (b == '\n') {
                             // end of record
-                            r = csv[++r_i];
+                            r = (*csv)[++r_i];
                             f_i = 0;
                         }
                         // f = r[f_i];
@@ -152,8 +128,7 @@ namespace WylesLibs {
             CSV<double> readDoubles(bool has_header) {
                 CSV<double> csv;
                 if (true == has_header) {
-                    CSV<std::string> lol;
-                    read(lol, 1, true, csv.header);
+                    read(nullptr, 1, &csv.header);
                 }
                 readDoubles(csv, SIZE_MAX);
                 return csv;
@@ -161,15 +136,15 @@ namespace WylesLibs {
             CSV<std::string> read(bool has_header) {
                 CSV<std::string> csv;
                 if (true == has_header) {
-                    read(csv, 1, true, csv.header);
+                    read(&csv, 1, &csv.header);
                 }
-                read(csv, SIZE_MAX, false, csv.header);
+                read(&csv, SIZE_MAX, nullptr);
                 return csv;
             }
             void read(CSV<std::string>& csv, size_t r_count) {
-                read(csv, r_count, false, csv.header);
+                read(&csv, r_count, nullptr);
             }
     };
 };
 
-#endif 
+#endif

@@ -4,16 +4,20 @@
 using namespace WylesLibs;
 
 template<typename T>
-MatrixVector<T> MatrixVector<T>::copy(const MatrixVector<T>& other) {
-    MatrixVector<T> copy;
-    // TODO: is_view seems not necessary now but maybe it is - runtime_error?
-    size_t size = *other.e_end - *other.e_start;
-    size_t loop_start = *other.e_start;
+size_t MatrixVector<T>::size() {
+    size_t size = *this.e_end - *this.e_start;
     if (false == size > 0) {
-        loop_start = 0; 
-        size = other.size();
+        return size;
+    } else {
+        return *this->e_size;
     }
-    for (size_t i = loop_start; i < size; i++) {
+}
+template<typename T>
+MatrixVector<T> MatrixVector<T>::copy(const MatrixVector<T>& other) {
+    // TOO side effecty?
+    MatrixVector<T> copy(other, *other.e_start, *other.e_end);
+    size_t size = copy.size();
+    for (size_t i = *other.e_start; i < size; i++) {
         copy.append(other.buf()[i]);
     }
     return copy;
@@ -49,38 +53,24 @@ T& MatrixVector<T>::operator[] (const size_t pos) {
     return (*this->e_buf)[i];
 }
 
+// ! IMPORTANT - let's be clear, the user has control and needs to ensure matrix is structured properly when populating...
 template<typename T>
 size_t Matrix<T>::rows() {
-    if (*e_y_end - *e_y_start > 0) {
-        return *e_y_end - *e_y_start;
-    } else {
-        return matrix.size();
-    }
+    return matrix.size();
 }
 template<typename T>
 size_t Matrix<T>::columns() {
-    if (*e_x_end - *e_x_start > 0) {
-        return *e_x_end - *e_x_start;
-    } else {
-        // TODO: how to set limit/strict requirements? Do I care? Should I make immutable? unremovable at least?
-        // TODO:
-        // the above implies there's some data there?... that said, underlying arrays aren't immutable?
-        if (this->rows() == 0) {
-            return 0;
-        }
-        return (*this)[0].size();
+    if (this->rows() == 0) {
+        return 0;
     }
+    return (*this)[0].size();
 }
 // matrix copy constructor but not actual copy constructor lol... 
 template<typename T>
 Matrix<T> Matrix<T>::copy(const Matrix<T>& other) {
     Matrix<T> copy;
     MatrixVector<MatrixVector<T>> y_vector;
-    size_t loop_start = *e_y_start;
-    if (*e_y_end - *e_y_start > 0) {
-        loop_start = 0; 
-    }
-    for (size_t i = loop_start; i < this->rows(); i++) {
+    for (size_t i = *y_vector.e_start; i < *y_vector.e_end; i++) {
         y_vector[i] = other.matrix[i].copy();
     }
     copy.matrix = y_vector;
@@ -90,14 +80,18 @@ template<typename T>
 Matrix<T> Matrix<T>::view(size_t x_start, size_t x_end, size_t y_start, size_t y_end) {
     size_t x_size = x_end - x_start;
     size_t y_size = y_end - y_start;
-    if (x_size == 0 || x_size > this->columns() || y_size == 0 || y_size > this->rows()) {
+    // TODO: think about getting view of view...
+    //  view of copy...
+    //  TDD lol..
+    if (y_start >= this->rows() || y_start < 0 ||
+            x_start >= this->columns() || x_start < 0 ||
+            x_size == 0 || x_size > this->columns() || 
+            y_size == 0 || y_size > this->rows()) {
         throw std::runtime_error("Invalid view coordinates.");
     }
-    Matrix<T> view(*instance_count, x_start, x_end, y_start, y_end);
-    // TODO:
-    // seems tedious/clunky
+    Matrix<T> view;
     MatrixVector<MatrixVector<T>> y_vector(this->matrix, y_start, y_end);
-    for (size_t i = 0; i < this->rows(); i++) {
+    for (size_t i = y_start; i < y_end; i++) {
         MatrixVector<T> x_vector(this->matrix[i], x_start, x_end);
         y_vector[i] = x_vector;
     }

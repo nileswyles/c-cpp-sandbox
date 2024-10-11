@@ -118,7 +118,7 @@ void Array<T>::nlognSort(T * e_buf, size_t size) {
         size_t span = 1;
         T * left_buf;
         T * right_buf;
-        // so, this basically skips the first half of the tree... let's not bother updating other sort stuff with visualization..
+        // so, this basically skips the first half of the tree... let's not bother updating other sort stuff because visualization..
         while (span < size) {
             size_t i = 0;
             while (i < size) {
@@ -151,8 +151,7 @@ Array<T>& Array<T>::sort(ArraySort sortOrder) {
             nlognSort(*this->e_buf, *this->e_size);
         } catch (const std::exception& e) {
             loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
-            // TODO:
-            // we might want to handle bad_allocs differently?... consider insert and remove when I think about this again.
+            // inserts, removes and bad allocs makes it so that we can't assume array is sorted.
             *e_sorted = ARRAY_SORT_UNSORTED;
             throw e;
         }

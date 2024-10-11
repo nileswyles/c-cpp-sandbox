@@ -68,7 +68,8 @@ namespace WylesLibs {
                     this->constructed = true;
                 }
             }
-            // because not same as copy constructor
+            size_t size();
+            // not to be confused with copy constructor
             MatrixVector<T> copy(const MatrixVector<T>& other);
 
             MatrixVector<T>& operator+ (const MatrixVector<T>& m);
@@ -86,7 +87,6 @@ namespace WylesLibs {
                     this->e_start = other.e_start;
                     this->e_end = other.e_end;
              
-                    // TODO: so, if default constructor of parent is called after this than that's an issue... and need to implement some extra check...
                     (*this->instance_count)++;
                     this->constructed = true;
                 }
@@ -98,78 +98,17 @@ namespace WylesLibs {
     class Matrix {
         protected:
             MatrixVector<MatrixVector<T>> matrix;
-            size_t * instance_count;
-            size_t * e_x_start;
-            size_t * e_x_end;
-            size_t * e_y_start;
-            size_t * e_y_end;
         public:
-            Matrix(size_t * instance_count, size_t x_start, size_t x_end, size_t y_start, size_t y_end) {
-                if (instance_count == nullptr) {
-                    instance_count = new size_t(1);
-                } else {
-                    instance_count = instance_count;
-                    (*instance_count)++;
-                }
-                // LMAOOOOOO
-                e_x_start = new size_t(x_start);
-                e_x_end = new size_t(x_end);
-                e_y_start = new size_t(y_start);
-                e_y_end = new size_t(y_end);
-            }
-            Matrix(): Matrix(nullptr, 0, 0, 0, 0) {}
-            virtual ~Matrix() {
-                (*this->instance_count)--;
-                if (*this->instance_count == 0) {
-                    if (instance_count != nullptr) {
-                        delete instance_count;
-                    }
-                    if (e_x_start != nullptr) {
-                        delete e_x_start;
-                    } 
-                    if (e_x_end != nullptr) {
-                        delete e_x_end;
-                    }
-                    if (e_y_start != nullptr) {
-                        delete e_y_start;
-                    } 
-                    if (e_y_end != nullptr) {
-                        delete e_y_end;
-                    }
-                }
-            }
-            // copy constructor - containerization code remains here
-            Matrix(const Matrix<T>& other) {
-                // TODO:
-                // no access to private members? lol...
-                this->instance_count = other.instance_count;
-                this->e_y_start = other.e_y_start;
-                this->e_y_end = other.e_y_end;
-                this->e_x_start = other.e_x_start;
-                this->e_x_end = other.e_x_end;
-     
-                (*this->instance_count)++;
-            }
+            Matrix() = default;
+            virtual ~Matrix() = default;
             size_t rows();
             size_t columns();
-            // matrix copy constructor but not actual copy constructor lol... 
             Matrix<T> copy(const Matrix<T>& other);
             Matrix<T> view(size_t x_start, size_t x_end, size_t y_start, size_t y_end);
             Matrix<T>& operator+ (const Matrix<T>& m);
             Matrix<T>& operator- (const Matrix<T>& m);
             Matrix<T>& operator* (const Matrix<T>& m);
             MatrixVector<T>& operator[] (const size_t pos);
-            // copy assignment - containerization code remains here
-            Matrix<T>& operator= (const Matrix<T>& other) {
-                this->instance_count = other.instance_count;
-                this->e_y_start = other.e_y_start;
-                this->e_y_end = other.e_y_end;
-                this->e_x_start = other.e_x_start;
-                this->e_x_end = other.e_x_end;
-     
-                (*this->instance_count)++;
-                return *this;
-            }
     };
     class GraphNode {
         public:

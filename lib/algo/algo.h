@@ -20,13 +20,6 @@
 #include "datastructures/datastructures.h"
 
 namespace WylesLibs {
-    template<typename T>
-    static void assertArraySizes(const MatrixVector<T>& v1, const MatrixVector<T>& v2) {
-        if (v1.size() != v2.size()) {
-            printf("%lu, %lu\n", v1.size(), v2.size());
-            throw std::runtime_error("Vector sizes should equal.");
-        }
-    }
     namespace Distance {
         // TODO: 
         //  Assuming sqrt(a) + sqrt(b) = sqrt(a + b) lol.. which I think I already proved to be true.
@@ -272,59 +265,6 @@ namespace WylesLibs {
                 dot += (a[i] * b[i]);
             }
             return dot;
-        }
-        template<typename T>
-        static MatrixVector<T> add(const MatrixVector<T>& a, const MatrixVector<T>& b) {
-            assertArraySizes(a, b);
-
-            size_t size = a.size();
-            MatrixVector<T> add;
-            for (size_t i = 0; i < size; i++) {
-                add[i] = a[i] + b[i];
-            }
-            return add;
-        }
-        template<typename T>
-        static MatrixVector<T> sub(const MatrixVector<T>& a, const MatrixVector<T>& b) {
-            assertArraySizes(a, b);
-
-            size_t size = a.size();
-            MatrixVector<T> sub;
-            for (size_t i = 0; i < size; i++) {
-                sub[i] = a[i] - b[i];
-            }
-            return sub;
-        }
-        // yeah, I know slow but...
-        template<typename T>
-        static Matrix<T> mul(const Matrix<T>& m1, const Matrix<T>& m2) {
-            if (m1.rows() != m2.columns() || m1.columns() != m2.rows()) {
-                throw std::runtime_error("Invalid shape of matricies.");
-            }
-            Matrix<T> mul;
-            return mul;
-        }
-        template<typename T>
-        static Matrix<T> add(const Matrix<T>& m) {
-            size_t size = m.size();
-            Matrix<T> add;
-            for (size_t x = 0; x < m.rows(); x++) {
-                for (size_t y = 0; y < m.columns(); y++) {
-                    add[x][y] = m[x][y];
-                }
-            }
-            return add;
-        }
-        template<typename T>
-        static Matrix<T> sub(const Matrix<T>& m) {
-            size_t size = m.size();
-            Matrix<T> sub;
-            for (size_t x = 0; x < m.rows(); x++) {
-                for (size_t y = 0; y < m.columns(); y++) {
-                    sub[x][y] = m[x][y];
-                }
-            }
-            return sub;
         }
         template<typename T>
         static MatrixVector<T> crossProduct(const MatrixVector<T>& a, const MatrixVector<T>& b) {

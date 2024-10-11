@@ -14,8 +14,7 @@ size_t MatrixVector<T>::size() {
 }
 template<typename T>
 MatrixVector<T> MatrixVector<T>::copy(const MatrixVector<T>& other) {
-    // TOO side effecty?
-    MatrixVector<T> copy(other, *other.e_start, *other.e_end);
+    MatrixVector<T> copy;
     size_t size = copy.size();
     for (size_t i = *other.e_start; i < size; i++) {
         copy.append(other.buf()[i]);

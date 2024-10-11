@@ -17,7 +17,7 @@ static void testCSVParser(TestArg * t) {
     std::string csv_string("col_1,col_2\n");
     csv_string += "1:1,2:1\n";
     csv_string += "1:2,2:2\n";
-    csv_string += EOF;
+    csv_string += (char)EOF; // 255?
 
     std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
     CSVParser p(io);

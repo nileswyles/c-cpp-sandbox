@@ -54,8 +54,18 @@ namespace WylesLibs {
                 } else {
                     r = (*csv)[r_i];
                 }
+                // TODO: this is dumb, why allocate an extra string?
+                std::string current_str;
                 while (r_i < r_count) {
-                    if (b == EOF) {
+                    if (b >= 0x20 && b <= 0x7E) {
+                        printf("%c", b);
+                    } else if (b == 0x0A) {
+                        printf("\n");
+                    } else {
+                        printf("%x", b);
+                    }
+                    if (b == (uint8_t)EOF) {
+                        printf("okay, so this isn't a thing?\n");
                         break;
                     }
                     if (!quoted) {
@@ -67,21 +77,21 @@ namespace WylesLibs {
                         }
                     }
                     if (b == ',' || b == '\n') {
+                        r.append(current_str);
+                        current_str = "";
                         f_i++;
                         // end of field
                         if (b == '\n') {
                             // end of record
+                            // #containerization
                             r = (*csv)[++r_i];
                             f_i = 0;
                         }
-                        // f = r[f_i];
-                        continue;
                     }
-                    r[f_i] += (char)b;
+                    current_str.push_back((char)b);
                     b = (*io).readByte();
                 }
-                // TODO:
-                num_records_read = r_i;
+                num_records_read = r_i + 1;
             }
         public:
             std::shared_ptr<IOStream> io;
@@ -98,7 +108,7 @@ namespace WylesLibs {
                 MatrixVector<double> r = csv[r_i];
                 double current_double = 0;
                 while (r_i < r_count) {
-                    if (b == EOF) {
+                    if (b == (uint8_t)EOF) {
                         break;
                     }
                     if (b == ',' || b == '\n') {
@@ -108,11 +118,10 @@ namespace WylesLibs {
                         // end of field
                         if (b == '\n') {
                             // end of record
+                            // #containerization
                             r = csv[++r_i];
                             f_i = 0;
                         }
-                        // f = r[f_i];
-                        continue;
                     }
                     size_t dummy_digit_count = 0;
                     if (b == '.') {
@@ -122,8 +131,7 @@ namespace WylesLibs {
                     }
                     b = (*io).readByte();
                 }
-                // TODO:
-                num_records_read = r_i;
+                num_records_read = r_i + 1;
             }
             CSV<double> readDoubles(bool has_header) {
                 CSV<double> csv;

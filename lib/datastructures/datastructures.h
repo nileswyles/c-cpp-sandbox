@@ -14,7 +14,7 @@ namespace WylesLibs {
             size_t * e_start;
             size_t * e_end;
         public:
-            MatrixVector(): e_start(new size_t(0)), e_end(new size_t(0)) {}
+            MatrixVector(): Array<T>(), e_start(new size_t(0)), e_end(new size_t(0)) {}
             MatrixVector(const MatrixVector<T>& other, size_t start, size_t end): Array<T>(other.instance_count, other.e_buf, other.e_cap, other.e_size, other.e_sorted) {
                 // view...
                 (*other.instance_count)++;
@@ -52,18 +52,26 @@ namespace WylesLibs {
                     }
                     this->destructed = true;
                 }
+                // ~Array() is called...
             }
             // copy constructor - containerization code remains here
             MatrixVector(const MatrixVector<T>& other) {
+                printf("lkanslsndlkasnln ARRAY COPY ASSIGNMENT COPYING MATRIX VECTOR!!!! LOL\n");
+                printf("ankslnklasnCONSTRUCTED ARRAY COPY ASSIGNMENT COPYING MATRIX VECTOR!!!! LOL\n");
+                // TODO: since when can you include this-> in constructor? but whatever works...
+                this->instance_count = other.instance_count;
+                this->e_buf = other.e_buf;
+                this->e_cap = other.e_cap;
+                printf("???\n");
+                this->e_size = other.e_size;
+                this->e_sorted = other.e_sorted;
+                this->e_start = other.e_start;
+                this->e_end = other.e_end;
+                printf("???\n");
+
+                this->destructed = false;
                 if (false == this->constructed) {
-                    this->instance_count = other.instance_count;
-                    this->e_buf = other.e_buf;
-                    this->e_cap = other.e_cap;
-                    this->e_size = other.e_size;
-                    this->e_sorted = other.e_sorted;
-                    this->e_start = other.e_start;
-                    this->e_end = other.e_end;
-             
+                    // lol? what?
                     (*this->instance_count)++;
                     this->constructed = true;
                 }
@@ -155,6 +163,7 @@ namespace WylesLibs {
                         std::runtime_error("Attempting to access element outside of Matrix.");
                     }
                 } else {
+                    // TODO: maybe don't even bother with this...
                     T el;
                     this->append(el); 
                     i = this->size()-1;
@@ -163,18 +172,23 @@ namespace WylesLibs {
             }
             // copy assignment - containerization code remains here
             MatrixVector<T>& operator= (const MatrixVector<T>& other) {
+                printf("MatrixVector ARRAY COPY ASSIGNMENT COPYING MATRIX VECTOR!!!! LOL\n");
+                this->instance_count = other.instance_count;
+                this->e_buf = other.e_buf;
+                this->e_cap = other.e_cap;
+                this->e_size = other.e_size;
+                this->e_sorted = other.e_sorted;
+                this->e_start = other.e_start;
+                this->e_end = other.e_end;
+                printf("????\n");
+
+                this->destructed = false;
                 if (false == this->constructed) {
-                    this->instance_count = other.instance_count;
-                    this->e_buf = other.e_buf;
-                    this->e_cap = other.e_cap;
-                    this->e_size = other.e_size;
-                    this->e_sorted = other.e_sorted;
-                    this->e_start = other.e_start;
-                    this->e_end = other.e_end;
-             
+                    // lol? what?
                     (*this->instance_count)++;
                     this->constructed = true;
                 }
+                printf("WHAT's the issue?\n");
                 return *this;
             }
     };

@@ -16,7 +16,10 @@ ROOT_DIR="."
 SRC_FILES="
 -s $ROOT_DIR/lib/test/csv_test.cpp
 -s $ROOT_DIR/lib/test/tester.cpp
--s $ROOT_DIR/lib/array.cpp
+-s $ROOT_DIR/lib/datastructures/array.cpp
+-s $ROOT_DIR/lib/iostream/iostream.cpp
+-s $ROOT_DIR/lib/iostream/reader_task.cpp
+-s $ROOT_DIR/lib/datastructures/datastructures.cpp
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n csv_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"

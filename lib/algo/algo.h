@@ -2,11 +2,11 @@
 #define WYLESLIBS_ALGO_H
 
 #ifndef ALGO_SIGNED_LONG
-#define ALGO_SIGNED_LONG int32_t
+#define ALGO_SIGNED_LONG int64_t
 #endif
 
 #ifndef ALGO_UNSIGNED_LONG
-#define ALGO_UNSIGNED_LONG uint32_t
+#define ALGO_UNSIGNED_LONG uint64_t
 #endif
 
 #ifndef ALGO_SIGNED_INT
@@ -19,11 +19,9 @@
 
 #include "datastructures/datastructures.h"
 
-using namespace WylesLibs::DS;
-
-namespace WylesLibs::Algo {
+namespace WylesLibs {
     template<typename T>
-    static void assertArraySizes(const Array<T>& v1, const Array<T>& v2) {
+    static void assertArraySizes(const MatrixVector<T>& v1, const MatrixVector<T>& v2) {
         if (v1.size() != v2.size()) {
             printf("%lu, %lu\n", v1.size(), v2.size());
             throw std::runtime_error("Vector sizes should equal.");
@@ -90,7 +88,7 @@ namespace WylesLibs::Algo {
         //      okay, so similarly, create abstractions for matrix operations.
         //      
         template<typename T>
-        static ALGO_UNSIGNED_INT euclidean(const Array<T>& v1, const Array<T>& v2) {
+        static ALGO_UNSIGNED_INT euclidean(const MatrixVector<T>& v1, const MatrixVector<T>& v2) {
             assertArraySizes(v1, v2);
             size_t size = v1.size();
             ALGO_SIGNED_INT sum = 0;
@@ -102,18 +100,18 @@ namespace WylesLibs::Algo {
         template<typename T>
         static Matrix<ALGO_UNSIGNED_INT> euclidean(const Matrix<T>& v1, const Matrix<T>& v2) {
             size_t rows = v1.rows();
-            Matrix<T> euclidean;
+            Matrix<T> m;
             for (size_t i = 0; i < rows; i++) {
-                euclidean[i] = euclidean<T>(v1[i], v2[i]);
+                m[i] = euclidean<T>(v1[i], v2[i]);
             } 
-            return euclidean;
+            return m;
         }
         template<typename T>
-        static void manhattan(const Array<T>& v1, const Array<T>& v2) {
+        static void manhattan(const MatrixVector<T>& v1, const MatrixVector<T>& v2) {
             assertArraySizes(v1, v2);
             // # no C! lol, ef the pythagorean theorem.
             size_t size = v1.size();
-            Array<T> sum = 0;
+            MatrixVector<T> sum = 0;
             for (size_t i = 0; i < size; i++) {
                 sum += abs((ALGO_SIGNED_INT)v1[i] - v2[i]);
             }
@@ -122,11 +120,11 @@ namespace WylesLibs::Algo {
         template<typename T>
         static Matrix<ALGO_UNSIGNED_INT> manhattan(const Matrix<T>& v1, const Matrix<T>& v2) {
             size_t rows = v1.rows();
-            Matrix<ALGO_UNSIGNED_INT> manhattan;
+            Matrix<ALGO_UNSIGNED_INT> m;
             for (size_t i = 0; i < rows; i++) {
-                manhattan[i] = manhattan<T>(v1[i], v2[i]);
+                m[i] = manhattan<T>(v1[i], v2[i]);
             } 
-            return manhattan;
+            return m;
         }
     };
     namespace Statistics {
@@ -143,7 +141,7 @@ namespace WylesLibs::Algo {
             private:
                 double e_value;
             public:
-                ExpectedValue(Array<T> a) {
+                ExpectedValue(MatrixVector<T> a) {
                     ALGO_SIGNED_INT sum = 0;
                     size_t a_size = a.size();
                     // giggity
@@ -192,23 +190,23 @@ namespace WylesLibs::Algo {
         //  also, yeah, follow older c semantics and explicitly declare "loop" variables outside of loop... 
         //  really important in things like this that require the fastest of the fastest LMAO
         template<typename T>
-        static Range range(const Array<T>& a) {
+        static Range range(const MatrixVector<T>& a) {
             size_t size = a.size();
             Range r;
             for (size_t i = 0; i < size; i++) {
                 T val = a[i];
-                if (val > max) {
+                if (val > r.max) {
                     r.max = val;
-                } else if (val < min) {
+                } else if (val < r.min) {
                     r.min = val;
                 }
             }
             return r;
         }
         template<typename T>
-        static Array<T> normalize(const Range r, const Array<T>& a) {
+        static MatrixVector<T> normalize(const Range r, const MatrixVector<T>& a) {
             size_t size = a.size();
-            Array<T> n;
+            MatrixVector<T> n;
             for (size_t i = 0; i < size; i++) {
                 n[i] = normalize(r.min, r.max, a[i]);
             }
@@ -220,7 +218,7 @@ namespace WylesLibs::Algo {
         // yeah and maybe update and stringyshizzzzzzzzzzz
         // but again, that is only cool for order-dependent tasks... if I don't need to loop then don't
         template<typename T>
-        static double variance(const Array<T>& a, const ExpectedValue<T>& e) {
+        static double variance(const MatrixVector<T>& a, const ExpectedValue<T>& e) {
             // average of square of distance of each element from expected value
             size_t size = a.size();
             ALGO_SIGNED_LONG variance = 0;
@@ -230,7 +228,7 @@ namespace WylesLibs::Algo {
             return (double)variance/size;
         }
         template<typename T>
-        static Matrix<ALGO_SIGNED_LONG> covariance(const Array<T>& a, const ExpectedValue<T>& ae, const Array<T>& b, const ExpectedValue<T>& be) {
+        static Matrix<ALGO_SIGNED_LONG> covariance(const MatrixVector<T>& a, const ExpectedValue<T>& ae, const MatrixVector<T>& b, const ExpectedValue<T>& be) {
             // average of square of distance of each element from expected value
 
             // TODO:
@@ -260,38 +258,38 @@ namespace WylesLibs::Algo {
         // orthogonality - linear independence....
         //  2 non-zero vectors are orthogonal if and only if a dot b = 0;
         template<typename T>
-        static ALGO_SIGNED_LONG dotProduct(const Array<T>& a, const Array<T>& b) {
+        static ALGO_SIGNED_LONG dotProduct(const MatrixVector<T>& a, const MatrixVector<T>& b) {
             // # a dot b = |a||b|cos(theta) 
             //  TODO: look up proof of that ^
             //  applications:  
             //      law of cosines
-            Distance::assertArraySizes(a, b);
+            assertArraySizes(a, b);
 
             size_t a_size = a.size();
             size_t b_size = b.size();
             ALGO_SIGNED_LONG dot = 0;
-            for (size_t i = 0; i < size; i++) {
+            for (size_t i = 0; i < a_size; i++) {
                 dot += (a[i] * b[i]);
             }
             return dot;
         }
         template<typename T>
-        static Array<T> add(const Array<T>& a, const Array<T>& b) {
-            Distance::assertArraySizes(a, b);
+        static MatrixVector<T> add(const MatrixVector<T>& a, const MatrixVector<T>& b) {
+            assertArraySizes(a, b);
 
             size_t size = a.size();
-            Array<T> add;
+            MatrixVector<T> add;
             for (size_t i = 0; i < size; i++) {
                 add[i] = a[i] + b[i];
             }
             return add;
         }
         template<typename T>
-        static Array<T> sub(const Array<T>& a, const Array<T>& b) {
-            Distance::assertArraySizes(a, b);
+        static MatrixVector<T> sub(const MatrixVector<T>& a, const MatrixVector<T>& b) {
+            assertArraySizes(a, b);
 
             size_t size = a.size();
-            Array<T> sub;
+            MatrixVector<T> sub;
             for (size_t i = 0; i < size; i++) {
                 sub[i] = a[i] - b[i];
             }
@@ -304,8 +302,7 @@ namespace WylesLibs::Algo {
                 throw std::runtime_error("Invalid shape of matricies.");
             }
             Matrix<T> mul;
-            for (s)
-            return dot;
+            return mul;
         }
         template<typename T>
         static Matrix<T> add(const Matrix<T>& m) {
@@ -330,7 +327,7 @@ namespace WylesLibs::Algo {
             return sub;
         }
         template<typename T>
-        static Array<T> crossProduct(const Array<T>& a, const Array<T>& b) {
+        static MatrixVector<T> crossProduct(const MatrixVector<T>& a, const MatrixVector<T>& b) {
             // # 
             // applications:
             //  torque
@@ -339,7 +336,7 @@ namespace WylesLibs::Algo {
                 std::runtime_error("Limit to 3 dimensions.");
             }
 
-            Array<T> cross;
+            MatrixVector<T> cross;
             cross += (a[1] * b[2]) - (a[2] * b[1]); // i
             cross += (a[2] * b[0]) - (a[0] * b[2]); // j
             cross += (a[0] * b[1]) - (a[1] * b[0]); // k

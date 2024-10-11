@@ -37,10 +37,10 @@ template<typename T>
 T& MatrixVector<T>::operator[] (const size_t pos) {
     size_t i = pos;
     if (true == (*this->e_end - *this->e_start) > 0) {
-        if (i > this->*e_end) {
+        if (i > *this->e_end) {
             std::runtime_error("Attempting to access element outside of Matrix.");
         }
-        i += *this-e_start;
+        i += *this->e_start;
         if (i >= this->size()) {
             std::runtime_error("Attempting to access element outside of Matrix.");
         }

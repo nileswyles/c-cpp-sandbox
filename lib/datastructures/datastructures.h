@@ -90,7 +90,6 @@ namespace WylesLibs {
                     (*this->instance_count)++;
                     this->constructed = true;
                 }
-
                 return *this;
             }
     };

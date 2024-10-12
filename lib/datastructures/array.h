@@ -388,7 +388,6 @@ class Array {
             if (view_size > 0 && view_size <= this->e_size) {
                 return view_size;
             } else {
-                printf("SIZE %d\n", this->e_size);
                 return this->e_size;
             }
         }

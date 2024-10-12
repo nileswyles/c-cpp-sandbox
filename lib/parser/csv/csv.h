@@ -45,26 +45,17 @@ namespace WylesLibs {
             void read(CSV<std::string> * csv, size_t r_count, MatrixVector<std::string> * header) {
                 bool quoted = false;
                 uint8_t b;
-                size_t r_i = csv->rows();
+                size_t r_i = csv->rows() > 0 ? csv->rows() - 1: 0;
                 MatrixVector<std::string> r;
                 if (header != nullptr) {
                     r_count = 1;
                     r = *header;
                 } else {
-                    printf("starting at record: %d\n", r_i);
                     r = (*csv)[r_i];
                 }
-                // TODO: this is dumb, why allocate an extra string?
                 std::string current_str;
                 while (r_i < r_count) {
                     b = (*io).readByte();
-                    // if (b >= 0x20 && b <= 0x7E) {
-                    //     printf("%c", b);
-                    // } else if (b == 0x0A) {
-                    //     printf("\n");
-                    // } else {
-                    //     printf("%x", b);
-                    // }
                     if (b == (uint8_t)EOF) {
                         break;
                     }
@@ -80,15 +71,31 @@ namespace WylesLibs {
                         continue;
                     }
                     if (b == ',' || b == '\n') {
-                        // printf("appending\n");
                         r.append(current_str);
-                        // printf("\nlol, %p\n", r.buf());
-                        // printf("current field: '%s', '%s'\n", r.buf()[r.size()-1].c_str(), current_str.c_str());
                         current_str = "";
                         // end of field
                         if (b == '\n') {
+                            size_t new_record_size = (*csv)[r_i].size();
+                            if (r_i == 0) {
+                                // first iteration
+                                record_size = new_record_size;
+                            }
+                            if (new_record_size == 0 || record_size != new_record_size) {
+                                std::runtime_error("Invalid record size.");
+                            }
                             // end of record
                             // #containerization
+                            record_size = new_record_size;
+                            loggerExec(LOGGER_DEBUG_VERBOSE,
+                                std::string s;
+                                for (size_t i = 0; i < record_size; i++) {
+                                    s += (*csv)[r_i][i];
+                                    if (i + 1 != record_size) {
+                                        s += ",";
+                                    }
+                                }
+                                loggerPrintf(LOGGER_DEBUG_VERBOSE, "RECORD: '%s'\n", s.c_str());
+                            );
                             r = (*csv)[++r_i];
                         }
                         continue;
@@ -98,14 +105,15 @@ namespace WylesLibs {
             }
         public:
             std::shared_ptr<IOStream> io;
+            size_t record_size;
 
-            CSVParser(std::shared_ptr<IOStream> io, char delimeter): io(io) {}
+            CSVParser(std::shared_ptr<IOStream> io, char delimeter): io(io), record_size(0) {}
             CSVParser(std::shared_ptr<IOStream> io): CSVParser(io, ',') {}
             ~CSVParser() = default;
 
             void readDoubles(CSV<double>& csv, size_t r_count) {
                 uint8_t b;
-                size_t r_i = 0;
+                size_t r_i = csv.rows() > 0 ? csv.rows() - 1: 0;
                 MatrixVector<double> r = csv[r_i];
                 double current_double = 0;
                 while (r_i < r_count) {
@@ -118,6 +126,28 @@ namespace WylesLibs {
                         current_double = 0;
                         // end of field
                         if (b == '\n') {
+                            size_t new_record_size = csv[r_i].size();
+                            if (r_i == 0) {
+                                // first iteration
+                                record_size = new_record_size;
+                            }
+                            if (new_record_size == 0 || record_size != new_record_size) {
+                                std::runtime_error("Invalid record size.");
+                            }
+                            // end of record
+                            // #containerization
+                            loggerExec(LOGGER_DEBUG_VERBOSE,
+                                std::string s;
+                                char dec[32];
+                                for (size_t i = 0; i < record_size; i++) {
+                                    sprintf(dec, "%f", csv[r_i][i]);
+                                    s += dec;
+                                    if (i + 1 != record_size) {
+                                        s += ",";
+                                    }
+                                }
+                                loggerPrintf(LOGGER_DEBUG_VERBOSE, "RECORD: '%s'\n", s.c_str());
+                            );
                             // end of record
                             // #containerization
                             r = csv[++r_i];

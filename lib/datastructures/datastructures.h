@@ -25,45 +25,13 @@
 
 namespace WylesLibs {
     template<typename T>
-    class MatrixVector: public Array<T> {
+    class MatrixVector: public SharedArray<T> {
         private:
-            size_t * e_start;
-            size_t * e_end;
         public:
-            MatrixVector(): Array<T>(), e_start(new size_t(0)), e_end(new size_t(0)) {}
-            MatrixVector(const size_t initial_cap): Array<T>(initial_cap), e_start(new size_t(0)), e_end(new size_t(0)) {}
-            MatrixVector(const MatrixVector<T>& other, size_t start, size_t end): Array<T>((Array<T> *)&other) {
-                // view...
-                (*other.instance_count)++;
-
-                size_t view_size = end - start;
-                if (view_size == 0 || view_size > *other.e_size) {
-                    throw std::runtime_error("Invalid view coordinates.");
-                }
-                e_start = new size_t(start); 
-                e_end = new size_t(end); 
-            }
-            ~MatrixVector() override {
-                printf("MatrixVector Destructor called\n");
-                if (*this->instance_count == 1) {
-                    printf("Actually deleting\n");
-                    if (this->e_start != nullptr) {
-                        delete this->e_start;
-                    } 
-                    if (this->e_end != nullptr) {
-                        delete this->e_end;
-                    }
-                }
-                // ~Array() is called...
-            }
-            size_t size() {
-                size_t size = *this->e_end - *this->e_start;
-                if (false == size > 0) {
-                    return size;
-                } else {
-                    return *this->e_size;
-                }
-            }
+            MatrixVector() = default;
+            MatrixVector(const size_t initial_cap): SharedArray<T>(initial_cap) {}
+            MatrixVector(const MatrixVector<T>& other, size_t start, size_t end): SharedArray<T>(other, start, end) {}
+            ~MatrixVector() override = default;
             ALGO_UNSIGNED_INT euclidean(const MatrixVector<T>& v) {
                 assertArraySizes(*this, v);
                 size_t size = this->size();
@@ -151,48 +119,17 @@ namespace WylesLibs {
                 return dot;
             }
             T& operator[] (const size_t pos) {
-                size_t i = pos;
-                if (true == (*this->e_end - *this->e_start) > 0) {
-                    if (i > *this->e_end) {
-                        std::runtime_error("Attempting to access element outside of Matrix.");
-                    }
-                    i += *this->e_start;
-                    if (i >= this->size()) {
-                        std::runtime_error("Attempting to access element outside of Matrix.");
-                    }
-                } else if (i >= this->size()) {
-                    T el;
-                    this->append(el); 
-                    // so, el, get's destroyed but it should have been copied????
-                    //      If el, is a container like Array<T>... then we create new pointers, 
-                    //      we call new Array<T>;
-                    //      so it's initialized to zero...
-                    //      then we add it...
-                    //      ahh yeah, 
-
-                    i = this->size()-1;
-                }
-                return (*this->e_buf)[i];
+                return (*this->ctrl->ptr)[pos];
             }
             // copy constructor - containerization code remains here
-            MatrixVector(const MatrixVector<T>& other): Array<T>((Array<T> *)&other) {
-                this->e_start = other.e_start;
-                this->e_end = other.e_end;
+            MatrixVector(const MatrixVector<T>& other) {
+                this->ctrl = other.ctrl;
+                this->ctrl->instance_count++;
             }
             // copy assignment - containerization code remains here
             MatrixVector<T>& operator= (const MatrixVector<T>& other)  {
-                if (other.instance_count == nullptr || other.e_cap == nullptr || other.e_size == nullptr || other.e_sorted == nullptr) {
-                    std::runtime_error("Make sure the array is initialized before trying to create");
-                } else {
-                    this->instance_count = other.instance_count;
-                    this->e_buf = other.e_buf;
-                    this->e_cap = other.e_cap;
-                    this->e_size = other.e_size;
-                    this->e_sorted = other.e_sorted;
-                    this->e_start = other.e_start;
-                    this->e_end = other.e_end;
-                    (*this->instance_count)++;
-                }
+                this->ctrl = other.ctrl;
+                this->ctrl->instance_count++;
                 return *this;
             }
     };
@@ -205,10 +142,7 @@ namespace WylesLibs {
             MatrixVector<MatrixVector<T>> matrix;
         public:
             Matrix() = default;
-            // virtual ~Matrix() = default;
-            virtual ~Matrix() {
-                printf("MATRIX DESTRUCTOR CALLED BUT IT SHOULDN'T BE CALLED\n");
-            }
+            virtual ~Matrix() = default;
             // ! IMPORTANT - let's be clear, the user has control and needs to ensure matrix is structured properly when populating...
             size_t rows() {
                 return matrix.size();
@@ -330,7 +264,6 @@ namespace WylesLibs {
                 return mul;
             }
             MatrixVector<T>& operator[] (const size_t pos) {
-                printf("DD\n");
                 return this->matrix[pos];
             }
     };
@@ -343,7 +276,7 @@ namespace WylesLibs {
     class Graph {
         public:
             // maybe i don't need shared ptr because I can keep this contained but let's seee...
-            Array<std::shared_ptr<GraphNode>> node_list;
+            SharedArray<std::shared_ptr<GraphNode>> node_list;
             Graph() = default;
             virtual ~Graph() = default;
     };

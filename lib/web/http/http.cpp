@@ -38,7 +38,7 @@ using namespace WylesLibs::Parser;
 static Url parseUrl(IOStream * io) {
     Url url;
     // path = /aklmdla/aslmlamk(?)
-    Array<uint8_t> path = io->readUntil("? ");
+    SharedArray<uint8_t> path = io->readUntil("? ");
     if ((char)path.back() == '?') {
         // query = key=value&key2=value2
         url.query_map = KeyValue::parse(io, '&');
@@ -177,7 +177,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
 	if (content_type != "") {
         response = new HttpResponse;
 		if (request->method == "HEAD" || request->method == "GET") {
-            Array<uint8_t> file_data = File::read(path);
+            SharedArray<uint8_t> file_data = File::read(path);
             char content_length[17];
 			sprintf(content_length, "%ld", file_data.size());
             response->fields["Content-Length"] = std::string(content_length);
@@ -198,7 +198,7 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING WEBSOCKET REQUEST\n");
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
-        Array<std::string> protocols = request->fields["sec-websocket-protocol"];
+        SharedArray<std::string> protocols = request->fields["sec-websocket-protocol"];
         for (size_t i = 0; i < protocols.size(); i++) {
             for (size_t x = 0; i < this->upgraders.size(); i++) {
                 std::string protocol = protocols[i];

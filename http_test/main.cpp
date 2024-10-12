@@ -32,8 +32,8 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
         }
 };
 
-static Array<RequestFilter> requestFilters{};
-static Array<ResponseFilter> responseFilters{};
+static SharedArray<RequestFilter> requestFilters{};
+static SharedArray<ResponseFilter> responseFilters{};
 // TODO:
 // hmm... unordered maps here?
 // and yes you're all crazy this should and was working?
@@ -88,7 +88,7 @@ int main(int argc, char * argv[]) {
         server_context = &context;
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created config object.\n");
-        Array<ConnectionUpgrader *> upgraders;
+        SharedArray<ConnectionUpgrader *> upgraders;
         WebsocketJsonRpcConnection upgrader("/testpath", "jsonrpc");
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created upgrader object.\n");
         ConnectionUpgrader * upgrader_ptr = &upgrader;

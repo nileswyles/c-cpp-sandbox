@@ -34,7 +34,7 @@ void testUniqueKeyStringGenerator(TestArg * t) {
     ServerConfig config;
     UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore("sequence_store"));
 
-    Array<std::string> expected_keys{
+    SharedArray<std::string> expected_keys{
         "0000000000000000",
         "0000000000000001",
         "0000000000000002",

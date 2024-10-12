@@ -2,14 +2,14 @@
 
 using namespace WylesLibs;
 
-void ReaderTaskTrim::rTrimFlush(Array<uint8_t>& buffer) {
+void ReaderTaskTrim::rTrimFlush(SharedArray<uint8_t>& buffer) {
     if (this->r_trim.size() > 0) {
-        buffer.append(this->r_trim.buf(), this->r_trim.size());
+        buffer.append(this->r_trim);
     }
     r_trimming = false;
 }
 
-void ReaderTaskTrim::perform(Array<uint8_t>& buffer, uint8_t c) {
+void ReaderTaskTrim::perform(SharedArray<uint8_t>& buffer, uint8_t c) {
     if (!this->l_trimming) {
         if (STRING_UTILS_WHITESPACE.find(c) != std::string::npos) {
             // if just trimming whitespace...
@@ -34,7 +34,7 @@ void ReaderTaskTrim::perform(Array<uint8_t>& buffer, uint8_t c) {
     }
 }
 
-void ReaderTaskExtract::flush(Array<uint8_t>& buffer) {
+void ReaderTaskExtract::flush(SharedArray<uint8_t>& buffer) {
     // if extracting token and non whitespace after token throw an exception...
     if (r_trim_non_whitespace != 0) {
         std::string msg = "Found non-whitespace char right of token.";
@@ -48,15 +48,15 @@ void ReaderTaskExtract::flush(Array<uint8_t>& buffer) {
         buffer.append(this->r_trim_read_until);
     }
 }
-void ReaderTaskExtract::rTrimFlush(Array<uint8_t>& buffer) {
+void ReaderTaskExtract::rTrimFlush(SharedArray<uint8_t>& buffer) {
     if (this->r_trim.size() > 0) {
-        buffer.append(this->r_trim.buf(), this->r_trim.size());
+        buffer.append(this->r_trim);
     }
     this->r_trimming = false;
 }
 // TODO: bug fix/feature needed... if we reach an "until" character while r_trimming (when open, before right_most_char is reached), then we will exit.
 //  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ":": should yield :: not :. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
-void ReaderTaskExtract::perform(Array<uint8_t>& buffer, uint8_t c) {
+void ReaderTaskExtract::perform(SharedArray<uint8_t>& buffer, uint8_t c) {
     if (!this->l_trimming) {
         if (this->right_most_char == c) {
             this->r_trimming = true;

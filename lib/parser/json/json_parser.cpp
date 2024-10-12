@@ -302,7 +302,7 @@ static bool parseKey(JsonObject * obj, IOStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Key. %c\n", r->peekByte());
 
     ReaderTaskExtract extract('"', '"');
-    Array<uint8_t> key = r->readUntil(":}", &extract);
+    SharedArray<uint8_t> key = r->readUntil(":}", &extract);
 
     std::string key_string = key.toString();
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String with delimeter: '%s'\n", key_string.c_str());
@@ -380,7 +380,7 @@ extern JsonValue * WylesLibs::Parser::Json::parse(std::string json) {
     return parse(&r, i);
 }
 
-extern JsonValue * WylesLibs::Parser::Json::parse(Array<uint8_t> json) {
+extern JsonValue * WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
     if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
         std::string msg = "Json data to loooonnnng!";
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());

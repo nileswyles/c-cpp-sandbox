@@ -71,27 +71,27 @@ class IOStream {
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...
         // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...
         uint8_t readByte();
-        Array<uint8_t> readBytes(const size_t n);
+        SharedArray<uint8_t> readBytes(const size_t n);
         // ! IMPORTANT - inclusive means we read and consume the until character. 
         //      inclusive value of false means the until character stays in the read buffer for the next read.
-        //      Otherwise, Array provides a method to cleanly remove the until character after the fact.
+        //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
-        Array<uint8_t> readUntil(const char until) {
+        SharedArray<uint8_t> readUntil(const char until) {
             return readUntil(std::string(&until));
         }
-        Array<uint8_t> readUntil(std::string until) {
+        SharedArray<uint8_t> readUntil(std::string until) {
             return readUntil(until, nullptr, true);
         }
-        Array<uint8_t> readUntil(const char until, bool inclusive) {
+        SharedArray<uint8_t> readUntil(const char until, bool inclusive) {
             return readUntil(std::string(&until), inclusive);
         }
-        Array<uint8_t> readUntil(std::string until, bool inclusive) {
+        SharedArray<uint8_t> readUntil(std::string until, bool inclusive) {
             return readUntil(until, nullptr, inclusive);
         }
-        Array<uint8_t> readUntil(std::string until, ReaderTask * operation) {
+        SharedArray<uint8_t> readUntil(std::string until, ReaderTask * operation) {
             return readUntil(until, operation, true);
         }
-        Array<uint8_t> readUntil(std::string until, ReaderTask * operation, bool inclusive);
+        SharedArray<uint8_t> readUntil(std::string until, ReaderTask * operation, bool inclusive);
 
         void readDecimal(double& value, size_t& digit_count);
         void readNatural(double& value, size_t& digit_count);

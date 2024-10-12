@@ -56,14 +56,14 @@ ssize_t IOStream::writeBuffer(void * p_buf, size_t size) {
 #endif
 }
 
-Array<uint8_t> IOStream::readBytes(const size_t n) {
+SharedArray<uint8_t> IOStream::readBytes(const size_t n) {
     this->cursorCheck();
 
     if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
         throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
     }
 
-    Array<uint8_t> data;
+    SharedArray<uint8_t> data;
     size_t bytes_read = 0;
     while (bytes_read < n) {
         size_t bytes_left_to_read = n - bytes_read;
@@ -84,7 +84,7 @@ Array<uint8_t> IOStream::readBytes(const size_t n) {
     return data;
 }
 
-Array<uint8_t> IOStream::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
+SharedArray<uint8_t> IOStream::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
     // # less clunky
     if (operation != nullptr) {
         operation->read_until = until;
@@ -92,7 +92,7 @@ Array<uint8_t> IOStream::readUntil(std::string until, ReaderTask * operation, bo
 
     this->cursorCheck();
 
-    Array<uint8_t> data;
+    SharedArray<uint8_t> data;
     uint8_t c = this->buf[this->cursor];
     while (until.find(c) == std::string::npos) {
         // commit character

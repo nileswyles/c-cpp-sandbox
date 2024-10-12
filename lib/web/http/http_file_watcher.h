@@ -18,7 +18,7 @@ namespace WylesLibs::Http {
         public:
             HttpServerConfig config;
             ThreadSafeMap<std::string, std::string> static_paths;
-            HttpFileWatcher(HttpServerConfig config, ThreadSafeMap<std::string, std::string> static_paths, Array<std::string> paths_to_dirs): 
+            HttpFileWatcher(HttpServerConfig config, ThreadSafeMap<std::string, std::string> static_paths, SharedArray<std::string> paths_to_dirs): 
                     FileWatcher(paths_to_dirs, IN_CLOSE | IN_CREATE | IN_MOVE | IN_DELETE), config(config), static_paths(static_paths) {}
             ~HttpFileWatcher() override = default;
 

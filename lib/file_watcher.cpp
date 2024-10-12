@@ -15,7 +15,7 @@ static int fd = -1;
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-FileWatcher::FileWatcher(Array<std::string> paths, uint32_t access_mask) {
+FileWatcher::FileWatcher(SharedArray<std::string> paths, uint32_t access_mask) {
     if (fd == -1) {
         std::runtime_error("File watcher thread has not been initialized!");
     }

@@ -16,22 +16,18 @@ void WylesLibs::addElement<const char *>(const char ** buf, const size_t pos, co
 // T * == const char **
 // T ** == const char ***
 template<>
-void WylesLibs::deleteCArray<const char *>(const char *** e_buf, size_t size) {
+void WylesLibs::deleteCArray<const char *>(const char ** e_buf, size_t size) {
     loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'const char *' of size: %lu\n", size);
     if (e_buf != nullptr) {
-        if (*e_buf != nullptr) {
-            for (size_t i = 0; i < size; i++) {
-                // deletes string. see allocation in addElement function above...
-                loggerPrintf(LOGGER_DEBUG_VERBOSE, "String being deleted: '%s'\n", (*e_buf)[i]);
-                if (*e_buf[i] != nullptr) {
-                    delete[] (*e_buf)[i];
-                }
+        for (size_t i = 0; i < size; i++) {
+            // deletes string. see allocation in addElement function above...
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "String being deleted: '%s'\n", e_buf[i]);
+            if (e_buf[i] != nullptr) {
+                delete[] e_buf[i];
             }
-            // deletes array of string pointers
-            delete[] *e_buf;
         }
-        // deletes container (pointer to array deleted above) 
-        delete e_buf;
+        // deletes array of string pointers
+        delete[] e_buf;
     }
 }
 
@@ -46,9 +42,9 @@ void WylesLibs::deleteCArrayElement<const char *>(const char ** buf, size_t pos)
 }
 
 template<>
-ssize_t WylesLibs::arrayFind<const char *>(const char *** e_buf, size_t size, const char * el) {
+ssize_t WylesLibs::arrayFind<const char *>(const char ** e_buf, size_t size, const char * el) {
     for (size_t i = 0; i < size; i++) {
-        if (strcmp((*e_buf)[i], el) == 0) {
+        if (strcmp(e_buf[i], el) == 0) {
             return i;
         }
     }

@@ -14,7 +14,7 @@ namespace WylesLibs::Parser::Multipart::ByteRanges {
 // lol, still valid for client code...
 static void parse(IOStream * r, MultipartFile& file) {
     while (1) {
-        Array<uint8_t> potential_boundary = r->readUntil("\n"); // read and consume boundary string
+        SharedArray<uint8_t> potential_boundary = r->readUntil("\n"); // read and consume boundary string
         if (potential_boundary.buf[0] == '-' && potential_boundary.buf[1] == '-') {
             if (potential_boundary.buf[potential_boundary.size() - 3] == '-') break;
             // assume type then range for now...
@@ -63,7 +63,7 @@ static void parse(IOStream * r, MultipartFile& file) {
             // inclusive...
             // [0,0] = 1, [1,0] = 0, [0,1] = 2
             //            [2,0] = -1
-            Array<uint8_t> data = r->readBytes(max - min + 1);
+            SharedArray<uint8_t> data = r->readBytes(max - min + 1);
             // WylesLibs::File::write(file.getResourcePath(), data);
         } else {
             throw std::runtime_error("Boundary string expected at start or after read.");

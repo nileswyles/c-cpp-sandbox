@@ -19,7 +19,7 @@ using namespace WylesLibs;
 using namespace WylesLibs::Test;
 
 template<typename T>
-bool assert(Array<T> actual, T * expected, size_t expected_size, size_t expected_cap) {
+bool assert(SharedArray<T> actual, T * expected, size_t expected_size, size_t expected_cap) {
     bool memory_match = memcmp((void *)expected, (void *)actual.buf(), expected_size * sizeof(T)) == 0;
     bool size_match = actual.size() == expected_size;
     // make sure cap grows at the predetermined rate.
@@ -41,7 +41,7 @@ bool assert(Array<T> actual, T * expected, size_t expected_size, size_t expected
 }
 
 template<>
-bool assert<const char *>(Array<const char *> actual, const char ** expected, size_t expected_size, size_t expected_cap) {
+bool assert<const char *>(SharedArray<const char *> actual, const char ** expected, size_t expected_size, size_t expected_cap) {
     bool size_match = actual.size() == expected_size;
     // make sure cap grows at the predetermined rate.
     // also make sure size doesn't exceed cap (arguably more important).
@@ -130,7 +130,7 @@ static void testArrayAppendCstrings(TestArg * t) {
         "STRING 6",
         "STRING 7"
     };
-    Array<const char *> actual(ARRAY_RECOMMENDED_INITIAL_CAP);
+    SharedArray<const char *> actual(ARRAY_RECOMMENDED_INITIAL_CAP);
     actual.append(expected, expected_size);
 
     t->fail = !assert<const char *>(actual, expected, expected_size, ARRAY_RECOMMENDED_INITIAL_CAP);
@@ -142,7 +142,7 @@ static void testArrayAppend(TestArg * t) {
     uint8_t expected[expected_size];
     memset(expected, 0x07, expected_size);
     
-    Array<uint8_t> actual;
+    SharedArray<uint8_t> actual;
     actual.append(expected, expected_size);
 
     t->fail = !assert<uint8_t>(actual, expected, expected_size, ARRAY_RECOMMENDED_INITIAL_CAP);
@@ -154,7 +154,7 @@ static void testArrayAppendRecapped(TestArg * t) {
     uint8_t expected[expected_size];
     memset(expected, 0x07, expected_size);
 
-    Array<uint8_t> actual;
+    SharedArray<uint8_t> actual;
     size_t initial_size = actual.size();
     actual.append(expected, expected_size);
 
@@ -166,7 +166,7 @@ static void testArrayAppendConsecutive(TestArg * t) {
     #define expected_size 7
     uint8_t expected[expected_size];
 
-    Array<uint8_t> actual;
+    SharedArray<uint8_t> actual;
     for (int i = 0; i < expected_size; i++) {
         expected[i] = 0x07;
         actual.append(expected + i, 1);
@@ -180,7 +180,7 @@ static void testArrayAppendConsecutiveRecapped(TestArg * t) {
     #define expected_size 15
     uint8_t expected[expected_size];
 
-    Array<uint8_t> actual;
+    SharedArray<uint8_t> actual;
     size_t initial_size = actual.size();
 
     for (int i = 0; i < expected_size; i++) {
@@ -202,7 +202,7 @@ static void testArrayRemoveCstrings(TestArg * t) {
         "STRING 6",
         "STRING 7"
     };
-    Array<const char *> actual{
+    SharedArray<const char *> actual{
         "STRING 1",
         "STRING 2",
         "STRING 3",
@@ -227,7 +227,7 @@ static void testArrayRemoveCstringsLastElement(TestArg * t) {
         "STRING 5",
         "STRING 6",
     };
-    Array<const char *> actual{
+    SharedArray<const char *> actual{
         "STRING 1",
         "STRING 2",
         "STRING 3",
@@ -252,7 +252,7 @@ static void testArrayRemove(TestArg * t) {
         0x6,
         0x7
     };
-    Array<uint8_t> actual{
+    SharedArray<uint8_t> actual{
         0x1,
         0x2,
         0x3,
@@ -276,7 +276,7 @@ static void testArrayRemoveConsecutive(TestArg * t) {
         0x6,
         0x7
     };
-    Array<uint8_t> actual{
+    SharedArray<uint8_t> actual{
         0x1,
         0x2,
         0x3,
@@ -298,7 +298,7 @@ static void testArrayRemoveRecapped(TestArg * t) {
         0x1,
         0x7
     };
-    Array<uint8_t> actual{
+    SharedArray<uint8_t> actual{
         0x1,
         0x2,
         0x3,
@@ -320,7 +320,7 @@ static void testArrayRemoveConsecutiveRecapped(TestArg * t) {
         0x6,
         0x7
     };
-    Array<uint8_t> actual{
+    SharedArray<uint8_t> actual{
         0x1,
         0x2,
         0x3,

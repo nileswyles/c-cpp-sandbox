@@ -143,7 +143,7 @@ class JsonString: public JsonValue {
 //  if nothing else, let's keep parsing stuff consistent... 
 extern JsonValue * parseFile(std::string file_path);
 extern JsonValue * parse(std::string json);
-extern JsonValue * parse(Array<uint8_t> json);
+extern JsonValue * parse(SharedArray<uint8_t> json);
 extern JsonValue * parse(IOStream * r, size_t& i);
 
 extern std::string pretty(std::string json);

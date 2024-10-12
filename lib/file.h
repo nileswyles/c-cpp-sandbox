@@ -39,7 +39,7 @@ static void write(std::string file_path, std::string buffer, bool append) {
     }
 }
 
-static void write(std::string file_path, Array<uint8_t> buffer, bool append) {
+static void write(std::string file_path, SharedArray<uint8_t> buffer, bool append) {
     // open every time a problem?
     std::fstream s{file_path, s.binary | s.out};
     if (!s.is_open()) {
@@ -54,7 +54,7 @@ static void write(std::string file_path, Array<uint8_t> buffer, bool append) {
     }
 }
 
-static WylesLibs::Array<uint8_t> read(std::string file_path) {
+static WylesLibs::SharedArray<uint8_t> read(std::string file_path) {
     int fd = open(file_path.c_str(), O_RDONLY);
     if (fd == -1) {
         throw std::runtime_error("Unable to read file at: " + file_path);
@@ -62,7 +62,7 @@ static WylesLibs::Array<uint8_t> read(std::string file_path) {
     struct stat stat_info = {};
     int lol = fstat(fd, &stat_info);
     IOStream r(fd);
-    Array<uint8_t> file = r.readBytes(stat_info.st_size);
+    SharedArray<uint8_t> file = r.readBytes(stat_info.st_size);
     close(fd);
     return file;
 }

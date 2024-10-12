@@ -14,13 +14,13 @@ using namespace WylesLibs;
 
 namespace WylesLibs::Parser::Multipart::FormData {
 //
-static void parse(IOStream * io, Array<MultipartFile> files, unordered_map<std::string, std::string> form_content) {
+static void parse(IOStream * io, SharedArray<MultipartFile> files, unordered_map<std::string, std::string> form_content) {
     while (1) {
         std::string field_name;
         bool is_file = false;
         bool new_file = true;
         MultipartFile file;
-        Array<uint8_t> line = io->readUntil("\n"); // read and consume boundary string
+        SharedArray<uint8_t> line = io->readUntil("\n"); // read and consume boundary string
         if (line.buf()[0] == '-' && line.buf()[1] == '-') {
             if (line.buf()[line.size() - 3] == '-') break;
             // assume type then range for now...

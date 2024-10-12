@@ -30,7 +30,7 @@ bool riskyDeleteBool = false;
 
 class TestFileWatcher: public FileWatcher {
     public:
-        TestFileWatcher(Array<std::string> paths): FileWatcher(paths, IN_CREATE | IN_MOVE | IN_DELETE) {}
+        TestFileWatcher(SharedArray<std::string> paths): FileWatcher(paths, IN_CREATE | IN_MOVE | IN_DELETE) {}
         void handle(const struct inotify_event * event) {
             loggerPrintf(LOGGER_DEBUG, "MASK: %x\n", event->mask);
             if (event->mask&IN_CREATE) {
@@ -127,7 +127,7 @@ static void beforeSuite() {
 
     // would be lame if I need to enumerate and list all files? that would defeat purpose?
     //  maybe just directories?
-    Array<std::string> paths{test_directory};
+    SharedArray<std::string> paths{test_directory};
     // file_watcher = std::make_shared<TestFileWatcher>({test_directory});
     file_watcher = std::make_shared<TestFileWatcher>(paths);
     file_watcher->initialize(file_watcher);

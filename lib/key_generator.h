@@ -63,7 +63,7 @@ class UniqueKeyGeneratorStore {
                 close(fd);
             }
         }
-        void flush(Array<uint8_t> data) {
+        void flush(SharedArray<uint8_t> data) {
             if (this->file_path.size() > 0) {
                 loggerPrintf(LOGGER_DEBUG, "Flushing sequence to data store at %s\n", this->file_path.c_str());
                 File::write(this->file_path, data, false);
@@ -77,7 +77,7 @@ class UniqueKeyGenerator {
         pthread_mutex_t mutex;
         uint64_t current;
     public:
-        static void valToHexCharArray(Array<uint8_t> data, uint64_t value, uint8_t bytes) {
+        static void valToHexCharArray(SharedArray<uint8_t> data, uint64_t value, uint8_t bytes) {
             if (bytes > 8) {
                 throw std::runtime_error("byte count cannnot exceed 64 bits.");
             }
@@ -109,7 +109,7 @@ class UniqueKeyGenerator {
         }
         virtual ~UniqueKeyGenerator() {
             pthread_mutex_lock(&this->mutex);
-            Array<uint8_t> data;
+            SharedArray<uint8_t> data;
             UniqueKeyGenerator::valToHexCharArray(data, current, 8);
             store.flush(data);
             pthread_mutex_unlock(&this->mutex);
@@ -119,7 +119,7 @@ class UniqueKeyGenerator {
             pthread_mutex_lock(&this->mutex);
             this->current++;
 
-            Array<uint8_t> data;
+            SharedArray<uint8_t> data;
             UniqueKeyGenerator::valToHexCharArray(data, current, 8);
             pthread_mutex_unlock(&this->mutex);
             return data.toString();
@@ -145,7 +145,7 @@ class UUIDGeneratorV4: public UniqueKeyGenerator {
         }
         ~UUIDGeneratorV4() override = default;
         std::string next() override {
-            Array<uint8_t> data;
+            SharedArray<uint8_t> data;
             for (uint8_t i = 0; i < num_randoms; i++) {
                 UniqueKeyGenerator::valToHexCharArray(data, (uint32_t)random(), 4);
             }
@@ -168,8 +168,8 @@ class UUIDGeneratorV7: public UUIDGeneratorV4 {
             struct timespec ts;
             clock_gettime(CLOCK_MONOTONIC, &ts);
 
-            Array<int> selections;
-            Array<uint8_t> data;
+            SharedArray<int> selections;
+            SharedArray<uint8_t> data;
             uint8_t size = 1 + this->num_randoms;
             printf("randoms: %d\n", this->num_randoms);
             for (uint8_t i = 0; i <= size; i++) {

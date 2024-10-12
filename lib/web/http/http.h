@@ -40,7 +40,7 @@ using namespace WylesLibs::Paths;
 
 namespace WylesLibs::Http {
 
-static Array<const char *> FIELD_VALUES_TO_LOWER_CASE{
+static SharedArray<const char *> FIELD_VALUES_TO_LOWER_CASE{
     "connection",
     "upgrade"
 };
@@ -60,14 +60,14 @@ class HttpRequest {
         Url url;
         std::string version;
         
-        std::map<std::string, Array<std::string>> fields;
-        std::map<std::string, Array<std::string>> cookies;
+        std::map<std::string, SharedArray<std::string>> fields;
+        std::map<std::string, SharedArray<std::string>> cookies;
 
         size_t content_length;
         JsonValue * json_content;
-        Array<MultipartFile> files;
+        SharedArray<MultipartFile> files;
         std::unordered_map<std::string, std::string> form_content;
-        Array<uint8_t> content;
+        SharedArray<uint8_t> content;
 
         Authorization auth;
 
@@ -82,7 +82,7 @@ class HttpResponse {
         std::string version;
         std::unordered_map<std::string, std::string> fields;
         std::unordered_map<std::string, std::string> cookies;
-        Array<uint8_t> content;
+        SharedArray<uint8_t> content;
 
         HttpResponse(): version("HTTP/1.1"), status_code("500") {
 			fields["Connection"].append("close");
@@ -116,9 +116,9 @@ class HttpConnection {
     private:
         RequestProcessor * processor;
         map<std::string, map<std::string, RequestProcessor *>> request_map;
-        Array<RequestFilter> request_filters;
-        Array<ResponseFilter> response_filters;
-        Array<ConnectionUpgrader *> upgraders;
+        SharedArray<RequestFilter> request_filters;
+        SharedArray<ResponseFilter> response_filters;
+        SharedArray<ConnectionUpgrader *> upgraders;
         HttpServerConfig config;
         ThreadSafeMap<std::string, std::string> static_paths; 
 
@@ -190,8 +190,8 @@ class HttpConnection {
         HttpConnection() {}
         // haha, funny how that worked out...
         HttpConnection(HttpServerConfig pConfig, map<std::string, map<std::string, RequestProcessor *>> pRequest_map, 
-                        Array<RequestFilter> pRequest_filters, Array<ResponseFilter> pResponse_filters, 
-                        Array<ConnectionUpgrader *> pUpgraders) {
+                        SharedArray<RequestFilter> pRequest_filters, SharedArray<ResponseFilter> pResponse_filters, 
+                        SharedArray<ConnectionUpgrader *> pUpgraders) {
             config = pConfig;
             request_map = pRequest_map;
             request_filters = pRequest_filters;
@@ -199,7 +199,7 @@ class HttpConnection {
             upgraders = pUpgraders;
             processor = nullptr;
         }
-        HttpConnection(HttpServerConfig config, RequestProcessor * processor, Array<ConnectionUpgrader *> upgraders): 
+        HttpConnection(HttpServerConfig config, RequestProcessor * processor, SharedArray<ConnectionUpgrader *> upgraders): 
             config(config), processor(processor), upgraders(upgraders) {
                 if (processor == nullptr) {
                     std::string msg = "Processor can not be a nullptr when invoking this constructor.";

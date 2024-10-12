@@ -45,25 +45,20 @@ template<typename T>
 void addElement(T * buf, const size_t pos, T el) {
     // copy assignment
     buf[pos] = el;
-    loggerPrintf(LOGGER_DEBUG, "%p, NEW BUFFER ELEMENT: [%x], OLD BUFFER ELEMENT: [%x]\n", buf + pos, buf[pos], el);
 }
 template<>
 void addElement<const char *>(const char ** buf, const size_t pos, const char * el);
 
 template<typename T>
-void deleteCArray(T ** e_buf, size_t size) {
+void deleteCArray(T * e_buf, size_t size) {
     loggerPrintf(LOGGER_DEBUG, "Deleting C Array of type 'generic' of size: %lu\n", size);
     if (e_buf != nullptr) {
-        if (*e_buf != nullptr) {
-            // deletes array of pointers to object of type T
-            delete[] *e_buf;
-        }
-        // deletes container (pointer to array deleted above) 
-        delete e_buf;
+        // deletes array of pointers to object of type T
+        delete[] e_buf;
     }
 }
 template<>
-void deleteCArray<const char *>(const char *** e_buf, size_t size);
+void deleteCArray<const char *>(const char ** e_buf, size_t size);
 
 template<typename T>
 void deleteCArrayElement(T * buf, size_t pos) {
@@ -79,16 +74,16 @@ void deleteCArrayElement<const char *>(const char ** buf, size_t pos);
 // TODO: again, member function "specialization" didn't work, so... I think the non-specialization stuff was working lol...
 //  revisit in future.
 template<typename T>
-ssize_t arrayFind(T ** e_buf, size_t size, const T el) {
+ssize_t arrayFind(T * e_buf, size_t size, const T el) {
     for (size_t i = 0; i < size; i++) {
-        if ((*e_buf)[i] == el) {
+        if (e_buf[i] == el) {
             return i;
         }
     }
     return -1;
 }
 template<>
-ssize_t arrayFind<const char *>(const char *** e_buf, size_t size, const char * el);
+ssize_t arrayFind<const char *>(const char ** e_buf, size_t size, const char * el);
 
 typedef enum ArraySort {
     ARRAY_SORT_UNSORTED,
@@ -123,12 +118,12 @@ int nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const ch
 template<typename T>
 class Array {
     protected:
-        size_t * instance_count;
-
-        T ** e_buf;
-        size_t * e_cap;
-        size_t * e_size;
-        ArraySort * e_sorted;
+        T * e_buf;
+        size_t e_cap;
+        size_t e_size;
+        ArraySort e_sorted;
+        size_t view_start;
+        size_t view_end;
 
         inline void nlognsortMerge(T * A, size_t size_a, T * B, size_t size_b, T * swap_space) {
             size_t swap_space_push = 0;
@@ -143,7 +138,7 @@ class Array {
                 if (swap_space_push - swap_space_pop > 0) {
                     left_compare = swap_space[swap_space_pop];
                 }
-                if (j < size_b && nlognsortCompare<T>(*this->e_sorted, left_compare, B[j]) > 0) {
+                if (j < size_b && nlognsortCompare<T>(this->e_sorted, left_compare, B[j]) > 0) {
                     // B wins
                     swap = A[i];
                     A[i] = B[j];
@@ -161,7 +156,7 @@ class Array {
             // merge swap space with remaining B, remember assuming contigious
             while (swap_space_push - swap_space_pop > 0) {
                 left_compare = swap_space[swap_space_pop];
-                if (j < size_b && nlognsortCompare<T>(*this->e_sorted, left_compare, B[j]) > 0) {
+                if (j < size_b && nlognsortCompare<T>(this->e_sorted, left_compare, B[j]) > 0) {
                     // by law of numbers i will never be more than j lol
                     A[i] = B[j];
                     j++;
@@ -213,63 +208,47 @@ class Array {
         Array(): Array(ARRAY_RECOMMENDED_INITIAL_CAP) {}
         //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         Array(std::initializer_list<T> list) {
-            instance_count = new size_t(1);
-            e_cap = new size_t(list.size() * UPSIZE_FACTOR);
-            e_buf = new T *(newCArray<T>(*e_cap));
-            e_size = new size_t(list.size()); 
-            e_sorted = new ArraySort(ARRAY_SORT_UNSORTED);
+            e_cap = list.size() * UPSIZE_FACTOR;
+            e_buf = newCArray<T>(e_cap);
+            e_size = list.size(); 
+            e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
+            view_start = 0;
+            view_end = 0;
 
             size_t i = 0;
             for (auto el: list) {
-                (*e_buf)[i++] = el;
+                e_buf[i++] = el;
             }
         }
         Array(const size_t initial_cap) {
-            instance_count = new size_t(1);
-            e_cap = new size_t(initial_cap);
-            e_buf = new T*(newCArray<T>(*e_cap));
-            e_size = new size_t(0);
-            e_sorted = new ArraySort(ARRAY_SORT_UNSORTED);
+            e_cap = initial_cap;
+            e_buf = newCArray<T>(e_cap);
+            e_size = 0;
+            e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
+            view_start = 0;
+            view_end = 0;
         }
-        Array(Array * other) {
-            if (other == nullptr || other->instance_count == nullptr || other->e_cap == nullptr || other->e_size == nullptr || other->e_sorted == nullptr) {
-                std::runtime_error("Make sure the array is initialized before trying to create");
-            } else {
-                instance_count = other->instance_count;
-                e_buf = other->e_buf;
-                e_cap = other->e_cap;
-                e_size = other->e_size;
-                e_sorted = other->e_sorted;
-                (*instance_count)++;
+        // view...
+        Array(const Array<T>& other, size_t start, size_t end): Array<T>(other) {
+            size_t view_size = end - start;
+            if (view_size <= 0 || view_size > other.size()) {
+                throw std::runtime_error("Invalid view coordinates.");
             }
+            view_start = start;
+            view_end = end;
         }
         virtual ~Array() {
-            (*this->instance_count)--;
-            if (*this->instance_count == 0) {
-                deleteCArray<T>(e_buf, *e_size);
-                if (instance_count != nullptr) {
-                    delete instance_count;
-                }
-                if (e_cap != nullptr) {
-                    delete e_cap;
-                } 
-                if (e_size != nullptr) {
-                    delete e_size;
-                }
-                if (e_sorted != nullptr) {
-                    delete e_sorted;
-                }
-            }
+            deleteCArray<T>(e_buf, e_size);
         }
         Array<T>& sort(ArraySort sortOrder) {
-            if (sortOrder != ARRAY_SORT_UNSORTED && *e_sorted != sortOrder) {
-                *e_sorted = sortOrder;
+            if (sortOrder != ARRAY_SORT_UNSORTED && e_sorted != sortOrder) {
+                e_sorted = sortOrder;
                 try {
-                    nlognSort(*this->e_buf, *this->e_size);
+                    nlognSort(this->e_buf, this->e_size);
                 } catch (const std::exception& e) {
                     loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
                     // inserts, removes and bad allocs makes it so that we can't assume array is sorted.
-                    *e_sorted = ARRAY_SORT_UNSORTED;
+                    e_sorted = ARRAY_SORT_UNSORTED;
                     throw e;
                 }
             }
@@ -285,7 +264,7 @@ class Array {
         
             loggerPrintf(LOGGER_DEBUG, "num_els: %ld, size: %ld, e_cap: %ld, pos: %ld\n", num_els, this->size(), this->cap(), pos);
         
-            T * new_buf = *this->e_buf; 
+            T * new_buf = this->e_buf; 
             bool recapped = false;
             if (num_els + this->size() > this->cap()) {
                 size_t new_cap = (size_t)((num_els + this->size()) * UPSIZE_FACTOR);
@@ -297,12 +276,12 @@ class Array {
                     throw std::runtime_error(msg);
                 } else {
                     recapped = true;
-                    *this->e_cap = new_cap;
+                    this->e_cap = new_cap;
                     // if recapped, copy elements up until pos.
                     //  the rest will be automagically initialized by the insert operation... (see use of new_buf vs this->buf variables below)
                     size_t total_size_up_to_pos = pos * sizeof(T);
                     for (size_t i = 0; i < pos; i++) {
-                        new_buf[i] = (*this->e_buf)[i];
+                        new_buf[i] = (this->e_buf)[i];
                     }
                 }
             }
@@ -327,7 +306,7 @@ class Array {
                     }
                 }
                 if (i < this->size()) {
-                    bucket[bucket_push] = (*this->e_buf)[i];
+                    bucket[bucket_push] = (this->e_buf)[i];
                     if (++bucket_push == num_els) {
                         bucket_push = 0;
                     }
@@ -336,14 +315,14 @@ class Array {
             }
             delete[] bucket;
         
-            *this->e_size += num_els;
+            this->e_size += num_els;
         
             if (recapped) {
-                delete[] *this->e_buf;
-                *this->e_buf = new_buf;
+                delete[] this->e_buf;
+                this->e_buf = new_buf;
             }
         
-            *e_sorted = ARRAY_SORT_UNSORTED;
+            e_sorted = ARRAY_SORT_UNSORTED;
         
             return *this;
         }
@@ -369,47 +348,53 @@ class Array {
                     throw std::runtime_error(msg);
                 } else {
                     recapped = true;
-                    *this->e_cap = potential_new_cap;
+                    this->e_cap = potential_new_cap;
                     // if recapped, copy elements up until pos.
                     //  the rest will be automatically intialized by remove operation... 
                     selected_buf = new_buf;
                     for (size_t i = 0; i < pos; i++) {
-                        selected_buf[i] = (*this->e_buf)[i];
+                        selected_buf[i] = (this->e_buf)[i];
                     }
                 }
             } else {
                 // else, just remove, don't recap array...
-                selected_buf = *this->e_buf;
+                selected_buf = this->e_buf;
             }
             for (size_t i = pos; i < this->size(); i++) {
                 if (i < pos + num_els) {
                     // make sure to deallocate memory for elements being removed.
-                    deleteCArrayElement<T>(*this->e_buf, i);
+                    deleteCArrayElement<T>(this->e_buf, i);
                 }
                 // if removing last element, no shifting needed... decrementing size should be enough...
                 if (i + num_els < this->size()) {
-                    selected_buf[i] = (*this->e_buf)[i + num_els];
+                    selected_buf[i] = (this->e_buf)[i + num_els];
                 }
             }
             if (recapped) {
-                delete[] *this->e_buf;
-                *this->e_buf = selected_buf;
+                delete[] this->e_buf;
+                this->e_buf = selected_buf;
             }
         
-            *this->e_size -= num_els;
+            this->e_size -= num_els;
         
             return *this;
         }
         T * buf() {
             // use at your own risk, obviously...
-            return *this->e_buf;
+            return this->e_buf;
         }
-        virtual size_t size() {
-            return *this->e_size;
+        size_t size() {
+            size_t view_size = this->view_end - this->view_start;
+            if (view_size > 0 && view_size <= this->e_size) {
+                return view_size;
+            } else {
+                printf("SIZE %d\n", this->e_size);
+                return this->e_size;
+            }
         }
         size_t cap() {
             // this is really only useful for testing.
-            return *this->e_cap;
+            return this->e_cap;
         }
         Array<T>& uniqueAppend(const T& el) {
             if (this->contains(el)) { 
@@ -419,6 +404,9 @@ class Array {
         }
         Array<T>& append(const T& el) {
             return this->append(&el, 1);
+        }
+        Array<T>& append(const Array<T>& x) {
+            return this->append(x.e_buf, x.e_size);
         }
         Array<T>& append(const T * els, const size_t num_els) {
             return this->insert(this->size(), els, num_els);
@@ -444,7 +432,7 @@ class Array {
         }
         T& at(const size_t pos) {
             if (pos >= 0 && pos < this->size()) {
-                return (*this->e_buf)[pos];
+                return (this->e_buf)[pos];
             } else {
                 throw std::runtime_error("Invalid position.");
             }
@@ -455,7 +443,7 @@ class Array {
                 loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
-            return (*this->e_buf)[0];
+            return (this->e_buf)[0];
         }
         T& back() {
             if (this->size() == 0) {
@@ -463,7 +451,7 @@ class Array {
                 loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
-            return (*this->e_buf)[this->size()-1];
+            return (this->e_buf)[this->size()-1];
         }
         Array<T>& removeFront() {
             if (this->size() == 0) {
@@ -486,18 +474,24 @@ class Array {
         std::string toString() {
             T nul = {0};
             this->append(nul);
-            return std::string((char *)(*this->e_buf));
+            return std::string((char *)(this->e_buf));
         }
         T& operator[] (const size_t pos) {
-            // TODO: check if exists... else, append...
-            // like other overload... at, checks if exist i belive already.
             size_t i = pos;
-            if (pos >= this->size()) {
+            if (true == (this->view_end - this->view_start) > 0) {
+                if (i > this->view_end) {
+                    std::runtime_error("Attempting to access element outside of Matrix.");
+                }
+                i += this->view_start;
+                if (i >= this->size()) {
+                    std::runtime_error("Attempting to access element outside of Matrix.");
+                }
+            } else if (i >= this->size()) {
                 T el;
                 this->append(el); 
                 i = this->size()-1;
             }
-            return (*this->e_buf)[i];
+            return this->e_buf[i];
         }
         // TODO: so, passing a literal to this is defined by the language? 
         //      even though the literal will never be used again. lol
@@ -512,24 +506,147 @@ class Array {
                 this->append(el); 
                 i = this->size() - 1;
             }
-            return (*this->e_buf)[i];
+            return (this->e_buf)[i];
         }
-        T& operator+= (const T& el) {
-            this->append(el); 
+        // TODO: += doesn't work?
+        Array<T>& operator+ (const Array<T>& x) {
+            this->append(x);
+            return *this;
+        }
+};
+template<typename T>
+class ArrayControl {
+    public:
+        Array<T> * ptr;
+        size_t instance_count;
+        ArrayControl(): ptr(new Array<T>), instance_count(1) {}
+        //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
+        ArrayControl(std::initializer_list<T> list): ptr(new Array<T>(list)), instance_count(1) {}
+        ArrayControl(const size_t initial_cap): ptr(new Array<T>(initial_cap)), instance_count(1) {}
+        ~ArrayControl() {
+            delete this->ptr;
+        }
+};
+template<typename T> 
+class SharedArray {
+    protected:
+        ArrayControl<T> * ctrl;
+        T * buf() {
+            return this->ctrl->ptr->buf();
+        }
+    public:
+        // # perspective!
+
+        // implement same interface as Array...
+        SharedArray(): ctrl(new ArrayControl<T>()) {}
+        //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
+        SharedArray(std::initializer_list<T> list): ctrl(new ArrayControl<T>(list)) {}
+        SharedArray(const size_t initial_cap): ctrl(new ArrayControl<T>(initial_cap)) {}
+        SharedArray(const SharedArray<T>& other, size_t start, size_t end) {
+            size_t view_size = end - start;
+            if (view_size <= 0 || view_size > other.size()) {
+                throw std::runtime_error("Invalid view coordinates.");
+            }
+            ctrl->ptr.view_start = start;
+            ctrl->ptr.view_end = end;
+        }
+        virtual ~SharedArray() {
+            if (this->ctrl != nullptr) {
+                (this->ctrl->instance_count)--;
+                if (this->ctrl->instance_count == 0) {
+                    delete this->ctrl;
+                }
+            }
+        }
+        SharedArray<T>& sort(ArraySort sortOrder) {
+            this->ctrl->ptr->sort(sortOrder);
+            return *this;
+        }
+        SharedArray<T>& insert(const size_t pos, const T * els, const size_t num_els) {
+            this->ctrl->ptr->insert(pos, els, num_els);
+            return *this;
+        }
+        SharedArray<T>& remove(const size_t pos, const size_t num_els) {
+            this->ctrl->ptr->remove(pos, num_els);
+            return *this;
+        }
+        size_t size() {
+            return this->ctrl->ptr->size();
+        }
+        size_t cap() {
+            // this is really only useful for testing.
+            return this->ctrl->ptr->cap();
+        }
+        SharedArray<T>& uniqueAppend(const T& el) {
+            this->ctrl->ptr->uniqueAppend(el);
+            return *this;
+        }
+        SharedArray<T>& append(const T& el) {
+            this->ctrl->ptr->append(el);
+            return *this;
+        }
+        SharedArray<T>& append(const SharedArray<T>& other) {
+            return this->append(other);
+        }
+        SharedArray<T>& append(const T * els, const size_t num_els) {
+            this->ctrl->ptr->append(els, num_els);
+            return *this;
+        }
+        SharedArray<T>& insert(const size_t pos, const T& el) {
+            this->ctrl->ptr->insert(pos, el);
+            return *this;
+        }
+        SharedArray<T>& removeEl(const T& el) {
+            this->ctrl->ptr->removeEl(el);
+            return *this;
+        }
+        SharedArray<T>& remove(const size_t pos) {
+            this->ctrl->ptr->remove(pos);
+            return *this;
+        }
+        bool contains(const T& el) {
+            return this->ctrl->ptr->contains(el);
+        }
+        ssize_t find(const T& el) {
+            return this->ctrl->ptr->find(el);
+        }
+        T& at(const size_t pos) {
+            return this->ctrl->ptr->at(pos);
+        }
+        T& front() {
+            return this->ctrl->ptr->front();
+        }
+        T& back() {
+            return this->ctrl->ptr->back();
+        }
+        SharedArray<T>& removeFront() {
+            this->ctrl->ptr->removeFront();
+            return *this;
+        }
+        SharedArray<T>& removeBack() {
+            this->ctrl->ptr->removeBack();
+            return *this;
+        }
+        std::string toString() {
+            return this->ctrl->ptr->toString();
+        }
+        T& operator[] (const size_t pos) {
+            return this->ctrl->ptr[pos];
+        }
+        T& operator[] (const T& el) {
+            return this->ctrl->ptr[el];
         }
         // Copy
-        Array(const Array<T>& x): Array<T>((Array<T> *)&x) {}
-        Array<T>& operator= (const Array<T>& other) {
-            if (other.instance_count == nullptr || other.e_cap == nullptr || other.e_size == nullptr || other.e_sorted == nullptr) {
-                std::runtime_error("Make sure the array is initialized before trying to create");
-            } else {
-                this->instance_count = other.instance_count;
-                this->e_buf = other.e_buf;
-                this->e_cap = other.e_cap;
-                this->e_size = other.e_size;
-                this->e_sorted = other.e_sorted;
-                (*this->instance_count)++;
-            }
+        SharedArray(const SharedArray<T>& x) {
+            this->ctrl = x.ctrl;
+            (this->ctrl->instance_count)++;
+        }
+        SharedArray<T>& operator= (const SharedArray<T>& x) {
+            this->ctrl = x.ctrl;
+            (this->ctrl->instance_count)++;
+        }
+        SharedArray<T>& operator+ (const SharedArray<T>& x) {
+            this->append(x);
             return *this;
         }
 };

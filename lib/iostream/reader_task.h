@@ -70,8 +70,8 @@ class ReaderTask {
         //  final says that function is virtual (supports dynamic dispatch) and cannot be overridden.
         //      - compiler error is generated if user tries to override. 
 
-        virtual void flush(Array<uint8_t>& buffer) = 0;
-        virtual void perform(Array<uint8_t>& buffer, uint8_t c) = 0;
+        virtual void flush(SharedArray<uint8_t>& buffer) = 0;
+        virtual void perform(SharedArray<uint8_t>& buffer, uint8_t c) = 0;
 };
 
 class ReaderTaskChain: public ReaderTask {
@@ -83,7 +83,7 @@ class ReaderTaskChain: public ReaderTask {
         ReaderTaskChain(ReaderTaskChain * next): nextOperation(next), ignored(false) {}
         ~ReaderTaskChain() override = default;
 
-        void next(Array<uint8_t>& buffer, uint8_t c) {
+        void next(SharedArray<uint8_t>& buffer, uint8_t c) {
             if (!this->ignored) {
                 if (this->nextOperation == nullptr) {
                     buffer.append(c);
@@ -93,16 +93,16 @@ class ReaderTaskChain: public ReaderTask {
             }
             this->ignored = false;
         }
-        void flush(Array<uint8_t>& buffer) override {
+        void flush(SharedArray<uint8_t>& buffer) override {
             this->nextOperation->flush(buffer);
         }
-        void perform(Array<uint8_t>& buffer, uint8_t c) override {};
+        void perform(SharedArray<uint8_t>& buffer, uint8_t c) override {};
 };
 
 class ReaderTaskLC: public ReaderTaskChain {
     public:
         ~ReaderTaskLC() override = default;
-        void perform(Array<uint8_t>& buffer, uint8_t c) final override {
+        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
             if (c >= 0x41 && c <= 0x5A) { // lowercase flag set and is upper case
         		c += 0x20; // lower case the char
         	}
@@ -113,7 +113,7 @@ class ReaderTaskLC: public ReaderTaskChain {
 class ReaderTaskUC: public ReaderTaskChain {
     public:
         ~ReaderTaskUC() override = default;
-        void perform(Array<uint8_t>& buffer, uint8_t c) final override {
+        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
             if (c >= 0x61 && c <= 0x7A) {
         		c -= 0x20;
         	}
@@ -130,7 +130,7 @@ class ReaderTaskDisallow: public ReaderTaskChain {
         ReaderTaskDisallow(std::string to_disallow, bool strict): to_disallow(to_disallow), strict(strict) {}
         ~ReaderTaskDisallow() override = default;
 
-        void perform(Array<uint8_t>& buffer, uint8_t c) final override {
+        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
             if (this->to_disallow.find(c) != std::string::npos) { 
                 if (strict) {
                     std::string msg = "Banned character found:";
@@ -153,7 +153,7 @@ class ReaderTaskAllow: public ReaderTaskChain {
         ReaderTaskAllow(std::string to_allow, bool strict): to_allow(to_allow), strict(strict) {}
         ~ReaderTaskAllow() override = default;
 
-        void perform(Array<uint8_t>& buffer, uint8_t c) final override {
+        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
             if (this->to_allow.find(c) == std::string::npos) { 
                 if (strict) {
                     std::string msg = "Banned character found:";
@@ -169,23 +169,23 @@ class ReaderTaskAllow: public ReaderTaskChain {
 
 class ReaderTaskTrim: public ReaderTask {
     public:
-        Array<uint8_t> data;
-        Array<uint8_t> r_trim;
+        SharedArray<uint8_t> data;
+        SharedArray<uint8_t> r_trim;
         bool l_trimming;
         bool r_trimming;
 
         ReaderTaskTrim(): l_trimming(true), r_trimming(false) {}
         ~ReaderTaskTrim() override = default;
 
-        void flush(Array<uint8_t>& buffer) final override {}
-        void rTrimFlush(Array<uint8_t>& buffer);
-        void perform(Array<uint8_t>& buffer, uint8_t c) final override;
+        void flush(SharedArray<uint8_t>& buffer) final override {}
+        void rTrimFlush(SharedArray<uint8_t>& buffer);
+        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override;
 };
 
 class ReaderTaskExtract: public ReaderTask {
     public:
-        Array<uint8_t> data;
-        Array<uint8_t> r_trim;
+        SharedArray<uint8_t> data;
+        SharedArray<uint8_t> r_trim;
         bool l_trimming;
         bool r_trimming;
         uint8_t r_trim_non_whitespace;
@@ -200,9 +200,9 @@ class ReaderTaskExtract: public ReaderTask {
             r_trim_non_whitespace(0), r_trim_read_until(0) {}
         ~ReaderTaskExtract() override = default;
 
-        void flush(Array<uint8_t>& buffer) final override;
-        void rTrimFlush(Array<uint8_t>& buffer);
-        void perform(Array<uint8_t>& buffer, uint8_t c) final override;
+        void flush(SharedArray<uint8_t>& buffer) final override;
+        void rTrimFlush(SharedArray<uint8_t>& buffer);
+        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override;
 };
 }
 

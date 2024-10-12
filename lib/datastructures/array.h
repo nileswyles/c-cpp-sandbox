@@ -227,7 +227,7 @@ class Array {
             e_sorted = new ArraySort(ARRAY_SORT_UNSORTED);
         }
         Array(Array * other) {
-            if (other == nullptr || other->instance_count == nullptr || other->e_cap == nullptr || other-> e_size == nullptr || other->e_sorted == nullptr) {
+            if (other == nullptr || other->instance_count == nullptr || other->e_cap == nullptr || other->e_size == nullptr || other->e_sorted == nullptr) {
                 std::runtime_error("Make sure the array is initialized before trying to create");
             } else {
                 instance_count = other->instance_count;
@@ -515,8 +515,18 @@ class Array {
         }
         // Copy
         Array(const Array<T>& x): Array<T>((Array<T> *)&x) {}
-        Array<T>& operator= (const Array<T>& x) {
-            return Array<T>(x);
+        Array<T>& operator= (const Array<T>& other) {
+            if (other.instance_count == nullptr || other.e_cap == nullptr || other.e_size == nullptr || other.e_sorted == nullptr) {
+                std::runtime_error("Make sure the array is initialized before trying to create");
+            } else {
+                this->instance_count = other.instance_count;
+                this->e_buf = other.e_buf;
+                this->e_cap = other.e_cap;
+                this->e_size = other.e_size;
+                this->e_sorted = other.e_sorted;
+                (*this->instance_count)++;
+            }
+            return *this;
         }
 };
 }

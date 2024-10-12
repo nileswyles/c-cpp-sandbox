@@ -137,10 +137,20 @@ namespace WylesLibs {
                 this->e_end = other.e_end;
             }
             // copy assignment - containerization code remains here
-            // TODO: should be fine right? no unnecessary overhead?
             MatrixVector<T>& operator= (const MatrixVector<T>& other)  {
-                return MatrixVector<T>(other);
-                // return *this;
+                if (other.instance_count == nullptr || other.e_cap == nullptr || other.e_size == nullptr || other.e_sorted == nullptr) {
+                    std::runtime_error("Make sure the array is initialized before trying to create");
+                } else {
+                    this->instance_count = other.instance_count;
+                    this->e_buf = other.e_buf;
+                    this->e_cap = other.e_cap;
+                    this->e_size = other.e_size;
+                    this->e_sorted = other.e_sorted;
+                    this->e_start = other.e_start;
+                    this->e_end = other.e_end;
+                    (*this->instance_count)++;
+                }
+                return *this;
             }
     };
     template<typename T>

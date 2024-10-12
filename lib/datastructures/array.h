@@ -119,7 +119,7 @@ int nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const ch
 
 // TODO: thread safety
 //  also, this is probably the more correct way of doing this but could have alternatively used unique_ptr instead of containerizing?
-//  also, maybe minimize memory footprint, by adding another layer of abstraction... manage only pointer to this ArrayBase class not the 5 we currently manage....
+//  also, maybe minimize memory footprint, by adding another layer of abstraction... manage only 2 pointers to this ArrayBase class not the 5 we currently manage....
 template<typename T>
 class Array {
     protected:
@@ -130,7 +130,7 @@ class Array {
         size_t * e_size;
         ArraySort * e_sorted;
 
-        void nlognsortMerge(T * A, size_t size_a, T * B, size_t size_b, T * swap_space) {
+        inline void nlognsortMerge(T * A, size_t size_a, T * B, size_t size_b, T * swap_space) {
             size_t swap_space_push = 0;
             size_t swap_space_pop = 0;
 
@@ -176,8 +176,11 @@ class Array {
         }
         void nlognSort(T * e_buf, size_t size) {
             if (false == (e_buf == nullptr || size <= 1)) {
-                // reduce memory usage size, recursion is generally frownd upon!
-                size_t size_left = ceil(size/2.0);
+                // reduce memory usage - recursion is generally frownd upon!
+                // ! IMPORTANT - kind of not obvious, but in an effort to optimize both runtime and memory
+                //   we need a bucket of at least half the size of the array to swap elements in merge function.
+                //   floor(half) is (at least) more than the maximum size of the right buffer, because right_size is set to span which is a power of 2...
+                size_t size_left = floor(size/2.0);
                 T * swap_space = new T[size_left];
                 size_t span = 1;
                 T * left_buf;
@@ -196,7 +199,7 @@ class Array {
                                 right_size = size - (i + span);
                             }
                             // left must always be larger or equal to right
-                            merge(left_buf, span, right_buf, right_size, swap_space);
+                            nlognsortMerge<T>(left_buf, span, right_buf, right_size, swap_space);
                         }
                         i += (2*span);
                     }

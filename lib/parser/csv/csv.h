@@ -47,9 +47,8 @@ namespace WylesLibs {
         private:
             void read(CSV<std::string> * csv, size_t r_count, MatrixVector<std::string> * header) {
                 bool quoted = false;
-                uint8_t b = (*io).readByte();
+                uint8_t b;
                 size_t r_i = 0;
-                size_t f_i = 0;
                 MatrixVector<std::string> r;
                 if (header != nullptr) {
                     r_count = 1;
@@ -60,6 +59,7 @@ namespace WylesLibs {
                 // TODO: this is dumb, why allocate an extra string?
                 std::string current_str;
                 while (r_i < r_count) {
+                    b = (*io).readByte();
                     if (b >= 0x20 && b <= 0x7E) {
                         printf("%c", b);
                     } else if (b == 0x0A) {
@@ -78,23 +78,28 @@ namespace WylesLibs {
                         } else if (b == '\r') {
                             continue;
                         }
+                    } else {
+                        quoted = false;
+                        continue;
                     }
                     if (b == ',' || b == '\n') {
+                        printf("appending\n");
                         r.append(current_str);
+                        printf("\nlol, %p\n", r.buf());
+                        printf("current field: '%s', '%s'\n", r.buf()[r.size()-1].c_str(), current_str.c_str());
                         current_str = "";
-                        f_i++;
                         // end of field
                         if (b == '\n') {
                             // end of record
                             // #containerization
+                            printf("???\n");
                             r = (*csv)[++r_i];
-                            f_i = 0;
                         }
-                    }
+                        continue;
+                    } 
                     current_str.push_back((char)b);
-                    b = (*io).readByte();
                 }
-                num_records_read = r_i + 1;
+                num_records_read = r_i;
             }
         public:
             std::shared_ptr<IOStream> io;
@@ -105,26 +110,25 @@ namespace WylesLibs {
             ~CSVParser() = default;
 
             void readDoubles(CSV<double>& csv, size_t r_count) {
-                uint8_t b = (*io).readByte();
+                uint8_t b;
                 size_t r_i = 0;
-                size_t f_i = 0;
                 MatrixVector<double> r = csv[r_i];
                 double current_double = 0;
                 while (r_i < r_count) {
+                    b = (*io).readByte();
                     if (b == (uint8_t)EOF) {
                         break;
                     }
                     if (b == ',' || b == '\n') {
-                        r[f_i] = current_double;
+                        r.append(current_double);
                         current_double = 0;
-                        f_i++;
                         // end of field
                         if (b == '\n') {
                             // end of record
                             // #containerization
                             r = csv[++r_i];
-                            f_i = 0;
                         }
+                        continue;
                     }
                     size_t dummy_digit_count = 0;
                     if (b == '.') {
@@ -132,9 +136,8 @@ namespace WylesLibs {
                     } else {
                         (*io).readNatural(current_double, dummy_digit_count);
                     }
-                    b = (*io).readByte();
                 }
-                num_records_read = r_i + 1;
+                num_records_read = r_i;
             }
             CSV<double> readDoubles(bool has_header) {
                 CSV<double> csv;

@@ -43,8 +43,9 @@ static inline T * newCArray(size_t size) {
 
 template<typename T>
 void addElement(T * buf, const size_t pos, T el) {
+    // copy assignment
     buf[pos] = el;
-    // loggerPrintf(LOGGER_DEBUG, "%p, NEW BUFFER ELEMENT: [%x], OLD BUFFER ELEMENT: [%x]\n", e_buf + pos, e_buf[pos], el);
+    loggerPrintf(LOGGER_DEBUG, "%p, NEW BUFFER ELEMENT: [%x], OLD BUFFER ELEMENT: [%x]\n", buf + pos, buf[pos], el);
 }
 template<>
 void addElement<const char *>(const char ** buf, const size_t pos, const char * el);
@@ -118,6 +119,7 @@ int nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const ch
 
 // TODO: thread safety
 //  also, this is probably the more correct way of doing this but could have alternatively used unique_ptr instead of containerizing?
+//  also, maybe minimize memory footprint, by adding another layer of abstraction... manage only pointer to this ArrayBase class not the 5 we currently manage....
 template<typename T>
 class Array {
     protected:
@@ -256,7 +258,6 @@ class Array {
                 }
             }
         }
-
         Array<T>& sort(ArraySort sortOrder) {
             if (sortOrder != ARRAY_SORT_UNSORTED && *e_sorted != sortOrder) {
                 *e_sorted = sortOrder;

@@ -17,7 +17,7 @@ SRC_FILES="
 -s $ROOT_DIR/lib/test/array_test.cpp 
 -s $ROOT_DIR/lib/test/tester.cpp 
 -s $ROOT_DIR/lib/iostream/iostream.cpp 
--s $ROOT_DIR/lib/array.cpp
+-s $ROOT_DIR/lib/datastructures/array.cpp
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n array_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"

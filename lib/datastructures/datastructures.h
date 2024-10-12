@@ -27,7 +27,9 @@ namespace WylesLibs {
                 e_end = new size_t(end); 
             }
             ~MatrixVector() override {
+                printf("MatrixVector Destructor called\n");
                 if (*this->instance_count == 1) {
+                    printf("Actually deleting\n");
                     if (this->e_start != nullptr) {
                         delete this->e_start;
                     } 
@@ -123,10 +125,16 @@ namespace WylesLibs {
                     if (i >= this->size()) {
                         std::runtime_error("Attempting to access element outside of Matrix.");
                     }
-                } else {
-                    // TODO: maybe don't even bother with this...
+                } else if (i >= this->size()) {
                     T el;
                     this->append(el); 
+                    // so, el, get's destroyed but it should have been copied????
+                    //      If el, is a container like Array<T>... then we create new pointers, 
+                    //      we call new Array<T>;
+                    //      so it's initialized to zero...
+                    //      then we add it...
+                    //      ahh yeah, 
+
                     i = this->size()-1;
                 }
                 return (*this->e_buf)[i];
@@ -159,7 +167,10 @@ namespace WylesLibs {
             MatrixVector<MatrixVector<T>> matrix;
         public:
             Matrix() = default;
-            virtual ~Matrix() = default;
+            // virtual ~Matrix() = default;
+            virtual ~Matrix() {
+                printf("MATRIX DESTRUCTOR CALLED BUT IT SHOULDN'T BE CALLED\n");
+            }
             // ! IMPORTANT - let's be clear, the user has control and needs to ensure matrix is structured properly when populating...
             size_t rows() {
                 return matrix.size();
@@ -263,6 +274,7 @@ namespace WylesLibs {
                 return mul;
             }
             MatrixVector<T>& operator[] (const size_t pos) {
+                printf("DD\n");
                 return this->matrix[pos];
             }
     };

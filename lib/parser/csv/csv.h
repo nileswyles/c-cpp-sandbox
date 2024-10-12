@@ -87,7 +87,7 @@ namespace WylesLibs {
                             loggerExec(LOGGER_DEBUG_VERBOSE,
                                 std::string s;
                                 for (size_t i = 0; i < record_size; i++) {
-                                    s += (*csv)[r_i][i];
+                                    s += r[i];
                                     if (i + 1 != record_size) {
                                         s += ",";
                                     }
@@ -138,7 +138,7 @@ namespace WylesLibs {
                                 std::string s;
                                 char dec[32];
                                 for (size_t i = 0; i < record_size; i++) {
-                                    sprintf(dec, "%f", csv[r_i][i]);
+                                    sprintf(dec, "%f", r[i]);
                                     s += dec;
                                     if (i + 1 != record_size) {
                                         s += ",";

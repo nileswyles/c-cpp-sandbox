@@ -113,8 +113,6 @@ template<>
 int nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const char * B);
 
 // TODO: thread safety
-//  also, this is probably the more correct way of doing this but could have alternatively used unique_ptr instead of containerizing?
-//  also, maybe minimize memory footprint, by adding another layer of abstraction... manage only 2 pointers to this ArrayBase class not the 5 we currently manage....
 template<typename T>
 class Array {
     protected:

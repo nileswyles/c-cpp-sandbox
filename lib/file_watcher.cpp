@@ -76,7 +76,9 @@ static void * watcherRun(void * arg) {
             /* Loop over all events in the buffer. */
             for (char *ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
                 event = (const struct inotify_event *) ptr;
-                registeredWatchers[event->wd].lock()->handle(event);
+                if (auto watcher = registeredWatchers[event->wd].lock()) {
+                    watcher->handle(event);
+                }
             }
         }
         pthread_mutex_unlock(&mutex);

@@ -51,7 +51,7 @@ namespace WylesLibs {
             // not to be confused with copy constructor
             MatrixVector<T> copy(const MatrixVector<T>& other) {
                 MatrixVector<T> copy(other.size());
-                size_t size = copy.size();
+                size_t size = other.size();
                 for (size_t i = *other.e_start; i < size; i++) {
                     copy.append(other.buf()[i]);
                 }

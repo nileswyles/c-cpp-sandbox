@@ -84,8 +84,6 @@ namespace WylesLibs {
                                 std::runtime_error("Invalid record size.");
                             }
                             // end of record
-                            // #containerization
-                            record_size = new_record_size;
                             loggerExec(LOGGER_DEBUG_VERBOSE,
                                 std::string s;
                                 for (size_t i = 0; i < record_size; i++) {
@@ -96,6 +94,7 @@ namespace WylesLibs {
                                 }
                                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "RECORD: '%s'\n", s.c_str());
                             );
+                            // #containerization
                             r = (*csv)[++r_i];
                         }
                         continue;
@@ -135,7 +134,6 @@ namespace WylesLibs {
                                 std::runtime_error("Invalid record size.");
                             }
                             // end of record
-                            // #containerization
                             loggerExec(LOGGER_DEBUG_VERBOSE,
                                 std::string s;
                                 char dec[32];

@@ -15,6 +15,7 @@ namespace WylesLibs {
             size_t * e_end;
         public:
             MatrixVector(): Array<T>(), e_start(new size_t(0)), e_end(new size_t(0)) {}
+            MatrixVector(const size_t initial_cap): Array<T>(initial_cap), e_start(new size_t(0)), e_end(new size_t(0)) {}
             MatrixVector(const MatrixVector<T>& other, size_t start, size_t end): Array<T>((Array<T> *)&other) {
                 // view...
                 (*other.instance_count)++;
@@ -49,7 +50,7 @@ namespace WylesLibs {
             }
             // not to be confused with copy constructor
             MatrixVector<T> copy(const MatrixVector<T>& other) {
-                MatrixVector<T> copy;
+                MatrixVector<T> copy(other.size());
                 size_t size = copy.size();
                 for (size_t i = *other.e_start; i < size; i++) {
                     copy.append(other.buf()[i]);
@@ -184,11 +185,11 @@ namespace WylesLibs {
             // matrix copy constructor but not actual copy constructor lol... 
             Matrix<T> copy(const Matrix<T>& other) {
                 Matrix<T> copy;
-                MatrixVector<MatrixVector<T>> y_vector;
                 size_t end = other.size();
                 if (*other.matrix.e_end != 0) {
                     end = *other.matrix.e_end;
                 }
+                MatrixVector<MatrixVector<T>> y_vector(end - *other.matrix.e_start);
                 for (size_t i = *other.matrix.e_start; i < end; i++) {
                     y_vector[i] = other.matrix[i].copy();
                 }

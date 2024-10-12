@@ -56,23 +56,24 @@ void FileWatcher::initialize(std::shared_ptr<FileWatcher> ptr) {
 #define FILE_WATCHER_SIZE sizeof(struct inotify_event) * 270
 
 static void * watcherRun(void * arg) {
-    while (thread_run) {
-        pthread_mutex_lock(&mutex);
-        char buf[FILE_WATCHER_SIZE];
-        const struct inotify_event *event;
-        ssize_t len;
+    char buf[FILE_WATCHER_SIZE];
+    const struct inotify_event *event;
+    ssize_t len;
+    try {
         /* Loop while events can be read from inotify file descriptor. */
-        for (;;) {
+        bool loop = thread_run;
+        while (true == loop) {
+            pthread_mutex_lock(&mutex);
             /* Read some events. */
             len = read(fd, buf, sizeof(buf));
             if (len <= 0) {
                 if (errno != EAGAIN) {
                     loggerPrintf(LOGGER_DEBUG_VERBOSE, "Failed to read from inotify fd: %d\n", fd);
-                    fileWatcherThreadStop();
+                    throw std::runtime_error("Failed to read from inotify fd.");
                 }
-                break;
+                continue;
             }
-
+    
             /* Loop over all events in the buffer. */
             for (char *ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
                 event = (const struct inotify_event *) ptr;
@@ -80,14 +81,20 @@ static void * watcherRun(void * arg) {
                     watcher->handle(event);
                 }
             }
+            loop = thread_run;
+            pthread_mutex_unlock(&mutex);
         }
+    } catch(std::exception& e) {
         pthread_mutex_unlock(&mutex);
+        loggerPrintf(LOGGER_DEBUG, "Exception thrown proccessing FileWatcher->handle: '%s'", e.what());
+        fileWatcherThreadStop();
     }
-
     return nullptr;
 }
 
 extern void WylesLibs::fileWatcherThreadStart() {
+    pthread_mutex_lock(&mutex);
+
     /* Create the file descriptor for accessing the inotify API. */
     fd = inotify_init1(IN_NONBLOCK);
     if (fd == -1) {
@@ -100,9 +107,13 @@ extern void WylesLibs::fileWatcherThreadStart() {
 
     thread_run = true;
     pthread_create(&watcher_thread, &attr, watcherRun, nullptr);
+
+    pthread_mutex_unlock(&mutex);
 }
 
 extern void WylesLibs::fileWatcherThreadStop() {
+    pthread_mutex_lock(&mutex);
+
     for (auto w: registeredWatchers) {
         w.second.lock()->paths_wd_map.clear();
         inotify_rm_watch(fd, w.first);
@@ -111,4 +122,6 @@ extern void WylesLibs::fileWatcherThreadStop() {
     close(fd);
     fd = -1;
     thread_run = false;
+
+    pthread_mutex_lock(&mutex);
 }

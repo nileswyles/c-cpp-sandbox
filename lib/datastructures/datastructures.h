@@ -5,6 +5,22 @@
 #include <string>
 #include <memory>
 
+#ifndef ALGO_SIGNED_LONG
+#define ALGO_SIGNED_LONG int64_t
+#endif
+
+#ifndef ALGO_UNSIGNED_LONG
+#define ALGO_UNSIGNED_LONG uint64_t
+#endif
+
+#ifndef ALGO_SIGNED_INT
+#define ALGO_SIGNED_INT int32_t
+#endif
+
+#ifndef ALGO_UNSIGNED_INT
+#define ALGO_UNSIGNED_INT uint32_t
+#endif
+
 #include "datastructures/array.h"
 
 namespace WylesLibs {
@@ -48,6 +64,25 @@ namespace WylesLibs {
                     return *this->e_size;
                 }
             }
+            ALGO_UNSIGNED_INT euclidean(const MatrixVector<T>& v) {
+                assertArraySizes(*this, v);
+                size_t size = this->size();
+                ALGO_SIGNED_INT sum = 0;
+                for (size_t i = 0; i < size; i++) {
+                    sum += ((ALGO_SIGNED_INT)(*this)[i] - v[i]) * ((ALGO_SIGNED_INT)(*this)[i] - v[i]);
+                }
+                return sqrt(sum);
+            }
+            ALGO_UNSIGNED_INT manhattan(const MatrixVector<T>& v) {
+                assertArraySizes(*this, v);
+                // # no C! lol, ef the pythagorean theorem.
+                size_t size = this->size();
+                ALGO_SIGNED_INT sum = 0;
+                for (size_t i = 0; i < size; i++) {
+                    sum += abs((ALGO_SIGNED_INT)(*this)[i] - v[i]);
+                }
+                return sqrt(sum);
+            }
             // not to be confused with copy constructor
             MatrixVector<T> copy(const MatrixVector<T>& other) {
                 MatrixVector<T> copy(other.size());
@@ -61,7 +96,7 @@ namespace WylesLibs {
                 assertArraySizes<T>(*this, m);
          
                 size_t size = this->size();
-                MatrixVector<T> add;
+                MatrixVector<T> add(size);
                 for (size_t i = 0; i < size; i++) {
                     add[i] = (*this)[i] + m[i];
                 }
@@ -71,7 +106,7 @@ namespace WylesLibs {
                 assertArraySizes<T>(*this, m);
          
                 size_t size = this->size();
-                MatrixVector<T> sub;
+                MatrixVector<T> sub(size);
                 for (size_t i = 0; i < size; i++) {
                     sub[i] = (*this)[i] - m[i];
                 }
@@ -84,16 +119,16 @@ namespace WylesLibs {
                 //      law of cosines
                 assertArraySizes<T>(*this, m);
          
-                size_t a_size = this->size();
+                size_t size = this->size();
                 T dot = 0;
-                for (size_t i = 0; i < a_size; i++) {
+                for (size_t i = 0; i < size; i++) {
                     dot += (*this)[i] * m[i];
                 }
                 return dot;
             }
             MatrixVector<T>& operator+ (const T& b) {
                 size_t size = this->size();
-                MatrixVector<T> add;
+                MatrixVector<T> add(size);
                 for (size_t i = 0; i < size; i++) {
                     add[i] = (*this)[i] + b;
                 }
@@ -101,17 +136,16 @@ namespace WylesLibs {
             }
             MatrixVector<T>& operator- (const T& b) {
                 size_t size = this->size();
-                MatrixVector<T> sub;
+                MatrixVector<T> sub(size);
                 for (size_t i = 0; i < size; i++) {
                     sub[i] = (*this)[i] - b;
                 }
                 return sub;
             }
             MatrixVector<T>& operator* (const T& b) {
-                // lol, is this even a nece?
-                size_t a_size = this->size();
-                MatrixVector<T> dot;
-                for (size_t i = 0; i < a_size; i++) {
+                size_t size = this->size();
+                MatrixVector<T> dot(size);
+                for (size_t i = 0; i < size; i++) {
                     dot += (*this)[i] * b;
                 }
                 return dot;
@@ -162,6 +196,9 @@ namespace WylesLibs {
                 return *this;
             }
     };
+
+    // TODO: vertical sort?
+    //  Also, tensor is just Matrix<MatrixVector<T>>?
     template<typename T>
     class Matrix {
         protected:
@@ -181,6 +218,24 @@ namespace WylesLibs {
                     return 0;
                 }
                 return (*this)[0].size();
+            }
+            MatrixVector<ALGO_UNSIGNED_INT> euclidean(const Matrix<T>& m) {
+                assertMatrixSizes<T>(*this, m);
+                size_t rows = this->rows();
+                MatrixVector<T> m_out(this->columns());
+                for (size_t i = 0; i < rows; i++) {
+                    m_out[i] = (*this)[i].euclidean(m[i]);
+                } 
+                return m_out;
+            }
+            MatrixVector<ALGO_UNSIGNED_INT> manhattan(const Matrix<T>& m) {
+                assertMatrixSizes<T>(*this, m);
+                size_t rows = this->rows();
+                MatrixVector<T> m_out(this->columns());
+                for (size_t i = 0; i < rows; i++) {
+                    m_out[i] = (*this)[i].manhattan(m[i]);
+                } 
+                return m_out;
             }
             // matrix copy constructor but not actual copy constructor lol... 
             Matrix<T> copy(const Matrix<T>& other) {

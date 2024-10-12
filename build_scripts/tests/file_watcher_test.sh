@@ -17,7 +17,7 @@ SRC_FILES="
 -s $ROOT_DIR/lib/test/file_watcher_test.cpp
 -s $ROOT_DIR/lib/file_watcher.cpp
 -s $ROOT_DIR/lib/test/tester.cpp
--s $ROOT_DIR/lib/array.cpp
+-s $ROOT_DIR/lib/datastructures/array.cpp
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n file_watcher_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"

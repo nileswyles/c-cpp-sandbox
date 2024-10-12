@@ -1,125 +1,68 @@
 #ifndef WYLESLIBS_ALGO_H
 #define WYLESLIBS_ALGO_H
 
-#ifndef ALGO_SIGNED_LONG
-#define ALGO_SIGNED_LONG int64_t
-#endif
-
-#ifndef ALGO_UNSIGNED_LONG
-#define ALGO_UNSIGNED_LONG uint64_t
-#endif
-
-#ifndef ALGO_SIGNED_INT
-#define ALGO_SIGNED_INT int32_t
-#endif
-
-#ifndef ALGO_UNSIGNED_INT
-#define ALGO_UNSIGNED_INT uint32_t
-#endif
-
 #include "datastructures/datastructures.h"
 
 namespace WylesLibs {
-    namespace Distance {
-        // TODO: 
-        //  Assuming sqrt(a) + sqrt(b) = sqrt(a + b) lol.. which I think I already proved to be true.
+    // TODO: 
+    //  Assuming sqrt(a) + sqrt(b) = sqrt(a + b) lol.. which I think I already proved to be true.
 
-        // alright, backup...
+    // alright, backup...
 
-        //  [a, b, c] <> [d, e, f]
-        //      euclidean distance of two points in 3d space...
-        //      is sqrt((a - d)^2 + (b - e)^2 + (c - f)^2) 
-        //      
-        //      and this can be extended to n-dimensions...
+    //  [a, b, c] <> [d, e, f]
+    //      euclidean distance of two points in 3d space...
+    //      is sqrt((a - d)^2 + (b - e)^2 + (c - f)^2) 
+    //      
+    //      and this can be extended to n-dimensions...
 
-        //      so, euclidian of arrays (1xM matrix), can produce a single value representing the length of the hypotenuse-line-(plane?), as described above...
-        //      or, represent such a vector as individual components (same as manhattan?) (maybe if polar coordinates but assuming a cartesian plane, they are related through pythogorean theorem...)
+    //      so, euclidian of arrays (1xM matrix), can produce a single value representing the length of the hypotenuse-line-(plane?), as described above...
+    //      or, represent such a vector as individual components (same as manhattan?) (maybe if polar coordinates but assuming a cartesian plane, they are related through pythogorean theorem...)
 
-        //      let's consider the former...
-        //      so, how would wwe approach this for NxM matricies? 
-        //      result would be a 1xM vector representing euclidian distances between each row in the matricies...
+    //      let's consider the former...
+    //      so, how would wwe approach this for NxM matricies? 
+    //      result would be a 1xM vector representing euclidian distances between each row in the matricies...
 
-        //      okay, this makes sense....
-        //          now, manhattan is the sum of absolute values of each component
-        //  [a, b, c] <manhattan> [d, e, f]
-        //          = abs(a - d) + abs(b - e) + abs(c - f)
+    //      okay, this makes sense....
+    //          now, manhattan is the sum of absolute values of each component
+    //  [a, b, c] <manhattan> [d, e, f]
+    //          = abs(a - d) + abs(b - e) + abs(c - f)
 
-        //          = and similarly this can be extended to n-dimensions...
+    //          = and similarly this can be extended to n-dimensions...
 
-        //      and again if NxM matrix
-        //          we will provide a 1xM vector representing manhattan distances between each row in the matricies...
+    //      and again if NxM matrix
+    //          we will provide a 1xM vector representing manhattan distances between each row in the matricies...
 
-        //      if you need some scalar representing, accounting for the entire matrix, one might sum(1xM vector) or avg(1xM vector)...
+    //      if you need some scalar representing, accounting for the entire matrix, one might sum(1xM vector) or avg(1xM vector)...
 
-        //      Alright, so there's the approach... we can go ahead and implement that....
+    //      Alright, so there's the approach... we can go ahead and implement that....
 
-        //      alternative to both of those solutions is 1xM, NxM matrices, with differences between the two (1xM, NxM) matrices... but then athat's just subtracting two matrices...
-        //          and then we can say, okay how about abs of these differences, that might be a different but useful representation of that?
-        //      
-        //      So, normally if might implement those as different abstractions or different operations... meaning you'll see each element more than once...
-        //      think about this differently? think numpy? if not too complicated? you can specify axis?
-        //          like maybe instead of each row, you might want to perform operation vertically?
-        //          may also want to easily select rows/shape?
-        //      or, on second thought, the beauty of this is it's simplicity? and speed
+    //      alternative to both of those solutions is 1xM, NxM matrices, with differences between the two (1xM, NxM) matrices... but then athat's just subtracting two matrices...
+    //          and then we can say, okay how about abs of these differences, that might be a different but useful representation of that?
+    //      
+    //      So, normally if might implement those as different abstractions or different operations... meaning you'll see each element more than once...
+    //      think about this differently? think numpy? if not too complicated? you can specify axis?
+    //          like maybe instead of each row, you might want to perform operation vertically?
+    //          may also want to easily select rows/shape?
+    //      or, on second thought, the beauty of this is it's simplicity? and speed
 
-        //      maybe, learn from reader_task and allow you to chain operations on data then only visit each node once...
-        //          so, that's easy for element wise operations...
+    //      maybe, learn from reader_task and allow you to chain operations on data then only visit each node once...
+    //          so, that's easy for element wise operations...
 
-        //          but, it's gets more complicated for other operations like sum, avg, etc seem similar to the collect stuff in java streams API?
-        //          so, maybe something where you can specify and select axis to perform operations on (with runtime checks for shape rules based on matrix maths...) as part of the collect function?
+    //          but, it's gets more complicated for other operations like sum, avg, etc seem similar to the collect stuff in java streams API?
+    //          so, maybe something where you can specify and select axis to perform operations on (with runtime checks for shape rules based on matrix maths...) as part of the collect function?
 
-        //          this all goes out the door if GPU acceleration is not mostly a scam for things like this... chatty stuff might not benefit from GPU acceleration, so gaming grpahics only?
-        //          idk, seems like something I might want to know for sure before proceeding... like, unified memory in consoles and mac's are a thing? lol,, reading not computing? knowledge is good!
+    //          this all goes out the door if GPU acceleration is not mostly a scam for things like this... chatty stuff might not benefit from GPU acceleration, so gaming grpahics only?
+    //          idk, seems like something I might want to know for sure before proceeding... like, unified memory in consoles and mac's are a thing? lol,, reading not computing? knowledge is good!
 
-        //          yeah, theres the idea of programs (kernels) that run on other hardware, so maybe that's what I should be targeting with this library? they use a different languages typically but why not keep the same paradigm?
-        //          I must be missing something...
+    //          yeah, theres the idea of programs (kernels) that run on other hardware, so maybe that's what I should be targeting with this library? they use a different languages typically but why not keep the same paradigm?
+    //          I must be missing something...
 
-        //      yeah, so detour.... part of reason why convolution stuff is designed as such?
+    //      yeah, so detour.... part of reason why convolution stuff is designed as such?
 
-        //      actually, might want both... basic computation can be performed on cpu side?
-        //  
-        //      okay, so similarly, create abstractions for matrix operations.
-        //      
-        template<typename T>
-        static ALGO_UNSIGNED_INT euclidean(const MatrixVector<T>& v1, const MatrixVector<T>& v2) {
-            assertArraySizes(v1, v2);
-            size_t size = v1.size();
-            ALGO_SIGNED_INT sum = 0;
-            for (size_t i = 0; i < size; i++) {
-                sum += ((ALGO_SIGNED_INT)v1[i] - v2[i]) * ((ALGO_SIGNED_INT)v1[i] - v2[i]);
-            }
-            return sqrt(sum);
-        }
-        template<typename T>
-        static Matrix<ALGO_UNSIGNED_INT> euclidean(const Matrix<T>& v1, const Matrix<T>& v2) {
-            size_t rows = v1.rows();
-            Matrix<T> m;
-            for (size_t i = 0; i < rows; i++) {
-                m[i] = euclidean<T>(v1[i], v2[i]);
-            } 
-            return m;
-        }
-        template<typename T>
-        static void manhattan(const MatrixVector<T>& v1, const MatrixVector<T>& v2) {
-            assertArraySizes(v1, v2);
-            // # no C! lol, ef the pythagorean theorem.
-            size_t size = v1.size();
-            MatrixVector<T> sum = 0;
-            for (size_t i = 0; i < size; i++) {
-                sum += abs((ALGO_SIGNED_INT)v1[i] - v2[i]);
-            }
-            return sqrt(sum);
-        }
-        template<typename T>
-        static Matrix<ALGO_UNSIGNED_INT> manhattan(const Matrix<T>& v1, const Matrix<T>& v2) {
-            size_t rows = v1.rows();
-            Matrix<ALGO_UNSIGNED_INT> m;
-            for (size_t i = 0; i < rows; i++) {
-                m[i] = manhattan<T>(v1[i], v2[i]);
-            } 
-            return m;
-        }
-    };
+    //      actually, might want both... basic computation can be performed on cpu side?
+    //  
+    //      okay, so similarly, create abstractions for matrix operations.
+    //      
     namespace Statistics {
         // type called DataSet
         //  Matrix<>

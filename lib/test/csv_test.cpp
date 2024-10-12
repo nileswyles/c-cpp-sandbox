@@ -19,70 +19,372 @@ static void testCSVParser(TestArg * t) {
     csv_string += "1:2,2:2\n";
     csv_string += (char)EOF; // 255?
 
+    size_t num_rows = 2;
+    size_t num_columns = 2;
+
     std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
     CSVParser p(io);
-    CSV csv = p.read(true);
-    printf("%s\n", csv.toString().c_str());
-    // for (size_t i = 0; i < csv.header.size(); i++) {
-    //     printf("%s\n", csv.header[i].c_str());
-    // }
-    // for (size_t i = 0; i < csv.rows(); i++) {
-    //     for (size_t j = 0; j < csv.columns(); j++) {
-    //         printf("%s", csv[i][j].c_str());
-    //         if (j + 1 == csv.columns()) {
-    //             printf("\n");
-    //         } else {
-    //             printf(",");
-    //         }
-    //     }
-    // }
+    CSV<std::string> csv = p.read(true);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
+    if (csv.header[0] == "col_1" &&
+        csv.header[1] == "col_2" &&
+        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv[0][0] == "1:1" &&
+        csv[0][1] == "2:1" &&
+        csv[1][0] == "1:2" &&
+        csv[1][1] == "2:2") {
+        t->fail = false;
+    }
+}
+
+static void testCSVParserPeriodSeparator(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    try {
+        CSVParser p(io, '.');
+    } catch (std::runtime_error &e) {
+        loggerPrintf(LOGGER_TEST, "Exception: %s\n", e.what());
+        if (strcmp("Periods aren't allowed as CSV separator.", e.what()) == 0) {
+            t->fail = false;
+        }
+    }
+}
+
+static void testCSVParserDoubles(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "1.797,27\n";
+    csv_string += "4,2\n";
+    csv_string += (char)EOF; // 255?
+
+    size_t num_rows = 2;
+    size_t num_columns = 2;
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    CSV<double> csv = p.readDoubles(true);
+    if (csv.header[0] == "col_1" &&
+        csv.header[1] == "col_2" &&
+        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv[0][0] == 1.797 &&
+        csv[0][1] == 27 &&
+        csv[1][0] == 4 &&
+        csv[1][1] == 2) {
+        t->fail = false;
+    }
+}
+
+static void testCSVParserDoublesNonNumber(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "1.797,lkannlakn\n";
+    csv_string += "4,2\n";
+    csv_string += (char)EOF; // 255?
+
+    size_t num_rows = 2;
+    size_t num_columns = 2;
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    try {
+        CSV<double> csv = p.readDoubles(true);
+    } catch (std::runtime_error &e) {
+        loggerPrintf(LOGGER_TEST, "Exception: %s\n", e.what());
+        if (strcmp("Non-digit character found in CSV data.", e.what()) == 0) {
+            t->fail = false;
+        }
+    }
 }
 
 static void testCSVParserSkipHeader(TestArg * t) {
+    std::string csv_string("1:1,2:1\n");
+    csv_string += "1:2,2:2\n";
+    csv_string += (char)EOF; // 255?
 
+    size_t num_rows = 2;
+    size_t num_columns = 2;
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    CSV<std::string> csv = p.read(false);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
+    if (csv.header.size() == 0 &&
+        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv[0][0] == "1:1" &&
+        csv[0][1] == "2:1" &&
+        csv[1][0] == "1:2" &&
+        csv[1][1] == "2:2") {
+        t->fail = false;
+    }
 }
 
 static void testCSVParserDelimeter(TestArg * t) {
+    std::string csv_string("col_1|col_2\n");
+    csv_string += "1:1|2:1\n";
+    csv_string += "1:2|2:2\n";
+    csv_string += (char)EOF; // 255?
 
+    size_t num_rows = 2;
+    size_t num_columns = 2;
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io, '|');
+    CSV<std::string> csv = p.read(true);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
+    if (csv.header[0] == "col_1" &&
+        csv.header[1] == "col_2" &&
+        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv[0][0] == "1:1" &&
+        csv[0][1] == "2:1" &&
+        csv[1][0] == "1:2" &&
+        csv[1][1] == "2:2") {
+        t->fail = false;
+    }
 }
-static void testCSVParserRecordWithNoFields(TestArg * t) {
 
+static void testCSVParserRecordWithNoFields(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "\n";
+    csv_string += "1:2,2:2\n";
+    csv_string += (char)EOF; // 255?
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    try {
+        CSV<std::string> csv = p.read(false);
+        loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
+    } catch(const std::runtime_error &e) {
+        loggerPrintf(LOGGER_TEST, "Exception: %s\n", e.what());
+        if (strcmp("Invalid record size.", e.what()) == 0) {
+            t->fail = false;
+        }
+    }
 }
 
 static void testCSVParserRecordWithInvalidNumberOfFields(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "1:1,\n";
+    csv_string += "1:2,2:2\n";
+    csv_string += (char)EOF; // 255?
 
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    try {
+        CSV<std::string> csv = p.read(false);
+        loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
+    } catch(const std::runtime_error &e) {
+        loggerPrintf(LOGGER_TEST, "Exception: %s\n", e.what());
+        if (strcmp("Invalid record size.", e.what()) == 0) {
+            t->fail = false;
+        }
+    }
 }
 
 static void testCSVParserRecordWithSpaces(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "   1:1   ,2:1\n";
+    csv_string += "1:2,   2:2   \n";
+    csv_string += (char)EOF; // 255?
 
+    size_t num_rows = 2;
+    size_t num_columns = 2;
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    CSV<std::string> csv = p.read(true);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
+    if (csv.header[0] == "col_1" &&
+        csv.header[1] == "col_2" &&
+        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv[0][0] == "   1:1   " &&
+        csv[0][1] == "2:1" &&
+        csv[1][0] == "1:2" &&
+        csv[1][1] == "   2:2   ") {
+        t->fail = false;
+    }
 }
 
 static void testCSVParserRecordWithQuotes(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "\"1:1\",2:1\n";
+    csv_string += "1:2,\"2:2\"\n";
+    csv_string += (char)EOF; // 255?
 
+    size_t num_rows = 2;
+    size_t num_columns = 2;
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    CSV<std::string> csv = p.read(true);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
+    if (csv.header[0] == "col_1" &&
+        csv.header[1] == "col_2" &&
+        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv[0][0] == "1:1" &&
+        csv[0][1] == "2:1" &&
+        csv[1][0] == "1:2" &&
+        csv[1][1] == "2:2") {
+        t->fail = false;
+    }
 }
 
 static void testCSVParserRecordWithNestedQuotes(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "\"1:\"\"somestring\"\"1\",2:1\n";
+    csv_string += "\"1:\"\"somestring\"\"2\",\"2:2\"\n";
+    csv_string += (char)EOF; // 255?
+
+    size_t num_rows = 2;
+    size_t num_columns = 2;
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    CSV<std::string> csv = p.read(true);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[%s]\n", csv.toString().c_str());
+    if (csv.header[0] == "col_1" &&
+        csv.header[1] == "col_2" &&
+        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv[0][0] == "1:\"somestring\"1" &&
+        csv[0][1] == "2:1" &&
+        csv[1][0] == "1:\"somestring\"2" &&
+        csv[1][1] == "2:2") {
+        t->fail = false;
+    }
 }
 
+static void testCSVParserRecordWithFollowedQuotes(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "\"1:1\"    ,2:1\n";
+    csv_string += "1:2,\"2:2\"\n";
+    csv_string += (char)EOF; // 255?
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    CSV<std::string> csv = p.read(true);
+    try {
+        CSV<std::string> csv = p.read(false);
+        loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
+    } catch(const std::runtime_error &e) {
+        loggerPrintf(LOGGER_TEST, "Exception: %s\n", e.what());
+        if (strcmp("Quoted string cannot be followed by a non-delimiting character", e.what()) == 0) {
+            t->fail = false;
+        }
+    }
+}
+
+static void testCSVParserRecordWithPrecededQuotes(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "    \"1:1\",2:1\n";
+    csv_string += "1:2,\"2:2\"\n";
+    csv_string += (char)EOF; // 255?
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    CSV<std::string> csv = p.read(true);
+    try {
+        CSV<std::string> csv = p.read(false);
+        loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
+    } catch(const std::runtime_error &e) {
+        loggerPrintf(LOGGER_TEST, "Exception: %s\n", e.what());
+        if (strcmp("Quoted string cannot be preceded by a non-delimiting character", e.what()) == 0) {
+            t->fail = false;
+        }
+    }
+}
+
+static void testCSVParserFromRange(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "1:1,2:1\n";
+    csv_string += "1:2,2:2\n";
+    csv_string += "1:1,2:1\n";
+    csv_string += "1:2,2:2\n";
+    csv_string += "1:1,2:1\n";
+    csv_string += "1:2,2:2\n";
+    csv_string += "1:1,2:1\n";
+    csv_string += "l:2,2:l\n";
+    csv_string += (char)EOF; // 255?
+
+    size_t num_rows = 9;
+    size_t num_columns = 2;
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    CSV<std::string> csv;
+
+    size_t range = num_rows;
+    size_t dec = 2;
+    while (range > 0) {
+        size_t dec_actual = dec > range ? range: dec;
+        p.read(csv, dec_actual);
+        range -= dec_actual;
+    }
+    loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
+    if (csv.header.size() == 0 &&
+        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv[0][0] == "col_1" &&
+        csv[0][1] == "col_2" &&
+        csv[1][0] == "1:1" &&
+        csv[1][1] == "2:1" &&
+        csv[8][0] == "l:2" &&
+        csv[8][1] == "2:l") {
+        t->fail = false;
+    }
+}
+
+static void testCSVParserFromRangeOutOfRange(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "1:1,2:1\n";
+    csv_string += "1:2,2:2\n";
+    csv_string += "1:1,2:1\n";
+    csv_string += "1:2,2:2\n";
+    csv_string += "1:1,2:1\n";
+    csv_string += "1:2,2:2\n";
+    csv_string += "1:1,2:1\n";
+    csv_string += "1:2,2:2\n";
+    csv_string += (char)EOF; // 255?
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    CSV<std::string> csv;
+
+    size_t range = 27;
+    size_t dec = 2;
+    try {
+        while (range > 0) {
+            size_t dec_actual = dec > range ? range: dec;
+            p.read(csv, dec_actual);
+            range -= dec_actual;
+        }
+    } catch(const std::runtime_error &e) {
+        loggerPrintf(LOGGER_TEST, "Exception: %s\n", e.what());
+        t->fail = false;
+    }
+}
+
+// TODO: these might not be necessary lol because we aren't testing iostream.
 static void testCSVParserFromFileAll(TestArg * t) {
-
+    t->fail = false;
 }
-
 static void testCSVParserFromFileRange(TestArg * t) {
-
+    t->fail = false;
 }
 
 int main(int argc, char * argv[]) {
     Tester t("CSV Parser Tests");
 
     t.addTest(testCSVParser);
+    t.addTest(testCSVParserPeriodSeparator);
+    t.addTest(testCSVParserDoubles);
+    t.addTest(testCSVParserDoublesNonNumber);
     t.addTest(testCSVParserSkipHeader);
     t.addTest(testCSVParserDelimeter);
     t.addTest(testCSVParserRecordWithNoFields);
     t.addTest(testCSVParserRecordWithInvalidNumberOfFields);
     t.addTest(testCSVParserRecordWithSpaces);
     t.addTest(testCSVParserRecordWithQuotes);
+    t.addTest(testCSVParserRecordWithFollowedQuotes);
+    t.addTest(testCSVParserRecordWithPrecededQuotes);
     t.addTest(testCSVParserRecordWithNestedQuotes);
+    t.addTest(testCSVParserFromRange);
+    t.addTest(testCSVParserFromRangeOutOfRange);
     t.addTest(testCSVParserFromFileAll);
     t.addTest(testCSVParserFromFileRange);
 

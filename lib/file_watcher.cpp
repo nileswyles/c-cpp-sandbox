@@ -84,7 +84,7 @@ static void * watcherRun(void * arg) {
             loop = thread_run;
             pthread_mutex_unlock(&mutex);
         }
-    } catch(std::exception& e) {
+    } catch(const std::exception& e) {
         pthread_mutex_unlock(&mutex);
         loggerPrintf(LOGGER_DEBUG, "Exception thrown proccessing FileWatcher->handle: '%s'", e.what());
         fileWatcherThreadStop();

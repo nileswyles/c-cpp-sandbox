@@ -35,12 +35,18 @@ bool Tester::run(const char * name) {
     for (auto test: this->tests) {
         bool ran_test = false;
         // TODO: test selection pattern matching?
-        if (name == nullptr) {
-            runTest(&test);
+        try {
+            if (name == nullptr) {
+                runTest(&test);
+                ran_test = true;
+            } else if (test.name == std::string(name)) {
+                runTest(&test);
+                ran_test = true;
+            }
+        } catch(std::exception &e) {
+            test.arg.fail = true;
             ran_test = true;
-        } else if (test.name == std::string(name)) {
-            runTest(&test);
-            ran_test = true;
+            loggerPrintf(LOGGER_ERROR, "Exception: %s\n", e.what());
         }
         if (ran_test) {
             if (test.arg.fail) {

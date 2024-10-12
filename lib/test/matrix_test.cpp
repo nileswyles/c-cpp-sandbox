@@ -11,7 +11,33 @@
 using namespace WylesLibs;
 using namespace WylesLibs::Test;
 
+// yeah because we certaintly don't want it reallocating everything... and this way you don't need any pointers here...
+//  alternative would be to have MatrixVector extend Array instead of SharedArray and mem like a normal person lol...
+
+// static void printMatrix(Matrix<uint8_t>& matrix) {
+static void printMatrix(Matrix<uint8_t> matrix) {
+    for (size_t i = 0; i < matrix.rows(); i++) {
+        for (size_t j = 0; j < matrix.columns(); j++) {
+            printf("%u", matrix[i][j]);
+            if (j != 1) {
+                printf(",");
+            }
+        }
+        printf("\n");
+    }
+}
+
 static void testMatrix(TestArg * t) {
+    Matrix<uint8_t> matrix;
+    // 2x2
+    size_t val = 0;
+    for (size_t i = 0; i < 2; i++) {
+        for (size_t j = 0; j < 2; j++) {
+            matrix[i][j] = ++val;
+        }
+    }
+
+    printMatrix(matrix);
 }
 
 static void testMatrixView(TestArg * t) {
@@ -41,19 +67,17 @@ static void testMatrixCopyOfCopy(TestArg * t) {
 int main(int argc, char * argv[]) {
     Tester t("Matrix Tests");
 
-    t.addTest(testCSVParser);
-    t.addTest(testCSVParserSkipHeader);
-    t.addTest(testCSVParserDelimeter);
-    t.addTest(testCSVParserRecordWithNoFields);
-    t.addTest(testCSVParserRecordWithInvalidNumberOfFields);
-    t.addTest(testCSVParserRecordWithSpaces);
-    t.addTest(testCSVParserRecordWithQuotes);
-    t.addTest(testCSVParserRecordWithNestedQuotes);
-    t.addTest(testCSVParserFromFileAll);
-    t.addTest(testCSVParserFromFileRange);
+    t.addTest(testMatrix);
+    // t.addTest(testCSVParserSkipHeader);
+    // t.addTest(testCSVParserDelimeter);
+    // t.addTest(testCSVParserRecordWithNoFields);
+    // t.addTest(testCSVParserRecordWithInvalidNumberOfFields);
+    // t.addTest(testCSVParserRecordWithSpaces);
+    // t.addTest(testCSVParserRecordWithQuotes);
+    // t.addTest(testCSVParserRecordWithNestedQuotes);
+    // t.addTest(testCSVParserFromFileAll);
+    // t.addTest(testCSVParserFromFileRange);
 
-    // TODO: catch exceptions so that before and after suite is still performed?
-    //      Where too? in run function?
     bool passed = false;
     if (argc > 1) {
         loggerPrintf(LOGGER_DEBUG, "argc: %d, argv[0]: %s\n", argc, argv[1]);

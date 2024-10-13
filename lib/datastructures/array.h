@@ -520,7 +520,7 @@ class SharedArray {
         ArrayView * view;
         T& access(size_t pos) {
             size_t i = pos;
-            if (true == (this->viewEnd() - this->viewStart()) > 0) {
+            if (this->view != nullptr) {
                 if (i > this->viewEnd()) {
                     std::runtime_error("Attempting to access element outside of SharedArray.");
                 }

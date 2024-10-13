@@ -66,12 +66,18 @@ namespace WylesLibs {
     };
     class CSVParser {
         private:
+            bool assertCSVNoHeader(CSV<std::string> * csv, MatrixVector<std::string> * header) {
+                return csv != nullptr && header == nullptr;
+            }
+            bool assertHeaderNoCSV(CSV<std::string> * csv, MatrixVector<std::string> * header) {
+                return csv == nullptr && header != nullptr;
+            }
             void updateAndCheckRecordSize(size_t new_record_size) {
-                if (this->record_size == 0) {
+                if (0 == this->record_size) {
                     // first iteration
                     this->record_size = new_record_size;
                 }
-                if (new_record_size == 0 || this->record_size != new_record_size) {
+                if (0 == new_record_size || this->record_size != new_record_size) {
                     throw std::runtime_error("Invalid record size.");
                 }
             }
@@ -107,13 +113,13 @@ namespace WylesLibs {
                 );
                 // end of record
             }
-            bool handleFieldDelimeter(CSV<std::string> * csv, std::string current_str, uint8_t b, MatrixVector<std::string> * header) {
+            bool handleFieldDelimeter(CSV<std::string> * csv, std::string& current_str, uint8_t b, MatrixVector<std::string> * header) {
                 bool result = false;
                 MatrixVector<std::string> r;
-                if (header != nullptr) {
+                if (true == assertHeaderNoCSV(csv, header)) {
                     r = *header;
                 } else {
-                    r = (*csv)[csv->rows()];
+                    r = (*csv)[csv->rows() - 1];
                 }
                 if (b == separator || b == '\n') {
                     r.append(current_str);
@@ -123,7 +129,7 @@ namespace WylesLibs {
                     if ('\n' == b) {
                         processRecord(r);
                         // #containerization
-                        if (header == nullptr) {
+                        if (true == assertCSVNoHeader(csv, header)) {
                             // creates new row...
                             r = (*csv)[csv->rows()];
                         }
@@ -132,9 +138,10 @@ namespace WylesLibs {
                 } 
                 return result;
             }
-            bool handleFieldDelimeter(CSV<double> * csv, double current_double, uint8_t b) {
+            bool handleFieldDelimeter(CSV<double> * csv, double& current_double, uint8_t b) {
                 bool result = false;
-                MatrixVector<double> r = (*csv)[csv->rows()];
+                // TODO: no need for explicit null check because references?
+                MatrixVector<double> r = (*csv)[csv->rows() - 1];
                 if (this->separator == b || '\n' == b) {
                     r.append(current_double);
                     current_double = 0;
@@ -150,6 +157,7 @@ namespace WylesLibs {
             }
             bool handleQuotes(CSV<std::string> * csv, bool& quoted, std::string current_str, uint8_t b) {
                 bool result = false;
+                if (csv == nullptr) return result;
                 if (!quoted) {
                     if ('"' == b) {
                         if (current_str.size() != 0) {
@@ -180,8 +188,10 @@ namespace WylesLibs {
                 uint8_t b;
                 size_t r_i = 0;
                 size_t rows_at_start = 0;
-                if (csv != nullptr) {
-                    rows_at_start = rows_at_start = csv->rows() > 0 ? csv->rows() - 1: 0;
+                if (true == assertCSVNoHeader(csv, header)) {
+                    rows_at_start = csv->rows();
+                    r_i = rows_at_start > 0 ? rows_at_start - 1: 0;
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "r_i: %lu, rows_at_start: %lu, r_count: %lu\n", r_i, rows_at_start, r_count);
                 }
                 std::string current_str;
                 while (r_i < r_count + rows_at_start) {
@@ -196,11 +206,19 @@ namespace WylesLibs {
                     }
                     // handle field delimeter
                     if (true == handleFieldDelimeter(csv, current_str, b, header)) {
-                        if (header == nullptr) {
+                        if (true == assertCSVNoHeader(csv, header)) {
+                            // point to next row if end of record
                             r_i = csv->rows();
+                            loggerPrintf(LOGGER_DEBUG_VERBOSE, "NEW LINE --- r_i: %lu, rows_at_start: %lu, r_count: %lu\n", r_i, rows_at_start, r_count);
                             continue;
-                        } else {
-                            break;
+                        } else if (true == assertHeaderNoCSV(csv, header)) {
+                            // TODO: 
+                            // LOL - yeah this is absurd...
+                            if ('\n' == b) {
+                                break;
+                            } else if (this->separator == b) {
+                                continue;
+                            }
                         }
                     }
                     current_str.push_back((char)b);
@@ -218,8 +236,9 @@ namespace WylesLibs {
             }
             CSVParser(std::shared_ptr<IOStream> io): CSVParser(io, ',') {}
             ~CSVParser() = default;
-
-
+            void reset() {
+                this->record_size = 0;
+            }
             void readDoubles(CSV<double>& csv, size_t r_count) {
                 uint8_t b;
                 size_t rows_at_start = csv.rows() > 0 ? csv.rows() - 1: 0;
@@ -262,7 +281,7 @@ namespace WylesLibs {
             CSV<std::string> read(bool has_header) {
                 CSV<std::string> csv;
                 if (true == has_header) {
-                    read(&csv, 1, &csv.header);
+                    read(nullptr, 1, &csv.header);
                 }
                 read(&csv, SIZE_MAX, nullptr);
                 return csv;

@@ -50,8 +50,7 @@ namespace WylesLibs {
                         s += ",";
                     }
                 }
-                // they hating on me, hating on me, kisss kiss kiss kiss
-                for (size_t y = 0; y < this->rows() - 1; y++) {
+                for (size_t y = 0; y < this->rows(); y++) {
                     for (size_t x = 0; x < this->columns(); x++) {
                         s += (*this)[y][x];
                         if (x + 1 == this->columns()) {

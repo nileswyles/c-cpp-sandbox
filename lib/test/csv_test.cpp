@@ -334,17 +334,20 @@ static void testCSVParserFromRange(TestArg * t) {
     while (range > 0) {
         size_t dec_actual = dec > range ? range: dec;
         p.read(csv, dec_actual);
-        loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String [read %lu rows, %lu remaining]:\n[\n%s], %lu\n", dec_actual, range - dec_actual, csv.toString().c_str(), csv.rows());
+
+        size_t remaining = range - dec_actual;
+        loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String [read %lu rows, %lu remaining (%lu range)]:\n[\n%s], actual rows in matrix: %lu\n", dec_actual, remaining, range, csv.toString().c_str(), csv.rows());
+        loggerPrintf(LOGGER_TEST_VERBOSE, "FIRST ELEMENT: [%s, %s]\n", csv[0][0].c_str(), csv[0][1].c_str());
         if (true == (csv.rows() == dec_actual && csv.columns() == num_columns)) {
             if (range == 9 && (false == (csv[0][0] == "col_1" && csv[0][1] == "col_2"))) {
                 t->fail = true;
                 break;
             }
-            if (range == 2 && (false == (csv[0][0] == "1:2" && csv[0][1] == "2:2"))) {
+            if (range == 3 && (false == (csv[0][0] == "1:2" && csv[0][1] == "2:2"))) {
                 t->fail = true;
                 break;
             }
-            if (range == 2 && (false == (csv[1][0] == "1:1" && csv[1][1] == "2:1"))) {
+            if (range == 3 && (false == (csv[1][0] == "1:1" && csv[1][1] == "2:1"))) {
                 t->fail = true;
                 break;
             }

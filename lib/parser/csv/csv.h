@@ -130,8 +130,7 @@ namespace WylesLibs {
                         processRecord(r);
                         // #containerization
                         if (true == assertCSVNoHeader(csv, header)) {
-                            // creates new row...
-                            r = (*csv)[++r_i];
+                            ++r_i;
                         }
                     }
                     result = true;
@@ -149,7 +148,7 @@ namespace WylesLibs {
                         processRecord(r);
                         // TODO: better syntax for this...
                         //      function to create and return new element?
-                        r = (*csv)[++r_i];
+                        ++r_i;
                     }
                     result = true;
                 } 

@@ -28,7 +28,7 @@ static void testCSVParser(TestArg * t) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
     if (csv.header[0] == "col_1" &&
         csv.header[1] == "col_2" &&
-        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv.rows() == num_rows && csv.columns() == num_columns &&
         csv[0][0] == "1:1" &&
         csv[0][1] == "2:1" &&
         csv[1][0] == "1:2" &&
@@ -64,7 +64,7 @@ static void testCSVParserDoubles(TestArg * t) {
     CSV<double> csv = p.readDoubles(true);
     if (csv.header[0] == "col_1" &&
         csv.header[1] == "col_2" &&
-        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv.rows() == num_rows && csv.columns() == num_columns &&
         csv[0][0] == 1.797 &&
         csv[0][1] == 27 &&
         csv[1][0] == 4 &&
@@ -126,7 +126,7 @@ static void testCSVParserSkipHeader(TestArg * t) {
     CSV<std::string> csv = p.read(false);
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
     if (csv.header.size() == 0 &&
-        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv.rows() == num_rows && csv.columns() == num_columns &&
         csv[0][0] == "1:1" &&
         csv[0][1] == "2:1" &&
         csv[1][0] == "1:2" &&
@@ -150,7 +150,7 @@ static void testCSVParserDelimeter(TestArg * t) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
     if (csv.header[0] == "col_1" &&
         csv.header[1] == "col_2" &&
-        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv.rows() == num_rows && csv.columns() == num_columns &&
         csv[0][0] == "1:1" &&
         csv[0][1] == "2:1" &&
         csv[1][0] == "1:2" &&
@@ -212,7 +212,7 @@ static void testCSVParserRecordWithSpaces(TestArg * t) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
     if (csv.header[0] == "col_1" &&
         csv.header[1] == "col_2" &&
-        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv.rows() == num_rows && csv.columns() == num_columns &&
         csv[0][0] == "   1:1   " &&
         csv[0][1] == "2:1" &&
         csv[1][0] == "1:2" &&
@@ -236,7 +236,7 @@ static void testCSVParserRecordWithQuotes(TestArg * t) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
     if (csv.header[0] == "col_1" &&
         csv.header[1] == "col_2" &&
-        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv.rows() == num_rows && csv.columns() == num_columns &&
         csv[0][0] == "1:1" &&
         csv[0][1] == "2:1" &&
         csv[1][0] == "1:2" &&
@@ -260,7 +260,7 @@ static void testCSVParserRecordWithNestedQuotes(TestArg * t) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[%s]\n", csv.toString().c_str());
     if (csv.header[0] == "col_1" &&
         csv.header[1] == "col_2" &&
-        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
+        csv.rows() == num_rows && csv.columns() == num_columns &&
         csv[0][0] == "1:\"somestring\"1" &&
         csv[0][1] == "2:1" &&
         csv[1][0] == "1:\"somestring\"2" &&
@@ -335,7 +335,7 @@ static void testCSVParserFromRange(TestArg * t) {
         size_t dec_actual = dec > range ? range: dec;
         p.read(csv, dec_actual);
         loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String [read %lu rows, %lu remaining]:\n[\n%s], %lu\n", dec_actual, range - dec_actual, csv.toString().c_str(), csv.rows());
-        if (true == (csv.rows() == dec_actual + 1 && csv.columns() == num_columns)) {
+        if (true == (csv.rows() == dec_actual && csv.columns() == num_columns)) {
             // LOLLLLLL
             if (range == 9 && (false == (csv[0][0] == "col_1" && csv[0][1] == "col_2"))) {
                 t->fail = true;

@@ -336,7 +336,6 @@ static void testCSVParserFromRange(TestArg * t) {
         p.read(csv, dec_actual);
         loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String [read %lu rows, %lu remaining]:\n[\n%s], %lu\n", dec_actual, range - dec_actual, csv.toString().c_str(), csv.rows());
         if (true == (csv.rows() == dec_actual && csv.columns() == num_columns)) {
-            // LOLLLLLL
             if (range == 9 && (false == (csv[0][0] == "col_1" && csv[0][1] == "col_2"))) {
                 t->fail = true;
                 break;

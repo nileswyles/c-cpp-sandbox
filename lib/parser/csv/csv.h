@@ -113,13 +113,13 @@ namespace WylesLibs {
                 );
                 // end of record
             }
-            bool handleFieldDelimeter(CSV<std::string> * csv, std::string& current_str, uint8_t b, MatrixVector<std::string> * header) {
+            bool handleFieldDelimeter(CSV<std::string> * csv, std::string& current_str, uint8_t b, MatrixVector<std::string> * header, size_t& r_i) {
                 bool result = false;
                 MatrixVector<std::string> r;
                 if (true == assertHeaderNoCSV(csv, header)) {
                     r = *header;
                 } else {
-                    r = (*csv)[csv->rows() - 1];
+                    r = (*csv)[r_i];
                 }
                 if (b == separator || b == '\n') {
                     r.append(current_str);
@@ -131,17 +131,17 @@ namespace WylesLibs {
                         // #containerization
                         if (true == assertCSVNoHeader(csv, header)) {
                             // creates new row...
-                            r = (*csv)[csv->rows()];
+                            r = (*csv)[++r_i];
                         }
                     }
                     result = true;
                 } 
                 return result;
             }
-            bool handleFieldDelimeter(CSV<double> * csv, double& current_double, uint8_t b) {
+            bool handleFieldDelimeter(CSV<double> * csv, double& current_double, uint8_t b, size_t& r_i) {
                 bool result = false;
                 // TODO: no need for explicit null check because references?
-                MatrixVector<double> r = (*csv)[csv->rows() - 1];
+                MatrixVector<double> r = (*csv)[r_i];
                 if (this->separator == b || '\n' == b) {
                     r.append(current_double);
                     current_double = 0;
@@ -149,7 +149,7 @@ namespace WylesLibs {
                         processRecord(r);
                         // TODO: better syntax for this...
                         //      function to create and return new element?
-                        r = (*csv)[csv->rows()];
+                        r = (*csv)[++r_i];
                     }
                     result = true;
                 } 
@@ -187,14 +187,8 @@ namespace WylesLibs {
                 bool quoted = false;
                 uint8_t b;
                 size_t r_i = 0;
-                size_t rows_at_start = 0;
-                if (true == assertCSVNoHeader(csv, header)) {
-                    rows_at_start = csv->rows();
-                    r_i = rows_at_start > 0 ? rows_at_start - 1: 0;
-                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "r_i: %lu, rows_at_start: %lu, r_count: %lu\n", r_i, rows_at_start, r_count);
-                }
                 std::string current_str;
-                while (r_i < r_count + rows_at_start) {
+                while (r_i < r_count) {
                     b = (*this->io).readByte();
                     // TODO: this requires '\n' at end of last record... which might be okay... but good to think about...
                     if (b == (uint8_t)EOF) {
@@ -205,11 +199,9 @@ namespace WylesLibs {
                         continue;
                     }
                     // handle field delimeter
-                    if (true == handleFieldDelimeter(csv, current_str, b, header)) {
+                    if (true == handleFieldDelimeter(csv, current_str, b, header, r_i)) {
                         if (true == assertCSVNoHeader(csv, header)) {
                             // point to next row if end of record
-                            r_i = csv->rows();
-                            loggerPrintf(LOGGER_DEBUG_VERBOSE, "NEW LINE --- r_i: %lu, rows_at_start: %lu, r_count: %lu\n", r_i, rows_at_start, r_count);
                             continue;
                         } else if (true == assertHeaderNoCSV(csv, header)) {
                             // TODO: 
@@ -241,14 +233,13 @@ namespace WylesLibs {
             }
             void readDoubles(CSV<double>& csv, size_t r_count) {
                 uint8_t b;
-                size_t rows_at_start = csv.rows() > 0 ? csv.rows() - 1: 0;
-                size_t r_i = rows_at_start;
+                size_t r_i = 0;
                 MatrixVector<double> r = csv[r_i];
                 double current_double = 0;
-                while (r_i < r_count + rows_at_start) {
+                while (r_i < r_count) {
                     b = (*this->io).peekByte();
                     // handle field delimeter
-                    if (true == handleFieldDelimeter(&csv, current_double, b)) {
+                    if (true == handleFieldDelimeter(&csv, current_double, b, r_i)) {
                         (*this->io).readByte();
                         continue;
                     }

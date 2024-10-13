@@ -318,7 +318,7 @@ static void testCSVParserFromRange(TestArg * t) {
     csv_string += "1:1,2:1\n";
     csv_string += "1:2,2:2\n";
     csv_string += "1:1,2:1\n";
-    csv_string += "l:2,2:l\n";
+    csv_string += "e:2,2:e\n";
     csv_string += (char)EOF; // 255?
 
     size_t num_rows = 9;
@@ -328,23 +328,41 @@ static void testCSVParserFromRange(TestArg * t) {
     CSVParser p(io);
     CSV<std::string> csv;
 
+    t->fail = false;
     size_t range = num_rows;
     size_t dec = 2;
     while (range > 0) {
         size_t dec_actual = dec > range ? range: dec;
         p.read(csv, dec_actual);
+        loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String [read %lu rows, %lu remaining]:\n[\n%s], %lu\n", dec_actual, range - dec_actual, csv.toString().c_str(), csv.rows());
+        if (true == (csv.rows() == dec_actual + 1 && csv.columns() == num_columns)) {
+            // LOLLLLLL
+            if (false == (range == 9 && csv[0][0] == "col_1" && csv[0][1] == "col_2")) {
+                t->fail = true;
+                break;
+            }
+            if (false == (range == 2 && csv[0][0] == "1:2" && csv[0][1] == "2:2")) {
+                t->fail = true;
+                break;
+            }
+            if (false == (range == 2 && csv[1][0] == "1:1" && csv[1][1] == "2:1")) {
+                t->fail = true;
+                break;
+            }
+        // because obviously, we'll have more in buffer than actually read...
+        } else if (range == 1) {
+            if (false == (range == 1 && csv[0][0] == "e:2" && csv[0][1] == "2:e")) {
+                t->fail = true;
+                break;
+            }
+        } else {
+            t->fail = true;
+            break;
+        }
         range -= dec_actual;
     }
-    loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
-    if (csv.header.size() == 0 &&
-        csv.rows() == num_rows + 1 && csv.columns() == num_columns &&
-        csv[0][0] == "col_1" &&
-        csv[0][1] == "col_2" &&
-        csv[1][0] == "1:1" &&
-        csv[1][1] == "2:1" &&
-        csv[8][0] == "l:2" &&
-        csv[8][1] == "2:l") {
-        t->fail = false;
+    if (csv.header.size() != 0) {
+        t->fail = true;
     }
 }
 

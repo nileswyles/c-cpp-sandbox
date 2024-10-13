@@ -56,7 +56,7 @@ namespace WylesLibs {
                 MatrixVector<T> copy(other.size());
                 size_t size = other.size();
                 for (size_t i = *other.e_start; i < size; i++) {
-                    copy.append(other.buf()[i]);
+                    copy.append(other[i]);
                 }
                 return copy;
             }
@@ -139,6 +139,7 @@ namespace WylesLibs {
     template<typename T>
     class Matrix {
         protected:
+            T * lol; //:?
             MatrixVector<MatrixVector<T>> matrix;
         public:
             Matrix() = default;

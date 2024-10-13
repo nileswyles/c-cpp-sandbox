@@ -337,24 +337,22 @@ static void testCSVParserFromRange(TestArg * t) {
         loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String [read %lu rows, %lu remaining]:\n[\n%s], %lu\n", dec_actual, range - dec_actual, csv.toString().c_str(), csv.rows());
         if (true == (csv.rows() == dec_actual + 1 && csv.columns() == num_columns)) {
             // LOLLLLLL
-            if (false == (range == 9 && csv[0][0] == "col_1" && csv[0][1] == "col_2")) {
+            if (range == 9 && (false == (csv[0][0] == "col_1" && csv[0][1] == "col_2"))) {
                 t->fail = true;
                 break;
             }
-            if (false == (range == 2 && csv[0][0] == "1:2" && csv[0][1] == "2:2")) {
+            if (range == 2 && (false == (csv[0][0] == "1:2" && csv[0][1] == "2:2"))) {
                 t->fail = true;
                 break;
             }
-            if (false == (range == 2 && csv[1][0] == "1:1" && csv[1][1] == "2:1")) {
+            if (range == 2 && (false == (csv[1][0] == "1:1" && csv[1][1] == "2:1"))) {
                 t->fail = true;
                 break;
             }
         // because obviously, we'll have more in buffer than actually read...
-        } else if (range == 1) {
-            if (false == (range == 1 && csv[0][0] == "e:2" && csv[0][1] == "2:e")) {
-                t->fail = true;
-                break;
-            }
+        } else if (range == 1 && (false == (csv[0][0] == "e:2" && csv[0][1] == "2:e"))) {
+            t->fail = true;
+            break;
         } else {
             t->fail = true;
             break;

@@ -20,7 +20,7 @@
 #endif
 
 #ifndef LOGGER_ARRAY
-#define LOGGER_ARRAY 1
+#define LOGGER_ARRAY 0
 #endif
 
 #undef LOGGER_MODULE_ENABLED
@@ -31,6 +31,8 @@
 #include "logger.h"
 
 namespace WylesLibs {
+
+// @
 
 constexpr size_t ARRAY_RECOMMENDED_INITIAL_CAP = 8;
 constexpr double UPSIZE_FACTOR = 1.75;
@@ -112,6 +114,8 @@ int nlognsortCompare(ArraySort sortOrder, T A, T B) {
 template<>
 int nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const char * B);
 
+// @
+
 // TODO: thread safety
 template<typename T>
 class Array {
@@ -120,8 +124,6 @@ class Array {
         size_t e_cap;
         size_t e_size;
         ArraySort e_sorted;
-        size_t view_start;
-        size_t view_end;
 
         inline void nlognsortMerge(T * A, size_t size_a, T * B, size_t size_b, T * swap_space) {
             size_t swap_space_push = 0;
@@ -210,8 +212,6 @@ class Array {
             e_buf = newCArray<T>(e_cap);
             e_size = list.size(); 
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
-            view_start = 0;
-            view_end = 0;
 
             size_t i = 0;
             for (auto el: list) {
@@ -223,17 +223,6 @@ class Array {
             e_buf = newCArray<T>(e_cap);
             e_size = 0;
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
-            view_start = 0;
-            view_end = 0;
-        }
-        // view...
-        Array(const Array<T>& other, size_t start, size_t end): Array<T>(other) {
-            size_t view_size = end - start;
-            if (view_size <= 0 || view_size > other.size()) {
-                throw std::runtime_error("Invalid view coordinates.");
-            }
-            view_start = start;
-            view_end = end;
         }
         virtual ~Array() {
             deleteCArray<T>(e_buf, e_size);
@@ -382,12 +371,7 @@ class Array {
             return this->e_buf;
         }
         size_t size() {
-            size_t view_size = this->view_end - this->view_start;
-            if (view_size > 0 && view_size <= this->e_size) {
-                return view_size;
-            } else {
-                return this->e_size;
-            }
+            return this->e_size;
         }
         size_t cap() {
             // this is really only useful for testing.
@@ -475,15 +459,7 @@ class Array {
         }
         T& operator[] (const size_t pos) {
             size_t i = pos;
-            if (true == (this->view_end - this->view_start) > 0) {
-                if (i > this->view_end) {
-                    std::runtime_error("Attempting to access element outside of Matrix.");
-                }
-                i += this->view_start;
-                if (i >= this->size()) {
-                    std::runtime_error("Attempting to access element outside of Matrix.");
-                }
-            } else if (i >= this->size()) {
+            if (i >= this->size()) {
                 T el;
                 this->append(el); 
                 i = this->size()-1;
@@ -511,6 +487,9 @@ class Array {
             return *this;
         }
 };
+
+// @
+
 template<typename T>
 class ArrayControl {
     public:
@@ -524,34 +503,60 @@ class ArrayControl {
             delete this->ptr;
         }
 };
+class ArrayView {
+    public:
+        size_t start;
+        size_t end;
+        ArrayView(size_t start, size_t end): start(start), end(end) {}
+        ~ArrayView() = default;
+};
+
+// @
+
 template<typename T> 
 class SharedArray {
     protected:
         ArrayControl<T> * ctrl;
+        ArrayView * view;
+        T& access(size_t pos) {
+            size_t i = pos;
+            if (true == (this->viewEnd() - this->viewStart()) > 0) {
+                if (i > this->viewEnd()) {
+                    std::runtime_error("Attempting to access element outside of SharedArray.");
+                }
+                i += this->viewStart();
+                if (i >= this->size()) {
+                    std::runtime_error("Attempting to access element outside of SharedArray.");
+                }
+            }
+            return (*this->ctrl->ptr)[i];
+        }
         T * buf() {
             return this->ctrl->ptr->buf();
         }
     public:
-        // # perspective!
-
+        // ! IMPORTANT 
         // implement same interface as Array...
         SharedArray(): ctrl(new ArrayControl<T>()) {}
-        //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         SharedArray(std::initializer_list<T> list): ctrl(new ArrayControl<T>(list)) {}
         SharedArray(const size_t initial_cap): ctrl(new ArrayControl<T>(initial_cap)) {}
         SharedArray(const SharedArray<T>& other, size_t start, size_t end) {
-            size_t view_size = end - start;
-            if (view_size <= 0 || view_size > other.size()) {
-                throw std::runtime_error("Invalid view coordinates.");
+            if (other.ctrl != nullptr) {
+                ctrl = other.ctrl;
+                // ! IMPORTANT 
+                size_t view_size = end - start;
+                if (view_size <= 0 || view_size > ctrl->ptr->size()) {
+                    throw std::runtime_error("Invalid view coordinates.");
+                }
+                view = new ArrayView(start, end);
             }
-            ctrl->ptr.view_start = start;
-            ctrl->ptr.view_end = end;
         }
         virtual ~SharedArray() {
             if (this->ctrl != nullptr) {
                 (this->ctrl->instance_count)--;
                 if (this->ctrl->instance_count == 0) {
                     delete this->ctrl;
+                    delete this->view;
                 }
             }
         }
@@ -568,7 +573,28 @@ class SharedArray {
             return *this;
         }
         size_t size() {
-            return this->ctrl->ptr->size();
+            if (this->view == nullptr) {
+                return this->ctrl->ptr->size();
+            } else {
+                // # inclusive...
+                return this->viewEnd() - this->viewStart() + 1;
+            }
+        }
+        size_t viewEnd() {
+            if (this->view == nullptr) {
+                return this->size() - 1;
+            } else {
+                // # inclusive...
+                return this->view->end;
+            }
+        }
+        size_t viewStart() {
+            if (this->view == nullptr) {
+                return 0;
+            } else {
+                // # inclusive...
+                return this->view->start;
+            }
         }
         size_t cap() {
             // this is really only useful for testing.
@@ -628,19 +654,21 @@ class SharedArray {
             return this->ctrl->ptr->toString();
         }
         T& operator[] (const size_t pos) {
-            return this->ctrl->ptr[pos];
+            return this->access(pos);
         }
         T& operator[] (const T& el) {
-            return this->ctrl->ptr[el];
+            return (*this->ctrl->ptr)[el];
         }
         // Copy
         SharedArray(const SharedArray<T>& x) {
             this->ctrl = x.ctrl;
-            (this->ctrl->instance_count)++;
+            this->view = x.view;
+            this->ctrl->instance_count++;
         }
         SharedArray<T>& operator= (const SharedArray<T>& x) {
             this->ctrl = x.ctrl;
-            (this->ctrl->instance_count)++;
+            this->view = x.view;
+            this->ctrl->instance_count++;
         }
         SharedArray<T>& operator+ (const SharedArray<T>& x) {
             this->append(x);

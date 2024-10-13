@@ -30,6 +30,9 @@
 #include "logger.h"
 
 namespace WylesLibs {
+
+    // @
+
     template<typename T>
     class CSV: public Matrix<T> {
         public:
@@ -63,6 +66,9 @@ namespace WylesLibs {
                 return s;
             }
     };
+
+    // @
+
     class CSVParser {
         private:
             bool assertCSVNoHeader(CSV<std::string> * csv, MatrixVector<std::string> * header) {

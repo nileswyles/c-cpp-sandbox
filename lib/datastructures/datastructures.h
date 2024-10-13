@@ -24,12 +24,15 @@
 #include "datastructures/array.h"
 
 namespace WylesLibs {
+
+    // @
+
     template<typename T>
     class MatrixVector: public SharedArray<T> {
-        private:
         public:
             MatrixVector() = default;
             MatrixVector(const size_t initial_cap): SharedArray<T>(initial_cap) {}
+            // view
             MatrixVector(const MatrixVector<T>& other, size_t start, size_t end): SharedArray<T>(other, start, end) {}
             ~MatrixVector() override = default;
             ALGO_UNSIGNED_INT euclidean(const MatrixVector<T>& v) {
@@ -51,11 +54,10 @@ namespace WylesLibs {
                 }
                 return sqrt(sum);
             }
-            // not to be confused with copy constructor
+            // copy (not copy constructor)
             MatrixVector<T> copy(const MatrixVector<T>& other) {
                 MatrixVector<T> copy(other.size());
-                size_t size = other.size();
-                for (size_t i = *other.e_start; i < size; i++) {
+                for (size_t i = other.viewStart(); i <= other.viewEnd(); i++) {
                     copy.append(other[i]);
                 }
                 return copy;
@@ -119,27 +121,31 @@ namespace WylesLibs {
                 return dot;
             }
             T& operator[] (const size_t pos) {
-                return (*this->ctrl->ptr)[pos];
+                return this->access(pos);
             }
             // copy constructor - containerization code remains here
             MatrixVector(const MatrixVector<T>& other) {
                 this->ctrl = other.ctrl;
+                this->view = other.view;
                 this->ctrl->instance_count++;
             }
             // copy assignment - containerization code remains here
             MatrixVector<T>& operator= (const MatrixVector<T>& other)  {
                 this->ctrl = other.ctrl;
+                this->view = other.view;
                 this->ctrl->instance_count++;
                 return *this;
             }
     };
+
+    // @
 
     // TODO: vertical sort?
     //  Also, tensor is just Matrix<MatrixVector<T>>?
     template<typename T>
     class Matrix {
         protected:
-            T * lol; //:?
+            // TODO: yeah, so this means an extra 2-ptrs per row... (ctrl, view - in SharedArray) should be fine... flat not so useful in this situation lol
             MatrixVector<MatrixVector<T>> matrix;
         public:
             Matrix() = default;
@@ -161,7 +167,7 @@ namespace WylesLibs {
                 for (size_t i = 0; i < rows; i++) {
                     m_out[i] = (*this)[i].euclidean(m[i]);
                 } 
-                return m_out;
+                return m_out; 
             }
             MatrixVector<ALGO_UNSIGNED_INT> manhattan(const Matrix<T>& m) {
                 assertMatrixSizes<T>(*this, m);
@@ -175,12 +181,9 @@ namespace WylesLibs {
             // matrix copy constructor but not actual copy constructor lol... 
             Matrix<T> copy(const Matrix<T>& other) {
                 Matrix<T> copy;
-                size_t end = other.size();
-                if (*other.matrix.e_end != 0) {
-                    end = *other.matrix.e_end;
-                }
-                MatrixVector<MatrixVector<T>> y_vector(end - *other.matrix.e_start);
-                for (size_t i = *other.matrix.e_start; i < end; i++) {
+                MatrixVector<MatrixVector<T>> y_vector(other.matrix.size());
+                // # inclusive
+                for (size_t i = *other.matrix.viewStart(); i <= other.matrix.viewEnd(); i++) {
                     y_vector[i] = other.matrix[i].copy();
                 }
                 copy.matrix = y_vector;
@@ -189,9 +192,6 @@ namespace WylesLibs {
             Matrix<T> view(size_t x_start, size_t x_end, size_t y_start, size_t y_end) {
                 size_t x_size = x_end - x_start;
                 size_t y_size = y_end - y_start;
-                // TODO: think about getting view of view...
-                //  view of copy...
-                //  TDD lol..
                 if (y_start >= this->rows() || y_start < 0 ||
                         x_start >= this->columns() || x_start < 0 ||
                         x_size == 0 || x_size > this->columns() || 
@@ -200,12 +200,8 @@ namespace WylesLibs {
                 }
                 Matrix<T> view;
                 MatrixVector<MatrixVector<T>> y_vector(this->matrix, y_start, y_end);
-
-                size_t end = this->rows();
-                if (*this->matrix.e_end != 0) {
-                    end = *this->matrix.e_end;
-                }
-                for (size_t i = *this->matrix.e_start; i < end; i++) {
+                // # inclusive
+                for (size_t i = this->matrix.viewStart(); i <= this->matrix.viewEnd(); i++) {
                     MatrixVector<T> x_vector(this->matrix[i], x_start, x_end);
                     y_vector[i] = x_vector;
                 }
@@ -281,6 +277,8 @@ namespace WylesLibs {
             Graph() = default;
             virtual ~Graph() = default;
     };
+
+    // @
 
     template<typename T>
     static void assertArraySizes(const MatrixVector<T>& v1, const MatrixVector<T>& v2) {

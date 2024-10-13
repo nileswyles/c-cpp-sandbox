@@ -19,7 +19,7 @@ static void printMatrix(Matrix<uint8_t> matrix) {
     for (size_t i = 0; i < matrix.rows(); i++) {
         for (size_t j = 0; j < matrix.columns(); j++) {
             printf("%u", matrix[i][j]);
-            if (j != 1) {
+            if (j+1 != matrix.columns()) {
                 printf(",");
             }
         }
@@ -41,7 +41,23 @@ static void testMatrix(TestArg * t) {
 }
 
 static void testMatrixView(TestArg * t) {
+    Matrix<uint8_t> matrix;
+    // 4x4
+    // ****
+    // ****
+    // ****
+    // ****
+    size_t val = 0;
+    for (size_t i = 0; i < 4; i++) {
+        for (size_t j = 0; j < 4; j++) {
+            matrix[i][j] = ++val;
+        }
+    }
+    printf("Matrix: \n");
+    printMatrix(matrix);
 
+    printf("Matrix View: \n");
+    printMatrix(matrix.view(1,4,1,3));
 }
 static void testMatrixCopy(TestArg * t) {
 
@@ -68,6 +84,7 @@ int main(int argc, char * argv[]) {
     Tester t("Matrix Tests");
 
     t.addTest(testMatrix);
+    t.addTest(testMatrixView);
     // t.addTest(testCSVParserSkipHeader);
     // t.addTest(testCSVParserDelimeter);
     // t.addTest(testCSVParserRecordWithNoFields);

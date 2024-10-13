@@ -94,6 +94,25 @@ static void testCSVParserDoublesNonNumber(TestArg * t) {
     }
 }
 
+static void testCSVParserDoublesRecordWithInvalidNumberOfFields(TestArg * t) {
+    std::string csv_string("col_1,col_2\n");
+    csv_string += "1.797\n";
+    csv_string += "4,2\n";
+    csv_string += (char)EOF; // 255?
+
+    std::shared_ptr<IOStream> io = std::make_shared<IOStream>((uint8_t *)csv_string.data(), csv_string.size());
+    CSVParser p(io);
+    try {
+        CSV<double> csv = p.readDoubles(false);
+    } catch(const std::runtime_error &e) {
+        loggerPrintf(LOGGER_TEST, "Exception: %s\n", e.what());
+        if (strcmp("Invalid record size.", e.what()) == 0) {
+            t->fail = false;
+        }
+    }
+}
+
+
 static void testCSVParserSkipHeader(TestArg * t) {
     std::string csv_string("1:1,2:1\n");
     csv_string += "1:2,2:2\n";
@@ -374,6 +393,7 @@ int main(int argc, char * argv[]) {
     t.addTest(testCSVParserPeriodSeparator);
     t.addTest(testCSVParserDoubles);
     t.addTest(testCSVParserDoublesNonNumber);
+    t.addTest(testCSVParserDoublesRecordWithInvalidNumberOfFields);
     t.addTest(testCSVParserSkipHeader);
     t.addTest(testCSVParserDelimeter);
     t.addTest(testCSVParserRecordWithNoFields);

@@ -66,85 +66,143 @@ namespace WylesLibs {
     };
     class CSVParser {
         private:
+            void updateAndCheckRecordSize(size_t new_record_size) {
+                if (this->record_size == 0) {
+                    // first iteration
+                    this->record_size = new_record_size;
+                }
+                if (new_record_size == 0 || this->record_size != new_record_size) {
+                    throw std::runtime_error("Invalid record size.");
+                }
+            }
+            void processRecord(MatrixVector<std::string>& r) {
+                updateAndCheckRecordSize(r.size());
+                // end of record
+                loggerExec(LOGGER_DEBUG_VERBOSE,
+                    std::string s;
+                    for (size_t i = 0; i < record_size; i++) {
+                        s += r[i];
+                        if (i + 1 != record_size) {
+                            s += ",";
+                        }
+                    }
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "RECORD: '%s'\n", s.c_str());
+                );
+                // end of record
+            }
+            void processRecord(MatrixVector<double>& r) {
+                updateAndCheckRecordSize(r.size());
+                // end of record
+                loggerExec(LOGGER_DEBUG_VERBOSE,
+                    std::string s;
+                    char dec[32];
+                    for (size_t i = 0; i < record_size; i++) {
+                        sprintf(dec, "%f", r[i]);
+                        s += dec;
+                        if (i + 1 != record_size) {
+                            s += ",";
+                        }
+                    }
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "RECORD: '%s'\n", s.c_str());
+                );
+                // end of record
+            }
+            bool handleFieldDelimeter(CSV<std::string> * csv, std::string current_str, uint8_t b, MatrixVector<std::string> * header) {
+                bool result = false;
+                MatrixVector<std::string> r;
+                if (header != nullptr) {
+                    r = *header;
+                } else {
+                    r = (*csv)[csv->rows()];
+                }
+                if (b == separator || b == '\n') {
+                    r.append(current_str);
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "CURRENT STR: '%s', '%s'\n", current_str.c_str(), r[0].c_str());
+                    current_str = "";
+                    // end of field
+                    if ('\n' == b) {
+                        processRecord(r);
+                        // #containerization
+                        if (header == nullptr) {
+                            // creates new row...
+                            r = (*csv)[csv->rows()];
+                        }
+                    }
+                    result = true;
+                } 
+                return result;
+            }
+            bool handleFieldDelimeter(CSV<double> * csv, double current_double, uint8_t b) {
+                bool result = false;
+                MatrixVector<double> r = (*csv)[csv->rows()];
+                if (this->separator == b || '\n' == b) {
+                    r.append(current_double);
+                    current_double = 0;
+                    if ('\n' == b) {
+                        processRecord(r);
+                        // TODO: better syntax for this...
+                        //      function to create and return new element?
+                        r = (*csv)[csv->rows()];
+                    }
+                    result = true;
+                } 
+                return result;
+            }
+            bool handleQuotes(CSV<std::string> * csv, bool& quoted, std::string current_str, uint8_t b) {
+                bool result = false;
+                if (!quoted) {
+                    if ('"' == b) {
+                        if (current_str.size() != 0) {
+                            throw std::runtime_error("Quoted string cannot be preceded by a non-delimiting character.");
+                        }
+                        quoted = true;
+                        result = true;
+                    } else if ('\r' == b) {
+                        result = true;
+                    }
+                } else if (quoted && '"' == b){
+                    // peak
+                    uint8_t peeked = (*this->io).peekByte();
+                    if (peeked == '"') {
+                        (*this->io).readByte();
+                    } else if (true == (peeked == this->separator || '\n' == peeked)){
+                        // end of quoted string....
+                        quoted = false;
+                        result = true;
+                    } else {
+                        throw std::runtime_error("Quoted string cannot be followed by a non-delimiting character.");
+                    }
+                }
+                return result;
+            }
             void read(CSV<std::string> * csv, size_t r_count, MatrixVector<std::string> * header) {
                 bool quoted = false;
                 uint8_t b;
-                MatrixVector<std::string> r;
-                size_t rows_at_start = 0;
                 size_t r_i = 0;
-                if (header != nullptr) {
-                    r_count = 1;
-                    r = *header;
-                } else {
-                    rows_at_start = csv->rows() > 0 ? csv->rows() - 1: 0;
-                    r_i = rows_at_start;
-                    r = (*csv)[r_i];
+                size_t rows_at_start = 0;
+                if (csv != nullptr) {
+                    rows_at_start = rows_at_start = csv->rows() > 0 ? csv->rows() - 1: 0;
                 }
                 std::string current_str;
                 while (r_i < r_count + rows_at_start) {
-                    b = (*io).readByte();
+                    b = (*this->io).readByte();
                     // TODO: this requires '\n' at end of last record... which might be okay... but good to think about...
                     if (b == (uint8_t)EOF) {
                         break;
                     }
                     // handle quotes
-                    if (!quoted) {
-                        if (b == '"') {
-                            if (current_str.size() != 0) {
-                                throw std::runtime_error("Quoted string cannot be preceded by a non-delimiting character.");
-                            }
-                            quoted = true;
-                            continue;
-                        } else if (b == '\r') {
-                            continue;
-                        }
-                    } else if (quoted && b == '"'){
-                        // peak
-                        uint8_t peeked = (*io).peekByte();
-                        if ('"' == peeked) {
-                            (*io).readByte();
-                        } else if (true == (peeked == separator || peeked == '\n')){
-                            // end of quoted string....
-                            quoted = false;
-                            continue;
-                        } else {
-                            throw std::runtime_error("Quoted string cannot be followed by a non-delimiting character.");
-                        }
+                    if (true == handleQuotes(csv, quoted, current_str, b)) {
+                        continue;
                     }
                     // handle field delimeter
-                    if (b == separator || b == '\n') {
-                        r.append(current_str);
-                        loggerPrintf(LOGGER_DEBUG_VERBOSE, "CURRENT STR: '%s', '%s'\n", current_str.c_str(), r[0].c_str());
-                        current_str = "";
-                        // end of field
-                        if (b == '\n') {
-                            size_t new_record_size = r.size();
-                            if (r_i == 0) {
-                                // first iteration
-                                record_size = new_record_size;
-                            }
-                            if (new_record_size == 0 || record_size != new_record_size) {
-                                throw std::runtime_error("Invalid record size.");
-                            }
-                            // end of record
-                            loggerExec(LOGGER_DEBUG_VERBOSE,
-                                std::string s;
-                                for (size_t i = 0; i < record_size; i++) {
-                                    s += r[i];
-                                    if (i + 1 != record_size) {
-                                        s += ",";
-                                    }
-                                }
-                                loggerPrintf(LOGGER_DEBUG_VERBOSE, "RECORD: '%s'\n", s.c_str());
-                            );
-                            // #containerization
-                            ++r_i;
-                            if (csv != nullptr) {
-                                r = (*csv)[r_i];
-                            }
+                    if (true == handleFieldDelimeter(csv, current_str, b, header)) {
+                        if (header == nullptr) {
+                            r_i = csv->rows();
+                            continue;
+                        } else {
+                            break;
                         }
-                        continue;
-                    } 
+                    }
                     current_str.push_back((char)b);
                 }
             }
@@ -161,6 +219,7 @@ namespace WylesLibs {
             CSVParser(std::shared_ptr<IOStream> io): CSVParser(io, ',') {}
             ~CSVParser() = default;
 
+
             void readDoubles(CSV<double>& csv, size_t r_count) {
                 uint8_t b;
                 size_t rows_at_start = csv.rows() > 0 ? csv.rows() - 1: 0;
@@ -168,54 +227,24 @@ namespace WylesLibs {
                 MatrixVector<double> r = csv[r_i];
                 double current_double = 0;
                 while (r_i < r_count + rows_at_start) {
-                    b = (*io).peekByte();
-                    if (b == separator || b == '\n') {
-                        r.append(current_double);
-                        current_double = 0;
-                        // end of field
-                        if (b == '\n') {
-                            size_t new_record_size = r.size();
-                            if (r_i == 0) {
-                                // first iteration
-                                record_size = new_record_size;
-                            }
-                            if (new_record_size == 0 || record_size != new_record_size) {
-                                throw std::runtime_error("Invalid record size.");
-                            }
-                            // end of record
-                            loggerExec(LOGGER_DEBUG_VERBOSE,
-                                std::string s;
-                                char dec[32];
-                                for (size_t i = 0; i < record_size; i++) {
-                                    sprintf(dec, "%f", r[i]);
-                                    s += dec;
-                                    if (i + 1 != record_size) {
-                                        s += ",";
-                                    }
-                                }
-                                loggerPrintf(LOGGER_DEBUG_VERBOSE, "RECORD: '%s'\n", s.c_str());
-                            );
-                            // end of record
-                            // #containerization
-
-                            // TODO: better syntax for this...
-                            //      function to create and return new element?
-                            r = csv[++r_i];
-                        }
-                        (*io).readByte();
+                    b = (*this->io).peekByte();
+                    // handle field delimeter
+                    if (true == handleFieldDelimeter(&csv, current_double, b)) {
+                        (*this->io).readByte();
                         continue;
                     }
+                    // handle numbers delimeter
                     size_t dummy_digit_count = 0;
                     if (isDigit(b)) {
-                        (*io).readNatural(current_double, dummy_digit_count);
-                        if ((*io).peekByte() == '.') {
-                            (*io).readByte();
-                            (*io).readDecimal(current_double, dummy_digit_count);
+                        (*this->io).readNatural(current_double, dummy_digit_count);
+                        if ((*this->io).peekByte() == '.') {
+                            (*this->io).readByte();
+                            (*this->io).readDecimal(current_double, dummy_digit_count);
                         }
                         continue;
                         // buffer should be at non-number-digit
                     } else if (b == (uint8_t)EOF) {
-                        (*io).readByte();
+                        (*this->io).readByte();
                         break;
                     } else {
                         throw std::runtime_error("Non-digit character found in CSV data.");
@@ -233,7 +262,7 @@ namespace WylesLibs {
             CSV<std::string> read(bool has_header) {
                 CSV<std::string> csv;
                 if (true == has_header) {
-                    read(nullptr, 1, &csv.header);
+                    read(&csv, 1, &csv.header);
                 }
                 read(&csv, SIZE_MAX, nullptr);
                 return csv;

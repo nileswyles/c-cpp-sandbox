@@ -6,6 +6,8 @@
 #include "datastructures/datastructures.h"
 #include <string>
 #include <memory>
+#include <unistd.h>
+#include <fcntl.h>
 
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL
@@ -35,51 +37,11 @@ namespace WylesLibs {
 
     template<typename T>
     class CSV: public Matrix<T> {
-        public:
-            MatrixVector<std::string> header;
-            CSV() = default;
-            ~CSV() override final = default;
-            MatrixVector<T>& operator[] (const size_t pos) {
-                return this->matrix[pos];
-            }
-            std::string toString() {
-                // assuming T == std::string for now...
-                std::string s;
-                for (size_t i = 0; i < this->header.size(); i++) {
-                    s += this->header[i];
-                    if (i + 1 == this->header.size()) {
-                        s += "\n";
-                    } else {
-                        s += ",";
-                    }
-                }
-                for (size_t y = 0; y < this->rows(); y++) {
-                    for (size_t x = 0; x < this->columns(); x++) {
-                        s += (*this)[y][x];
-                        if (x + 1 == this->columns()) {
-                            s += "\n";
-                        } else {
-                            s += ",";
-                        }
-                    }
-                }
-                return s;
-            }
-    };
-
-    // @
-
-    class CSVParser {
         private:
             std::shared_ptr<IOStream> io;
             size_t record_size;
             char separator;
-            bool assertCSVNoHeader(CSV<std::string> * csv, MatrixVector<std::string> * header) {
-                return csv != nullptr && header == nullptr;
-            }
-            bool assertHeaderNoCSV(CSV<std::string> * csv, MatrixVector<std::string> * header) {
-                return csv == nullptr && header != nullptr;
-            }
+            int fd;
             void updateAndCheckRecordSize(size_t new_record_size) {
                 if (0 == this->record_size) {
                     // first iteration
@@ -121,13 +83,13 @@ namespace WylesLibs {
                 );
                 // end of record
             }
-            bool handleFieldDelimeter(CSV<std::string> * csv, std::string& current_str, uint8_t b, MatrixVector<std::string> * header, size_t& r_i, size_t& f_i) {
+            bool handleFieldDelimeter(std::string& current_str, uint8_t b, size_t& r_i, size_t& f_i, bool process_header) {
                 bool result = false;
                 MatrixVector<std::string> r;
-                if (true == assertHeaderNoCSV(csv, header)) {
-                    r = *header;
+                if (true == process_header) {
+                    r = this->header;
                 } else {
-                    r = (*csv)[r_i];
+                    r = (*this)[r_i];
                 }
                 if (b == separator || b == '\n') {
                     r[f_i++] = current_str;
@@ -144,15 +106,16 @@ namespace WylesLibs {
                 } 
                 return result;
             }
-            bool handleFieldDelimeter(CSV<double> * csv, double& current_double, uint8_t b, size_t& r_i, size_t& f_i) {
+            bool handleFieldDelimeter(double& current_double, uint8_t b, size_t& r_i, size_t& f_i) {
                 bool result = false;
                 // TODO: no need for explicit null check because references?
-                MatrixVector<double> r = (*csv)[r_i];
+                MatrixVector<double> r = (*this)[r_i];
                 if (this->separator == b || '\n' == b) {
                     r[f_i++] = current_double;
                     current_double = 0;
                     if ('\n' == b) {
                         processRecord(r);
+                        // #containerization
                         // TODO: better syntax for this...
                         //      function to create and return new element?
                         ++r_i;
@@ -162,9 +125,8 @@ namespace WylesLibs {
                 } 
                 return result;
             }
-            bool handleQuotes(CSV<std::string> * csv, bool& quoted, std::string current_str, uint8_t b) {
+            bool handleQuotes(bool& quoted, std::string current_str, uint8_t b) {
                 bool result = false;
-                if (csv == nullptr) return result;
                 if (!quoted) {
                     if ('"' == b) {
                         if (current_str.size() != 0) {
@@ -190,7 +152,8 @@ namespace WylesLibs {
                 }
                 return result;
             }
-            void read(CSV<std::string> * csv, size_t r_count, MatrixVector<std::string> * header) {
+            // TODO: this bs because member function specialization doesn't work and don't want to do same as array, for reasons.
+            void read(std::string& type, size_t r_count, bool process_header) {
                 bool quoted = false;
                 uint8_t b;
                 size_t r_i = 0;
@@ -203,37 +166,25 @@ namespace WylesLibs {
                         break;
                     }
                     // handle quotes
-                    if (true == handleQuotes(csv, quoted, current_str, b)) {
+                    if (true == handleQuotes(quoted, current_str, b)) {
                         continue;
                     }
                     // handle field delimeter
-                    if (true == handleFieldDelimeter(csv, current_str, b, header, r_i, f_i)) {
+                    if (true == handleFieldDelimeter(current_str, b, r_i, f_i, process_header)) {
                         continue;
                     }
                     current_str.push_back((char)b);
                 }
             }
-        public:
-            CSVParser(std::shared_ptr<IOStream> io, char separator): io(io), separator(separator), record_size(0) {
-                if (separator == '.') {
-                    throw std::runtime_error("Periods aren't allowed as CSV separator.");
-                }
-            }
-            CSVParser(std::shared_ptr<IOStream> io): CSVParser(io, ',') {}
-            ~CSVParser() = default;
-            void reset() {
-                this->record_size = 0;
-            }
-            void readDoubles(CSV<double>& csv, size_t r_count) {
+            void read(double& type, size_t r_count, bool process_header) {
                 uint8_t b;
                 size_t r_i = 0;
                 size_t f_i = 0;
-                MatrixVector<double> r = csv[r_i];
                 double current_double = 0;
                 while (r_i < r_count) {
                     b = (*this->io).peekByte();
                     // handle field delimeter
-                    if (true == handleFieldDelimeter(&csv, current_double, b, r_i, f_i)) {
+                    if (true == handleFieldDelimeter(current_double, b, r_i, f_i)) {
                         (*this->io).readByte();
                         continue;
                     }
@@ -255,24 +206,69 @@ namespace WylesLibs {
                     }
                 }
             }
-            CSV<double> readDoubles(bool has_header) {
-                CSV<double> csv;
-                if (true == has_header) {
-                    read(nullptr, 1, &csv.header);
+        public:
+            MatrixVector<std::string> header;
+
+            CSV(std::shared_ptr<IOStream> io, char separator): io(io), separator(separator), record_size(0), fd(-1) {
+                if (separator == '.') {
+                    throw std::runtime_error("Periods aren't allowed as CSV separator.");
                 }
-                readDoubles(csv, SIZE_MAX);
-                return csv;
             }
-            CSV<std::string> read(bool has_header) {
-                CSV<std::string> csv;
-                if (true == has_header) {
-                    read(nullptr, 1, &csv.header);
+            CSV(std::shared_ptr<IOStream> io): CSV(io, ',') {}
+            CSV(std::string file_path, char separator) {
+                separator = ',';
+                fd = open(file_path.c_str(), O_RDONLY);
+                if (fd == -1) {
+                    throw std::runtime_error("Unable to read file at: " + file_path);
                 }
-                read(&csv, SIZE_MAX, nullptr);
-                return csv;
+                io = IOStream(fd);
             }
-            void read(CSV<std::string>& csv, size_t r_count) {
-                read(&csv, r_count, nullptr);
+            CSV(std::string file_path): CSV(file_path, separator) {}
+            ~CSV() {
+                close(this->fd);
+            }
+
+            void reset() {
+                this->record_size = 0;
+            }
+            void read(bool has_header) {
+                this->reset();
+                T dumb_function_selector;
+                if (true == has_header) {
+                    read(dumb_function_selector, 1, true);
+                }
+                // read until EOF...
+                read(dumb_function_selector, SIZE_MAX, false);
+            }
+            void read(size_t r_count) {
+                T dumb_function_selector;
+                read(dumb_function_selector, r_count, false);
+            }
+            MatrixVector<T>& operator[] (const size_t pos) {
+                return this->matrix[pos];
+            }
+            std::string toString() {
+                // assuming T == std::string for now...
+                std::string s;
+                for (size_t i = 0; i < this->header.size(); i++) {
+                    s += this->header[i];
+                    if (i + 1 == this->header.size()) {
+                        s += "\n";
+                    } else {
+                        s += ",";
+                    }
+                }
+                for (size_t y = 0; y < this->rows(); y++) {
+                    for (size_t x = 0; x < this->columns(); x++) {
+                        s += (*this)[y][x];
+                        if (x + 1 == this->columns()) {
+                            s += "\n";
+                        } else {
+                            s += ",";
+                        }
+                    }
+                }
+                return s;
             }
     };
 };

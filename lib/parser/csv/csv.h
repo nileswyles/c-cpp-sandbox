@@ -209,21 +209,22 @@ namespace WylesLibs {
         public:
             MatrixVector<std::string> header;
 
-            CSV(std::shared_ptr<IOStream> io, char separator): io(io), separator(separator), record_size(0), fd(-1) {
+            CSV(std::shared_ptr<IOStream> io): CSV(io, ',') {}
+            CSV(std::shared_ptr<IOStream> io, char separator): CSV(io, separator, -1) {}
+            CSV(std::shared_ptr<IOStream> io, char separator, int fd): io(io), separator(separator), record_size(0), fd(fd) {
                 if (separator == '.') {
                     throw std::runtime_error("Periods aren't allowed as CSV separator.");
                 }
             }
-            CSV(std::shared_ptr<IOStream> io): CSV(io, ',') {}
+            CSV(std::string file_path): CSV(file_path, separator) {}
             CSV(std::string file_path, char separator) {
-                separator = ',';
                 fd = open(file_path.c_str(), O_RDONLY);
                 if (fd == -1) {
                     throw std::runtime_error("Unable to read file at: " + file_path);
                 }
-                io = IOStream(fd);
+                // explicitly call other constructor
+                CSV(IOStream(fd), separator);
             }
-            CSV(std::string file_path): CSV(file_path, separator) {}
             ~CSV() {
                 close(this->fd);
             }
@@ -232,6 +233,9 @@ namespace WylesLibs {
                 this->record_size = 0;
             }
             void read(bool has_header) {
+                // TODO: this doesn't make much sense, user can just create new instance?
+                //  actually, no, since it's coupled now, more performance to allow reset (and reconfiguring IOStream (new))
+                //  TBC
                 this->reset();
                 T dumb_function_selector;
                 if (true == has_header) {

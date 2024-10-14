@@ -25,16 +25,66 @@
 
 namespace WylesLibs {
 
+    class MatrixVectorView {
+        public:
+            size_t start;
+            size_t end;
+            MatrixVectorView(size_t start, size_t end): start(start), end(end) {}
+            ~MatrixVectorView() = default;
+    };
+
     // @
 
     template<typename T>
     class MatrixVector: public SharedArray<T> {
+        private:
+            // TODO: might move this to MatrixVector as originally considered lol... MAKE UP YOUR MIND!
+            MatrixVectorView * view;
+            size_t viewEnd() {
+                if (this->view == nullptr) {
+                    return this->size() - 1;
+                } else {
+                    // # inclusive...
+                    return this->view->end;
+                }
+            }
+            size_t viewStart() {
+                if (this->view == nullptr) {
+                    return 0;
+                } else {
+                    // # inclusive...
+                    return this->view->start;
+                }
+            }
         public:
             MatrixVector() = default;
             MatrixVector(const size_t initial_cap): SharedArray<T>(initial_cap) {}
             // view
-            MatrixVector(const MatrixVector<T>& other, size_t start, size_t end): SharedArray<T>(other, start, end) {}
-            ~MatrixVector() override = default;
+            MatrixVector(const MatrixVector<T>& other, size_t start, size_t end) {
+                if (other.ctrl != nullptr) {
+                    this->ctrl = other.ctrl;
+                    // ! IMPORTANT 
+                    size_t view_size = end - start;
+                    if (view_size <= 0 || view_size > this->ctrl->ptr->size()) {
+                        throw std::runtime_error("Invalid view coordinates.");
+                    }
+                    this->view = new MatrixVectorView(start, end);
+                }
+            }
+            ~MatrixVector() {
+                if (this->ctrl == nullptr || this->ctrl->instance_count == 1) {
+                    delete this->view;
+                }
+                // ~SharedArray();
+            };
+            size_t size() {
+                if (this->view == nullptr) {
+                    return this->ctrl->ptr->size();
+                } else {
+                    // # inclusive...
+                    return this->viewEnd() - this->viewStart() + 1;
+                }
+            }
             ALGO_UNSIGNED_INT euclidean(const MatrixVector<T>& v) {
                 assertArraySizes(*this, v);
                 size_t size = this->size();
@@ -121,7 +171,17 @@ namespace WylesLibs {
                 return dot;
             }
             T& operator[] (const size_t pos) {
-                return this->access(pos);
+                size_t i = pos;
+                if (this->view != nullptr) {
+                    if (i > this->viewEnd()) {
+                        std::runtime_error("Attempting to access element outside of MatrixVector.");
+                    }
+                    i += this->viewStart();
+                    if (i >= this->size()) {
+                        std::runtime_error("Attempting to access element outside of MatrixVector.");
+                    }
+                }
+                return (*this->ctrl->ptr)[i];
             }
             // copy constructor - containerization code remains here
             MatrixVector(const MatrixVector<T>& other) {

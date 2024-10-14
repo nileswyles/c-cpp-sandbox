@@ -503,13 +503,6 @@ class ArrayControl {
             delete this->ptr;
         }
 };
-class ArrayView {
-    public:
-        size_t start;
-        size_t end;
-        ArrayView(size_t start, size_t end): start(start), end(end) {}
-        ~ArrayView() = default;
-};
 
 // @
 
@@ -517,20 +510,6 @@ template<typename T>
 class SharedArray {
     protected:
         ArrayControl<T> * ctrl;
-        ArrayView * view;
-        T& access(size_t pos) {
-            size_t i = pos;
-            if (this->view != nullptr) {
-                if (i > this->viewEnd()) {
-                    std::runtime_error("Attempting to access element outside of SharedArray.");
-                }
-                i += this->viewStart();
-                if (i >= this->size()) {
-                    std::runtime_error("Attempting to access element outside of SharedArray.");
-                }
-            }
-            return (*this->ctrl->ptr)[i];
-        }
         T * buf() {
             return this->ctrl->ptr->buf();
         }
@@ -540,23 +519,11 @@ class SharedArray {
         SharedArray(): ctrl(new ArrayControl<T>()) {}
         SharedArray(std::initializer_list<T> list): ctrl(new ArrayControl<T>(list)) {}
         SharedArray(const size_t initial_cap): ctrl(new ArrayControl<T>(initial_cap)) {}
-        SharedArray(const SharedArray<T>& other, size_t start, size_t end) {
-            if (other.ctrl != nullptr) {
-                ctrl = other.ctrl;
-                // ! IMPORTANT 
-                size_t view_size = end - start;
-                if (view_size <= 0 || view_size > ctrl->ptr->size()) {
-                    throw std::runtime_error("Invalid view coordinates.");
-                }
-                view = new ArrayView(start, end);
-            }
-        }
         virtual ~SharedArray() {
             if (this->ctrl != nullptr) {
                 (this->ctrl->instance_count)--;
                 if (this->ctrl->instance_count == 0) {
                     delete this->ctrl;
-                    delete this->view;
                 }
             }
         }
@@ -572,29 +539,8 @@ class SharedArray {
             this->ctrl->ptr->remove(pos, num_els);
             return *this;
         }
-        size_t size() {
-            if (this->view == nullptr) {
-                return this->ctrl->ptr->size();
-            } else {
-                // # inclusive...
-                return this->viewEnd() - this->viewStart() + 1;
-            }
-        }
-        size_t viewEnd() {
-            if (this->view == nullptr) {
-                return this->size() - 1;
-            } else {
-                // # inclusive...
-                return this->view->end;
-            }
-        }
-        size_t viewStart() {
-            if (this->view == nullptr) {
-                return 0;
-            } else {
-                // # inclusive...
-                return this->view->start;
-            }
+        virtual size_t size() {
+            return this->ctrl->ptr->size();
         }
         size_t cap() {
             // this is really only useful for testing.
@@ -654,7 +600,7 @@ class SharedArray {
             return this->ctrl->ptr->toString();
         }
         T& operator[] (const size_t pos) {
-            return this->access(pos);
+            return (*this->ctrl->ptr)[pos];
         }
         T& operator[] (const T& el) {
             return (*this->ctrl->ptr)[el];
@@ -662,12 +608,10 @@ class SharedArray {
         // Copy
         SharedArray(const SharedArray<T>& x) {
             this->ctrl = x.ctrl;
-            this->view = x.view;
             this->ctrl->instance_count++;
         }
         SharedArray<T>& operator= (const SharedArray<T>& x) {
             this->ctrl = x.ctrl;
-            this->view = x.view;
             this->ctrl->instance_count++;
         }
         SharedArray<T>& operator+ (const SharedArray<T>& x) {

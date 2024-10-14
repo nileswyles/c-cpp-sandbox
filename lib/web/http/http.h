@@ -136,9 +136,9 @@ class HttpConnection {
         HttpResponse * requestDispatcher(HttpRequest * request);
 
         SSL * acceptTLS(int conn_fd);
-        ReaderTaskDisallow * whitespace_chain;
-        ReaderTaskDisallow * whitespace_lc_chain;
-        ReaderTaskLC * lowercase_task;
+        ReaderTaskDisallow whitespace_chain;
+        ReaderTaskDisallow whitespace_lc_chain;
+        ReaderTaskLC lowercase_task;
         void writeResponse(HttpResponse * response, IOStream * io);
 
         void initializeStaticPaths(HttpServerConfig config, ThreadSafeMap<std::string, std::string> static_paths) {
@@ -190,13 +190,13 @@ class HttpConnection {
             }
         }
         void initializeIOStreamTasks() {
-            lowercase_task = new ReaderTaskLC();
-            whitespace_chain = new ReaderTaskDisallow("\t ");
-            whitespace_lc_chain = new ReaderTaskDisallow("\t ");
-            whitespace_lc_chain->nextOperation = lowercase_task;
+            this->lowercase_task = ReaderTaskLC();
+            this->whitespace_chain = ReaderTaskDisallow("\t ");
+            this->whitespace_lc_chain = ReaderTaskDisallow("\t ");
+            this->whitespace_lc_chain.nextOperation = &this->lowercase_task;
         }
     public:
-        HttpConnection() {}
+        HttpConnection() = default;
         // haha, funny how that worked out...
         HttpConnection(HttpServerConfig pConfig, map<std::string, map<std::string, RequestProcessor *>> pRequest_map, 
                         SharedArray<RequestFilter> pRequest_filters, SharedArray<ResponseFilter> pResponse_filters, 

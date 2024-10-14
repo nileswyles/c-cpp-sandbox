@@ -68,7 +68,7 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
     request->content_length = -1;
     int field_idx = 0; 
     while (field_idx < HTTP_FIELD_MAX) {
-        std::string field_name = io->readUntil(":\n", this->whitespace_lc_chain).toString();
+        std::string field_name = io->readUntil(":\n", &this->whitespace_lc_chain).toString();
         if (field_name[field_name.size()-1] == '\n') {
             printf("FOUND EMPTY NEW LINE AFTER PARSING FIELDS\n");
             break;
@@ -77,9 +77,9 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
 
         loggerPrintf(LOGGER_DEBUG, "field_name: '%s'\n", field_name.c_str());
 
-        ReaderTaskChain * chain = this->whitespace_chain;
+        ReaderTaskChain * chain = &this->whitespace_chain;
         if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name.c_str())) {
-            chain = this->whitespace_lc_chain;
+            chain = &this->whitespace_lc_chain;
         }
         field_idx++;
         char delimeter = 0x00;

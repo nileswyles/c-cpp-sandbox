@@ -71,6 +71,9 @@ namespace WylesLibs {
 
     class CSVParser {
         private:
+            std::shared_ptr<IOStream> io;
+            size_t record_size;
+            char separator;
             bool assertCSVNoHeader(CSV<std::string> * csv, MatrixVector<std::string> * header) {
                 return csv != nullptr && header == nullptr;
             }
@@ -134,10 +137,8 @@ namespace WylesLibs {
                     if ('\n' == b) {
                         processRecord(r);
                         // #containerization
-                        if (true == assertCSVNoHeader(csv, header)) {
-                            ++r_i;
-                            f_i = 0;
-                        }
+                        ++r_i;
+                        f_i = 0;
                     }
                     result = true;
                 } 
@@ -207,27 +208,12 @@ namespace WylesLibs {
                     }
                     // handle field delimeter
                     if (true == handleFieldDelimeter(csv, current_str, b, header, r_i, f_i)) {
-                        if (true == assertCSVNoHeader(csv, header)) {
-                            // point to next row if end of record
-                            continue;
-                        } else if (true == assertHeaderNoCSV(csv, header)) {
-                            // TODO: 
-                            // LOL - yeah this is absurd...
-                            if ('\n' == b) {
-                                break;
-                            } else if (this->separator == b) {
-                                continue;
-                            }
-                        }
+                        continue;
                     }
                     current_str.push_back((char)b);
                 }
             }
         public:
-            std::shared_ptr<IOStream> io;
-            size_t record_size;
-            char separator;
-
             CSVParser(std::shared_ptr<IOStream> io, char separator): io(io), separator(separator), record_size(0) {
                 if (separator == '.') {
                     throw std::runtime_error("Periods aren't allowed as CSV separator.");
@@ -260,7 +246,7 @@ namespace WylesLibs {
                             (*this->io).readDecimal(current_double, dummy_digit_count);
                         }
                         continue;
-                        // buffer should be at non-number-digit
+                        // buffer should be at non-numeric
                     } else if (b == (uint8_t)EOF) {
                         (*this->io).readByte();
                         break;

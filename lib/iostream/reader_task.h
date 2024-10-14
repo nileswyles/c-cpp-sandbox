@@ -62,7 +62,7 @@ class ReaderTask {
         //      a class with a pure function (=0) is abstract and cannot be instantiated, but can be used as a pointer type.
         //  This means the compiler throws an error if it doesn't find an implementation of the pure function in sub-classes. 
 
-        // override and final
+        // override and final (called virt-specifier -- in CPP grammar specification)
         // These appear to be optional and more a formality thing... Restrict behaviour as much as possible if not strictly necessary...
 
         //  override says that function is virtual (supports dynamic dispatch) and overrides a virtual class.
@@ -76,27 +76,23 @@ class ReaderTask {
 
 class ReaderTaskChain: public ReaderTask {
     public:
-        bool ignored;
         ReaderTask * nextOperation;
 
-        ReaderTaskChain(): nextOperation(nullptr), ignored(false) {}
-        ReaderTaskChain(ReaderTaskChain * next): nextOperation(next), ignored(false) {}
+        ReaderTaskChain(): nextOperation(nullptr) {}
+        ReaderTaskChain(ReaderTaskChain * next): nextOperation(next) {}
         ~ReaderTaskChain() override = default;
 
         void next(SharedArray<uint8_t>& buffer, uint8_t c) {
-            if (!this->ignored) {
-                if (this->nextOperation == nullptr) {
-                    buffer.append(c);
-                } else {
-                    this->nextOperation->perform(buffer, c);
-                }
+            if (this->nextOperation == nullptr) {
+                buffer.append(c);
+            } else {
+                this->nextOperation->perform(buffer, c);
             }
-            this->ignored = false;
         }
         void flush(SharedArray<uint8_t>& buffer) override {
             this->nextOperation->flush(buffer);
         }
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) override {};
+        virtual void perform(SharedArray<uint8_t>& buffer, uint8_t c) = 0;
 };
 
 class ReaderTaskLC: public ReaderTaskChain {
@@ -131,16 +127,19 @@ class ReaderTaskDisallow: public ReaderTaskChain {
         ~ReaderTaskDisallow() override = default;
 
         void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
+            bool ignored = false;
             if (this->to_disallow.find(c) != std::string::npos) { 
                 if (strict) {
                     std::string msg = "Banned character found:";
                     loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
                     throw std::runtime_error(msg);
                 } else {
-                    this->ignored = true;
+                    ignored = true;
                 }
+            } 
+            if (false == ignored) {
+                this->next(buffer, c);
             }
-            this->next(buffer, c);
         }
 };
 
@@ -154,16 +153,15 @@ class ReaderTaskAllow: public ReaderTaskChain {
         ~ReaderTaskAllow() override = default;
 
         void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
-            if (this->to_allow.find(c) == std::string::npos) { 
+            if (this->to_allow.find(c) != std::string::npos) { 
+                this->next(buffer, c);
+            } else {
                 if (strict) {
                     std::string msg = "Banned character found:";
                     loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
                     throw std::runtime_error(msg);
-                } else {
-                    this->ignored = true;
                 }
             }
-            this->next(buffer, c);
         }
 };
 

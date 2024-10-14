@@ -67,11 +67,8 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
 
     request->content_length = -1;
     int field_idx = 0; 
-    ReaderTaskDisallow name_operation("\t ");
-    ReaderTaskLC lowercase;
-    name_operation.nextOperation = &lowercase;
     while (field_idx < HTTP_FIELD_MAX) {
-        std::string field_name = io->readUntil(":\n", &name_operation).toString();
+        std::string field_name = io->readUntil(":\n", this->whitespace_lc_chain).toString();
         if (field_name[field_name.size()-1] == '\n') {
             printf("FOUND EMPTY NEW LINE AFTER PARSING FIELDS\n");
             break;
@@ -80,14 +77,14 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
 
         loggerPrintf(LOGGER_DEBUG, "field_name: '%s'\n", field_name.c_str());
 
-        ReaderTaskDisallow value_operation("\t ");
+        ReaderTaskChain * chain = this->whitespace_chain;
         if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name.c_str())) {
-            value_operation.nextOperation = &lowercase;
+            chain = this->whitespace_lc_chain;
         }
         field_idx++;
         char delimeter = 0x00;
         while (delimeter != '\n') {
-            std::string field_value = io->readUntil(",\n", &value_operation).toString();
+            std::string field_value = io->readUntil(",\n", chain).toString();
             // if size == 0, throw an exception idc...
             delimeter = (char)field_value[field_value.size()-1];
             // only process field if it's an actual field, else check delimeter in while loop...

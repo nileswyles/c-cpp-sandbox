@@ -136,6 +136,9 @@ class HttpConnection {
         HttpResponse * requestDispatcher(HttpRequest * request);
 
         SSL * acceptTLS(int conn_fd);
+        ReaderTaskDisallow * whitespace_chain;
+        ReaderTaskDisallow * whitespace_lc_chain;
+        ReaderTaskLC * lowercase_task;
         void writeResponse(HttpResponse * response, IOStream * io);
 
         void initializeStaticPaths(HttpServerConfig config, ThreadSafeMap<std::string, std::string> static_paths) {
@@ -186,6 +189,12 @@ class HttpConnection {
                 this->context = nullptr;
             }
         }
+        void initializeIOStreamTasks() {
+            lowercase_task = new ReaderTaskLC();
+            whitespace_chain = new ReaderTaskDisallow("\t ");
+            whitespace_lc_chain = new ReaderTaskDisallow("\t ");
+            whitespace_lc_chain->nextOperation = lowercase_task;
+        }
     public:
         HttpConnection() {}
         // haha, funny how that worked out...
@@ -213,6 +222,7 @@ class HttpConnection {
 
         // ! IMPORTANT - this needs to be explicitly called by construction caller because CPP.
         void initialize() {
+            initializeIOStreamTasks();
             initializeStaticPaths(config, static_paths);
             initializeSSLContext();
             // Array<std::string> paths{config.static_path};

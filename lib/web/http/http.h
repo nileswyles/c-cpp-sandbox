@@ -45,14 +45,10 @@ static SharedArray<const char *> FIELD_VALUES_TO_LOWER_CASE{
     "upgrade"
 };
 
-class Url {
-    public:
-        std::string path;
-        std::unordered_map<std::string, std::string> query_map;
-        
-        Url() {}
-        ~Url() = default;
-};
+typedef struct Url {
+    std::string path;
+    std::unordered_map<std::string, std::string> query_map;
+} Url;
 
 class HttpRequest {
     public:

@@ -81,6 +81,14 @@ static uint8_t connectionHandler(int conn_fd) {
 int main(int argc, char * argv[]) {
     int ret = 0;
     try {
+        // ! IMPORTANT
+        // Might be good to get in the habit of evaluating size of types used from libs to determine whether to malloc or not?
+        //  modern stack sizes are large enough but might matter in an embedded system?
+        //  can also just look at header file...
+        //  you can't assume they ptr everything and there's actually a compelling argument to not.
+        //  More generally, larger stack size allocations vs larger heap.
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpConnection: %lu, Size of ServerContext: %lu\n", sizeof(HttpConnection), sizeof(ServerContext));
+
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
         HttpServerConfig config("config.json");
         

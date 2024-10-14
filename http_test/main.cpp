@@ -87,6 +87,8 @@ int main(int argc, char * argv[]) {
         //  can also just look at header file...
         //  you can't assume they ptr everything and there's actually a compelling argument to not.
         //  More generally, larger stack size allocations vs larger heap.
+
+        //  so, if need access to more memory you can call new where needed at point of creation of each thread. Like here.
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpConnection: %lu, Size of ServerContext: %lu\n", sizeof(HttpConnection), sizeof(ServerContext));
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
@@ -107,6 +109,8 @@ int main(int argc, char * argv[]) {
 
         connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders); 
         connection.initialize();
+
+
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
         serverListen(config.address.c_str(), (uint16_t)config.port, connectionHandler);
     } catch (const std::exception& e) {

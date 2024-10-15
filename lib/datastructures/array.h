@@ -624,19 +624,10 @@ class SharedArray {
 // @ static
 
 // // 8 + 8 + 8 + 1 = 25 // 8 + 8 + 8 + 1 = 13
-#if __WORDSIZE == 64
 // TODO:
 // math's not mathing but if that's what compiler says
 static_assert(sizeof(Array<uint8_t>) == 40); 
-#elif __WORDSIZE == 32
-static_assert(sizeof(Array<uint8_t>) == 13); 
-#endif
-
-#if __WORDSIZE == 64
-// ptr == 16 in what world?
 static_assert(sizeof(SharedArray<uint8_t>) == 16); 
-#elif __WORDSIZE == 32
-static_assert(sizeof(SharedArray<uint8_t>) == 4); 
-#endif
+
 }
 #endif 

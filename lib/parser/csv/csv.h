@@ -2,12 +2,14 @@
 #define WYLESLIBS_CSV_H
 
 #include "iostream/iostream.h"
-#include "string_utils.h"
-#include "datastructures/datastructures.h"
+
 #include <string>
 #include <memory>
 #include <unistd.h>
 #include <fcntl.h>
+
+#include "string_utils.h"
+#include "datastructures/datastructures.h"
 
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL

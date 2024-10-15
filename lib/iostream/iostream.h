@@ -81,6 +81,19 @@ class IOStream {
         void readDecimal(double& value, size_t& digit_count);
         void readNatural(double& value, size_t& digit_count);
 };
+
+// @ static
+
+// assuming amd64 - what year are we in? LMAO
+static_assert(sizeof(IOStream) == 
+    sizeof(uint8_t *) + 
+    sizeof(size_t) + 
+    sizeof(size_t) + 
+    sizeof(size_t)
+);
+static_assert(sizeof(IOStream) == 40);
+
+
 }
 
 #endif

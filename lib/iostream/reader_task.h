@@ -122,6 +122,7 @@ class ReaderTaskDisallow: public ReaderTaskChain {
         std::string to_disallow;
         bool strict;
 
+        ReaderTaskDisallow(): to_disallow(" \t"), strict(false) {}
         ReaderTaskDisallow(std::string to_disallow): to_disallow(to_disallow), strict(false) {}
         ReaderTaskDisallow(std::string to_disallow, bool strict): to_disallow(to_disallow), strict(strict) {}
         ~ReaderTaskDisallow() override = default;
@@ -148,6 +149,8 @@ class ReaderTaskAllow: public ReaderTaskChain {
         std::string to_allow;
         bool strict;
 
+        // allow alphanumeric by default because why not? 
+        ReaderTaskAllow(): to_allow("abcdefghijklmnopqrstuvwxyz012345679ABCDEFGHIJKLMNOPQRSTUVWXYZ"), strict(false) {}
         ReaderTaskAllow(std::string to_allow): to_allow(to_allow), strict(false) {}
         ReaderTaskAllow(std::string to_allow, bool strict): to_allow(to_allow), strict(strict) {}
         ~ReaderTaskAllow() override = default;

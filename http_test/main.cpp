@@ -27,7 +27,7 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
         //  alright, I know I "c@n'T gr@MM@R" but definetly not that bad...
         uint8_t onConnection(IOStream * io) {
             printf("Established websocket connection...\n");
-            printf("MESSAGE FROM CLIENT: %s\n", io->readUntil('}').toString().c_str());
+            printf("MESSAGE FROM CLIENT: %s\n", io->readUntil("}").toString().c_str());
             return 1;
         }
 };
@@ -90,6 +90,10 @@ int main(int argc, char * argv[]) {
 
         //  so, if need access to more memory you can call new where needed at point of creation of each thread. Like here.
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpConnection: %lu, Size of ServerContext: %lu\n", sizeof(HttpConnection), sizeof(ServerContext));
+        // if you see this in header files, then maybe their worthy lol...
+        // static_assert(sizeof(HttpConnection) == 0); 
+        // but maybe this isn't a good idea because now we definetly have this type in program?
+        // static_assert(sizeof(Array<uint8_t>) == 0); 
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
         HttpServerConfig config("config.json");

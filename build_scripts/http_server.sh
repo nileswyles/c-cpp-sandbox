@@ -29,7 +29,7 @@ SRC_FILES="
 -s $ROOT_DIR/lib/web/server.c
 -s $ROOT_DIR/lib/file_watcher.cpp
 -s $ROOT_DIR/lib/web/http/http_file_watcher.cpp
--s $ROOT_DIR/lib/array.cpp
+-s $ROOT_DIR/lib/datastructures/array.cpp
 "
 
 LD_FLAGS="

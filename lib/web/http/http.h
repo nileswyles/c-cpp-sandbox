@@ -1,7 +1,7 @@
 #ifndef WYLESLIB_HTTP_H
 #define WYLESLIB_HTTP_H
 
-
+// glibc
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -10,11 +10,15 @@
 #include <pthread.h>
 #include <errno.h>
 #include <stdbool.h>
+
+// cpp-stdlib
 #include <filesystem>
 #include <unordered_map>
 #include <map>
-#include <openssl/ssl.h>
 #include <memory>
+
+// other
+#include <openssl/ssl.h>
 
 #include "iostream/iostream.h"
 #include "web/server.h"
@@ -27,6 +31,7 @@
 #include "thread_safe_map.h"
 #include "file.h"
 #include "paths.h"
+#include "datastructures/array.h"
 
 // #ifndef WYLESLIBS_HTTP_DEBUG
 // #define WYLESLIBS_HTTP_DEBUG 0
@@ -187,8 +192,8 @@ class HttpConnection {
         }
         void initializeIOStreamTasks() {
             this->lowercase_task = ReaderTaskLC();
-            this->whitespace_chain = ReaderTaskDisallow("\t ");
-            this->whitespace_lc_chain = ReaderTaskDisallow("\t ");
+            this->whitespace_chain.to_disallow = "\t ";
+            this->whitespace_lc_chain.to_disallow = "\t ";
             this->whitespace_lc_chain.nextOperation = &this->lowercase_task;
         }
     public:
@@ -226,6 +231,62 @@ class HttpConnection {
         //     file_watcher->initialize(file_watcher);
         }
 };
+
+// @ static
+
+#if __WORDSIZE == 64
+// hmm..... doing this willl force developer to think about reprocusions of adding new field...
+//  but doesn't really enforce a size.
+//  might be okay to use an approximation? 
+//      what I mean by that is, types I define will be either other types I define, primitive type or from some lib (which is less likely)
+//      primitive types and stdlib types won't (commonly) change unless someone is being dumb... so as long as everyone is doing their part, this might be enough?
+//      so, type is sum of it's parts and if parts also static assert then we'll catch any issues. Be trust worthy but don't do too much?
+
+//  alright, point of this was to not have to explictly calculate sizeof -- can probably just go with latter...
+//  and only where it makes sense? lol like classes passed around?
+static_assert(sizeof(Url) == 
+    sizeof(std::string) + 
+    sizeof(std::unordered_map<std::string, std::string>)
+); 
+//   let's do both! This is for whoever is using the module. The above is for the developer of this module.
+static_assert(sizeof(Url) == 88);
+
+static_assert(sizeof(HttpConnection) == 
+    sizeof(RequestProcessor *) +
+    sizeof(map<std::string, map<std::string, RequestProcessor *>>) +
+    sizeof(SharedArray<RequestFilter>) + 
+    sizeof(SharedArray<ResponseFilter>) + 
+    sizeof(SharedArray<ConnectionUpgrader *>) + 
+    sizeof(HttpServerConfig) +
+    sizeof(ThreadSafeMap<std::string, std::string>) +
+    8 + // sizeof(SSL_CTX) +
+    sizeof(std::shared_ptr<HttpFileWatcher>) +
+    sizeof(ReaderTaskDisallow) +
+    sizeof(ReaderTaskDisallow) +
+    sizeof(ReaderTaskLC)
+);
+static_assert(sizeof(HttpConnection) == 688);
+#elif __WORDSIZE == 32
+// something is something
+static_assert(sizeof(Url) == 
+    sizeof(std::string) + 
+    sizeof(std::unordered_map<std::string, std::string>)
+); 
+static_assert(sizeof(HttpConnection) == 
+    sizeof(RequestProcessor *) +
+    sizeof(map<std::string, map<std::string, RequestProcessor *>>) +
+    sizeof(SharedArray<RequestFilter>) + 
+    sizeof(SharedArray<ResponseFilter>) + 
+    sizeof(SharedArray<ConnectionUpgrader *>) + 
+    sizeof(HttpServerConfig) +
+    sizeof(ThreadSafeMap<std::string, std::string>) +
+    sizeof(SSL_CTX) +
+    sizeof(std::shared_ptr<HttpFileWatcher>) +
+    sizeof(ReaderTaskDisallow) +
+    sizeof(ReaderTaskDisallow) +
+    sizeof(ReaderTaskLC)
+);
+#endif
 
 };
 

@@ -106,7 +106,7 @@ namespace WylesLibs {
             }
             // copy (not copy constructor)
             MatrixVector<T> copy(const MatrixVector<T>& other) {
-                MatrixVector<T> copy(other.size());
+                MatrixVector<T> copy(other.cap());
                 for (size_t i = other.viewStart(); i <= other.viewEnd(); i++) {
                     copy.append(other[i]);
                 }
@@ -241,7 +241,7 @@ namespace WylesLibs {
             // matrix copy constructor but not actual copy constructor lol... 
             Matrix<T> copy(const Matrix<T>& other) {
                 Matrix<T> copy;
-                MatrixVector<MatrixVector<T>> y_vector(other.matrix.size());
+                MatrixVector<MatrixVector<T>> y_vector(other.matrix.cap());
                 // # inclusive
                 for (size_t i = *other.matrix.viewStart(); i <= other.matrix.viewEnd(); i++) {
                     y_vector[i] = other.matrix[i].copy();

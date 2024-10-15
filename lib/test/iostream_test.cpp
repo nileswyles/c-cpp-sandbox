@@ -56,7 +56,7 @@ static void testReadUntil(TestArg * t) {
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
 
-    std::string result = reader.readUntil(' ').toString();
+    std::string result = reader.readUntil(" ").toString();
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     readUntilAssert(t, result, expected);
@@ -69,7 +69,7 @@ static void testReadUntilUpperCase(TestArg * t) {
     buffer = test_string;
 
     ReaderTaskUC uppercase;
-    std::string result = reader.readUntil(' ', (ReaderTask *)&uppercase).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&uppercase).toString();
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     readUntilAssert(t, result, expected);
@@ -82,7 +82,7 @@ static void testReadUntilLowerCase(TestArg * t) {
     buffer = test_string;
 
     ReaderTaskLC lowercase;
-    std::string result = reader.readUntil(' ', (ReaderTask *)&lowercase).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&lowercase).toString();
     std::string expected = "teststringwithspace ";
 
     readUntilAssert(t, result, expected);
@@ -95,7 +95,7 @@ static void testReadUntilAllow(TestArg * t) {
     buffer = test_string;
 
     ReaderTaskAllow allow("ABC");
-    std::string result = reader.readUntil(' ', (ReaderTask *)&allow).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&allow).toString();
     std::string expected = "ACA";
 
     // LOL
@@ -112,7 +112,7 @@ static void testReadUntilAllowStrict(TestArg * t) {
     ReaderTaskAllow allow("ABC", true);
     bool exception = false;
     try {
-        std::string result = reader.readUntil(' ', (ReaderTask *)&allow).toString();
+        std::string result = reader.readUntil(" ", (ReaderTask *)&allow).toString();
     } catch(std::exception& e) {
         exception = true;
     }
@@ -129,7 +129,7 @@ static void testReadUntilDisallow(TestArg * t) {
     buffer = test_string;
 
     ReaderTaskDisallow disallow("IO");
-    std::string result = reader.readUntil(' ', (ReaderTask *)&disallow).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&disallow).toString();
     std::string expected = "TESTSTRNG";
 
     readUntilAssert(t, result, expected);
@@ -144,7 +144,7 @@ static void testReadUntilDisallowStrict(TestArg * t) {
     ReaderTaskDisallow disallow("IO", true);
     bool exception = false;
     try {
-        std::string result = reader.readUntil(' ', (ReaderTask *)&disallow).toString();
+        std::string result = reader.readUntil(" ", (ReaderTask *)&disallow).toString();
     } catch(std::exception& e) {
         exception = true;
     }
@@ -161,7 +161,7 @@ static void testReadUntilTrim(TestArg * t) {
     buffer = test_string;
 
     ReaderTaskTrim trim;
-    std::string result = reader.readUntil(' ', (ReaderTask *)&trim).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&trim).toString();
     std::string expected = "TESTSTRINGWITHSPACE";
 
     readUntilAssert(t, result, expected);
@@ -176,7 +176,7 @@ static void testReadUntilDisallowSpaceTrim(TestArg * t) {
     ReaderTaskDisallow disallow(" ");
     ReaderTaskTrim trim;
     disallow.nextOperation = &trim;
-    std::string result = reader.readUntil(' ', (ReaderTask *)&disallow).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&disallow).toString();
     std::string expected = "TESTSTRINGWITHSPACE";
 
     readUntilAssert(t, result, expected);
@@ -189,7 +189,7 @@ static void testReadUntilExtract(TestArg * t) {
     buffer = test_string;
 
     ReaderTaskExtract extract('"','"');
-    std::string result = reader.readUntil(' ', (ReaderTask *)&extract).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&extract).toString();
     std::string expected = "TESTSTRINGWITHSPACE";
 
     readUntilAssert(t, result, expected);
@@ -204,7 +204,7 @@ static void testReadUntilAllowExtract(TestArg * t) {
     ReaderTaskAllow allow("ABC");
     ReaderTaskExtract extract('"', '"');
     allow.nextOperation = &extract;
-    std::string result = reader.readUntil(' ', (ReaderTask *)&allow).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&allow).toString();
     std::string expected = "AC";
 
     readUntilAssert(t, result, expected);
@@ -219,7 +219,7 @@ static void testReadUntilDisallowExtract(TestArg * t) {
     ReaderTaskDisallow disallow("IO");
     ReaderTaskExtract extract('"', '"');
     disallow.nextOperation = &extract;
-    std::string result = reader.readUntil(' ', (ReaderTask *)&disallow).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&disallow).toString();
     std::string expected = "TESTSTRINGWTHSPACE";
 
     readUntilAssert(t, result, expected);
@@ -234,7 +234,7 @@ static void testReadUntilLowerCaseExtract(TestArg * t) {
     ReaderTaskLC lowercase;
     ReaderTaskExtract extract('"','"');
     lowercase.nextOperation = &extract;
-    std::string result = reader.readUntil(' ', (ReaderTask *)&lowercase).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&lowercase).toString();
     std::string expected = "teststringwithspace";
 
     readUntilAssert(t, result, expected);
@@ -249,7 +249,7 @@ static void testReadUntilUpperCaseExtract(TestArg * t) {
     ReaderTaskUC uppercase;
     ReaderTaskExtract extract('"','"');
     uppercase.nextOperation = &extract;
-    std::string result = reader.readUntil(' ', (ReaderTask *)&uppercase).toString();
+    std::string result = reader.readUntil(" ", (ReaderTask *)&uppercase).toString();
     std::string expected = "TESTSTRINGWITHSPACE";
 
     readUntilAssert(t, result, expected);
@@ -260,7 +260,7 @@ static void testReadUntilCursorAtUntil(TestArg * t) {
     IOStream reader(1, buf_size);
     buffer = " BLAH";
 
-    std::string result = reader.readUntil(' ').toString();
+    std::string result = reader.readUntil(" ").toString();
     readUntilAssert(t, result, "");
 }
 
@@ -276,7 +276,7 @@ static void testReadUntilFillBufferOnce(TestArg * t) {
     expected[expected_size - 3] = ' ';
     buffer = expected.c_str();
     
-    std::string result = reader.readUntil(' ').toString();
+    std::string result = reader.readUntil(" ").toString();
     readUntilAssert(t, result, expected);
 }
 
@@ -292,7 +292,7 @@ static void testReadUntilFillBufferTwice(TestArg * t) {
     expected[expected_size - 3] = ' ';
     buffer = expected.c_str();
 
-    std::string result = reader.readUntil(' ').toString();
+    std::string result = reader.readUntil(" ").toString();
     readUntilAssert(t, result, expected);
 }
 

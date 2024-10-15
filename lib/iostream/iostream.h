@@ -76,22 +76,7 @@ class IOStream {
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
-        SharedArray<uint8_t> readUntil(const char until) {
-            return readUntil(std::string(&until));
-        }
-        SharedArray<uint8_t> readUntil(std::string until) {
-            return readUntil(until, nullptr, true);
-        }
-        SharedArray<uint8_t> readUntil(const char until, bool inclusive) {
-            return readUntil(std::string(&until), inclusive);
-        }
-        SharedArray<uint8_t> readUntil(std::string until, bool inclusive) {
-            return readUntil(until, nullptr, inclusive);
-        }
-        SharedArray<uint8_t> readUntil(std::string until, ReaderTask * operation) {
-            return readUntil(until, operation, true);
-        }
-        SharedArray<uint8_t> readUntil(std::string until, ReaderTask * operation, bool inclusive);
+        SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
 
         void readDecimal(double& value, size_t& digit_count);
         void readNatural(double& value, size_t& digit_count);

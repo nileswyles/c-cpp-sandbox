@@ -510,9 +510,6 @@ template<typename T>
 class SharedArray {
     protected:
         ArrayControl<T> * ctrl;
-        T * buf() {
-            return this->ctrl->ptr->buf();
-        }
     public:
         // ! IMPORTANT 
         // implement same interface as Array...
@@ -526,6 +523,9 @@ class SharedArray {
                     delete this->ctrl;
                 }
             }
+        }
+        T * buf() {
+            return this->ctrl->ptr->buf();
         }
         SharedArray<T>& sort(ArraySort sortOrder) {
             this->ctrl->ptr->sort(sortOrder);

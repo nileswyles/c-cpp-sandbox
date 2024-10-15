@@ -36,6 +36,8 @@ static void write(std::string file_path, std::string buffer, bool append) {
             s.seekp(0);
         }
         s.write((const char *)buffer.data(), buffer.size()); // binary output
+        s.flush();
+        s.close();
     }
 }
 
@@ -51,6 +53,8 @@ static void write(std::string file_path, SharedArray<uint8_t> buffer, bool appen
             s.seekp(0);
         }
         s.write((const char *)buffer.buf(), buffer.size()); // binary output
+        s.flush();
+        s.close();
     }
 }
 

@@ -38,7 +38,7 @@ if [ -z $CXX_COMPILER ]; then
 fi
 
 echo "\n~Build: "
-BUILD_CMD="$CXX_COMPILER $DEBUG$SRC_FILES-iquote $QUOTE_INCLUDE_ROOT -iquote $ROOT_DIR/http_test $DEFINES$LD_FLAGS-std=c++20 -o $PROGRAM_PATH"
+BUILD_CMD="$CXX_COMPILER $DEBUG$SRC_FILES-iquote $QUOTE_INCLUDE_ROOT -iquote $ROOT_DIR/http_test $DEFINES$LD_FLAGS-std=c++20 -Wall -Wextra -Wpedantic -o $PROGRAM_PATH"
 echo "\t$BUILD_CMD"
 eval $BUILD_CMD
 

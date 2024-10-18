@@ -241,6 +241,7 @@ class Array {
             }
             return *this;
         }
+        // TODO: no overloading?
         Array<T>& insert(const size_t pos, const T * els, const size_t num_els) {
             // pos out of bounds, return error...
             if (pos < 0 || pos > this->size()) {
@@ -313,6 +314,24 @@ class Array {
         
             return *this;
         }
+        Array<T>& insert(const size_t pos, const T& el) {
+            return this->insert(pos, &el, 1);
+        }
+        Array<T>& uniqueAppend(const T& el) {
+            if (this->contains(el)) { 
+            } else {
+                return this->append(&el, 1);
+            }
+        }
+        Array<T>& append(const T& el) {
+            return this->append(&el, 1);
+        }
+        Array<T>& append(const Array<T>& x) {
+            return this->append(x.e_buf, x.e_size);
+        }
+        Array<T>& append(const T * els, const size_t num_els) {
+            return this->insert(this->size(), els, num_els);
+        }
         Array<T>& remove(const size_t pos, const size_t num_els) {
             // pos out of bounds, return error...
             if (pos < 0 || pos + num_els > this->size()) {
@@ -366,6 +385,34 @@ class Array {
         
             return *this;
         }
+        Array<T>& removeEl(const T& el) {
+            size_t i = this->find(el);
+            if (i != -1) {
+                remove(i, 1);
+            }
+            return *this;
+        }
+        Array<T>& remove(const size_t pos) {
+            return this->remove(pos, 1);
+        }
+        Array<T>& removeFront() {
+            if (this->size() == 0) {
+                std::string msg = "No element to remove.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+            remove(0);
+            return *this;
+        }
+        Array<T>& removeBack() {
+            if (this->size() == 0) {
+                std::string msg = "No element to remove.";
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+            remove(this->size()-1);
+            return *this;
+        }
         T * buf() {
             // use at your own risk, obviously...
             return this->e_buf;
@@ -377,34 +424,6 @@ class Array {
             // this is really only useful for testing.
             return this->e_cap;
         }
-        Array<T>& uniqueAppend(const T& el) {
-            if (this->contains(el)) { 
-            } else {
-                return this->append(&el, 1);
-            }
-        }
-        Array<T>& append(const T& el) {
-            return this->append(&el, 1);
-        }
-        Array<T>& append(const Array<T>& x) {
-            return this->append(x.e_buf, x.e_size);
-        }
-        Array<T>& append(const T * els, const size_t num_els) {
-            return this->insert(this->size(), els, num_els);
-        }
-        Array<T>& insert(const size_t pos, const T& el) {
-            return this->insert(pos, &el, 1);
-        }
-        Array<T>& removeEl(const T& el) {
-            size_t i = this->find(el);
-            if (i != -1) {
-                remove(i, 1);
-            }
-            return *this;
-        }
-        Array<T>& remove(const size_t pos) {
-            return this->remove(pos, 1);
-        }
         bool contains(const T& el) {
             return this->find(el) != -1;
         }
@@ -412,7 +431,7 @@ class Array {
             return arrayFind<T>(this->e_buf, this->size(), el);
         }
         T& at(const size_t pos) {
-            if (pos >= 0 && pos < this->size()) {
+            if (pos < this->size()) {
                 return (this->e_buf)[pos];
             } else {
                 throw std::runtime_error("Invalid position.");
@@ -433,24 +452,6 @@ class Array {
                 throw std::runtime_error(msg);
             }
             return (this->e_buf)[this->size()-1];
-        }
-        Array<T>& removeFront() {
-            if (this->size() == 0) {
-                std::string msg = "No element to remove.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-                throw std::runtime_error(msg);
-            }
-            remove(0);
-            return *this;
-        }
-        Array<T>& removeBack() {
-            if (this->size() == 0) {
-                std::string msg = "No element to remove.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-                throw std::runtime_error(msg);
-            }
-            remove(this->size()-1);
-            return *this;
         }
         std::string toString() {
             T nul = {0};
@@ -524,20 +525,55 @@ class SharedArray {
                 }
             }
         }
-        T * buf() {
-            return this->ctrl->ptr->buf();
-        }
         SharedArray<T>& sort(ArraySort sortOrder) {
             this->ctrl->ptr->sort(sortOrder);
             return *this;
         }
-        SharedArray<T>& insert(const size_t pos, const T * els, const size_t num_els) {
+        virtual SharedArray<T>& insert(const size_t pos, const T * els, const size_t num_els) {
             this->ctrl->ptr->insert(pos, els, num_els);
             return *this;
         }
-        SharedArray<T>& remove(const size_t pos, const size_t num_els) {
+        virtual SharedArray<T>& insert(const size_t pos, const T& el) {
+            this->ctrl->ptr->insert(pos, el);
+            return *this;
+        }
+        virtual SharedArray<T>& uniqueAppend(const T& el) {
+            this->ctrl->ptr->uniqueAppend(el);
+            return *this;
+        }
+        virtual SharedArray<T>& append(const T& el) {
+            this->ctrl->ptr->append(el);
+            return *this;
+        }
+        virtual SharedArray<T>& append(const SharedArray<T>& other) {
+            return this->append(other.buf(), other.size());
+        }
+        virtual SharedArray<T>& append(const T * els, const size_t num_els) {
+            this->ctrl->ptr->append(els, num_els);
+            return *this;
+        }
+        virtual SharedArray<T>& remove(const size_t pos, const size_t num_els) {
             this->ctrl->ptr->remove(pos, num_els);
             return *this;
+        }
+        virtual SharedArray<T>& removeEl(const T& el) {
+            this->ctrl->ptr->removeEl(el);
+            return *this;
+        }
+        virtual SharedArray<T>& remove(const size_t pos) {
+            this->ctrl->ptr->remove(pos);
+            return *this;
+        }
+        virtual SharedArray<T>& removeFront() {
+            this->ctrl->ptr->removeFront();
+            return *this;
+        }
+        virtual SharedArray<T>& removeBack() {
+            this->ctrl->ptr->removeBack();
+            return *this;
+        }
+        T * buf() {
+            return this->ctrl->ptr->buf();
         }
         virtual size_t size() {
             return this->ctrl->ptr->size();
@@ -545,33 +581,6 @@ class SharedArray {
         size_t cap() {
             // this is really only useful for testing.
             return this->ctrl->ptr->cap();
-        }
-        SharedArray<T>& uniqueAppend(const T& el) {
-            this->ctrl->ptr->uniqueAppend(el);
-            return *this;
-        }
-        SharedArray<T>& append(const T& el) {
-            this->ctrl->ptr->append(el);
-            return *this;
-        }
-        SharedArray<T>& append(const SharedArray<T>& other) {
-            return this->append(other);
-        }
-        SharedArray<T>& append(const T * els, const size_t num_els) {
-            this->ctrl->ptr->append(els, num_els);
-            return *this;
-        }
-        SharedArray<T>& insert(const size_t pos, const T& el) {
-            this->ctrl->ptr->insert(pos, el);
-            return *this;
-        }
-        SharedArray<T>& removeEl(const T& el) {
-            this->ctrl->ptr->removeEl(el);
-            return *this;
-        }
-        SharedArray<T>& remove(const size_t pos) {
-            this->ctrl->ptr->remove(pos);
-            return *this;
         }
         bool contains(const T& el) {
             return this->ctrl->ptr->contains(el);
@@ -587,14 +596,6 @@ class SharedArray {
         }
         T& back() {
             return this->ctrl->ptr->back();
-        }
-        SharedArray<T>& removeFront() {
-            this->ctrl->ptr->removeFront();
-            return *this;
-        }
-        SharedArray<T>& removeBack() {
-            this->ctrl->ptr->removeBack();
-            return *this;
         }
         std::string toString() {
             return this->ctrl->ptr->toString();

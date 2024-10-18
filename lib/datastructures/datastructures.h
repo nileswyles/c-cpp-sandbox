@@ -58,7 +58,13 @@ namespace WylesLibs {
             }
         public:
             MatrixVector() = default;
-            MatrixVector(const size_t initial_cap): SharedArray<T>(initial_cap) {}
+            MatrixVector(const size_t initial_cap): MatrixVector<T>(initial_cap, false) {}
+            MatrixVector(const size_t initial_cap, bool is_view): SharedArray<T>(initial_cap) {
+                if (initial_cap <= 1) {
+                    throw std::runtime_error("View must have at least two elements (remember inclusive).");
+                }
+                this->view = new MatrixVectorView(0, initial_cap - 1);
+            }
             // view
             MatrixVector(const MatrixVector<T>& other, size_t start, size_t end) {
                 if (other.ctrl != nullptr) {
@@ -75,8 +81,117 @@ namespace WylesLibs {
                 if (this->ctrl == nullptr || this->ctrl->instance_count == 1) {
                     delete this->view;
                 }
-                // ~SharedArray();
+                // ~MatrixVector();
             };
+            MatrixVector<T>& insert(const size_t pos, const T * els, const size_t num_els) {
+                if (this->view == nullptr) {
+                    this->ctrl->ptr->insert(pos, els, num_els);
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+                return *this;
+            }
+            MatrixVector<T>& insert(const size_t pos, const T& el) {
+                if (this->view == nullptr)
+                    this->ctrl->ptr->insert(pos, el);
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+                return *this;
+            }
+            MatrixVector<T>& uniqueAppend(const T& el) {
+                if (this->view == nullptr)
+                    this->ctrl->ptr->uniqueAppend(el);
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+                return *this;
+            }
+            MatrixVector<T>& append(const T& el) {
+                if (this->view == nullptr) {
+                    this->ctrl->ptr->append(el);
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+                return *this;
+            }
+            MatrixVector<T>& append(const MatrixVector<T>& other) {
+                if (this->view == nullptr) {
+                    return this->append(other.buf(), other.size());
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+            }
+            MatrixVector<T>& append(const T * els, const size_t num_els) {
+                if (this->view == nullptr) {
+                    this->ctrl->ptr->append(els, num_els);
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+                return *this;
+            }
+            MatrixVector<T>& remove(const size_t pos, const size_t num_els) {
+                if (this->view == nullptr) {
+                    this->ctrl->ptr->remove(pos, num_els);
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+                return *this;
+            }
+            MatrixVector<T>& removeEl(const T& el) {
+                if (this->view == nullptr) {
+                    this->ctrl->ptr->removeEl(el);
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+                return *this;
+            }
+            MatrixVector<T>& remove(const size_t pos) {
+                if (this->view == nullptr) {
+                    this->ctrl->ptr->remove(pos);
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+                return *this;
+            }
+            MatrixVector<T>& removeFront() {
+                if (this->view == nullptr) {
+                    this->ctrl->ptr->removeFront();
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+                return *this;
+            }
+            MatrixVector<T>& removeBack() {
+                if (this->view == nullptr) {
+                    this->ctrl->ptr->removeBack();
+                } else {
+                    std::string message = "Cannot modify a view-only matrix vector.";
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());
+                    throw std::runtime_error(message);
+                }
+                return *this;
+            }
             size_t size() {
                 if (this->view == nullptr) {
                     return this->ctrl->ptr->size();
@@ -173,12 +288,12 @@ namespace WylesLibs {
             T& operator[] (const size_t pos) {
                 size_t i = pos;
                 if (this->view != nullptr) {
+                    i += this->viewStart();
                     if (i > this->viewEnd()) {
                         std::runtime_error("Attempting to access element outside of MatrixVector.");
-                    }
-                    i += this->viewStart();
-                    if (i >= this->size()) {
-                        std::runtime_error("Attempting to access element outside of MatrixVector.");
+                    } else if (i <= this->ctrl->ptr()->size()) {
+                        //  Let's keep it simple - can't edit views. If main MatrixVector is modified, the view might lie outside of original MatrixVector, so throw exception.
+                        std::runtime_error("Attempting to access element outside of underlying buffer.");
                     }
                 }
                 return (*this->ctrl->ptr)[i];
@@ -205,10 +320,16 @@ namespace WylesLibs {
     template<typename T>
     class Matrix {
         protected:
-            // TODO: yeah, so this means an extra 2-ptrs per row... (ctrl, view - in SharedArray) should be fine... flat not so useful in this situation lol
+            // TODO: yeah, so this means an extra 2-ptrs per row... (ctrl, view - in MatrixVector) should be fine... flat not so useful in this situation lol
             MatrixVector<MatrixVector<T>> matrix;
         public:
             Matrix() = default;
+            Matrix(std::initializer_list<MatrixVector<T>> list) {
+                matrix = MatrixVector(list.size(), true);
+                for (auto el: list) {
+                    matrix.append(el);
+                }
+            }
             virtual ~Matrix() = default;
             // ! IMPORTANT - let's be clear, the user has control and needs to ensure matrix is structured properly when populating...
             size_t rows() {

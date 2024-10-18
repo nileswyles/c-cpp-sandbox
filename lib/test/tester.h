@@ -40,9 +40,9 @@ class Tester {
         std::vector<Test> tests;
         size_t num_tests;
 
-        Tester(std::string suite_name): suite_name(suite_name), before(nullptr), after(nullptr), before_each(nullptr), after_each(nullptr), num_tests(0) {}
         Tester(std::string suite_name, SuiteFunction * before, TestFunction * before_each, SuiteFunction * after, TestFunction * after_each): 
             suite_name(suite_name), before(before), before_each(before_each), after(after), after_each(after_each), num_tests(0) {}
+        Tester(std::string suite_name): Tester(suite_name, nullptr, nullptr, nullptr, nullptr) {}
 
         void addTestWithName(const char * name, TestFunction * func) {
             std::string s(name);

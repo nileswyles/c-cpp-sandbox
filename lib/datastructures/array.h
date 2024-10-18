@@ -244,7 +244,7 @@ class Array {
         // TODO: no overloading?
         Array<T>& insert(const size_t pos, const T * els, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos > this->size()) {
+            if (pos > this->size()) {
                 std::string msg = "Position out of range.";
                 loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
@@ -320,8 +320,9 @@ class Array {
         Array<T>& uniqueAppend(const T& el) {
             if (this->contains(el)) { 
             } else {
-                return this->append(&el, 1);
+                this->append(&el, 1);
             }
+            return *this;
         }
         Array<T>& append(const T& el) {
             return this->append(&el, 1);
@@ -334,7 +335,7 @@ class Array {
         }
         Array<T>& remove(const size_t pos, const size_t num_els) {
             // pos out of bounds, return error...
-            if (pos < 0 || pos + num_els > this->size()) {
+            if (pos + num_els > this->size()) {
                 std::string msg = "Position out of range.";
                 loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
@@ -385,8 +386,10 @@ class Array {
         
             return *this;
         }
+        // TODO:
+        //      this should be const, does const reference have some other semantic?
         Array<T>& removeEl(const T& el) {
-            size_t i = this->find(el);
+            ssize_t i = this->find(el);
             if (i != -1) {
                 remove(i, 1);
             }
@@ -545,8 +548,11 @@ class SharedArray {
             this->ctrl->ptr->append(el);
             return *this;
         }
-        virtual SharedArray<T>& append(const SharedArray<T>& other) {
-            return this->append(other.buf(), other.size());
+        // TODO:
+        //      this should be const, does const reference have some other semantic?
+        virtual SharedArray<T>& append(SharedArray<T>& other) {
+            this->ctrl->ptr->append(other.buf(), other.size());
+            return *this;
         }
         virtual SharedArray<T>& append(const T * els, const size_t num_els) {
             this->ctrl->ptr->append(els, num_els);

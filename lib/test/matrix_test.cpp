@@ -40,6 +40,22 @@ static void testMatrix(TestArg * t) {
     printMatrix(matrix);
 }
 
+static void testMatrixImmutableView(TestArg * t) {
+    // 4x4
+    // ****
+    // ****
+    // ****
+    // ****
+    Matrix<uint8_t> matrix{
+        {1, 2, 3, 4},
+        {5, 6, 7, 8},
+        {9, 10, 11, 12},
+        {13, 14, 15, 16}
+    };
+    printf("Matrix: \n");
+    printMatrix(matrix);
+}
+
 static void testMatrixView(TestArg * t) {
     Matrix<uint8_t> matrix;
     // 4x4

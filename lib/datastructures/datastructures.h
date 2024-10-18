@@ -58,6 +58,7 @@ namespace WylesLibs {
             }
         public:
             MatrixVector() = default;
+            MatrixVector(std::initializer_list<T> list): SharedArray<T>(list) {}
             MatrixVector(const size_t initial_cap): MatrixVector<T>(initial_cap, false) {}
             MatrixVector(const size_t initial_cap, bool is_view): SharedArray<T>(initial_cap) {
                 if (initial_cap <= 1) {

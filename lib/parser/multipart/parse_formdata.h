@@ -10,19 +10,26 @@
 #include "datastructures/array.h"
 #include "web/services.h"
 
+
 using namespace WylesLibs;
 
 namespace WylesLibs::Parser::Multipart::FormData {
-//
-static void parse(IOStream * io, SharedArray<MultipartFile> files, unordered_map<std::string, std::string> form_content) {
+
+static constexpr size_t MAX_NUM_FILES_PER_REQUEST = 64;
+
+static void parse(IOStream * io, SharedArray<MultipartFile> files, std::unordered_map<std::string, std::string> form_content) {
+    // files are uploaded in one request (less overhead - no limit...) hence, timeout in http.cpp.
+    bool new_file = true;
     while (1) {
         std::string field_name;
         bool is_file = false;
-        bool new_file = true;
         MultipartFile file;
         SharedArray<uint8_t> line = io->readUntil("\n"); // read and consume boundary string
         if (line.buf()[0] == '-' && line.buf()[1] == '-') {
-            if (line.buf()[line.size() - 3] == '-') break;
+            if (line.buf()[line.size() - 3] == '-') {
+                // last boundary string, we are done reading files... 
+                break;
+            };
             // assume type then range for now...
             io->readUntil(";"); // read and consume content disposition type because who cares.
 
@@ -34,8 +41,16 @@ static void parse(IOStream * io, SharedArray<MultipartFile> files, unordered_map
                 std::string value = io->readUntil(";", &extract).removeBack().toString();
                 if (field == "filename") {
                     is_file = true;
-                    file = Service::createMultipartFile(value);
-                    new_file = true;
+                    if (files.size() > MAX_NUM_FILES_PER_REQUEST) {
+                        throw std::runtime_error("Stack size... lol");
+                    }
+                    if (false == files.contains({value})) {
+                        file = Service::createMultipartFile(value);
+                        files.append(file);
+                        new_file = true;
+                    } else {
+                        file = files[value];
+                    }
                 } else if (field == "name") {
                     field_name = value;
                     has_name = true;

@@ -19,6 +19,11 @@ class MultipartFile {
         std::string name;
 
         MultipartFile(): resource_root("./") {}
+        MultipartFile(std::string name) {
+            resource_root = "";
+            id = "";
+            name = name;
+        }
         MultipartFile(ServerContext * context, std::string name) {
             resource_root = context->config.resources_root;
             id = context->key_generator.next();
@@ -28,6 +33,10 @@ class MultipartFile {
 
         std::string getResourcePath() {
             return Paths::join(this->resource_root, this->id);
+        }
+        bool operator== (MultipartFile& other) {
+            // assume resource root is a server-wide thing...
+            return this->name == other.name;
         }
 };
 }

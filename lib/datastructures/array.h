@@ -75,8 +75,10 @@ void deleteCArrayElement<const char *>(const char ** buf, size_t pos);
 
 // TODO: again, member function "specialization" didn't work, so... I think the non-specialization stuff was working lol...
 //  revisit in future.
+
+// TODO: this should be const.
 template<typename T>
-ssize_t arrayFind(T * e_buf, size_t size, const T el) {
+ssize_t arrayFind(T * e_buf, size_t size, T el) {
     for (size_t i = 0; i < size; i++) {
         if (e_buf[i] == el) {
             return i;

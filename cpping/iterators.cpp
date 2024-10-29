@@ -6,6 +6,31 @@ typedef int* const_iterator;
 
 class Test {
     public:
+        // from cppreference.com
+        //  apparently, you can define an iterator class like so (obviously?)
+        //  which implies return type of begin and end doesn't have to be ptr-backed... type just needs to support the operators listed below.
+        
+        //  in a sense, defining paths of traversal within any datastructure. 
+        //  Not obvious how useful that is, but good to be built into the language - might facilitate very readible code.
+
+        // member typedefs provided through inheriting from std::iterator
+        //  
+        // class iterator : public std::iterator<
+        //                             std::input_iterator_tag, // iterator_category
+        //                             long,                    // value_type
+        //                             long,                    // difference_type
+        //                             const long*,             // pointer
+        //                             long                     // reference
+        //                         > {
+        //     long num = FROM;
+        // public:
+        //     explicit iterator(long _num = 0) : num(_num) {}
+        //     iterator& operator++() { num = TO >= FROM ? num + 1: num - 1; return *this; }
+        //     iterator operator++(int) { iterator retval = *this; ++(*this); return retval; }
+        //     bool operator==(iterator other) const { return num == other.num; }
+        //     bool operator!=(iterator other) const { return !(*this == other); }
+        //     reference operator*() const { return num; }
+        // };
         int * i;
         int size;
         Test() {

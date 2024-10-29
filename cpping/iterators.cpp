@@ -47,6 +47,13 @@ class Test {
         int * end() {
             return i + size;
         }
+        // Also, interestingly enough this doesn't compile.
+        // int begin() {
+        //     return *i;
+        // }
+        // int end() {
+        //     return *(i + size);
+        // }
 };
 
 // g++ cpping/iterators.cpp -Wall -o iterators.out

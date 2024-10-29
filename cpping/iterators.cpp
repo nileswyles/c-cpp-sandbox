@@ -6,7 +6,7 @@ typedef int* const_iterator;
 
 class Test {
     public:
-        // from cppreference.com
+        // from https://en.cppreference.com/w/cpp/iterator/iterator
         //  apparently, you can define an iterator class like so (obviously?)
         //  which implies return type of begin and end doesn't have to be ptr-backed... type just needs to support the operators listed below.
         

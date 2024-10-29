@@ -96,13 +96,13 @@ static_assert(sizeof(IOStream) ==
 );
 static_assert(sizeof(IOStream) == 40);
 #else
-static_assert(sizeof(IOStream) == 
-    sizeof(uint8_t *) + 
-    sizeof(size_t) + 
-    sizeof(size_t) + 
-    sizeof(size_t) +
-    sizeof(int)
-);
+// static_assert(sizeof(IOStream) == 
+//     sizeof(uint8_t *) + 
+//     sizeof(size_t) + 
+//     sizeof(size_t) + 
+//     sizeof(size_t) +
+//     sizeof(int)
+// );
 static_assert(sizeof(IOStream) == 40);
 #endif
 

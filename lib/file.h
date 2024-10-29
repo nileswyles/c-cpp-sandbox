@@ -52,7 +52,7 @@ static void write(std::string file_path, SharedArray<uint8_t> buffer, bool appen
         } else {
             s.seekp(0);
         }
-        s.write((const char *)buffer.buf(), buffer.size()); // binary output
+        s.write((const char *)buffer.start(), buffer.size()); // binary output
         s.flush();
         s.close();
     }

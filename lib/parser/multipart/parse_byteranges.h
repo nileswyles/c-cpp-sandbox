@@ -15,8 +15,8 @@ namespace WylesLibs::Parser::Multipart::ByteRanges {
 static void parse(IOStream * r, MultipartFile& file) {
     while (1) {
         SharedArray<uint8_t> potential_boundary = r->readUntil("\n"); // read and consume boundary string
-        if (potential_boundary.buf[0] == '-' && potential_boundary.buf[1] == '-') {
-            if (potential_boundary.buf[potential_boundary.size() - 3] == '-') break;
+        if (potential_boundary.at(0) == '-' && potential_boundary.at(1) == '-') {
+            if (potential_boundary.at(potential_boundary.size() - 3) == '-') break;
             // assume type then range for now...
             r->readUntil("\n"); // read and consume content type because who cares.
 

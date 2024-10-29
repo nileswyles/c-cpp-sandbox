@@ -227,7 +227,7 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
 
                     this->writeResponse(response, io);
 
-                    serverDisableTimeout(io->fd);
+                    serverDisableConnectionTimeout(io->fd);
                     upgrader->onConnection(io);
 
                     // NOTE: the upgrade function should indefinetly block until the connection is intended to be closed.

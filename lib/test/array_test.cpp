@@ -20,7 +20,7 @@ using namespace WylesLibs::Test;
 
 template<typename T>
 bool assert(SharedArray<T> actual, T * expected, size_t expected_size, size_t expected_cap) {
-    bool memory_match = memcmp((void *)expected, (void *)actual.buf(), expected_size * sizeof(T)) == 0;
+    bool memory_match = memcmp((void *)expected, (void *)actual.start(), expected_size * sizeof(T)) == 0;
     bool size_match = actual.size() == expected_size;
     // make sure cap grows at the predetermined rate.
     // also make sure size doesn't exceed cap (arguably more important).
@@ -31,7 +31,7 @@ bool assert(SharedArray<T> actual, T * expected, size_t expected_size, size_t ex
     loggerPrintf(LOGGER_TEST, "Expected:\n");
     loggerPrintByteArray(LOGGER_TEST, (uint8_t *)expected, expected_size * sizeof(T));
     loggerPrintf(LOGGER_TEST, "Actual:\n");
-    loggerPrintByteArray(LOGGER_TEST, (uint8_t *)actual.buf(), actual.size() * sizeof(T));
+    loggerPrintByteArray(LOGGER_TEST, (uint8_t *)actual.start(), actual.size() * sizeof(T));
     loggerPrintf(LOGGER_TEST, "Size Match: %s (Expected: %lu, Actual: %lu)\n", 
         size_match ? "True" : "False", expected_size, actual.size());
     loggerPrintf(LOGGER_TEST, "Cap Match: %s (Expected: %lu, Actual: %lu)\n", 
@@ -50,7 +50,7 @@ bool assert<const char *>(SharedArray<const char *> actual, const char ** expect
     bool memory_match = true;
     if (size_match) {
         for (size_t i = 0; i < expected_size; i++) {
-            if (strcmp(expected[i], actual.buf()[i]) != 0) {
+            if (strcmp(expected[i], actual[i]) != 0) {
                 memory_match = false;
             }
         }
@@ -63,7 +63,7 @@ bool assert<const char *>(SharedArray<const char *> actual, const char ** expect
     }
     loggerPrintf(LOGGER_TEST, "Actual:\n");
     for (size_t i = 0; i < actual.size(); i++) {
-        loggerPrintf(LOGGER_TEST, "%s\n", actual.buf()[i]);
+        loggerPrintf(LOGGER_TEST, "%s\n", actual[i]);
     }
     loggerPrintf(LOGGER_TEST, "Size Match: %s (Expected: %lu, Actual: %lu)\n", 
         size_match ? "True" : "False", expected_size, actual.size());
@@ -211,8 +211,11 @@ static void testArrayRemoveCstrings(TestArg * t) {
         "STRING 6",
         "STRING 7"
     };
+    printf("?????\n");
     size_t initial_size = actual.size();
+    printf("?????\n");
     actual.remove(1);
+    printf("?????\n");
     t->fail = !assert<const char *>(actual, expected, expected_size, initial_size * 1.75);
 }
 

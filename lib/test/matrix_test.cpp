@@ -158,7 +158,7 @@ int main(int argc, char * argv[]) {
     Tester t("Matrix Tests");
 
     t.addTest(testMatrix);
-    t.addTest(testMatrixView);
+    t.addTest(testMatrixImmutableView);
     // t.addTest(testCSVParserSkipHeader);
     // t.addTest(testCSVParserDelimeter);
     // t.addTest(testCSVParserRecordWithNoFields);

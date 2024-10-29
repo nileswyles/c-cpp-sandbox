@@ -29,7 +29,7 @@ typedef struct thread_arg {
 static void * handler_wrapper_func(void * arg);
 static void process_sockopts(int fd);
 
-extern void serverDisableTimeout(int fd) {
+extern void serverDisableConnectionTimeout(int fd) {
     timerRemoveConnection(fd, false);
 }
 

@@ -57,8 +57,8 @@ void testUniqueKeyStringGenerator(TestArg * t) {
     for (size_t i = 0; i < 7; i++) {
         std::string key = generator.next();
         loggerPrintf(LOGGER_TEST, "key: %s\n", key.c_str());
-        loggerPrintf(LOGGER_TEST, "expected key: %s\n", expected_keys.buf()[0].c_str());
-        if (key != expected_keys.buf()[0]) {
+        loggerPrintf(LOGGER_TEST, "expected key: %s\n", expected_keys[0].c_str());
+        if (key != expected_keys[0]) {
             failed = true;
         }
     }

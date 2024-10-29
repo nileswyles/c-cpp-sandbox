@@ -13,7 +13,7 @@ extern "C"
 typedef uint8_t(connection_handler_t)(int);
 
 extern void serverListen(const char * address, const uint16_t port, connection_handler_t * handler);
-extern void serverDisableTimeout(int fd);
+extern void serverDisableConnectionTimeout(int fd);
 extern void serverSetConnectionTimeout(int fd, uint32_t timeout_s);
 extern void serverSetInitialConnectionTimeout(int fd, uint32_t timeout_s);
 extern void serverSetSocketTimeout(int fd, uint32_t timeout_s);

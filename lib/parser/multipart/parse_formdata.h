@@ -25,8 +25,8 @@ static void parse(IOStream * io, SharedArray<MultipartFile> files, std::unordere
         bool is_file = false;
         MultipartFile file;
         SharedArray<uint8_t> line = io->readUntil("\n"); // read and consume boundary string
-        if (line.buf()[0] == '-' && line.buf()[1] == '-') {
-            if (line.buf()[line.size() - 3] == '-') {
+        if (line.at(0) == '-' && line.at(1) == '-') {
+            if (line[line.size() - 3] == '-') {
                 // last boundary string, we are done reading files... 
                 break;
             };

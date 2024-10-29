@@ -1,12 +1,15 @@
 #ifndef ARRAY_H
 #define ARRAY_H
-#include <string>
+
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
+
+#include <string>
+#include <initializer_list>
 #include <stdexcept>
 
 // make sure global logger level is initialized
@@ -196,7 +199,7 @@ class Array {
                                 right_size = size - (i + span);
                             }
                             // left must always be larger or equal to right
-                            nlognsortMerge<T>(left_buf, span, right_buf, right_size, swap_space);
+                            nlognsortMerge(left_buf, span, right_buf, right_size, swap_space);
                         }
                         i += (2*span);
                     }
@@ -336,6 +339,7 @@ class Array {
             return this->insert(this->size(), els, num_els);
         }
         Array<T>& remove(const size_t pos, const size_t num_els) {
+            printf("Array remove(pos, els)\n");
             // pos out of bounds, return error...
             if (pos + num_els > this->size()) {
                 std::string msg = "Position out of range.";
@@ -361,6 +365,7 @@ class Array {
                     // if recapped, copy elements up until pos.
                     //  the rest will be automatically intialized by remove operation... 
                     selected_buf = new_buf;
+                    printf("hmm....\n");
                     for (size_t i = 0; i < pos; i++) {
                         selected_buf[i] = (this->e_buf)[i];
                     }
@@ -369,6 +374,7 @@ class Array {
                 // else, just remove, don't recap array...
                 selected_buf = this->e_buf;
             }
+            printf("removing!\n");
             for (size_t i = pos; i < this->size(); i++) {
                 if (i < pos + num_els) {
                     // make sure to deallocate memory for elements being removed.
@@ -398,6 +404,7 @@ class Array {
             return *this;
         }
         Array<T>& remove(const size_t pos) {
+            printf("Array remove(pos)\n");
             return this->remove(pos, 1);
         }
         Array<T>& removeFront() {
@@ -418,9 +425,11 @@ class Array {
             remove(this->size()-1);
             return *this;
         }
-        T * buf() {
-            // use at your own risk, obviously...
+        T * start() {
             return this->e_buf;
+        }
+        T * end() {
+            return this->e_buf + this->size();
         }
         size_t size() {
             return this->e_size;
@@ -553,7 +562,7 @@ class SharedArray {
         // TODO:
         //      this should be const, does const reference have some other semantic?
         virtual SharedArray<T>& append(SharedArray<T>& other) {
-            this->ctrl->ptr->append(other.buf(), other.size());
+            this->ctrl->ptr->append(other.start(), other.size());
             return *this;
         }
         virtual SharedArray<T>& append(const T * els, const size_t num_els) {
@@ -569,6 +578,7 @@ class SharedArray {
             return *this;
         }
         virtual SharedArray<T>& remove(const size_t pos) {
+            printf("SharedArray remove\n");
             this->ctrl->ptr->remove(pos);
             return *this;
         }
@@ -580,8 +590,11 @@ class SharedArray {
             this->ctrl->ptr->removeBack();
             return *this;
         }
-        T * buf() {
-            return this->ctrl->ptr->buf();
+        T * start() {
+            return this->ctrl->ptr->start();
+        }
+        T * end() {
+            return this->ctrl->ptr->end();
         }
         virtual size_t size() {
             return this->ctrl->ptr->size();

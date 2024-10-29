@@ -38,7 +38,7 @@ class S3FileManager: public FileManager {
         void write(std::string path, SharedArray<uint8_t> buffer, bool append = false) override final;
 
         // probably never needed but why not
-        FileStat stat(std::string path) override final;
+        struct stat stat(std::string path) override final;
 
         SharedArray<std::string> list(std::string path) override final;
 

@@ -13,7 +13,7 @@ void S3FileManager::write(std::string path, SharedArray<uint8_t> buffer, size_t 
 void S3FileManager::write(std::string path, SharedArray<uint8_t> buffer, bool append) {
 }
 
-FileStat S3FileManager::stat(std::string path) {
+struct stat S3FileManager::stat(std::string path) {
 }
 SharedArray<std::string> S3FileManager::list(std::string path) {
 }

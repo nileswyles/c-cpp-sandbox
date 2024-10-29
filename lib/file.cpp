@@ -47,20 +47,16 @@ void FileManager::write(std::string path, SharedArray<uint8_t> buffer, bool appe
     WylesLibs::File::write(path, buffer, append);
 }
 
-FileStat FileManager::stat(std::string path) {
+struct stat FileManager::stat(std::string path) {
     int fd = open(path.c_str(), O_RDONLY);
     if (fd == -1) {
         throw std::runtime_error("Unable to read file at: " + path);
     }
     struct stat stat_info = {};
     int lol = fstat(fd, &stat_info);
-
-    FileStat stat;
-    stat.path = path;
-    stat.size = stat_info.st_size;
     close(fd);
 
-    return stat;
+    return stat_info;
 }
 SharedArray<std::string> FileManager::list(std::string path) {
     // if not directory (or is file)

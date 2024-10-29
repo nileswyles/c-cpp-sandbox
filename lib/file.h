@@ -71,14 +71,6 @@ static WylesLibs::SharedArray<uint8_t> read(std::string file_path) {
     return file;
 }
 
-class FileStat {
-    public:
-        std::string path;
-        std::string date;
-        size_t size;
-        FileStat() = default;
-        ~FileStat() = default;
-};
 class FileManager {
     public:
         FileManager() = default;
@@ -90,7 +82,7 @@ class FileManager {
         virtual void write(std::string path, SharedArray<uint8_t> buffer, size_t offset = 0);
         virtual void write(std::string path, SharedArray<uint8_t> buffer, bool append = false);
 
-        virtual FileStat stat(std::string path);
+        virtual struct stat stat(std::string path);
         virtual SharedArray<std::string> list(std::string path);
 
         virtual void remove(std::string path);

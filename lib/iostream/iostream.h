@@ -92,17 +92,19 @@ static_assert(sizeof(IOStream) ==
     sizeof(size_t) + 
     sizeof(size_t) +
     sizeof(SSL *) +
-    sizeof(int)
+    sizeof(int) + 
+    4 // just because?
 );
-static_assert(sizeof(IOStream) == 40);
+static_assert(sizeof(IOStream) == 48);
 #else
-// static_assert(sizeof(IOStream) == 
-//     sizeof(uint8_t *) + 
-//     sizeof(size_t) + 
-//     sizeof(size_t) + 
-//     sizeof(size_t) +
-//     sizeof(int)
-// );
+static_assert(sizeof(IOStream) == 
+    sizeof(uint8_t *) + 
+    sizeof(size_t) + 
+    sizeof(size_t) + 
+    sizeof(size_t) +
+    sizeof(int) +
+    4 // just because?
+);
 static_assert(sizeof(IOStream) == 40);
 #endif
 

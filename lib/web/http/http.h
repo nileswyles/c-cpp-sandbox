@@ -255,11 +255,12 @@ static_assert(sizeof(HttpConnection) ==
     sizeof(ThreadSafeMap<std::string, std::string>) +
     8 + // sizeof(SSL_CTX) +
     sizeof(std::shared_ptr<HttpFileWatcher>) +
+    sizeof(std::shared_ptr<FileManager>) +
     sizeof(ReaderTaskDisallow) +
     sizeof(ReaderTaskDisallow) +
     sizeof(ReaderTaskLC)
 );
-static_assert(sizeof(HttpConnection) == 688);
+static_assert(sizeof(HttpConnection) == 704);
 
 };
 

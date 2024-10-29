@@ -149,7 +149,7 @@ static void parseString(JsonArray * obj, IOStream * r) {
     std::string s;
     char prev_c = (char)0x00;
     uint16_t string_count = 0;
-    while (c != '"' || prev_c == '\\' && JSON_STRING_SIZE_LIMIT > string_count) {
+    while (c != '"' || (prev_c == '\\' && JSON_STRING_SIZE_LIMIT > string_count)) {
         /*
             '"'
             '\'

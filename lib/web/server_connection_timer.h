@@ -24,7 +24,7 @@ extern "C"
 
 typedef struct Connection {
     int fd;
-    uint64_t start_s;
+    struct timespec start_s;
     uint32_t timeout_s;
     Connection * next;
     Connection * prev;
@@ -75,8 +75,8 @@ static void * timerProcess(void * arg) {
             Connection * next = current->next;
             struct timespec ts;
             clock_gettime(CLOCK_MONOTONIC, &ts);
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "fd: %d, start: %lu, timeout: %u, current_time: %lu\n", current->fd, current->start_s, current->timeout_s, ts.tv_sec);
-            if (current->start_s + current->timeout_s <= ts.tv_sec) {
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "fd: %d, start: %ld, timeout: %u, current_time: %lu\n", current->fd, current->start_s.tv_sec, current->timeout_s, ts.tv_sec);
+            if (current->start_s.tv_sec + current->timeout_s <= ts.tv_sec) {
                 loggerPrintf(LOGGER_DEBUG, "Closing connection (with FD: %d) due to timer expiration.\n", current->fd);
                 closeConnection(current);
             }
@@ -121,7 +121,7 @@ static void timerAddConnection(int fd, uint32_t timeout_s) {
 
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    connection->start_s = ts.tv_sec;
+    connection->start_s = ts;
 
     connection->timeout_s = timeout_s;
     connection->prev = NULL;

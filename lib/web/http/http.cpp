@@ -65,7 +65,7 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
     request->version = io->readUntil("\n").removeBack().toString();
     request->version = request->version.substr(0, request->version.size()-1);
 
-    request->content_length = -1;
+    request->content_length = SIZE_MAX;
     int field_idx = 0; 
     while (field_idx < HTTP_FIELD_MAX) {
         std::string field_name = io->readUntil(":\n", &this->whitespace_lc_chain).toString();
@@ -104,7 +104,7 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
         throw std::runtime_error("Too many fields in request.");
     }
 
-    if (request->method == "POST" && request->fields["content-type"].size() > 0 && request->content_length != -1) {
+    if (request->method == "POST" && request->fields["content-type"].size() > 0 && request->content_length != SIZE_MAX) {
         loggerPrintf(LOGGER_DEBUG, "Content-Type: %s, Content-Length: %ld\n", request->fields["content-type"].front().c_str(), request->content_length);
         if ("application/json" == request->fields["content-type"].front()) {
             size_t i = 0;
@@ -217,8 +217,11 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
                     char message_digest[20];
                     SHA_CTX context;
                     int result = SHA1_Init(&context);
+                    if (0 == result) { throw std::runtime_error("SHA1 Init failed."); }
                     result = SHA1_Update(&context, (void *)key_string.c_str(), key_string.size());
+                    if (0 == result) { throw std::runtime_error("SHA1 Update failed."); }
                     result = SHA1_Final((unsigned char *)message_digest, &context);
+                    if (0 == result) { throw std::runtime_error("SHA1 Final failed."); }
 
                     char base64_encoded[32] = {0};
                     EVP_EncodeBlock((unsigned char *)base64_encoded, (unsigned char *)message_digest, 20);

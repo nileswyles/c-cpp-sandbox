@@ -490,7 +490,7 @@ class Array {
         // lol, also const reference? I'm pretty sure I looked into but think about this again... too lazy right now..
         T& operator[] (const T& el) {
             size_t i = this->find(el);
-            if (i == -1) {
+            if (i == SIZE_MAX) {
                 this->append(el); 
                 i = this->size() - 1;
             }

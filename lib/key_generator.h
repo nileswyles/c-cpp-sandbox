@@ -1,6 +1,8 @@
 #ifndef SEQUENCE_ID_GENERATOR_H
 #define SEQUENCE_ID_GENERATOR_H
 
+#include <memory>
+
 #include <math.h>
 #include <pthread.h>
 #include <string>
@@ -60,7 +62,7 @@ class UniqueKeyGeneratorStore {
                         current |= (byte - 0x41) + 0xA;
                     } else {
                         std::string msg = "Non-hex character detected.";
-                        loggerPrintf(LOGGER_DEBUG, "%s: [0x%x] at iteration %lu\n", msg.c_str(), byte, i);
+                        loggerPrintf(LOGGER_DEBUG, "%s: [0x%x] at iteration %u\n", msg.c_str(), byte, i);
                         throw std::runtime_error(msg);
                     }
                 }

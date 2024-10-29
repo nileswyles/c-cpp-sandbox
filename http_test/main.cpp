@@ -111,7 +111,7 @@ int main(int argc, char * argv[]) {
     
         fileWatcherThreadStart();
 
-        connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders); 
+        connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders, context.file_manager); 
         connection.initialize();
 
 

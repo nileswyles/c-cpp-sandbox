@@ -42,6 +42,7 @@
 using namespace WylesLibs;
 using namespace WylesLibs::Parser::Multipart;
 using namespace WylesLibs::Paths;
+using namespace WylesLibs::File;
 
 namespace WylesLibs::Http {
 
@@ -126,6 +127,8 @@ class HttpConnection {
         SSL_CTX * context;
 
         std::shared_ptr<HttpFileWatcher> file_watcher;
+        std::shared_ptr<FileManager> file_manager;
+
         void parseRequest(HttpRequest * request, IOStream * reader);
         void processRequest(IOStream * io, HttpRequest * request);
 
@@ -201,16 +204,17 @@ class HttpConnection {
         // haha, funny how that worked out...
         HttpConnection(HttpServerConfig pConfig, map<std::string, map<std::string, RequestProcessor *>> pRequest_map, 
                         SharedArray<RequestFilter> pRequest_filters, SharedArray<ResponseFilter> pResponse_filters, 
-                        SharedArray<ConnectionUpgrader *> pUpgraders) {
+                        SharedArray<ConnectionUpgrader *> pUpgraders, std::shared_ptr<FileManager> file_manager) {
             config = pConfig;
             request_map = pRequest_map;
             request_filters = pRequest_filters;
             response_filters = pResponse_filters;
             upgraders = pUpgraders;
             processor = nullptr;
+            file_manager = file_manager;
         }
-        HttpConnection(HttpServerConfig config, RequestProcessor * processor, SharedArray<ConnectionUpgrader *> upgraders): 
-            config(config), processor(processor), upgraders(upgraders) {
+        HttpConnection(HttpServerConfig config, RequestProcessor * processor, SharedArray<ConnectionUpgrader *> upgraders, std::shared_ptr<FileManager> file_manager): 
+            config(config), processor(processor), upgraders(upgraders), file_manager(file_manager) {
                 if (processor == nullptr) {
                     std::string msg = "Processor can not be a nullptr when invoking this constructor.";
                     loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());

@@ -1,6 +1,8 @@
 #include "tester.h"
 #include "key_generator.h"
 
+#include <memory>
+
 #ifndef LOGGER_KEY_GENERATOR_TEST
 #define LOGGER_KEY_GENERATOR_TEST 1
 #endif
@@ -11,11 +13,17 @@
 
 using namespace WylesLibs;
 using namespace WylesLibs::Test;
+using namespace WylesLibs::File;
+
+static std::shared_ptr<FileManager> file_manager = std::make_shared<FileManager>();
+
+static void beforeEach(TestArg * t) {
+    File::write("sequence_store", std::string("0000000000000000"), false); // clear file store
+}
 
 void testUniqueKeyGenerator(TestArg * t) {
-    File::write("sequence_store", std::string("0000000000000000"), false); // clear file store
     ServerConfig config;
-    UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore("sequence_store"));
+    UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore(file_manager, "sequence_store"));
 
     bool failed = false;
     for (size_t i = 0; i < 7; i++) {
@@ -30,9 +38,8 @@ void testUniqueKeyGenerator(TestArg * t) {
 }
 
 void testUniqueKeyStringGenerator(TestArg * t) {
-    File::write("sequence_store", std::string("0000000000000000"), false); // clear file store
     ServerConfig config;
-    UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore("sequence_store"));
+    UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore(file_manager, "sequence_store"));
 
     SharedArray<std::string> expected_keys{
         "0000000000000000",
@@ -102,7 +109,7 @@ void testUUIDGeneratorV7(TestArg * t) {
 }
 
 int main(int argc, char * argv[]) {
-    Tester t("Key Generator Tests");
+    Tester t("Key Generator Tests", nullptr, beforeEach, nullptr, nullptr);
 
     t.addTest(testUniqueKeyGenerator);
     t.addTest(testUUIDGeneratorV4);

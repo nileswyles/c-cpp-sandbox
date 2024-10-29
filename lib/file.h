@@ -41,11 +41,11 @@ static void write(std::string file_path, std::string buffer, bool append) {
     }
 }
 
-static void write(std::string file_path, SharedArray<uint8_t> buffer, bool append) {
+static void write(std::string path, SharedArray<uint8_t> buffer, bool append) {
     // open every time a problem?
-    std::fstream s{file_path, s.binary | s.out};
+    std::fstream s{path, s.binary | s.out};
     if (!s.is_open()) {
-        throw std::runtime_error("Unable to open file at: " + file_path);
+        throw std::runtime_error("Unable to open file at: " + path);
     } else {
         if (append) {
             s.seekp(0, std::ios_base::end);
@@ -71,5 +71,31 @@ static WylesLibs::SharedArray<uint8_t> read(std::string file_path) {
     return file;
 }
 
+class FileStat {
+    public:
+        std::string path;
+        std::string date;
+        size_t size;
+        FileStat() = default;
+        ~FileStat() = default;
+};
+class FileManager {
+    public:
+        FileManager() = default;
+        virtual ~FileManager() = default;
+
+        // hmm... to string or not to string.
+        virtual SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX);
+
+        virtual void write(std::string path, SharedArray<uint8_t> buffer, size_t offset = 0);
+        virtual void write(std::string path, SharedArray<uint8_t> buffer, bool append = false);
+
+        virtual FileStat stat(std::string path);
+        virtual SharedArray<std::string> list(std::string path);
+
+        virtual void remove(std::string path);
+        virtual void move(std::string path, std::string destination_path);
+        virtual void copy(std::string path, std::string destination_path);
+};
 }
 #endif

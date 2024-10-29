@@ -34,13 +34,17 @@
 #define LOGGER_LEVEL LOGGER_LEVEL_KEY_GENERATOR
 #include "logger.h"
 
+using namespace WylesLibs::File;
+
 namespace WylesLibs {
 
 class UniqueKeyGeneratorStore {
-    std::string file_path;
+    private:
+        std::shared_ptr<FileManager> file_manager;
+        std::string file_path;
     public:
         UniqueKeyGeneratorStore() {}
-        UniqueKeyGeneratorStore(std::string file_path): file_path(file_path) {}
+        UniqueKeyGeneratorStore(std::shared_ptr<FileManager> file_manager, std::string file_path): file_manager(file_manager), file_path(file_path) {}
         ~UniqueKeyGeneratorStore() = default;
         void refresh(uint64_t& current) {
             // read value from existing file...
@@ -66,7 +70,7 @@ class UniqueKeyGeneratorStore {
         void flush(SharedArray<uint8_t> data) {
             if (this->file_path.size() > 0) {
                 loggerPrintf(LOGGER_DEBUG, "Flushing sequence to data store at %s\n", this->file_path.c_str());
-                File::write(this->file_path, data, false);
+                this->file_manager->write(this->file_path, data, false);
             }
         }
 };

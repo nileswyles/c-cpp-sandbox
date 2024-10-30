@@ -25,9 +25,7 @@
 using namespace WylesLibs;
 
 namespace WylesLibs::File {
-
-static void write(std::shared_ptr<FileManager> file_manager, std::string path, SharedArray<uint8_t> buffer, bool append) {
-    std::shared_ptr<std::ostream> s = file_manager->writer(path);
+static void write(std::shared_ptr<std::ostream> s, SharedArray<uint8_t> buffer, bool append) {
     if (append) {
         s->seekp(0, std::ios_base::end);
     } else {
@@ -39,11 +37,9 @@ static void write(std::shared_ptr<FileManager> file_manager, std::string path, S
     //  That's rather annoying?
     s->flush();
     s->close();
-
-    file_manager->removeWriter(path);
 }
 
-static WylesLibs::SharedArray<uint8_t> read(std::shared_ptr<std::istream> s) {
+static SharedArray<uint8_t> read(std::shared_ptr<std::istream> s) {
     SharedArray<uint8_t> file_data;
     while (s->good() && !s->eof()) {
         file_data.append(s->get());
@@ -61,6 +57,15 @@ class FileManager {
     public:
         FileManager() = default;
         virtual ~FileManager() = default;
+
+        void write(std::string path, SharedArray<uint8_t> buffer, bool append) {
+            std::shared_ptr<std::ostream> s = this->writer(path);
+            File::write(s, buffer, append);
+            this->removeWriter(path);
+        }
+        SharedArray<uint8_t> read(std::string path) {
+            return File::read(this->reader(path));
+        }
 
         virtual std::shared_ptr<std::istream> reader(std::string path);
         virtual std::shared_ptr<std::ostream> writer(std::string path);

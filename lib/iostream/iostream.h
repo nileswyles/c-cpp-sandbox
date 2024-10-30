@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <fcntl.h>
 
 #ifdef WYLESLIBS_SSL_ENABLED
 #include <openssl/ssl.h>
@@ -20,7 +21,7 @@
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
 namespace WylesLibs {
-class IOStream {
+class IOStream: public std::istream {
     private:
         uint8_t * buf;
         size_t buf_size;
@@ -34,7 +35,15 @@ class IOStream {
         SSL * ssl;
 #endif
         int fd;
+        bool managed_fd;
         IOStream() {}
+        IOStream(std::string file_path) {
+            int fd = open(file_path.c_str(), O_RDONLY);
+            if (fd == -1) {
+                throw std::runtime_error("Unable to read file at: " + file_path);
+            }
+            managed_fd = true;
+        }
         IOStream(uint8_t * p_buf, const size_t p_buf_size) {
             buf = p_buf;
             buf_size = p_buf_size;
@@ -42,6 +51,7 @@ class IOStream {
             // ! IMPORTANT - an exception is thrown if read past buffer. (see fillBuffer implementation)
             fd = -1;
             bytes_in_buffer = p_buf_size;
+            managed_fd = false;
         }
 #ifdef WYLESLIBS_SSL_ENABLED
         IOStream(SSL * ssl): IOStream(0) {
@@ -64,8 +74,14 @@ class IOStream {
 #ifdef WYLESLIBS_SSL_ENABLED
             ssl = nullptr;
 #endif
+            managed_fd = false;
         }
-        ~IOStream() = default;
+        ~IOStream() {
+            delete[] buf;
+            if (true == managed_fd) {
+                close(fd);
+            }
+        };
         ssize_t writeBuffer(void * p_buf, size_t size);
         uint8_t peekByte();
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...

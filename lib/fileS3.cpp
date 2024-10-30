@@ -3,8 +3,6 @@
 using namespace WylesLibs;
 using namespace WylesLibs::File;
 
-SharedArray<uint8_t> S3FileManager::read(std::string path, size_t offset) {
-}
 SharedArray<uint8_t> S3FileManager::read(std::string path, size_t offset, size_t size) {
 }
 

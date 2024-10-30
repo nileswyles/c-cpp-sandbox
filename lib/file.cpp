@@ -14,20 +14,8 @@
 using namespace WylesLibs;
 using namespace WylesLibs::File;
 
-SharedArray<uint8_t> FileManager::read(std::string path, size_t offset, size_t size) {
-    int fd = open(path.c_str(), O_RDONLY);
-    if (fd == -1) {
-        throw std::runtime_error("Unable to read file at: " + path);
-    }
-    IOStream r(fd);
-    if (size == SIZE_MAX) {
-        struct stat stat_info = {};
-        int lol = fstat(fd, &stat_info);
-        size = stat_info.st_size - offset;
-    }
-    SharedArray<uint8_t> file = r.readBytes(size);
-    close(fd);
-    return file;
+std::shared_ptr<std::istream> FileManager::read(std::string path) {
+    return std::make_shared<IOStream>(path);
 }
 
 void FileManager::write(std::string path, SharedArray<uint8_t> buffer, size_t offset) {
@@ -41,7 +29,6 @@ void FileManager::write(std::string path, SharedArray<uint8_t> buffer, size_t of
         s.flush();
         s.close();
     }
-
 }
 void FileManager::write(std::string path, SharedArray<uint8_t> buffer, bool append) {
     WylesLibs::File::write(path, buffer, append);

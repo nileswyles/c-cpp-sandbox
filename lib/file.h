@@ -8,9 +8,10 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <string>
+#include <sys/stat.h>
 
 #include <fstream>
-#include <sys/stat.h>
+#include <memory>
 
 #ifndef LOGGER_FILE
 #define LOGGER_FILE 1
@@ -50,6 +51,7 @@ static void write(std::string path, SharedArray<uint8_t> buffer, bool append) {
         if (append) {
             s.seekp(0, std::ios_base::end);
         } else {
+            // TODO: I think expected behavior here is to overwrite file... if size < current size, this file should end at new size....
             s.seekp(0);
         }
         s.write((const char *)buffer.start(), buffer.size()); // binary output
@@ -76,8 +78,7 @@ class FileManager {
         FileManager() = default;
         virtual ~FileManager() = default;
 
-        // hmm... to string or not to string.
-        virtual SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX);
+        virtual std::shared_ptr<std::istream> read(std::string path);
 
         virtual void write(std::string path, SharedArray<uint8_t> buffer, size_t offset = 0);
         virtual void write(std::string path, SharedArray<uint8_t> buffer, bool append = false);

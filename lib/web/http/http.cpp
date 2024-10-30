@@ -171,6 +171,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
     }
     pthread_mutex_lock(this->static_paths.getMutex());
     std::string content_type = this->static_paths[path];
+    pthread_mutex_unlock(this->static_paths.getMutex());
 	if (content_type != "") {
         response = new HttpResponse;
 		if (request->method == "HEAD" || request->method == "GET") {
@@ -187,7 +188,6 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
             response->status_code = "500";
         }
 	}
-    pthread_mutex_unlock(this->static_paths.getMutex());
     return response;
 }
 

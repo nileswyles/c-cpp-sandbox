@@ -12,7 +12,7 @@
 #include "web/server_config.h"
 #include "paths.h"
 #include "file.h"
-#include "iostream/iostream.h"
+#include "estream/estream.h"
 #include "string_utils.h"
 
 // make sure global logger level is initialized
@@ -52,10 +52,10 @@ class UniqueKeyGeneratorStore {
             // read value from existing file...
             int fd = open(file_path.c_str(), O_RDONLY);
             if (fd != -1) {
-                IOStream r(fd);
+                EStream r(fd);
                 for (uint8_t i = 0; i < 16; i++) {
                     current = current << 4;
-                    uint8_t byte = r.readByte();
+                    uint8_t byte = r.get();
                     if (isDigit(byte)) {
                         current |= byte - 0x30;
                     } else if (isUpperHex(byte)) {

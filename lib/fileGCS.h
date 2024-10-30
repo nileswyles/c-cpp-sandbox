@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_FILES3_H
 #define WYLESLIBS_FILES3_H
 
-#include "iostream/iostream.h"
+#include "estream/estream.h"
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -37,8 +37,8 @@ class GCSFileManager: public FileManager {
         GCSFileManager(std::string bucket_name): bucket_name(bucket_name), client(google::cloud::storage::Client()) {};
         ~GCSFileManager() override final = default;
 
-        std::shared_ptr<std::istream> reader(std::string path) override final;
-        std::shared_ptr<std::ostream> writer(std::string path) override final;
+        std::shared_ptr<ReaderEStream> reader(std::string path) override final;
+        std::shared_ptr<WriterEStream> writer(std::string path) override final;
 
         struct stat stat(std::string path) override final;
 

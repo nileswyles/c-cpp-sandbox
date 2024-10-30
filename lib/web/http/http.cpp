@@ -35,7 +35,7 @@ using namespace WylesLibs::Parser;
 #define LOGGER_LEVEL LOGGER_LEVEL_HTTP
 #include "logger.h"
 
-static Url parseUrl(IOStream * io) {
+static Url parseUrl(EStream * io) {
     Url url;
     // path = /aklmdla/aslmlamk(?)
     SharedArray<uint8_t> path = io->readUntil("? ");
@@ -45,7 +45,7 @@ static Url parseUrl(IOStream * io) {
     }
 
     // TODO: because removeBack functionality of the array class isn't working...
-    //  IOStream can probably use string for readuntil but let's roll with this for now.
+    //  EStream can probably use string for readuntil but let's roll with this for now.
     //  Hesitant for obvious reasons...
     std::string pathString = path.toString();
     url.path = pathString.substr(0, pathString.size()-1);
@@ -53,7 +53,7 @@ static Url parseUrl(IOStream * io) {
     return url;
 }
 
-void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
+void HttpConnection::parseRequest(HttpRequest * request, EStream * io) {
     if (request == NULL || io == NULL) {
         throw std::runtime_error("lol....");
     }
@@ -124,7 +124,7 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
     }
 }
 
-void HttpConnection::processRequest(IOStream * io, HttpRequest * request) {
+void HttpConnection::processRequest(EStream * io, HttpRequest * request) {
         HttpResponse * response = this->handleStaticRequest(request); 
         if (response != nullptr) {
             this->writeResponse(response, io);
@@ -191,7 +191,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
     return response;
 }
 
-bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request) {
+bool HttpConnection::handleWebsocketRequest(EStream * io, HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING WEBSOCKET REQUEST\n");
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
@@ -243,7 +243,7 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
 }
 
 #ifdef WYLESLIBS_HTTP_DEBUG
-HttpResponse * HttpConnection::handleTimeoutRequests(IOStream * io, HttpRequest * request) {
+HttpResponse * HttpConnection::handleTimeoutRequests(EStream * io, HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING TIMEOUT REQUEST\n");
     HttpResponse * response = nullptr;
     if (request->url.path == "/timeout" && request->method == "POST") {
@@ -373,27 +373,34 @@ uint8_t HttpConnection::onConnection(int fd) {
     //  so, if need access to more memory you can call new where needed at point of creation of each thread.
 
     HttpRequest request;
-    IOStream io(fd);
+    EStream * io;
+    bool acceptedTLS = false;
     try {
         if (this->config.tls_enabled) {
-            io.ssl = this->acceptTLS(fd); // initializes ssl object for connection
+            SSLEStream sslio (this->acceptTLS(fd)); // initializes ssl object for connection
+            acceptedTLS = true;
+            io = (EStream *)&sslio;
+        } else {
+            EStream eio(fd);
+            io = &eio;
         }
-        this->parseRequest(&request, &io);
+        this->parseRequest(&request, io);
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
-        this->processRequest(&io, &request);
+        this->processRequest(io, &request);
     } catch (const std::exception& e) {
         loggerPrintf(LOGGER_ERROR, "Exception thrown while processing request: %s\n", e.what());
-        if (this->config.tls_enabled && io.ssl == nullptr) {
+        if (this->config.tls_enabled && false == acceptedTLS) {
             // then deduce error occured while initializing ssl
             loggerPrintf(LOGGER_DEBUG, "Error accepting and configuring TLS connection.\n");
         } else {
             // respond with empty HTTP status code 500
             HttpResponse * err = new HttpResponse;
-            writeResponse(err, &io);
+            writeResponse(err, io);
         }
     }
 
-    if (io.ssl != nullptr) {
+    if (acceptedTLS) {
+        // TODO:
         SSL_shutdown(io.ssl);
         SSL_free(io.ssl);
     }
@@ -402,7 +409,7 @@ uint8_t HttpConnection::onConnection(int fd) {
     return 1;
 }
 
-void HttpConnection::writeResponse(HttpResponse * response, IOStream * io) {
+void HttpConnection::writeResponse(HttpResponse * response, EStream * io) {
     std::string data = response->toString();
     // ! IMPORTANT - this response pointer will potentially come from an end-user (another developer)... YOU WILL ENCOUNTER PROBLEMS IF THE POINTER IS CREATED USING MALLOC AND NOT NEW
     delete response;

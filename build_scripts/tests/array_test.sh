@@ -16,7 +16,7 @@ ROOT_DIR="."
 SRC_FILES="
 -s $ROOT_DIR/lib/test/array_test.cpp 
 -s $ROOT_DIR/lib/test/tester.cpp 
--s $ROOT_DIR/lib/iostream/iostream.cpp 
+-s $ROOT_DIR/lib/iostream/estream.cpp 
 -s $ROOT_DIR/lib/datastructures/array.cpp
 "
 

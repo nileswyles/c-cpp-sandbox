@@ -1,11 +1,10 @@
-#include <stdbool.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-#include "string_utils.h"
 #include "json_parser.h"
 #include "json_array.h"
 #include "json_object.h"
+#include "string_utils.h"
+
+#include <stdbool.h>
+#include <unistd.h>
 
 #ifndef LOGGER_JSON_PARSER
 #define LOGGER_JSON_PARSER 1
@@ -17,38 +16,39 @@
 
 using namespace WylesLibs::Parser::Json;
 using namespace WylesLibs::Parser;
+using namespace WylesLibs::File;
 using namespace WylesLibs;
 
-static void readWhiteSpaceUntil(IOStream * r, std::string until);
+static void readWhiteSpaceUntil(EStream * r, std::string until);
 
 // tree base
-static void parseNumber(JsonArray * obj, IOStream * r);
-static void parseString(JsonArray * obj, IOStream * r);
-static void parseImmediate(JsonArray * obj, IOStream * r, std::string comp, JsonValue * value);
+static void parseNumber(JsonArray * obj, EStream * r);
+static void parseString(JsonArray * obj, EStream * r);
+static void parseImmediate(JsonArray * obj, EStream * r, std::string comp, JsonValue * value);
 
 // base-ish (base and 1 at same time)...
-static void parseNestedObject(JsonArray * obj, IOStream * r);
-static void parseArray(JsonArray * obj, IOStream * r);
+static void parseNestedObject(JsonArray * obj, EStream * r);
+static void parseArray(JsonArray * obj, EStream * r);
 
 // 2 
-static void parseValue(JsonArray * obj, IOStream * r);
-static bool parseKey(JsonObject * obj, IOStream * r);
+static void parseValue(JsonArray * obj, EStream * r);
+static bool parseKey(JsonObject * obj, EStream * r);
 
 // 1
-static void parseObject(JsonObject * obj, IOStream * r);
+static void parseObject(JsonObject * obj, EStream * r);
 
 // LMAO ! IMPORTANT - design choice no unnecessary checks because not exposed to the world and code within this module should be trusted.
 //      SO, know what your doing if you edit this file.
 
-static void readWhiteSpaceUntil(IOStream * r, std::string until) {
-    char c = r->peekByte();
+static void readWhiteSpaceUntil(EStream * r, std::string until) {
+    char c = r->peek();
     loggerPrintf(LOGGER_DEBUG, "Reading Whitespace Until: %s, %c\n", until.c_str(), c);
     if (until.find(c) != std::string::npos) {
         return;
     }
     while (STRING_UTILS_WHITESPACE.find(c) != std::string::npos) {
-        r->readByte(); // consume whitespace...
-        c = r->peekByte();
+        r->get(); // consume whitespace...
+        c = r->peek();
     }
     if (until.find(c) == std::string::npos) {
         std::string msg = "Only allow whitespace between tokens...";
@@ -58,7 +58,7 @@ static void readWhiteSpaceUntil(IOStream * r, std::string until) {
     // cursor == until...
 }
 
-static void parseNumber(JsonArray * obj, IOStream * r) {
+static void parseNumber(JsonArray * obj, EStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number\n");
     int8_t sign = 1;
     int8_t exponential_sign = 0;
@@ -67,13 +67,13 @@ static void parseNumber(JsonArray * obj, IOStream * r) {
 
     size_t natural_digits = 1;
     size_t decimal_digits = 1;
-    char c = r->peekByte();
+    char c = r->peek();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     if (c == '-') {
         sign = -1;
     }
 
-    c = r->peekByte();
+    c = r->peek();
     if (isDigit(c)) {
         r->readNatural(value, natural_digits);
     } else {
@@ -84,9 +84,9 @@ static void parseNumber(JsonArray * obj, IOStream * r) {
     }
 
     std::string comp(" ,}\r\n\t");
-    c = r->peekByte();
+    c = r->peek();
     if (c == '.') {
-        r->readByte();
+        r->get();
         r->readDecimal(value, decimal_digits);
     } else if (comp.find(c) == std::string::npos) { // if not one of the characters in comp throw exception...
         std::string msg = "Invalid number.";
@@ -94,15 +94,15 @@ static void parseNumber(JsonArray * obj, IOStream * r) {
         throw std::runtime_error(msg);
     }
 
-    c = r->peekByte();
+    c = r->peek();
     if (c == 'e' || c == 'E') {
-        c = r->peekByte();
+        c = r->peek();
         if (c == '-') { 
             exponential_sign = -1;
-            r->readByte();
+            r->get();
         } else if (c == '+') {
             exponential_sign = 1;
-            r->readByte();
+            r->get();
         }
 
         double exp = 0;
@@ -139,12 +139,12 @@ static void parseNumber(JsonArray * obj, IOStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsed Number\n");
 }
 
-static void parseString(JsonArray * obj, IOStream * r) {
+static void parseString(JsonArray * obj, EStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing String\n");
 
-    r->readByte(); // consume starting quote
+    r->get(); // consume starting quote
 
-    char c = r->readByte();
+    char c = r->get();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string s;
     char prev_c = (char)0x00;
@@ -187,7 +187,7 @@ static void parseString(JsonArray * obj, IOStream * r) {
         }
         string_count++;
         prev_c = c;
-        c = r->readByte();
+        c = r->get();
     }
 
     if (s.size() > MAX_LENGTH_OF_JSON_STRING_VALUES) {
@@ -201,12 +201,12 @@ static void parseString(JsonArray * obj, IOStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
 }
 
-static void parseImmediate(JsonArray * obj, IOStream * r, std::string comp, JsonValue * value) {
+static void parseImmediate(JsonArray * obj, EStream * r, std::string comp, JsonValue * value) {
     loggerPrintf(LOGGER_DEBUG, "Parsing %s\n", comp.c_str());
 
     std::string actual = r->readBytes(comp.size()).toString();
     if (actual == comp) {
-        loggerPrintf(LOGGER_DEBUG, "Parsed %s, @ %c\n", comp.c_str(), r->peekByte());
+        loggerPrintf(LOGGER_DEBUG, "Parsed %s, @ %c\n", comp.c_str(), r->peek());
         obj->addValue(value);
     } else {
         std::string msg = "Invalid immediate value - throw away the whole object. Don't rest on your laurels!";
@@ -215,8 +215,8 @@ static void parseImmediate(JsonArray * obj, IOStream * r, std::string comp, Json
     }
 }
 
-static void parseNestedObject(JsonArray * arr, IOStream * r) {
-    char c = r->peekByte();
+static void parseNestedObject(JsonArray * arr, EStream * r) {
+    char c = r->peek();
     if (c == '{') {
         JsonObject * new_obj = new JsonObject(arr->depth + 1);
         arr->addValue((JsonValue *)new_obj);
@@ -225,25 +225,25 @@ static void parseNestedObject(JsonArray * arr, IOStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Returning object, found %c\n", c);
 }
 
-static void parseArray(JsonArray * arr, IOStream * r) {
+static void parseArray(JsonArray * arr, EStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array\n");
 
-    char c = r->readByte();
+    char c = r->get();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     while(c != ']') {
         if (c == '[' || c == ',') { 
             parseValue(arr, r);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
-        loggerPrintf(LOGGER_DEBUG, "%c\n", r->peekByte());
-        c = r->readByte();
+        loggerPrintf(LOGGER_DEBUG, "%c\n", r->peek());
+        c = r->get();
     }
 
     loggerPrintf(LOGGER_DEBUG, "Parsed Array\n");
 }
 
-static void parseValue(JsonArray * obj, IOStream * r) {
-    char c = r->peekByte();
+static void parseValue(JsonArray * obj, EStream * r) {
+    char c = r->peek();
     bool parsed = false;
     // read until , or } or parsed token...
     while (c != ',' && c != '}' && c != ']') { 
@@ -284,7 +284,7 @@ static void parseValue(JsonArray * obj, IOStream * r) {
                 throw std::runtime_error(msg);
             } else {
                 // consume whitespace...
-                r->readByte();
+                r->get();
             }
         } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
             std::string msg = "Non-whitespace found right of value token.";
@@ -292,14 +292,14 @@ static void parseValue(JsonArray * obj, IOStream * r) {
             throw std::runtime_error(msg);
         } else {
             // consume whitespace...
-            r->readByte();
+            r->get();
         }
-        c = r->peekByte();
+        c = r->peek();
     }
 }
 
-static bool parseKey(JsonObject * obj, IOStream * r) {
-    loggerPrintf(LOGGER_DEBUG, "Parsing Key. %c\n", r->peekByte());
+static bool parseKey(JsonObject * obj, EStream * r) {
+    loggerPrintf(LOGGER_DEBUG, "Parsing Key. %c\n", r->peek());
 
     ReaderTaskExtract extract('"', '"');
     SharedArray<uint8_t> key = r->readUntil(":}", &extract);
@@ -336,8 +336,8 @@ static bool parseKey(JsonObject * obj, IOStream * r) {
     return true;
 }
 
-static void parseObject(JsonObject * obj, IOStream * r) {
-    char c = r->readByte();
+static void parseObject(JsonObject * obj, EStream * r) {
+    char c = r->get();
     while (c != '}') {
         if (c == '{' || c == ',') {
             if (!parseKey(obj, r)) {
@@ -345,7 +345,7 @@ static void parseObject(JsonObject * obj, IOStream * r) {
                 break;
             }
             parseValue(&(obj->values), r);
-            c = r->readByte();
+            c = r->get();
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function. @ %c\n", c);
         }
     }
@@ -353,17 +353,10 @@ static void parseObject(JsonObject * obj, IOStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");
 }
 
-extern JsonValue * WylesLibs::Parser::Json::parseFile(std::string file_path) {
-    int fd = open(file_path.c_str(), O_RDONLY);
-    if (fd == -1) {
-        std::string msg = "File does not exist.";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-        throw std::runtime_error(msg);
-    }
+extern JsonValue * WylesLibs::Parser::Json::parseFile(std::shared_ptr<FileManager> file_manager, std::string file_path) {
     size_t i = 0;
-    IOStream r(fd);
-    JsonValue * json = parse(&r, i);
-    close(fd);
+    std::shared_ptr<ReaderEStream> s = file_manager->reader(file_path);
+    JsonValue * json = parse((EStream *)s.get(), i);
     return json;
 }
 
@@ -376,7 +369,7 @@ extern JsonValue * WylesLibs::Parser::Json::parse(std::string json) {
         throw std::runtime_error(msg);
     }
     size_t i = 0;
-    IOStream r((uint8_t *)json.data(), json.size());
+    EStream r((uint8_t *)json.data(), json.size());
     return parse(&r, i);
 }
 
@@ -387,7 +380,7 @@ extern JsonValue * WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
         throw std::runtime_error(msg);
     }
     size_t i = 0;
-    IOStream r(json.start(), json.size());
+    EStream r(json.start(), json.size());
     return parse(&r, i);
 }
 
@@ -397,11 +390,11 @@ extern JsonValue * WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
 //      and .at() bounds checks (exceptions), [] doesn't
     // string construction? iterates over string to get length? that might be reason enough to change back to pointers lol... or maybe copy constructor is optimized? yeah
     //  but still that initial creation... 
-extern JsonValue * WylesLibs::Parser::Json::parse(IOStream * r, size_t& i) {
+extern JsonValue * WylesLibs::Parser::Json::parse(EStream * r, size_t& i) {
     readWhiteSpaceUntil(r, "{[");
 
     JsonValue * obj = nullptr;
-    char c = r->peekByte();
+    char c = r->peek();
     loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {
         JsonObject * new_obj = new JsonObject(0);

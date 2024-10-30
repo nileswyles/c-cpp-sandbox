@@ -5,6 +5,8 @@
 #include "web/server_config.h"
 #include "file.h"
 
+#include <memory>
+
 #ifndef LOGGER_HTTP_SERVER_CONFIG
 #define LOGGER_HTTP_SERVER_CONFIG 1
 #endif
@@ -15,6 +17,7 @@
 
 using namespace WylesLibs;
 using namespace WylesLibs::Parser::Json;
+using namespace WylesLibs::File;
 
 namespace WylesLibs::Http {
 
@@ -31,7 +34,7 @@ class HttpServerConfig: public ServerConfig {
         bool client_auth_enabled;
 
         HttpServerConfig(): static_path("./"), root_html_file("index.html"), address("127.0.0.1"), port(8080) {}
-        HttpServerConfig(std::string filepath): HttpServerConfig((JsonObject *)parseFile(filepath)) {}
+        HttpServerConfig(std::string filepath): HttpServerConfig((JsonObject *)parseFile(std::make_shared<FileManager>(), filepath)) {}
         HttpServerConfig(JsonObject * obj): ServerConfig(obj) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             // Defaults for optional fields...

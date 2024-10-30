@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_FILES_H
 #define WYLESLIBS_FILES_H
 
-#include "iostream/iostream.h"
+#include "estream/estream.h"
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -28,22 +28,18 @@ namespace WylesLibs::File {
 
 static void write(std::shared_ptr<std::ostream> s, SharedArray<uint8_t> buffer, bool append = false) {
     if (append) {
-        s->seekp(0, std::ios_base::end);
+        s->seekp(std::ios_base::end);
     } else {
         // TODO: I think expected behavior here is to overwrite file... if size < current size, this file should end at new size....
         s->seekp(0);
     }
     s->write((const char *)buffer.start(), buffer.size()); // binary output
-    // TODO: hopefully it's more like ifstream than istream, doubt it?
-    //  That's rather annoying?
     s->flush();
 }
 
 static void write(std::shared_ptr<std::ostream> s, SharedArray<uint8_t> buffer, size_t offset = 0) {
     s->seekp(offset);
     s->write((const char *)buffer.start(), buffer.size()); // binary output
-    // TODO: hopefully it's more like ifstream than istream, doubt it?
-    //  That's rather annoying?
     s->flush();
 }
 
@@ -73,7 +69,8 @@ class FileManager {
         virtual ~FileManager() = default;
 
         void write(std::string path, SharedArray<uint8_t> buffer, bool append) {
-            std::shared_ptr<std::ostream> s = this->writer(path);
+            // annoying but necessary
+            std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(this->writer(path));
             File::write(s, buffer, append);
 
             // TODO: hopefully it's more like ifstream than istream, doubt it?
@@ -82,22 +79,19 @@ class FileManager {
             this->removeWriter(path);
         }
         void write(std::string path, SharedArray<uint8_t> buffer, size_t offset = 0) {
-            std::shared_ptr<std::ostream> s = this->writer(path);
+            std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(this->writer(path));
             File::write(s, buffer, offset);
             // TODO: hopefully it's more like ifstream than istream, doubt it?
             //  That's rather annoying?
             // s->close();
             this->removeWriter(path);
         }
-        SharedArray<uint8_t> read(std::string path) {
-            return File::read(this->reader(path));
-        }
         SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
-            return File::read(this->reader(path), offset, size);
+            return File::read(std::dynamic_pointer_cast<std::istream>(this->reader(path)), offset, size);
         }
 
-        virtual std::shared_ptr<std::istream> reader(std::string path);
-        virtual std::shared_ptr<std::ostream> writer(std::string path);
+        virtual std::shared_ptr<ReaderEStream> reader(std::string path);
+        virtual std::shared_ptr<WriterEStream> writer(std::string path);
         // ! IMPORTANT - implementation should call this function when done with writer...
         //      is there a better way? yeah, maybe different ostream type with shared_ptr to this stuff... that removes when close is called...? too complicated?
         virtual void removeWriter(std::string path);

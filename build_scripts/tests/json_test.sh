@@ -21,7 +21,7 @@ SRC_FILES="
 -s $ROOT_DIR/lib/parser/json/json_object.cpp
 -s $ROOT_DIR/lib/parser/json/json_array.cpp
 -s $ROOT_DIR/lib/test/tester.cpp
--s $ROOT_DIR/lib/iostream/iostream.cpp
+-s $ROOT_DIR/lib/iostream/estream.cpp
 -s $ROOT_DIR/lib/iostream/reader_task.cpp
 "
 

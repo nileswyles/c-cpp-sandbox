@@ -20,7 +20,7 @@
 // other
 #include <openssl/ssl.h>
 
-#include "iostream/iostream.h"
+#include "estream/estream.h"
 #include "web/server.h"
 #include "config.h"
 #include "connection.h"
@@ -129,13 +129,13 @@ class HttpConnection {
         std::shared_ptr<HttpFileWatcher> file_watcher;
         std::shared_ptr<FileManager> file_manager;
 
-        void parseRequest(HttpRequest * request, IOStream * reader);
-        void processRequest(IOStream * io, HttpRequest * request);
+        void parseRequest(HttpRequest * request, EStream * reader);
+        void processRequest(EStream * io, HttpRequest * request);
 
         HttpResponse * handleStaticRequest(HttpRequest * request);
-        bool handleWebsocketRequest(IOStream * io, HttpRequest * request);
+        bool handleWebsocketRequest(EStream * io, HttpRequest * request);
 #ifdef WYLESLIBS_HTTP_DEBUG
-        HttpResponse * handleTimeoutRequests(IOStream * io, HttpRequest * request);
+        HttpResponse * handleTimeoutRequests(EStream * io, HttpRequest * request);
 #endif
         HttpResponse * requestDispatcher(HttpRequest * request);
 
@@ -143,7 +143,7 @@ class HttpConnection {
         ReaderTaskDisallow whitespace_chain;
         ReaderTaskDisallow whitespace_lc_chain;
         ReaderTaskLC lowercase_task;
-        void writeResponse(HttpResponse * response, IOStream * io);
+        void writeResponse(HttpResponse * response, EStream * io);
 
         void initializeStaticPaths(HttpServerConfig config, ThreadSafeMap<std::string, std::string> static_paths) {
             loggerPrintf(LOGGER_DEBUG, "Static Paths: %s\n", config.static_path.c_str());
@@ -193,7 +193,7 @@ class HttpConnection {
                 this->context = nullptr;
             }
         }
-        void initializeIOStreamTasks() {
+        void initializeEStreamTasks() {
             this->lowercase_task = ReaderTaskLC();
             this->whitespace_chain.to_disallow = "\t ";
             this->whitespace_lc_chain.to_disallow = "\t ";
@@ -227,7 +227,7 @@ class HttpConnection {
 
         // ! IMPORTANT - this needs to be explicitly called by construction caller because CPP.
         void initialize() {
-            initializeIOStreamTasks();
+            initializeEStreamTasks();
             initializeStaticPaths(config, static_paths);
             initializeSSLContext();
             // Array<std::string> paths{config.static_path};

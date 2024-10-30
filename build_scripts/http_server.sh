@@ -25,7 +25,7 @@ SRC_FILES="
 -s $ROOT_DIR/http_test/main.cpp
 -s $ROOT_DIR/http_test/controllers/example.cpp
 -s $ROOT_DIR/http_test/services/example.cpp
--s $ROOT_DIR/lib/iostream/iostream.cpp
+-s $ROOT_DIR/lib/iostream/estream.cpp
 -s $ROOT_DIR/lib/web/server.c
 -s $ROOT_DIR/lib/file_watcher.cpp
 -s $ROOT_DIR/lib/web/http/http_file_watcher.cpp

@@ -12,7 +12,7 @@ using WylesLibs::Parser;
 
 namespace WylesLibs::Parser::Multipart::ByteRanges {
 // lol, still valid for client code...
-static void parse(IOStream * r, MultipartFile& file) {
+static void parse(EStream * r, MultipartFile& file) {
     while (1) {
         SharedArray<uint8_t> potential_boundary = r->readUntil("\n"); // read and consume boundary string
         if (potential_boundary.at(0) == '-' && potential_boundary.at(1) == '-') {
@@ -38,7 +38,7 @@ static void parse(IOStream * r, MultipartFile& file) {
             double min = 0;
             uint32_t digits = 0;
             r->parseNatural(min, digits);
-            if (r->readByte() != '-') {
+            if (r->get() != '-') {
                 // -50 == 0-50... that's fine...
                 // throw exception...
                 throw std::runtime_error("Out of bounds error.");
@@ -47,7 +47,7 @@ static void parse(IOStream * r, MultipartFile& file) {
             double max = 0;
             digits = 0;
             r->parseNatural(max, digits);
-            if (r->readByte() != '/') {
+            if (r->get() != '/') {
                 // 0- == 0-0... that's fine...
                 // throw exception...
                 throw std::runtime_error("Out of bounds error.");

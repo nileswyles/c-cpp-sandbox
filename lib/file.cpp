@@ -14,24 +14,29 @@
 using namespace WylesLibs;
 using namespace WylesLibs::File;
 
-std::shared_ptr<std::istream> FileManager::reader(std::string path) {
-    return std::dynamic_pointer_cast<std::istream>(std::make_shared<std::ifstream>(path));
+std::shared_ptr<ReaderEStream> FileManager::reader(std::string path) {
+    std::shared_ptr<std::istream> s = std::dynamic_pointer_cast<std::istream>(std::make_shared<std::ifstream>(path));
+    return std::make_shared<ReaderEStream>(ReaderEStream(s));
 }
 
-std::shared_ptr<std::ostream> FileManager::writer(std::string path) {
+std::shared_ptr<WriterEStream> FileManager::writer(std::string path) {
     pthread_mutex_lock(&this->writers_lock);
     if (false == this->writers.contains(path)) {
-        // if empty ostream try again indefinetly?
-        return std::make_shared<std::ostream>();
+        return nullptr;
     }
-    std::shared_ptr<std::ostream> w = std::dynamic_pointer_cast<std::ostream>(std::make_shared<std::ofstream>(path, std::fstream::binary | std::fstream::out));
+    std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(std::make_shared<std::ofstream>(path, std::fstream::binary | std::fstream::out));
+    std::shared_ptr<WriterEStream> w = std::make_shared<WriterEStream>(WriterEStream(s));
     this->writers.insert(path); 
     pthread_mutex_unlock(&this->writers_lock);
     return w;
 }
 
+// TODO: store stream ptrs, up-cast flush and close?
+//      or implement my own streams that implements close... gcs doesn't support close anyways? but will this be an issue for other solutions?
+//      not as extensible?
 void FileManager::removeWriter(std::string path) {
     pthread_mutex_lock(&this->writers_lock);
+//      for now let's assume destructors flush and close appropriately...
     this->writers.erase(path);
     pthread_mutex_unlock(&this->writers_lock);
 }

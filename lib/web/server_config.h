@@ -4,7 +4,10 @@
 #include "parser/json/json.h"
 #include "file.h"
 
+#include <memory>
+
 using namespace WylesLibs::Parser::Json;
+using namespace WylesLibs::File;
 
 namespace WylesLibs {
 
@@ -14,7 +17,7 @@ class ServerConfig: public JsonBase {
 
         ServerConfig(): resources_root("./") {}
         ServerConfig(std::string filepath): 
-            ServerConfig((JsonObject *)parseFile(filepath)) {}
+            ServerConfig((JsonObject *)parseFile(std::make_shared<FileManager>(), filepath)) {}
         ServerConfig(JsonObject * obj) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {

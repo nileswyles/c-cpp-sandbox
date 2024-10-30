@@ -1,4 +1,4 @@
-#include "iostream.h"
+#include "estream.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -33,30 +33,28 @@
 
 using namespace WylesLibs;
 
-uint8_t IOStream::peekByte() {
+uint8_t EStream::peek() {
     this->cursorCheck();
     return this->buf[this->cursor];
 }
 
-uint8_t IOStream::readByte() {
-    uint8_t byte = peekByte();
+uint8_t EStream::get() {
+    uint8_t byte = peek();
     this->cursor++;
     return byte;
 }
 
-ssize_t IOStream::writeBuffer(void * p_buf, size_t size) {
-#ifdef WYLESLIBS_SSL_ENABLED
-    if (this->ssl == nullptr) {
-        return write(this->fd, p_buf, size);
-    } else {
-        return SSL_write(this->ssl, p_buf, size);
-    }
-#else 
+ssize_t EStream::writeBuffer(void * p_buf, size_t size) {
     return write(this->fd, p_buf, size);
-#endif
 }
 
-SharedArray<uint8_t> IOStream::readBytes(const size_t n) {
+#ifdef WYLESLIBS_SSL_ENABLED
+ssize_t SSLEStream::writeBuffer(void * p_buf, size_t size) {
+    return SSL_write(this->ssl, p_buf, size);
+}
+#endif
+
+SharedArray<uint8_t> EStream::readBytes(const size_t n) {
     this->cursorCheck();
 
     if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
@@ -84,29 +82,23 @@ SharedArray<uint8_t> IOStream::readBytes(const size_t n) {
     return data;
 }
 
-SharedArray<uint8_t> IOStream::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
+SharedArray<uint8_t> EStream::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
     // # less clunky
     if (operation != nullptr) {
         operation->read_until = until;
     }
 
-    this->cursorCheck();
-
     SharedArray<uint8_t> data;
-    uint8_t c = this->buf[this->cursor];
+    uint8_t c = this->peek();
     while (until.find(c) == std::string::npos) {
+        this->get(); // consume
         // commit character
         if (operation != nullptr) {
             operation->perform(data, c);
         } else {
             data.append(c);
         }
-        // move to next character
-        this->cursor++;
-        // if no more data in buffer (cursor beyond end of buffer), fill buffer and reset cursor...
-        this->cursorCheck();
-        // points to new value...
-        c = this->buf[this->cursor]; 
+        c = this->peek();
     }
     if (inclusive) {
         // commit character
@@ -116,7 +108,7 @@ SharedArray<uint8_t> IOStream::readUntil(std::string until, ReaderTask * operati
             data.append(c);
         }
         // make sure to move cursor past until char. else still point to until char for next read...
-        this->cursor++;
+        this->get();
     }
     if (operation != nullptr) {
         operation->flush(data);
@@ -128,18 +120,9 @@ SharedArray<uint8_t> IOStream::readUntil(std::string until, ReaderTask * operati
     return data;
 }
 
-void IOStream::fillBuffer() {
+void EStream::fillBuffer() {
     this->cursor = 0;
-    ssize_t ret = -1;
-#ifdef WYLESLIBS_SSL_ENABLED
-    if (this->ssl == nullptr) {
-        ret = read(this->fd, this->buf, this->buf_size);
-    } else {
-        ret = SSL_read(this->ssl, this->buf, this->buf_size);
-    }
-#else 
-    ret = read(this->fd, this->buf, this->buf_size);
-#endif
+    ssize_t ret = read(this->fd, this->buf, this->buf_size);
     // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
@@ -148,20 +131,34 @@ void IOStream::fillBuffer() {
     } else {
         this->bytes_in_buffer = ret;
         loggerExec(LOGGER_DEBUG_VERBOSE,
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
+        );
+    }
+}
+
 #ifdef WYLESLIBS_SSL_ENABLED
+void SSLEStream::fillBuffer() {
+    this->cursor = 0;
+    ssize_t ret = SSL_read(this->ssl, this->buf, this->buf_size);
+    // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
+    if (ret <= 0 || (size_t)ret > this->buf_size) {
+        this->bytes_in_buffer = 0;
+        loggerPrintf(LOGGER_ERROR, "Read error: %d, ret: %ld\n", errno, ret);
+        throw std::runtime_error("Read error.");
+    } else {
+        this->bytes_in_buffer = ret;
+        loggerExec(LOGGER_DEBUG_VERBOSE,
             if (this->ssl == nullptr) {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
             } else {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from tls layer.\n", ret);
             }
-#else 
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
-#endif
         );
     }
 }
+#endif
 
-void IOStream::cursorCheck() {
+void EStream::cursorCheck() {
     if (this->cursor >= this->bytes_in_buffer) {
         fillBuffer();
     }
@@ -171,15 +168,15 @@ void IOStream::cursorCheck() {
 //  streamify, these as well.
 //  also, think about what other generalizations can be made - think map/reduce/filter/collect
 //  some of the afforementioned operations are already accounted for.
-void IOStream::readDecimal(double& value, size_t& digit_count) {
+void EStream::readDecimal(double& value, size_t& digit_count) {
     double decimal_divisor = 10;
-    char c = this->peekByte();
+    char c = this->peek();
     while (isDigit(c)) {
-        this->readByte();
+        this->get();
         value += (c - 0x30) / decimal_divisor;
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
         decimal_divisor *= 10;
-        c = this->peekByte();
+        c = this->peek();
         if (++digit_count > NUMBER_MAX_DIGITS) {
             std::string msg = "parseDecimal: Exceeded decimal digit limit.";
             loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
@@ -188,13 +185,13 @@ void IOStream::readDecimal(double& value, size_t& digit_count) {
     }
 }
 
-void IOStream::readNatural(double& value, size_t& digit_count) {
-    char c = this->peekByte();
+void EStream::readNatural(double& value, size_t& digit_count) {
+    char c = this->peek();
     while (isDigit(c)) {
-        this->readByte();
+        this->get();
         value = (value * 10) + (c - 0x30); 
         loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
-        c = this->peekByte();
+        c = this->peek();
         if (++digit_count > NUMBER_MAX_DIGITS) {
             std::string msg = "parseNatural: Exceeded natural digit limit.";
             loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());

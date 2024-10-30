@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_FILES3_H
 #define WYLESLIBS_FILES3_H
 
-#include "iostream/iostream.h"
+#include "estream/estream.h"
 
 #include <stdio.h>
 #include <fcntl.h>

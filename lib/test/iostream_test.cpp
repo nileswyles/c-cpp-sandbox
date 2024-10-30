@@ -1,5 +1,5 @@
 #include "tester.h"
-#include "iostream/iostream.h"
+#include "estream/estream.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -34,7 +34,7 @@ using namespace WylesLibs::Test;
 
 static const char * buffer;
 
-// ! IMPORTANT - overriding stdlib's implementation of read (which is apparently weakly linked...)... IOStream's calls to read use this function. 
+// ! IMPORTANT - overriding stdlib's implementation of read (which is apparently weakly linked...)... EStream's calls to read use this function. 
 extern ssize_t read(int fd, void *buf, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
     memcpy(buf, buffer, ret);
@@ -51,7 +51,7 @@ static void readUntilAssert(TestArg * t, std::string result, std::string expecte
 }
 
 static void testReadUntil(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
@@ -63,7 +63,7 @@ static void testReadUntil(TestArg * t) {
 }
 
 static void testReadUntilUpperCase(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
@@ -76,7 +76,7 @@ static void testReadUntilUpperCase(TestArg * t) {
 }
 
 static void testReadUntilLowerCase(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
@@ -89,7 +89,7 @@ static void testReadUntilLowerCase(TestArg * t) {
 }
 
 static void testReadUntilAllow(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
     buffer = test_string;
@@ -104,7 +104,7 @@ static void testReadUntilAllow(TestArg * t) {
 }
 
 static void testReadUntilAllowStrict(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
     buffer = test_string;
@@ -123,7 +123,7 @@ static void testReadUntilAllowStrict(TestArg * t) {
 }
 
 static void testReadUntilDisallow(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRING";
     buffer = test_string;
@@ -136,7 +136,7 @@ static void testReadUntilDisallow(TestArg * t) {
 }
 
 static void testReadUntilDisallowStrict(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "TESTSTRING";
     buffer = test_string;
@@ -155,7 +155,7 @@ static void testReadUntilDisallowStrict(TestArg * t) {
 }
 
 static void testReadUntilTrim(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "     TESTSTRINGWITHSPACE     ";
     buffer = test_string;
@@ -168,7 +168,7 @@ static void testReadUntilTrim(TestArg * t) {
 }
 
 static void testReadUntilDisallowSpaceTrim(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "       TESTSTRINGWITHSPACE       ";
     buffer = test_string;
@@ -183,7 +183,7 @@ static void testReadUntilDisallowSpaceTrim(TestArg * t) {
 }
 
 static void testReadUntilExtract(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
     buffer = test_string;
@@ -196,7 +196,7 @@ static void testReadUntilExtract(TestArg * t) {
 }
 
 static void testReadUntilAllowExtract(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
     buffer = test_string;
@@ -211,7 +211,7 @@ static void testReadUntilAllowExtract(TestArg * t) {
 }
 
 static void testReadUntilDisallowExtract(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH O ";
     buffer = test_string;
@@ -226,7 +226,7 @@ static void testReadUntilDisallowExtract(TestArg * t) {
 }
 
 static void testReadUntilLowerCaseExtract(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
     buffer = test_string;
@@ -241,7 +241,7 @@ static void testReadUntilLowerCaseExtract(TestArg * t) {
 }
 
 static void testReadUntilUpperCaseExtract(TestArg * t) {
-    IOStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    EStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
     const char * test_string = "\"TESTSTRINGWiTHSPACE\"BLAH ";
     buffer = test_string;
@@ -257,7 +257,7 @@ static void testReadUntilUpperCaseExtract(TestArg * t) {
 
 static void testReadUntilCursorAtUntil(TestArg * t) {
     size_t buf_size = READER_RECOMMENDED_BUF_SIZE;
-    IOStream reader(1, buf_size);
+    EStream reader(1, buf_size);
     buffer = " BLAH";
 
     std::string result = reader.readUntil(" ").toString();
@@ -266,7 +266,7 @@ static void testReadUntilCursorAtUntil(TestArg * t) {
 
 static void testReadUntilFillBufferOnce(TestArg * t) {
     size_t buf_size = 7;
-    IOStream reader(1, buf_size);
+    EStream reader(1, buf_size);
 
     size_t expected_size = buf_size + 7;
     std::string expected;
@@ -282,7 +282,7 @@ static void testReadUntilFillBufferOnce(TestArg * t) {
 
 static void testReadUntilFillBufferTwice(TestArg * t) {
     size_t buf_size = 7;
-    IOStream reader(1, buf_size);
+    EStream reader(1, buf_size);
 
     size_t expected_size = (buf_size * 2) + 7;
     std::string expected;
@@ -297,7 +297,7 @@ static void testReadUntilFillBufferTwice(TestArg * t) {
 }
 
 int main(int argc, char * argv[]) {
-    Tester t("IOStream Tests");
+    Tester t("EStream Tests");
     // TODO: bug fix/feature needed... if we reach an "until" character while r_trimming (when open, before right_most_char is reached), then we will exit.
     //  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ": ": ' should yield ': ' not ':'. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
     

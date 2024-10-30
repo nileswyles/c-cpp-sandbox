@@ -3,26 +3,27 @@
 using namespace WylesLibs;
 using namespace WylesLibs::File;
 
-std::shared_ptr<std::istream> GCSFileManager::reader(std::string path) {
+std::shared_ptr<ReaderEStream> GCSFileManager::reader(std::string path) {
     auto reader = this->client.ReadObject(this->bucket_name, path);
     if (!reader) {
         throw std::runtime_error("Failed to create reader.");
     }
     // TODO: does this even need to be a shared_ptr?
-    return std::dynamic_pointer_cast<std::istream>(std::make_shared<google::cloud::storage::ObjectReadStream>(reader));
+    std::shared_ptr<std::istream> s = std::dynamic_pointer_cast<std::istream>(std::make_shared<google::cloud::storage::ObjectReadStream>(reader));
+    return std::make_shared<ReaderEStream>(ReaderEStream(s));
 }
 
-std::shared_ptr<std::ostream> GCSFileManager::writer(std::string path) {
+std::shared_ptr<WriterEStream> GCSFileManager::writer(std::string path) {
     pthread_mutex_lock(&this->writers_lock);
     if (false == this->writers.contains(path)) {
-        // if empty ostream try again indefinetly?
-        return std::make_shared<std::ostream>();
+        return nullptr;
     }
     auto writer = this->client.WriteObject(this->bucket_name, path);
     if (!writer.metadata()) {
         throw std::runtime_error("Failed to create writer.");
     }
-    std::shared_ptr<std::ostream> w = std::dynamic_pointer_cast<std::ostream>(std::make_shared<google::cloud::storage::ObjectWriteStream>(reader));
+    std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(std::make_shared<google::cloud::storage::ObjectWriteStream>(reader));
+    std::shared_ptr<WriterEStream> w = std::make_shared<WriterEStream>(WriterEStream(s));
     this->writers.insert(path); 
     pthread_mutex_unlock(&this->writers_lock);
     return w;

@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_CSV_H
 #define WYLESLIBS_CSV_H
 
-#include "iostream/iostream.h"
+#include "estream/estream.h"
 
 #include <string>
 #include <memory>
@@ -40,7 +40,7 @@ namespace WylesLibs {
     template<typename T>
     class CSV: public Matrix<T> {
         private:
-            std::shared_ptr<IOStream> io;
+            std::shared_ptr<EStream> io;
             size_t record_size;
             char separator;
             int fd;
@@ -141,9 +141,9 @@ namespace WylesLibs {
                     }
                 } else if (quoted && '"' == b){
                     // peak
-                    uint8_t peeked = (*this->io).peekByte();
+                    uint8_t peeked = (*this->io).peek();
                     if (peeked == '"') {
-                        (*this->io).readByte();
+                        (*this->io).get();
                     } else if (true == (peeked == this->separator || '\n' == peeked)){
                         // end of quoted string....
                         quoted = false;
@@ -162,7 +162,7 @@ namespace WylesLibs {
                 size_t f_i = 0;
                 std::string current_str;
                 while (r_i < r_count) {
-                    b = (*this->io).readByte();
+                    b = (*this->io).get();
                     // TODO: this requires '\n' at end of last record... which might be okay... but good to think about...
                     if (b == (uint8_t)EOF) {
                         break;
@@ -184,24 +184,24 @@ namespace WylesLibs {
                 size_t f_i = 0;
                 double current_double = 0;
                 while (r_i < r_count) {
-                    b = (*this->io).peekByte();
+                    b = (*this->io).peek();
                     // handle field delimeter
                     if (true == handleFieldDelimeter(current_double, b, r_i, f_i)) {
-                        (*this->io).readByte();
+                        (*this->io).get();
                         continue;
                     }
                     // handle numbers delimeter
                     size_t dummy_digit_count = 0;
                     if (isDigit(b)) {
                         (*this->io).readNatural(current_double, dummy_digit_count);
-                        if ((*this->io).peekByte() == '.') {
-                            (*this->io).readByte();
+                        if ((*this->io).peek() == '.') {
+                            (*this->io).get();
                             (*this->io).readDecimal(current_double, dummy_digit_count);
                         }
                         continue;
                         // buffer should be at non-numeric
                     } else if (b == (uint8_t)EOF) {
-                        (*this->io).readByte();
+                        (*this->io).get();
                         break;
                     } else {
                         throw std::runtime_error("Non-digit character found in CSV data.");
@@ -211,32 +211,21 @@ namespace WylesLibs {
         public:
             MatrixVector<std::string> header;
 
-            CSV(std::shared_ptr<IOStream> io): CSV(io, ',') {}
-            CSV(std::shared_ptr<IOStream> io, char separator): CSV(io, separator, -1) {}
-            CSV(std::shared_ptr<IOStream> io, char separator, int fd): io(io), separator(separator), record_size(0), fd(fd) {
+            CSV(std::shared_ptr<EStream> io): CSV(io, ',') {}
+            CSV(std::shared_ptr<EStream> io, char separator): CSV(io, separator, -1) {}
+            CSV(std::shared_ptr<EStream> io, char separator, int fd): io(io), separator(separator), record_size(0), fd(fd) {
                 if (separator == '.') {
                     throw std::runtime_error("Periods aren't allowed as CSV separator.");
                 }
             }
-            CSV(std::string file_path): CSV(file_path, separator) {}
-            CSV(std::string file_path, char separator) {
-                fd = open(file_path.c_str(), O_RDONLY);
-                if (fd == -1) {
-                    throw std::runtime_error("Unable to read file at: " + file_path);
-                }
-                // explicitly call other constructor
-                CSV(IOStream(fd), separator);
-            }
-            ~CSV() {
-                close(this->fd);
-            }
+            ~CSV() = default;
 
             void reset() {
                 this->record_size = 0;
             }
             void read(bool has_header) {
                 // TODO: this doesn't make much sense, user can just create new instance?
-                //  actually, no, since it's coupled now, more performance to allow reset (and reconfiguring IOStream (new))
+                //  actually, no, since it's coupled now, more performance to allow reset (and reconfiguring EStream (new))
                 //  TBC
                 this->reset();
                 T dumb_function_selector;

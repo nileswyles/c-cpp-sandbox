@@ -19,7 +19,15 @@ std::shared_ptr<std::istream> FileManager::reader(std::string path) {
 }
 
 std::shared_ptr<std::ostream> FileManager::writer(std::string path) {
-    return std::dynamic_pointer_cast<std::ostream>(std::make_shared<std::ofstream>(path, std::fstream::binary | std::fstream::out));
+    pthread_mutex_lock(&this->writers_lock);
+    if (false == this->writers.contains(path)) {
+        // if empty ostream try again indefinetly?
+        return std::make_shared<std::ostream>();
+    }
+    std::shared_ptr<std::ostream> w = std::dynamic_pointer_cast<std::ostream>(std::make_shared<std::ofstream>(path, std::fstream::binary | std::fstream::out));
+    this->writers.insert(path); 
+    pthread_mutex_unlock(&this->writers_lock);
+    return w;
 }
 
 void FileManager::removeWriter(std::string path) {

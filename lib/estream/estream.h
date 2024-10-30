@@ -89,7 +89,6 @@ class SSLEStream: public EStream {
 };
 #endif
 
-// lol
 static constexpr std::string read_only_msg = "This EStream is locked for reading only";
 class ReaderEStream: public EStream, public std::istream {
     private:
@@ -100,31 +99,18 @@ class ReaderEStream: public EStream, public std::istream {
     public:        
         std::shared_ptr<std::istream> reader;
 
-        ReaderEStream(std::shared_ptr<std::istream> reader): EStream(0) {
+        // TODO: std::move? that's interesting
+        ReaderEStream(std::shared_ptr<std::istream> reader): EStream(0), std::istream(std::move(*reader)) {
             reader = reader;
         }
         virtual ~ReaderEStream() = default;
+        // also, how does it handle EStream::get vs istream::get? Do I really need to explicitly override that.
         uint8_t get() override final { return this->reader->get(); }
         uint8_t peek() override final { return this->reader->peek(); }
         SharedArray<uint8_t> readBytes(const size_t n) override final {
-            return SharedArray<uint8_t>{this->reader, n};
+            return SharedArray<uint8_t>(this->reader, n);
         }
-        size_t read() override final { return this->reader->read(); }
-        size_t gcount() override final {
-            return this->reader->gcount();
-        }
-        void seekg(size_t offset) override final {
-            this->reader->seekg(offset);
-        }
-        bool good() {
-            return this->reader->good();
-        }
-        bool eof() {
-            return this->reader->eof();
-        }
-        // TODO: implement functionality as needed.
-
-        // disabled functionality
+        // disabled functionality from EStream
         ssize_t writeBuffer(void * p_buf, size_t size) override final {
             throw std::runtime_error(read_only_msg);
         }
@@ -144,23 +130,17 @@ class WriterEStream: public EStream, public std::ostream {
     public:        
         std::shared_ptr<std::istream> writer;
 
-        WriterEStream(std::shared_ptr<std::ostream> writer): EStream(0) {
+        WriterEStream(std::shared_ptr<std::ostream> writer): EStream(0), std::ostream(std::move(*writer)) {
             writer = writer;
         }
         virtual ~WriterEStream() = default;
-        void put(char c) {
-            this->writer->put(c);
+        // disabled functionality from EStream
+        uint8_t get() override final { 
+            throw std::runtime_error(write_only_msg);
         }
-        void seekp(size_t offset) override final {
-            this->writer->seekp(offset);
+        uint8_t peek() override final { 
+            throw std::runtime_error(write_only_msg);
         }
-        void write(const char * buffer, size_t size) override final {
-            this->writer->write(buffer, size);
-        }
-        void flush() override final {
-            this->writer->flush();
-        }
-        // disabled functionality
         SharedArray<uint8_t> readBytes(const size_t n) override final {
             throw std::runtime_error(write_only_msg);
         }

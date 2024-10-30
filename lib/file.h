@@ -55,7 +55,7 @@ static SharedArray<uint8_t> read(std::shared_ptr<std::istream> s, size_t offset 
         }
     } else {
         s->seekg(offset);
-        file_data = SharedArray<uint8_t>(*s, size);
+        file_data = SharedArray<uint8_t>(s, size);
     }
     return file_data;
 }

@@ -230,8 +230,7 @@ class Array {
             e_size = 0;
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
         }
-        // TODO: only care for uint8_t or char types for now.
-        Array(std::istream<T> stream, size_t size) {
+        Array(std::shared_ptr<std::basic_istream<T>>stream, size_t size) {
             e_cap = size;
             e_buf = newCArray<T>(e_cap);
             e_size = e_cap;
@@ -524,7 +523,7 @@ class ArrayControl {
         //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         ArrayControl(std::initializer_list<T> list): ptr(new Array<T>(list)), instance_count(1) {}
         ArrayControl(const size_t initial_cap): ptr(new Array<T>(initial_cap)), instance_count(1) {}
-        ArrayControl(std::istream<T> stream, size_t size): ptr(new Array<T>(stream, size)), instance_count(1) {}
+        ArrayControl(std::shared_ptr<std::basic_istream<T>> stream, size_t size): ptr(new Array<T>(stream, size)), instance_count(1) {}
         ~ArrayControl() {
             delete this->ptr;
         }
@@ -542,7 +541,7 @@ class SharedArray {
         SharedArray(): ctrl(new ArrayControl<T>()) {}
         SharedArray(std::initializer_list<T> list): ctrl(new ArrayControl<T>(list)) {}
         SharedArray(const size_t initial_cap): ctrl(new ArrayControl<T>(initial_cap)) {}
-        SharedArray(std::istream<T> stream, size_t size): ctrl(new ArrayControl<T>(stream, size)) {}
+        SharedArray(std::shared_ptr<std::basic_istream<T>> stream, size_t size): ctrl(new ArrayControl<T>(stream, size)) {}
 
         virtual ~SharedArray() {
             if (this->ctrl != nullptr) {

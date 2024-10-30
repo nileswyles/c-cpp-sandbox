@@ -89,7 +89,7 @@ class SSLEStream: public EStream {
 };
 #endif
 
-static constexpr std::string read_only_msg = "This EStream is locked for reading only";
+static const std::string read_only_msg = "This EStream is locked for reading only";
 class ReaderEStream: public EStream, public std::istream {
     private:
         ssize_t streamRead();
@@ -108,7 +108,9 @@ class ReaderEStream: public EStream, public std::istream {
         uint8_t get() override final { return this->reader->get(); }
         uint8_t peek() override final { return this->reader->peek(); }
         SharedArray<uint8_t> readBytes(const size_t n) override final {
-            return SharedArray<uint8_t>(this->reader, n);
+            // return SharedArray<uint8_t>(this->reader, n);
+            // lol...
+            throw std::runtime_error(read_only_msg);
         }
         // disabled functionality from EStream
         ssize_t writeBuffer(void * p_buf, size_t size) override final {
@@ -116,7 +118,7 @@ class ReaderEStream: public EStream, public std::istream {
         }
 };
 
-static constexpr std::string write_only_msg = "This EStream is locked for writing only";
+static const std::string write_only_msg = "This EStream is locked for writing only";
 class WriterEStream: public EStream, public std::ostream {
     private:
         ssize_t streamRead();
@@ -158,28 +160,15 @@ class WriterEStream: public EStream, public std::ostream {
 // @ static
 
 // assuming amd64 - what year are we in? LMAO
-#ifdef WYLESLIBS_SSL_ENABLED
-static_assert(sizeof(EStream) == 
-    sizeof(uint8_t *) + 
-    sizeof(size_t) + 
-    sizeof(size_t) + 
-    sizeof(size_t) +
-    sizeof(SSL *) +
-    sizeof(int) + 
-    4 // just because?
-);
-static_assert(sizeof(EStream) == 48);
-#else
-static_assert(sizeof(EStream) == 
-    sizeof(uint8_t *) + 
-    sizeof(size_t) + 
-    sizeof(size_t) + 
-    sizeof(size_t) +
-    sizeof(int) +
-    4 // just because?
-);
-static_assert(sizeof(EStream) == 40);
-#endif
+// static_assert(sizeof(EStream) == 
+//     sizeof(uint8_t *) + 
+//     sizeof(size_t) + 
+//     sizeof(size_t) + 
+//     sizeof(size_t) +
+//     sizeof(int) +
+//     4 // just because?
+// );
+// static_assert(sizeof(EStream) == 32);
 
 }
 

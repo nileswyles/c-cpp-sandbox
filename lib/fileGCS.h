@@ -1,5 +1,5 @@
-#ifndef WYLESLIBS_FILES3_H
-#define WYLESLIBS_FILES3_H
+#ifndef WYLESLIBS_FILEGCS_H
+#define WYLESLIBS_FILEGCS_H
 
 #include "estream/estream.h"
 
@@ -23,6 +23,7 @@
 
 #include "file.h"
 
+// TODO: compiler flags to not have to rely on google?
 #include "google/cloud/storage/client.h"
 
 using namespace WylesLibs;

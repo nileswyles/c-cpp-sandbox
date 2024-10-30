@@ -21,8 +21,8 @@ SRC_FILES="
 -s $ROOT_DIR/lib/parser/json/json_object.cpp
 -s $ROOT_DIR/lib/parser/json/json_array.cpp
 -s $ROOT_DIR/lib/test/tester.cpp
--s $ROOT_DIR/lib/iostream/estream.cpp
--s $ROOT_DIR/lib/iostream/reader_task.cpp
+-s $ROOT_DIR/lib/estream/estream.cpp
+-s $ROOT_DIR/lib/estream/reader_task.cpp
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n json_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"

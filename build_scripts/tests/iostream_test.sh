@@ -16,8 +16,8 @@ ROOT_DIR="."
 # $ROOT_DIR/lib/json/json_mapper.cpp
 SRC_FILES="
 -s $ROOT_DIR/lib/test/iostream_test.cpp
--s $ROOT_DIR/lib/iostream/estream.cpp
--s $ROOT_DIR/lib/iostream/reader_task.cpp
+-s $ROOT_DIR/lib/estream/estream.cpp
+-s $ROOT_DIR/lib/estream/reader_task.cpp
 -s $ROOT_DIR/lib/test/tester.cpp
 "
 

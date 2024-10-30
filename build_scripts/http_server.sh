@@ -25,7 +25,7 @@ SRC_FILES="
 -s $ROOT_DIR/http_test/main.cpp
 -s $ROOT_DIR/http_test/controllers/example.cpp
 -s $ROOT_DIR/http_test/services/example.cpp
--s $ROOT_DIR/lib/iostream/estream.cpp
+-s $ROOT_DIR/lib/estream/estream.cpp
 -s $ROOT_DIR/lib/web/server.c
 -s $ROOT_DIR/lib/file_watcher.cpp
 -s $ROOT_DIR/lib/web/http/http_file_watcher.cpp
@@ -35,6 +35,7 @@ SRC_FILES="
 LD_FLAGS="
 -f ssl
 -f crypto
+-f google-cloud-cpp/cmake-out/google/cloud/libgoogle_cloud_cpp_common.a
 "
 
 $ROOT_DIR/build_scripts/build_google.sh

@@ -12,6 +12,7 @@
 #include <initializer_list>
 #include <stdexcept>
 #include <istream>
+#include <memory>
 
 // make sure global logger level is initialized
 #ifndef GLOBAL_LOGGER_LEVEL
@@ -237,6 +238,17 @@ class Array {
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
 
             stream->read(e_buf, e_size);
+        }
+        Array(const std::string& s) {
+            e_cap = s.size() + 1;
+            e_buf = newCArray<T>(e_cap);
+            e_size = e_cap;
+            e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
+
+            for (size_t i = 0; i < e_size - 1; i++) {
+                e_buf[i] = s[i];
+            }
+            e_buf[e_size - 1] = 0x00;
         }
         virtual ~Array() {
             deleteCArray<T>(e_buf, e_size);
@@ -524,6 +536,7 @@ class ArrayControl {
         ArrayControl(std::initializer_list<T> list): ptr(new Array<T>(list)), instance_count(1) {}
         ArrayControl(const size_t initial_cap): ptr(new Array<T>(initial_cap)), instance_count(1) {}
         ArrayControl(std::shared_ptr<std::basic_istream<T>> stream, size_t size): ptr(new Array<T>(stream, size)), instance_count(1) {}
+        ArrayControl(const std::string& s): ptr(new Array<T>(s)), instance_count(1) {}
         ~ArrayControl() {
             delete this->ptr;
         }
@@ -542,6 +555,7 @@ class SharedArray {
         SharedArray(std::initializer_list<T> list): ctrl(new ArrayControl<T>(list)) {}
         SharedArray(const size_t initial_cap): ctrl(new ArrayControl<T>(initial_cap)) {}
         SharedArray(std::shared_ptr<std::basic_istream<T>> stream, size_t size): ctrl(new ArrayControl<T>(stream, size)) {}
+        SharedArray(const std::string& s): ctrl(new ArrayControl<T>(s)) {}
 
         virtual ~SharedArray() {
             if (this->ctrl != nullptr) {

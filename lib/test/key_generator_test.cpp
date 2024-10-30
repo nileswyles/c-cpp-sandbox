@@ -1,8 +1,10 @@
 #include "tester.h"
 #include "key_generator.h"
 #include "file.h"
+#include "datastructures/array.h"
 
 #include <memory>
+#include <sstream>
 
 #ifndef LOGGER_KEY_GENERATOR_TEST
 #define LOGGER_KEY_GENERATOR_TEST 1
@@ -19,7 +21,9 @@ using namespace WylesLibs::File;
 static std::shared_ptr<FileManager> file_manager = std::make_shared<FileManager>();
 
 static void beforeEach(TestArg * t) {
-    File::write("sequence_store", std::string("0000000000000000"), false); // clear file store
+    std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(file_manager->writer("sequence_store"));
+    // TODO: I think string literals are const char *? idk this shouldn't compile... lol
+    File::write(s, SharedArray<uint8_t>("0000000000000000"), false); // clear file store
 }
 
 void testUniqueKeyGenerator(TestArg * t) {

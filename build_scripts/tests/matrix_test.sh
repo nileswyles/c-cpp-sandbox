@@ -19,8 +19,8 @@ SRC_FILES="
 -s $ROOT_DIR/lib/test/matrix_test.cpp
 -s $ROOT_DIR/lib/test/tester.cpp
 -s $ROOT_DIR/lib/datastructures/array.cpp
--s $ROOT_DIR/lib/iostream/estream.cpp
--s $ROOT_DIR/lib/iostream/reader_task.cpp
+-s $ROOT_DIR/lib/estream/estream.cpp
+-s $ROOT_DIR/lib/estream/reader_task.cpp
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n matrix_test $SRC_FILES -l $LOG_LEVEL $DEBUG$DEFINES$TEST_ARG"

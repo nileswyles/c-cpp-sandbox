@@ -4,8 +4,9 @@ using namespace WylesLibs;
 using namespace WylesLibs::File;
 
 std::shared_ptr<ReaderEStream> GCSFileManager::reader(std::string path) {
-    auto reader = this->client.ReadObject(this->bucket_name, path);
+    auto reader = this->client.ReadObject(this->this->bucket_name, path);
     if (!reader) {
+        // TODO: log these error messages here..
         throw std::runtime_error("Failed to create reader.");
     }
     // TODO: does this even need to be a shared_ptr?
@@ -18,8 +19,9 @@ std::shared_ptr<WriterEStream> GCSFileManager::writer(std::string path) {
     if (false == this->writers.contains(path)) {
         return nullptr;
     }
-    auto writer = this->client.WriteObject(this->bucket_name, path);
+    auto writer = this->client.WriteObject(this->this->bucket_name, path);
     if (!writer.metadata()) {
+        // TODO: log these error messages here..
         throw std::runtime_error("Failed to create writer.");
     }
     std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(std::make_shared<google::cloud::storage::ObjectWriteStream>(reader));
@@ -29,58 +31,47 @@ std::shared_ptr<WriterEStream> GCSFileManager::writer(std::string path) {
     return w;
 }
 
+// TODO: this can probably be getSize instead...
 struct stat GCSFileManager::stat(std::string path) {
-      StatusOr<gcs::ObjectMetadata> object_metadata =
-        client.GetObjectMetadata(bucket_name, object_name);
+    StatusOr<google::cloud::storage::ObjectMetadata> object_metadata = client.GetObjectMetadata(this->bucket_name, object_name);
+    // TODO: log these error messages here..
     if (!object_metadata) throw std::move(object_metadata).status();
-
-    std::cout << "The metadata for object " << object_metadata->name()
-              << " in bucket " << object_metadata->bucket() << " is "
-              << *object_metadata << "\n";
-    this->client.
+    // struct stat info = 
+    // info.st_size = object_metadata.size();
+    return { .st_size = object_metadata.size() };
 }
-SharedArray<std::string> GCSFileManager::list(std::string path) {
-      for (auto&& object_metadata : client.ListObjects(bucket_name)) {
-      if (!object_metadata) throw std::move(object_metadata).status();
 
-      std::cout << "bucket_name=" << object_metadata->bucket()
-                << ", object_name=" << object_metadata->name() << "\n";
+SharedArray<std::string> GCSFileManager::list(std::string path) {
+    SharedArray<std::string> data;
+    google::cloud::storage::MatchGlob l{Paths::join(path, "/*")};
+    for (auto&& object_metadata : client.ListObjects(this->bucket_name, {l})) {
+        // TODO: log these error messages here..
+        if (!object_metadata) throw std::move(object_metadata).status();
+        data.append(object_metadata.name());
     }
 }
 
 void GCSFileManager::remove(std::string path) {
-      google::cloud::Status status =
-        client.DeleteObject(bucket_name, object_name);
-
+    google::cloud::Status status = client.DeleteObject(this->bucket_name, path);
+    // TODO: log these error messages here..
+    //      should through an exception or return bool
     if (!status.ok()) throw std::runtime_error(status.message());
-    std::cout << "Deleted " << object_name << " in bucket " << bucket_name
-              << "\n";
 }
+
 void GCSFileManager::move(std::string path, std::string destination_path) {
-     StatusOr<gcs::ObjectMetadata> object_metadata =
-        client.GetObjectMetadata(bucket_name, object_name);
+    StatusOr<google::cloud::storage::ObjectMetadata> object_metadata = client.GetObjectMetadata(this->bucket_name, path);
     if (!object_metadata) throw std::move(object_metadata).status();
 
-    gcs::ObjectMetadata desired = *object_metadata;
+    google::cloud::storage::ObjectMetadata desired = *object_metadata;
     desired.mutable_metadata().emplace(key, value);
 
-    StatusOr<gcs::ObjectMetadata> updated =
-        client.UpdateObject(bucket_name, object_name, desired,
-                            gcs::Generation(object_metadata->generation()));
+    StatusOr<google::cloud::storage::ObjectMetadata> updated = client.UpdateObject(this->bucket_name, path, destination_path, google::cloud::storageGeneration(object_metadata->generation()));
 
+    // TODO: log these error messages here..
     if (!updated) throw std::move(updated).status();
-    std::cout << "Object updated. The full metadata after the update is: "
-              << *updated << "\n";
 }
 void GCSFileManager::copy(std::string path, std::string destination_path) {
-      StatusOr<gcs::ObjectMetadata> new_copy_meta =
-        client.CopyObject(source_bucket_name, source_object_name,
-                          destination_bucket_name, destination_object_name);
+    StatusOr<google::cloud::storage::ObjectMetadata> new_copy_meta = client.CopyObject(this->bucket_name, path, this->bucket_name, destination_path);
+    // TODO: log these error messages here..
     if (!new_copy_meta) throw std::move(new_copy_meta).status();
-
-    std::cout << "Successfully copied " << source_object_name << " in bucket "
-              << source_bucket_name << " to bucket " << new_copy_meta->bucket()
-              << " with name " << new_copy_meta->name()
-              << ".\nThe full metadata after the copy is: " << *new_copy_meta
-              << "\n";
 }

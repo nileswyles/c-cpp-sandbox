@@ -16,7 +16,7 @@ ROOT_DIR="."
 SRC_FILES="
 -s $ROOT_DIR/lib/test/key_generator_test.cpp
 -s $ROOT_DIR/lib/test/tester.cpp
--s $ROOT_DIR/lib/iostream/estream.cpp
+-s $ROOT_DIR/lib/estream/estream.cpp
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n key_generator_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"

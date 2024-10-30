@@ -72,7 +72,7 @@ class UniqueKeyGeneratorStore {
         void flush(SharedArray<uint8_t> data) {
             if (this->file_path.size() > 0) {
                 loggerPrintf(LOGGER_DEBUG, "Flushing sequence to data store at %s\n", this->file_path.c_str());
-                this->file_manager->write(this->file_path, data, false);
+                File::write(this->file_manager, this->file_path, data, false);
             }
         }
 };

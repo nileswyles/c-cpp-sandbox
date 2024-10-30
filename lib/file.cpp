@@ -14,24 +14,18 @@
 using namespace WylesLibs;
 using namespace WylesLibs::File;
 
-std::shared_ptr<std::istream> FileManager::read(std::string path) {
-    return std::make_shared<IOStream>(path);
+std::shared_ptr<std::istream> FileManager::reader(std::string path) {
+    return std::dynamic_pointer_cast<std::istream>(std::make_shared<std::ifstream>(path));
 }
 
-void FileManager::write(std::string path, SharedArray<uint8_t> buffer, size_t offset) {
-    // open every time a problem?
-    std::fstream s{path, s.binary | s.out};
-    if (!s.is_open()) {
-        throw std::runtime_error("Unable to open file at: " + path);
-    } else {
-        s.seekp(offset);
-        s.write((const char *)buffer.start(), buffer.size()); // binary output
-        s.flush();
-        s.close();
-    }
+std::shared_ptr<std::ostream> FileManager::writer(std::string path) {
+    return std::dynamic_pointer_cast<std::ostream>(std::make_shared<std::ofstream>(path, std::fstream::binary | std::fstream::out));
 }
-void FileManager::write(std::string path, SharedArray<uint8_t> buffer, bool append) {
-    WylesLibs::File::write(path, buffer, append);
+
+void FileManager::removeWriter(std::string path) {
+    pthread_mutex_lock(&this->writers_lock);
+    this->writers.erase(path);
+    pthread_mutex_unlock(&this->writers_lock);
 }
 
 struct stat FileManager::stat(std::string path) {

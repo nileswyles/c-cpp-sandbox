@@ -12,6 +12,7 @@
 
 #include <fstream>
 #include <memory>
+#include <set>
 
 #ifndef LOGGER_FILE
 #define LOGGER_FILE 1
@@ -25,63 +26,47 @@ using namespace WylesLibs;
 
 namespace WylesLibs::File {
 
-static void write(std::string file_path, std::string buffer, bool append) {
-    // open every time a problem?
-    std::fstream s{file_path, s.binary | s.out};
-    if (!s.is_open()) {
-        throw std::runtime_error("Unable to open file at: " + file_path);
+static void write(std::shared_ptr<FileManager> file_manager, std::string path, SharedArray<uint8_t> buffer, bool append) {
+    std::shared_ptr<std::ostream> s = file_manager->writer(path);
+    if (append) {
+        s->seekp(0, std::ios_base::end);
     } else {
-        if (append) {
-            s.seekp(0, std::ios_base::end);
-        } else {
-            s.seekp(0);
-        }
-        s.write((const char *)buffer.data(), buffer.size()); // binary output
-        s.flush();
-        s.close();
+        // TODO: I think expected behavior here is to overwrite file... if size < current size, this file should end at new size....
+        s->seekp(0);
     }
+    s->write((const char *)buffer.start(), buffer.size()); // binary output
+    // TODO: hopefully it's more like ifstream than istream, doubt it?
+    //  That's rather annoying?
+    s->flush();
+    s->close();
+
+    file_manager->removeWriter(path);
 }
 
-static void write(std::string path, SharedArray<uint8_t> buffer, bool append) {
-    // open every time a problem?
-    std::fstream s{path, s.binary | s.out};
-    if (!s.is_open()) {
-        throw std::runtime_error("Unable to open file at: " + path);
-    } else {
-        if (append) {
-            s.seekp(0, std::ios_base::end);
-        } else {
-            // TODO: I think expected behavior here is to overwrite file... if size < current size, this file should end at new size....
-            s.seekp(0);
-        }
-        s.write((const char *)buffer.start(), buffer.size()); // binary output
-        s.flush();
-        s.close();
+static WylesLibs::SharedArray<uint8_t> read(std::shared_ptr<std::istream> s) {
+    SharedArray<uint8_t> file_data;
+    while (s->good() && !s->eof()) {
+        file_data.append(s->get());
     }
-}
-
-static WylesLibs::SharedArray<uint8_t> read(std::string file_path) {
-    int fd = open(file_path.c_str(), O_RDONLY);
-    if (fd == -1) {
-        throw std::runtime_error("Unable to read file at: " + file_path);
+    if (false == s->good()) {
+        throw std::runtime_error("Error occured while reading istream until EOF.");
     }
-    struct stat stat_info = {};
-    int lol = fstat(fd, &stat_info);
-    IOStream r(fd);
-    SharedArray<uint8_t> file = r.readBytes(stat_info.st_size);
-    close(fd);
-    return file;
+    return file_data;
 }
 
 class FileManager {
+    protected:
+        std::set<std::string> writers;
+        pthread_mutex_t writers_lock;
     public:
         FileManager() = default;
         virtual ~FileManager() = default;
 
-        virtual std::shared_ptr<std::istream> read(std::string path);
-
-        virtual void write(std::string path, SharedArray<uint8_t> buffer, size_t offset = 0);
-        virtual void write(std::string path, SharedArray<uint8_t> buffer, bool append = false);
+        virtual std::shared_ptr<std::istream> reader(std::string path);
+        virtual std::shared_ptr<std::ostream> writer(std::string path);
+        // ! IMPORTANT - implementation should call this function when done with writer...
+        //      is there a better way? yeah, maybe different ostream type with shared_ptr to this stuff... that removes when close is called...? too complicated?
+        virtual void removeWriter(std::string path);
 
         virtual struct stat stat(std::string path);
         virtual SharedArray<std::string> list(std::string path);

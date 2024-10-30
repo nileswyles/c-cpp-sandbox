@@ -175,7 +175,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
 	if (content_type != "") {
         response = new HttpResponse;
 		if (request->method == "HEAD" || request->method == "GET") {
-            SharedArray<uint8_t> file_data = this->file_manager->read(path);
+            SharedArray<uint8_t> file_data = File::read(this->file_manager->reader(path));
             char content_length[17];
 			sprintf(content_length, "%ld", file_data.size());
             response->fields["Content-Length"] = std::string(content_length);

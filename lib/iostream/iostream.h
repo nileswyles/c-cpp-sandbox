@@ -21,7 +21,7 @@
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
 namespace WylesLibs {
-class IOStream: public std::istream {
+class IOStream {
     private:
         uint8_t * buf;
         size_t buf_size;
@@ -35,15 +35,7 @@ class IOStream: public std::istream {
         SSL * ssl;
 #endif
         int fd;
-        bool managed_fd;
         IOStream() {}
-        IOStream(std::string file_path) {
-            int fd = open(file_path.c_str(), O_RDONLY);
-            if (fd == -1) {
-                throw std::runtime_error("Unable to read file at: " + file_path);
-            }
-            managed_fd = true;
-        }
         IOStream(uint8_t * p_buf, const size_t p_buf_size) {
             buf = p_buf;
             buf_size = p_buf_size;
@@ -74,14 +66,8 @@ class IOStream: public std::istream {
 #ifdef WYLESLIBS_SSL_ENABLED
             ssl = nullptr;
 #endif
-            managed_fd = false;
         }
-        ~IOStream() {
-            delete[] buf;
-            if (true == managed_fd) {
-                close(fd);
-            }
-        };
+        ~IOStream() = default;
         ssize_t writeBuffer(void * p_buf, size_t size);
         uint8_t peekByte();
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...

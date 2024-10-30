@@ -25,7 +25,8 @@
 using namespace WylesLibs;
 
 namespace WylesLibs::File {
-static void write(std::shared_ptr<std::ostream> s, SharedArray<uint8_t> buffer, bool append) {
+
+static void write(std::shared_ptr<std::ostream> s, SharedArray<uint8_t> buffer, bool append = false) {
     if (append) {
         s->seekp(0, std::ios_base::end);
     } else {
@@ -36,16 +37,29 @@ static void write(std::shared_ptr<std::ostream> s, SharedArray<uint8_t> buffer, 
     // TODO: hopefully it's more like ifstream than istream, doubt it?
     //  That's rather annoying?
     s->flush();
-    s->close();
 }
 
-static SharedArray<uint8_t> read(std::shared_ptr<std::istream> s) {
+static void write(std::shared_ptr<std::ostream> s, SharedArray<uint8_t> buffer, size_t offset = 0) {
+    s->seekp(offset);
+    s->write((const char *)buffer.start(), buffer.size()); // binary output
+    // TODO: hopefully it's more like ifstream than istream, doubt it?
+    //  That's rather annoying?
+    s->flush();
+}
+
+static SharedArray<uint8_t> read(std::shared_ptr<std::istream> s, size_t offset = 0, size_t size = SIZE_MAX) {
     SharedArray<uint8_t> file_data;
-    while (s->good() && !s->eof()) {
-        file_data.append(s->get());
-    }
-    if (false == s->good()) {
-        throw std::runtime_error("Error occured while reading istream until EOF.");
+    if (offset == 0 && size == SIZE_MAX) {
+        // read until EOF
+        while (s->good() && !s->eof()) {
+            file_data.append(s->get());
+        }
+        if (false == s->good()) {
+            throw std::runtime_error("Error occured while reading istream until EOF.");
+        }
+    } else {
+        s->seekg(offset);
+        file_data = SharedArray<uint8_t>(*s, size);
     }
     return file_data;
 }
@@ -61,10 +75,25 @@ class FileManager {
         void write(std::string path, SharedArray<uint8_t> buffer, bool append) {
             std::shared_ptr<std::ostream> s = this->writer(path);
             File::write(s, buffer, append);
+
+            // TODO: hopefully it's more like ifstream than istream, doubt it?
+            //  That's rather annoying?
+            // s->close();
+            this->removeWriter(path);
+        }
+        void write(std::string path, SharedArray<uint8_t> buffer, size_t offset = 0) {
+            std::shared_ptr<std::ostream> s = this->writer(path);
+            File::write(s, buffer, offset);
+            // TODO: hopefully it's more like ifstream than istream, doubt it?
+            //  That's rather annoying?
+            // s->close();
             this->removeWriter(path);
         }
         SharedArray<uint8_t> read(std::string path) {
             return File::read(this->reader(path));
+        }
+        SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
+            return File::read(this->reader(path), offset, size);
         }
 
         virtual std::shared_ptr<std::istream> reader(std::string path);

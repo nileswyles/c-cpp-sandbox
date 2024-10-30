@@ -8,6 +8,7 @@ std::shared_ptr<std::istream> GCSFileManager::reader(std::string path) {
     if (!reader) {
         throw std::runtime_error("Failed to create reader.");
     }
+    // TODO: does this even need to be a shared_ptr?
     return std::dynamic_pointer_cast<std::istream>(std::make_shared<google::cloud::storage::ObjectReadStream>(reader));
 }
 

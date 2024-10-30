@@ -231,7 +231,7 @@ class Array {
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
         }
         // TODO: only care for uint8_t or char types for now.
-        Array(std::istream<T> * stream, size_t size) {
+        Array(std::istream<T> stream, size_t size) {
             e_cap = size;
             e_buf = newCArray<T>(e_cap);
             e_size = e_cap;

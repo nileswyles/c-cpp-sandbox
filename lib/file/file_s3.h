@@ -2,7 +2,7 @@
 #define WYLESLIBS_FILES3_H
 
 #include "estream/estream.h"
-#include "file.h"
+#include "file/file.h"
 
 #include <string>
 
@@ -21,9 +21,6 @@ class S3FileManager: public FileManager {
     public:
         S3FileManager() = default;
         ~S3FileManager() override final = default;
-
-        std::shared_ptr<ReaderEStream> reader(std::string path) override final;
-        std::shared_ptr<std::basic_ostream<char>> writer(std::string path) override final;
 
         struct stat stat(std::string path) override final;
 

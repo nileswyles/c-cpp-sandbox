@@ -18,6 +18,7 @@ SRC_FILES="
 -s $ROOT_DIR/lib/test/tester.cpp
 -s $ROOT_DIR/lib/estream/estream.cpp
 -s $ROOT_DIR/lib/datastructures/array.cpp
+-s $ROOT_DIR/lib/estream/reader_task.cpp
 -s $ROOT_DIR/lib/file.cpp
 "
 

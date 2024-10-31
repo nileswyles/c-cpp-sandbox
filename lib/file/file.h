@@ -2,6 +2,7 @@
 #define WYLESLIBS_FILES_H
 
 #include "estream/estream.h"
+#include "file/stream_factory.h"
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -12,7 +13,6 @@
 
 #include <fstream>
 #include <memory>
-#include <set>
 
 #ifndef LOGGER_FILE
 #define LOGGER_FILE 1
@@ -33,13 +33,13 @@ static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8
         // TODO: I think expected behavior here is to overwrite file... if size < current size, this file should end at new size....
         s->seekp(0);
     }
-    s->write((const char *)buffer.start(), buffer.size()); // binary output
+    s->write((const char *)buffer.begin(), buffer.size()); // binary output
     s->flush();
 }
 
 static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8_t> buffer, size_t offset = 0) {
     s->seekp(offset);
-    s->write((const char *)buffer.start(), buffer.size()); // binary output
+    s->write((const char *)buffer.begin(), buffer.size()); // binary output
     s->flush();
 }
 
@@ -64,40 +64,35 @@ static SharedArray<uint8_t> read(std::shared_ptr<ReaderEStream> s, size_t offset
 
 class FileManager {
     protected:
-        std::shared_ptr<FileManager> this_shared;
-        std::set<std::string> writers;
-        pthread_mutex_t writers_lock;
+        std::shared_ptr<FileStreamFactory> stream_factory;
     public:
-        FileManager() {
-            pthread_mutex_init(&writers_lock, nullptr);
-        };
+        FileManager(): stream_factory(std::make_shared<FileStreamFactory>()) {}
+        FileManager(std::shared_ptr<FileStreamFactory> stream_factory): stream_factory(stream_factory) {}
         virtual ~FileManager() = default;
 
         void write(std::string path, SharedArray<uint8_t> buffer, bool append) {
             // annoying but necessary
-            File::write(this->writer(path), buffer, append);
+            File::write(this->streams()->writer(path), buffer, append);
 
             // TODO: hopefully it's more like ifstream than istream, doubt it?
             //  That's rather annoying?
             // s->close();
-            this->removeWriter(path);
+            this->streams()->removeWriter(path);
         }
         void write(std::string path, SharedArray<uint8_t> buffer, size_t offset = 0) {
-            File::write(this->writer(path), buffer, offset);
+            File::write(this->streams()->writer(path), buffer, offset);
             // TODO: hopefully it's more like ifstream than istream, doubt it?
             //  That's rather annoying?
             // s->close();
-            this->removeWriter(path);
+            this->streams()->removeWriter(path);
         }
         SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
-            return File::read(this->reader(path), offset, size);
+            std::shared_ptr<ReaderEStream> s = std::make_shared<ReaderEStream>(this->stream_factory, path, offset, size, this->streams()->reader(path));
+            return File::read(s, offset, size);
         }
-
-        virtual std::shared_ptr<ReaderEStream> reader(std::string path, size_t offset = 0, size_t size = SIZE_MAX);
-        virtual std::shared_ptr<std::basic_ostream<char>> writer(std::string path);
-        // ! IMPORTANT - implementation should call this function when done with writer...
-        //      is there a better way? yeah, maybe different ostream type with shared_ptr to this stuff... that removes when close is called...? too complicated?
-        virtual void removeWriter(std::string path);
+        std::shared_ptr<FileStreamFactory> streams() {
+            return this->stream_factory;
+        }
 
         virtual uint64_t stat(std::string path);
         virtual SharedArray<std::string> list(std::string path);

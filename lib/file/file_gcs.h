@@ -2,7 +2,7 @@
 #define WYLESLIBS_FILEGCS_H
 
 #include "estream/estream.h"
-#include "file.h"
+#include "file/file.h"
 
 #include <string>
 #include <fstream>
@@ -25,16 +25,14 @@ namespace WylesLibs::File {
 class GCSFileManager: public FileManager {
     private:
         std::string bucket_name;
-    public:
         google::cloud::storage::Client client;
-
+    public:
         GCSFileManager(std::string bucket_name): bucket_name(bucket_name), 
                                                  client(google::cloud::storage::Client()),
-                                                 FileManager() {};
-        ~GCSFileManager() override final = default;
+                                                 FileManager(std::dynamic_pointer_cast<FileStreamFactory>(std::make_shared<GCSFileStreamFactory>(client))) {
 
-        std::shared_ptr<ReaderEStream> reader(std::string path, size_t offset, size_t size) override final;
-        std::shared_ptr<std::basic_ostream<char>> writer(std::string path) override final;
+                                                 };
+        ~GCSFileManager() override final = default;
 
         uint64_t stat(std::string path) override final;
 

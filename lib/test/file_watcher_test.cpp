@@ -1,7 +1,7 @@
 #include "tester.h"
 
 #include "datastructures/array.h"
-#include "file_watcher.h"
+#include "file/file_watcher.h"
 #include "paths.h"
 
 #include <unistd.h>

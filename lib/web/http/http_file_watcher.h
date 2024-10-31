@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_HTTP_FILE_WATCHER_H
 #define WYLESLIBS_HTTP_FILE_WATCHER_H
 
-#include "file_watcher.h"
+#include "file/file_watcher.h"
 #include "thread_safe_map.h"
 #include "datastructures/array.h"
 #include "web/http/config.h"

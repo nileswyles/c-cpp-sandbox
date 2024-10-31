@@ -11,7 +11,7 @@
 #include "datastructures/array.h"
 #include "web/server_config.h"
 #include "paths.h"
-#include "file.h"
+#include "file/file.h"
 #include "estream/estream.h"
 #include "string_utils.h"
 

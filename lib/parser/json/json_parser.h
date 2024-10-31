@@ -8,7 +8,7 @@
 
 #include "datastructures/array.h"
 #include "estream/estream.h"
-#include "file.h"
+#include "file/file.h"
 
 #include "global_consts.h"
 

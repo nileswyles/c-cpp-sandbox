@@ -409,7 +409,7 @@ void HttpConnection::writeResponse(HttpResponse * response, EStream * io) {
     // ! IMPORTANT - this response pointer will potentially come from an end-user (another developer)... YOU WILL ENCOUNTER PROBLEMS IF THE POINTER IS CREATED USING MALLOC AND NOT NEW
     delete response;
 
-    if (io->writeBuffer((void *)data.c_str(), data.size()) == -1) {
+    if (io->write((void *)data.c_str(), data.size()) == -1) {
         loggerPrintf(LOGGER_DEBUG, "Error writing to connection: %d\n", errno);
     } else {
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Wrote response to connection: \n%s\n", data.c_str());

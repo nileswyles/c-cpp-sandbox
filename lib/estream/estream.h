@@ -1,9 +1,10 @@
-#ifndef WYLESLIBS_IOSTREAM_H
-#define WYLESLIBS_IOSTREAM_H
+#ifndef WYLESLIBS_ESTREAM_H
+#define WYLESLIBS_ESTREAM_H
 
-#include "reader_task.h"
+#include "estream/reader_task.h"
 
-#include "file.h"
+#include "file/file.h"
+#include "file/stream_factory.h"
 #include "datastructures/array.h"
 #include "string_utils.h"
 
@@ -24,29 +25,30 @@
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
 namespace WylesLibs {
-class ReaderEStream: public std::basic_istream<char> {
+class ReaderEStream {
     /*
         Read from stream
     */
     // TODO: does this incur any additional overhead in inherited even though private?
     private:
         std::shared_ptr<std::basic_istream<char>> reader;
-        std::shared_ptr<FileManager> file_manager;
+        std::shared_ptr<FileStreamFactory> factory;
         std::string path;
         size_t file_offset;
         size_t chunk_size;
     protected:
         virtual void cursorCheck();
         virtual void fillBuffer();
-    public:        
+    public: 
+        ReaderEStream() = default;
         // TODO: std::move? that's interesting
-        ReaderEStream(std::shared_ptr<std::basic_istream<char>> reader): std::basic_istream<char>(std::move(*reader)) {
-            file_manager = nullptr;
+        ReaderEStream(std::shared_ptr<std::basic_istream<char>> reader) {
+            factory = nullptr;
             reader = reader;
         }
-        ReaderEStream(std::shared_ptr<FileManager> file_manager, std::string path, size_t initial_offset, 
-                      size_t chunk_size, std::shared_ptr<std::basic_istream<char>> reader): std::basic_istream<char>(std::move(*reader)) {
-            file_manager = file_manager;
+        ReaderEStream(std::shared_ptr<FileStreamFactory> factory, std::string path, size_t initial_offset, 
+                      size_t chunk_size, std::shared_ptr<std::basic_istream<char>> reader) {
+            factory = factory;
             path = path;
             file_offset = initial_offset;
             chunk_size = chunk_size;
@@ -55,11 +57,14 @@ class ReaderEStream: public std::basic_istream<char> {
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...
         // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...
         virtual ~ReaderEStream() = default;
-        virtual SharedArray<uint8_t> readBytes(const size_t n) {
-            // yuck
-            // TODO: casting is annoying...
-            return SharedArray<uint8_t>(std::reinterpret_pointer_cast<std::basic_istream<uint8_t>>(this->reader), n);
-        }
+        // standard istream
+        virtual uint8_t get();
+        virtual uint8_t peek();
+        virtual bool eof();
+        virtual bool good();
+        void seekg(size_t offset);
+
+        virtual SharedArray<uint8_t> readBytes(const size_t n);
         // ! IMPORTANT - inclusive means we read and consume the until character. 
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
@@ -85,7 +90,7 @@ class EStream: public ReaderEStream {
     public: 
         int fd;
         EStream() = default;
-        EStream(uint8_t * p_buf, const size_t p_buf_size) {
+        EStream(uint8_t * p_buf, const size_t p_buf_size): ReaderEStream() {
             // # testing.
             buf = p_buf;
             buf_size = p_buf_size;
@@ -95,7 +100,7 @@ class EStream: public ReaderEStream {
             bytes_in_buffer = p_buf_size;
         }
         EStream(const int fd): EStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
-        EStream(const int p_fd, const size_t p_buf_size) {
+        EStream(const int p_fd, const size_t p_buf_size): ReaderEStream() {
             if (p_fd < 0) {
                 throw std::runtime_error("Invalid file descriptor provided.");
             }
@@ -110,8 +115,10 @@ class EStream: public ReaderEStream {
         }
         virtual ~EStream() = default;
         // standard istream
-        char_type get() override;
-        char_type peek() override;
+        uint8_t get() override;
+        uint8_t peek() override;
+        bool eof() override;
+        bool good() override;
         // char_type read() override;
 
         // ReaderEstream
@@ -125,7 +132,7 @@ class EStream: public ReaderEStream {
         void readNatural(double& value, size_t& digit_count) override;
 
         // Write to FD
-        virtual ssize_t writeBuffer(void * p_buf, size_t size);
+        virtual ssize_t write(void * p_buf, size_t size);
 };
 
 #ifdef WYLESLIBS_SSL_ENABLED
@@ -137,6 +144,7 @@ class SSLEStream: public EStream {
         void fillBuffer() override final;
     public:        
         SSL * ssl;
+        SSLEStream() = default;
         SSLEStream(SSL * ssl): EStream(0) {
             ssl = ssl;
         }
@@ -145,7 +153,7 @@ class SSLEStream: public EStream {
             SSL_shutdown(this->ssl);
             SSL_free(this->ssl);
         };
-        ssize_t writeBuffer(void * p_buf, size_t size) override final;
+        ssize_t write(void * p_buf, size_t size) override final;
 };
 #endif
 };

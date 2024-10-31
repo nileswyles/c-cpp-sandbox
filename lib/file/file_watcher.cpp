@@ -1,4 +1,4 @@
-#include "file_watcher.h"
+#include "file/file_watcher.h"
 #include <unistd.h>
 
 #include <pthread.h>

@@ -26,10 +26,10 @@
 #include "connection.h"
 #include "web/authorization.h"
 #include "parser/multipart/parse_formdata.h"
-#include "parser/multipart/multipart_file.h"
+#include "parser/multipart/multipart_file/file.h"
 #include "web/http/http_file_watcher.h"
 #include "thread_safe_map.h"
-#include "file.h"
+#include "file/file.h"
 #include "paths.h"
 #include "datastructures/array.h"
 

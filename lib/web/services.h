@@ -2,7 +2,7 @@
 #define WYLESLIB_SERVER_SERVICES
 
 #include "server_context.h"
-#include "parser/multipart/multipart_file.h"
+#include "parser/multipart/multipart_file/file.h"
 
 namespace Service {
 

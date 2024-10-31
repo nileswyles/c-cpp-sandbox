@@ -1,5 +1,5 @@
 #include "tester.h"
-#include "file.h"
+#include "file/file.h"
 #include "datastructures/array.h"
 #include "paths.h"
 
@@ -54,10 +54,10 @@ void testFileManager(TestArg * t) {
     }
 
     SharedArray<std::string> directory_list = file_manager->list(test_directory);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Directory Listing:\n", item);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Directory Listing:\n");
     for (auto item: directory_list) {
         size = file_manager->stat(Paths::join(test_directory, item));
-        loggerPrintf(LOGGER_TEST_VERBOSE, "%s, %lu\n", item, size);
+        loggerPrintf(LOGGER_TEST_VERBOSE, "%s, %lu\n", item.c_str(), size);
     }
 
     file_manager->remove(test_file);

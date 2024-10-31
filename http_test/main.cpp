@@ -6,8 +6,8 @@
 
 #include "controllers/example.h"
 
-#include "file_watcher.h"
-#include "file_gcs.h"
+#include "file/file_watcher.h"
+#include "file/file_gcs.h"
 
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1

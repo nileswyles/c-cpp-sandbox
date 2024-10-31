@@ -446,7 +446,7 @@ class Array {
             remove(this->size()-1);
             return *this;
         }
-        T * start() {
+        T * begin() {
             return this->e_buf;
         }
         T * end() {
@@ -518,9 +518,23 @@ class Array {
             return (this->e_buf)[i];
         }
         // TODO: += doesn't work?
-        Array<T>& operator+ (const Array<T>& x) {
+        Array<T>& operator+ (Array<T>& x) {
             this->append(x);
             return *this;
+        }
+        bool operator== (Array<T>& x) {
+            if (this->size() != x.size()) {
+                return false;
+            }
+            for (size_t i = 0; i < this->size(); i++) {
+                if (this->at(i) != x.at(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        bool operator!= (Array<T>& x) {
+            return false == (*this == x);
         }
 };
 
@@ -588,7 +602,7 @@ class SharedArray {
         // TODO:
         //      this should be const, does const reference have some other semantic?
         virtual SharedArray<T>& append(SharedArray<T>& other) {
-            this->ctrl->ptr->append(other.start(), other.size());
+            this->ctrl->ptr->append(other.begin(), other.size());
             return *this;
         }
         virtual SharedArray<T>& append(const T * els, const size_t num_els) {
@@ -616,8 +630,8 @@ class SharedArray {
             this->ctrl->ptr->removeBack();
             return *this;
         }
-        T * start() {
-            return this->ctrl->ptr->start();
+        T * begin() {
+            return this->ctrl->ptr->begin();
         }
         T * end() {
             return this->ctrl->ptr->end();
@@ -663,9 +677,18 @@ class SharedArray {
             this->ctrl->instance_count++;
             return *this;
         }
-        SharedArray<T>& operator+ (const SharedArray<T>& x) {
+        SharedArray<T>& operator+ (SharedArray<T>& x) {
             this->append(x);
             return *this;
+        }
+        // ! IMPORTANT - This compares contents of the underlying array not whether it points to the same underlying array.
+
+        // TODO: reconcile with MatrixVector.
+        bool operator== (const SharedArray<T>& x) {
+            return *this->ctrl->ptr == *x.ctrl->ptr;
+        }
+        bool operator!= (const SharedArray<T>& x) {
+            return *this->ctrl->ptr != *x.ctrl->ptr;
         }
 };
 

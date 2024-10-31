@@ -2,7 +2,7 @@
 #define WYLESLIBS_SERVER_CONFIG_H
 
 #include "parser/json/json.h"
-#include "file.h"
+#include "file/file.h"
 
 #include <memory>
 

@@ -47,21 +47,17 @@ void EStream::cursorCheck() {
 
 void ReaderEStream::fillBuffer() {
     // get new stream from underlying transport...
-    if (this->file_manager == nullptr) {
-        this->bytes_in_buffer = 0;
-        loggerPrintf(LOGGER_ERROR, "Read error: %d, ret: %ld\n", errno, ret);
+    if (this->factory == nullptr) {
         throw std::runtime_error("Read error.");
     } else {
         this->file_offset += this->chunk_size;
-        reader = this->file_manager->reader(path, this->file_offset, this->chunk_size);
-        // LOL,,,.... need to update 
-        *this = *reader;
+        reader = this->factory->reader(path, this->file_offset, this->chunk_size);
     }
 }
 
 void EStream::fillBuffer() {
     this->cursor = 0;
-    ssize_t ret = read(this->fd, this->buf, this->buf_size);
+    ssize_t ret = ::read(this->fd, this->buf, this->buf_size);
     // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
@@ -97,17 +93,41 @@ void SSLEStream::fillBuffer() {
 }
 #endif
 
-char_type EStream::get() {
-    char_type byte = this->peek();
+uint8_t ReaderEStream::get() {
+    this->cursorCheck();
+    return this->reader->get();
+}
+uint8_t ReaderEStream::peek() {
+    this->cursorCheck();
+    return this->reader->peek();
+}
+bool ReaderEStream::eof() {
+    return this->reader->eof();
+}
+bool ReaderEStream::good() {
+    return this->reader->good();
+}
+void ReaderEStream::seekg(size_t offset) {
+    this->reader->seekg(offset);
+}
+
+uint8_t EStream::get() {
+    char byte = this->peek();
     this->cursor++;
     return byte;
 }
-char_type EStream::peek() {
+uint8_t EStream::peek() {
     this->cursorCheck();
     return this->buf[this->cursor];
 }
+// Stub these out for now.
+bool EStream::eof() {
+    return false;
+}
+bool EStream::good() {
+    return true;
+}
 // char_type EStream::read() override;
-
 SharedArray<uint8_t> ReaderEStream::readBytes(const size_t n) {
     // yuck
     // TODO: casting is annoying...
@@ -174,7 +194,6 @@ SharedArray<uint8_t> ReaderEStream::readUntil(std::string until, ReaderTask * op
         operation->flush(data);
     }
 
-    loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);
     loggerPrintf(LOGGER_DEBUG, "reader_read_until string: '%s'\n", data.toString().c_str());
 
     return data;
@@ -216,12 +235,12 @@ void ReaderEStream::readNatural(double& value, size_t& digit_count) {
     }
 }
 
-ssize_t EStream::writeBuffer(void * p_buf, size_t size) {
-    return write(this->fd, p_buf, size);
+ssize_t EStream::write(void * p_buf, size_t size) {
+    return ::write(this->fd, p_buf, size);
 }
 
 #ifdef WYLESLIBS_SSL_ENABLED
-ssize_t SSLEStream::writeBuffer(void * p_buf, size_t size) {
+ssize_t SSLEStream::write(void * p_buf, size_t size) {
     return SSL_write(this->ssl, p_buf, size);
 }
 #endif

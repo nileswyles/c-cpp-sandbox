@@ -380,7 +380,7 @@ extern JsonValue * WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
         throw std::runtime_error(msg);
     }
     size_t i = 0;
-    EStream r(json.start(), json.size());
+    EStream r(json.begin(), json.size());
     return parse(&r, i);
 }
 

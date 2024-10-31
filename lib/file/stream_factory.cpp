@@ -47,7 +47,7 @@ namespace gcs = ::google::cloud::storage;
 std::shared_ptr<std::basic_istream<char> GCSFileStreamFactory::reader(std::string path, size_t offset, size_t size) {
     std::shared_ptr<std::basic_istream<char>> stream;
     gcs::ObjectReadStream reader;
-    // TODO: can I read from offset to end of file? I think so. 
+    // TODO: can I read from offset to end of file? I think so. ReadFromOffset option implies otherwise?
     // TODO: inclusive?
     reader = this->client.ReadObject(this->bucket_name, path, gcs::ReadRange(static_cast<std::int64_t>(offset), static_cast<std::int64_t>(offset + size)));
     if (!reader) {

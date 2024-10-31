@@ -22,8 +22,6 @@
 #define LOGGER_MODULE_ENABLED LOGGER_FILE
 #include "logger.h"
 
-using namespace WylesLibs;
-
 namespace WylesLibs::File {
 
 static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8_t> buffer, bool append = false) {
@@ -43,7 +41,7 @@ static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8
     s->flush();
 }
 
-static SharedArray<uint8_t> read(std::shared_ptr<ReaderEStream> s, size_t offset = 0, size_t size = SIZE_MAX) {
+static SharedArray<uint8_t> read(std::shared_ptr<WylesLibs::ReaderEStream> s, size_t offset = 0, size_t size = SIZE_MAX) {
     SharedArray<uint8_t> file_data;
     if (offset != 0) {
         s->seekg(offset); // read from absolute position defined by offset
@@ -72,7 +70,7 @@ class FileManager {
 
         void write(std::string path, SharedArray<uint8_t> buffer, bool append) {
             // annoying but necessary
-            File::write(this->streams()->writer(path), buffer, append);
+            File::write(this->stream_factory->writer(path), buffer, append);
 
             // TODO: hopefully it's more like ifstream than istream, doubt it?
             //  That's rather annoying?
@@ -80,14 +78,14 @@ class FileManager {
             this->streams()->removeWriter(path);
         }
         void write(std::string path, SharedArray<uint8_t> buffer, size_t offset = 0) {
-            File::write(this->streams()->writer(path), buffer, offset);
+            File::write(this->stream_factory->writer(path), buffer, offset);
             // TODO: hopefully it's more like ifstream than istream, doubt it?
             //  That's rather annoying?
             // s->close();
             this->streams()->removeWriter(path);
         }
         SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
-            std::shared_ptr<ReaderEStream> s = std::make_shared<ReaderEStream>(this->stream_factory, path, offset, size, this->streams()->reader(path));
+            std::shared_ptr<WylesLibs::ReaderEStream> s = std::make_shared<WylesLibs::ReaderEStream>(this->stream_factory, path, offset, size, this->stream_factory->reader(path));
             return File::read(s, offset, size);
         }
         std::shared_ptr<FileStreamFactory> streams() {

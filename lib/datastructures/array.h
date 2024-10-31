@@ -240,15 +240,14 @@ class Array {
             stream->read(e_buf, e_size);
         }
         Array(const std::string& s) {
-            e_cap = s.size() + 1;
+            e_cap = s.size();
             e_buf = newCArray<T>(e_cap);
             e_size = e_cap;
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
 
-            for (size_t i = 0; i < e_size - 1; i++) {
+            for (size_t i = 0; i < e_size; i++) {
                 e_buf[i] = s[i];
             }
-            e_buf[e_size - 1] = 0x00;
         }
         virtual ~Array() {
             deleteCArray<T>(e_buf, e_size);

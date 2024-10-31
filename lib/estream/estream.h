@@ -23,7 +23,13 @@
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
 namespace WylesLibs {
+// TODO:
+//      consider using stream instead of buf for reads and extend stream to support stream api in addition to readUntil stuff.
+//      support range requests for file_gcs because apparently it currently downloads the entire file.
 class EStream {
+    /*
+        Read and Write from file descriptor
+    */
     protected:
         uint8_t * buf;
         size_t buf_size;
@@ -77,6 +83,9 @@ class EStream {
 
 #ifdef WYLESLIBS_SSL_ENABLED
 class SSLEStream: public EStream {
+    /*
+        Read and Write from openssl object
+    */
     protected:
         void fillBuffer() override final;
     public:        
@@ -84,23 +93,29 @@ class SSLEStream: public EStream {
         SSLEStream(SSL * ssl): EStream(0) {
             ssl = ssl;
         }
-        ~SSLEStream() override final = default;
+        ~SSLEStream() override final {
+            // Move acceptTLS here?
+            SSL_shutdown(this->ssl);
+            SSL_free(this->ssl);
+        };
         ssize_t writeBuffer(void * p_buf, size_t size) override final;
 };
 #endif
 
-static const std::string read_only_msg = "This EStream is locked for reading only";
-class ReaderEStream: public EStream, public std::istream {
-    private:
-        ssize_t streamRead();
+// TODO: timeouts but for files should be fine? And I trust google, I think...
+static const std::string read_only_msg("This EStream is locked for reading only");
+class ReaderEStream: public EStream, public std::basic_istream<char> {
+    /*
+        Read from stream
+    */
     protected:
         void cursorCheck() override final {}
         void fillBuffer() override final {}
     public:        
-        std::shared_ptr<std::istream> reader;
+        std::shared_ptr<std::basic_istream<char>> reader;
 
         // TODO: std::move? that's interesting
-        ReaderEStream(std::shared_ptr<std::istream> reader): EStream(0), std::istream(std::move(*reader)) {
+        ReaderEStream(std::shared_ptr<std::basic_istream<char>> reader): EStream(0), std::basic_istream<char>(std::move(*reader)) {
             reader = reader;
         }
         virtual ~ReaderEStream() = default;
@@ -108,9 +123,9 @@ class ReaderEStream: public EStream, public std::istream {
         uint8_t get() override final { return this->reader->get(); }
         uint8_t peek() override final { return this->reader->peek(); }
         SharedArray<uint8_t> readBytes(const size_t n) override final {
-            // return SharedArray<uint8_t>(this->reader, n);
-            // lol...
-            throw std::runtime_error(read_only_msg);
+            // yuck
+            // TODO: casting is annoying...
+            return SharedArray<uint8_t>(std::reinterpret_pointer_cast<std::basic_istream<uint8_t>>(this->reader), n);
         }
         // disabled functionality from EStream
         ssize_t writeBuffer(void * p_buf, size_t size) override final {
@@ -118,10 +133,11 @@ class ReaderEStream: public EStream, public std::istream {
         }
 };
 
-static const std::string write_only_msg = "This EStream is locked for writing only";
+static const std::string write_only_msg("This EStream is locked for writing only");
 class WriterEStream: public EStream, public std::ostream {
-    private:
-        ssize_t streamRead();
+    /*
+        Write to stream
+    */
     protected:
         void cursorCheck() override final {
             throw std::runtime_error(write_only_msg);
@@ -130,7 +146,7 @@ class WriterEStream: public EStream, public std::ostream {
             throw std::runtime_error(write_only_msg);
         }
     public:        
-        std::shared_ptr<std::istream> writer;
+        std::shared_ptr<std::basic_istream<char>> writer;
 
         WriterEStream(std::shared_ptr<std::ostream> writer): EStream(0), std::ostream(std::move(*writer)) {
             writer = writer;
@@ -161,7 +177,7 @@ class WriterEStream: public EStream, public std::ostream {
 
 // assuming amd64 - what year are we in? LMAO
 // static_assert(sizeof(EStream) == 
-//     sizeof(uint8_t *) + 
+//     sizeof(char *) + 
 //     sizeof(size_t) + 
 //     sizeof(size_t) + 
 //     sizeof(size_t) +

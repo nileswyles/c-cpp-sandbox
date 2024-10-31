@@ -21,9 +21,7 @@ using namespace WylesLibs::File;
 static std::shared_ptr<FileManager> file_manager = std::make_shared<FileManager>();
 
 static void beforeEach(TestArg * t) {
-    std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(file_manager->writer("sequence_store"));
-    // TODO: I think string literals are const char *? idk this shouldn't compile... lol
-    File::write(s, SharedArray<uint8_t>("0000000000000000"), false); // clear file store
+    file_manager->write("sequence_store", SharedArray<uint8_t>("0000000000000000"), false); // clear file store
 }
 
 void testUniqueKeyGenerator(TestArg * t) {

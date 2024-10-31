@@ -197,8 +197,8 @@ class ReaderTaskExtract: public ReaderTask {
 
         ReaderTaskExtract(char left_most_char, char right_most_char): 
             l_trimming(true), r_trimming(false), 
-            left_most_char(left_most_char), right_most_char(right_most_char), 
-            r_trim_non_whitespace(0), r_trim_read_until(0) {}
+                                                                      left_most_char(left_most_char), right_most_char(right_most_char), 
+                                                                      r_trim_non_whitespace(0), r_trim_read_until(0) {}
         ~ReaderTaskExtract() override = default;
 
         void flush(SharedArray<uint8_t>& buffer) final override;

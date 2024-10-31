@@ -1,6 +1,7 @@
 #include "file.h"
 
 #include <filesystem>
+#include <filesystem>
 
 // TODO: I think this might be better in .h file because polymorphism but let's see...
 #ifndef LOGGER_FILE
@@ -15,8 +16,8 @@ using namespace WylesLibs;
 using namespace WylesLibs::File;
 
 std::shared_ptr<ReaderEStream> FileManager::reader(std::string path) {
-    std::shared_ptr<std::istream> s = std::dynamic_pointer_cast<std::istream>(std::make_shared<std::ifstream>(path));
-    return std::make_shared<ReaderEStream>(ReaderEStream(s));
+    std::shared_ptr<std::basic_istream<char>> s = std::dynamic_pointer_cast<std::basic_istream<char>>(std::make_shared<std::ifstream>(path));
+    return std::make_shared<ReaderEStream>(s);
 }
 
 std::shared_ptr<WriterEStream> FileManager::writer(std::string path) {
@@ -25,7 +26,7 @@ std::shared_ptr<WriterEStream> FileManager::writer(std::string path) {
         return nullptr;
     }
     std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(std::make_shared<std::ofstream>(path, std::fstream::binary | std::fstream::out));
-    std::shared_ptr<WriterEStream> w = std::make_shared<WriterEStream>(WriterEStream(s));
+    std::shared_ptr<WriterEStream> w = std::make_shared<WriterEStream>(s);
     this->writers.insert(path); 
     pthread_mutex_unlock(&this->writers_lock);
     return w;
@@ -41,7 +42,7 @@ void FileManager::removeWriter(std::string path) {
     pthread_mutex_unlock(&this->writers_lock);
 }
 
-struct stat FileManager::stat(std::string path) {
+uint64_t FileManager::stat(std::string path) {
     int fd = open(path.c_str(), O_RDONLY);
     if (fd == -1) {
         throw std::runtime_error("Unable to read file at: " + path);
@@ -50,7 +51,7 @@ struct stat FileManager::stat(std::string path) {
     int lol = fstat(fd, &stat_info);
     close(fd);
 
-    return stat_info;
+    return static_cast<uint64_t>(stat_info.st_size);
 }
 SharedArray<std::string> FileManager::list(std::string path) {
     // if not directory (or is file)

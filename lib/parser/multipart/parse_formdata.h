@@ -17,7 +17,7 @@ namespace WylesLibs::Parser::Multipart::FormData {
 
 static constexpr size_t MAX_NUM_FILES_PER_REQUEST = 64;
 
-static void parse(EStream * io, SharedArray<MultipartFile> files, std::unordered_map<std::string, std::string> form_content) {
+static void parse(EStream * io, SharedArray<MultipartFile> files, std::unordered_map<std::string, std::string> form_content, std::shared_ptr<FileManager> file_manager) {
     // files are uploaded in one request (less overhead - no limit...) hence, timeout in http.cpp.
     bool new_file = true;
     while (1) {
@@ -62,7 +62,7 @@ static void parse(EStream * io, SharedArray<MultipartFile> files, std::unordered
             io->readUntil("\n"); // consume new line...
         } else if (field_name != "") {
             if (is_file) {
-                WylesLibs::File::write(file.getResourcePath(), line, !new_file);
+                file_manager->write(file.getResourcePath(), line, !new_file);
                 new_file = false;
             } else {
                 form_content[field_name] += line.toString();

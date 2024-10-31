@@ -116,7 +116,7 @@ void HttpConnection::parseRequest(HttpRequest * request, EStream * io) {
             //  if set min transfer rate at 128Kb/s, 
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
             serverSetConnectionTimeout(io->fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
-            Multipart::FormData::parse(io, request->files, request->form_content);
+            Multipart::FormData::parse(io, request->files, request->form_content, this->file_manager);
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
             request->content = io->readBytes(request->content_length);
@@ -399,11 +399,6 @@ uint8_t HttpConnection::onConnection(int fd) {
         }
     }
 
-    if (acceptedTLS) {
-        // TODO:
-        SSL_shutdown(io.ssl);
-        SSL_free(io.ssl);
-    }
     close(fd); // doc's say you shouldn't retry close so ignore ret
 
     return 1;

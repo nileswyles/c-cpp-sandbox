@@ -1,17 +1,18 @@
-#include "fileGCS.h"
+#include "file_gcs.h"
+#include "paths.h"
 
 using namespace WylesLibs;
 using namespace WylesLibs::File;
 
 std::shared_ptr<ReaderEStream> GCSFileManager::reader(std::string path) {
-    auto reader = this->client.ReadObject(this->this->bucket_name, path);
+    auto reader = this->client.ReadObject(this->bucket_name, path);
     if (!reader) {
         // TODO: log these error messages here..
         throw std::runtime_error("Failed to create reader.");
     }
-    // TODO: does this even need to be a shared_ptr?
-    std::shared_ptr<std::istream> s = std::dynamic_pointer_cast<std::istream>(std::make_shared<google::cloud::storage::ObjectReadStream>(reader));
-    return std::make_shared<ReaderEStream>(ReaderEStream(s));
+    // TODO: cast then shared or shared then cast?
+    std::shared_ptr<std::basic_istream<char>> s = std::dynamic_pointer_cast<std::basic_istream<char>>(std::make_shared<google::cloud::storage::ObjectReadStream>(std::move(reader)));
+    return std::make_shared<ReaderEStream>(s);
 }
 
 std::shared_ptr<WriterEStream> GCSFileManager::writer(std::string path) {
@@ -19,36 +20,34 @@ std::shared_ptr<WriterEStream> GCSFileManager::writer(std::string path) {
     if (false == this->writers.contains(path)) {
         return nullptr;
     }
-    auto writer = this->client.WriteObject(this->this->bucket_name, path);
+    auto writer = this->client.WriteObject(this->bucket_name, path);
     if (!writer.metadata()) {
         // TODO: log these error messages here..
         throw std::runtime_error("Failed to create writer.");
     }
-    std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(std::make_shared<google::cloud::storage::ObjectWriteStream>(reader));
-    std::shared_ptr<WriterEStream> w = std::make_shared<WriterEStream>(WriterEStream(s));
+    std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(std::make_shared<google::cloud::storage::ObjectWriteStream>(std::move(writer)));
+    std::shared_ptr<WriterEStream> w = std::make_shared<WriterEStream>(s);
     this->writers.insert(path); 
     pthread_mutex_unlock(&this->writers_lock);
     return w;
 }
 
 // TODO: this can probably be getSize instead...
-struct stat GCSFileManager::stat(std::string path) {
-    StatusOr<google::cloud::storage::ObjectMetadata> object_metadata = client.GetObjectMetadata(this->bucket_name, object_name);
-    // TODO: log these error messages here..
+uint64_t GCSFileManager::stat(std::string path) {
+    google::cloud::StatusOr<google::cloud::storage::ObjectMetadata> object_metadata = client.GetObjectMetadata(this->bucket_name, path);
     if (!object_metadata) throw std::move(object_metadata).status();
-    // struct stat info = 
-    // info.st_size = object_metadata.size();
-    return { .st_size = object_metadata.size() };
+    return static_cast<uint64_t>(object_metadata->size());
 }
 
 SharedArray<std::string> GCSFileManager::list(std::string path) {
+    namespace gcs = ::google::cloud::storage;
     SharedArray<std::string> data;
-    google::cloud::storage::MatchGlob l{Paths::join(path, "/*")};
-    for (auto&& object_metadata : client.ListObjects(this->bucket_name, {l})) {
+    for (auto&& object_metadata : client.ListObjects(this->bucket_name, gcs::Prefix(path))) {
         // TODO: log these error messages here..
         if (!object_metadata) throw std::move(object_metadata).status();
-        data.append(object_metadata.name());
+        data.append(object_metadata->name());
     }
+    return data;
 }
 
 void GCSFileManager::remove(std::string path) {
@@ -59,19 +58,21 @@ void GCSFileManager::remove(std::string path) {
 }
 
 void GCSFileManager::move(std::string path, std::string destination_path) {
-    StatusOr<google::cloud::storage::ObjectMetadata> object_metadata = client.GetObjectMetadata(this->bucket_name, path);
+    namespace gcs = ::google::cloud::storage;
+    google::cloud::StatusOr<gcs::ObjectMetadata> object_metadata = client.GetObjectMetadata(this->bucket_name, path);
     if (!object_metadata) throw std::move(object_metadata).status();
 
-    google::cloud::storage::ObjectMetadata desired = *object_metadata;
-    desired.mutable_metadata().emplace(key, value);
+    gcs::ObjectMetadata desired = *object_metadata;
 
-    StatusOr<google::cloud::storage::ObjectMetadata> updated = client.UpdateObject(this->bucket_name, path, destination_path, google::cloud::storageGeneration(object_metadata->generation()));
+    desired.set_name(destination_path);
+
+    google::cloud::StatusOr<gcs::ObjectMetadata> updated = client.UpdateObject(this->bucket_name, path, desired, gcs::Generation(object_metadata->generation()));
 
     // TODO: log these error messages here..
     if (!updated) throw std::move(updated).status();
 }
 void GCSFileManager::copy(std::string path, std::string destination_path) {
-    StatusOr<google::cloud::storage::ObjectMetadata> new_copy_meta = client.CopyObject(this->bucket_name, path, this->bucket_name, destination_path);
+    google::cloud::StatusOr<google::cloud::storage::ObjectMetadata> new_copy_meta = client.CopyObject(this->bucket_name, path, this->bucket_name, destination_path);
     // TODO: log these error messages here..
     if (!new_copy_meta) throw std::move(new_copy_meta).status();
 }

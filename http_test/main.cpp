@@ -7,7 +7,7 @@
 #include "controllers/example.h"
 
 #include "file_watcher.h"
-#include "fileS3.h"
+#include "file_gcs.h"
 
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1
@@ -99,7 +99,7 @@ int main(int argc, char * argv[]) {
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
         HttpServerConfig config("config.json");
         
-        // ServerContext context(config, std::shared_ptr<S3FileManager>());
+        // ServerContext context(config, std::shared_ptr<GCSFileManager>());
         ServerContext context(config);
         server_context = &context;
 
@@ -115,7 +115,6 @@ int main(int argc, char * argv[]) {
 
         connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders, context.file_manager); 
         connection.initialize();
-
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
         serverListen(config.address.c_str(), (uint16_t)config.port, connectionHandler);

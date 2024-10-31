@@ -30,15 +30,19 @@ SRC_FILES="
 -s $ROOT_DIR/lib/file_watcher.cpp
 -s $ROOT_DIR/lib/web/http/http_file_watcher.cpp
 -s $ROOT_DIR/lib/datastructures/array.cpp
+-s $ROOT_DIR/lib/file.cpp
+-s $ROOT_DIR/lib/file_gcs.cpp
+-s $ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/libgoogle_cloud_cpp_common.a
+-s $ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/libgoogle_cloud_cpp_rest_internal.a
+-s $ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/storage/libgoogle_cloud_cpp_storage.a
 "
 
 LD_FLAGS="
 -f ssl
 -f crypto
--f google-cloud-cpp/cmake-out/google/cloud/libgoogle_cloud_cpp_common.a
 "
 
-$ROOT_DIR/build_scripts/build_google.sh
+# $ROOT_DIR/build_scripts/build_google.sh
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -l $LOG_LEVEL $LD_FLAGS $DEFINES$PROGRAM_ARG"
 echo "\t"$CMD

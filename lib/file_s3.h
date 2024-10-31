@@ -1,17 +1,10 @@
-#ifndef WYLESLIBS_FILEGCS_H
-#define WYLESLIBS_FILEGCS_H
+#ifndef WYLESLIBS_FILES3_H
+#define WYLESLIBS_FILES3_H
 
 #include "estream/estream.h"
-
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include "file.h"
 
 #include <string>
-#include <fstream>
-#include <unordered_map>
 
 #ifndef LOGGER_FILE
 #define LOGGER_FILE 1
@@ -21,22 +14,13 @@
 #define LOGGER_MODULE_ENABLED LOGGER_FILE
 #include "logger.h"
 
-#include "file.h"
-
-// TODO: compiler flags to not have to rely on google?
-#include "google/cloud/storage/client.h"
-
 using namespace WylesLibs;
 
 namespace WylesLibs::File {
-class GCSFileManager: public FileManager {
-    private:
-        std::string bucket_name;
+class S3FileManager: public FileManager {
     public:
-        google::cloud::storage::Client client;
-
-        GCSFileManager(std::string bucket_name): bucket_name(bucket_name), client(google::cloud::storage::Client()) {};
-        ~GCSFileManager() override final = default;
+        S3FileManager() = default;
+        ~S3FileManager() override final = default;
 
         std::shared_ptr<ReaderEStream> reader(std::string path) override final;
         std::shared_ptr<WriterEStream> writer(std::string path) override final;

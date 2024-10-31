@@ -23,10 +23,53 @@
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
 namespace WylesLibs {
-// TODO:
-//      consider using stream instead of buf for reads and extend stream to support stream api in addition to readUntil stuff.
-//      support range requests for file_gcs because apparently it currently downloads the entire file.
-class EStream {
+class ReaderEStream: public std::basic_istream<char> {
+    /*
+        Read from stream
+    */
+    // TODO: does this incur any additional overhead in inherited even though private?
+    private:
+        std::shared_ptr<std::basic_istream<char>> reader;
+        std::shared_ptr<FileManager> file_manager;
+        std::string path;
+        size_t file_offset;
+        size_t chunk_size;
+    protected:
+        virtual void cursorCheck();
+        virtual void fillBuffer();
+    public:        
+        // TODO: std::move? that's interesting
+        ReaderEStream(std::shared_ptr<std::basic_istream<char>> reader): std::basic_istream<char>(std::move(*reader)) {
+            file_manager = nullptr;
+            reader = reader;
+        }
+        ReaderEStream(std::shared_ptr<FileManager> file_manager, std::string path, size_t initial_offset, 
+                      size_t chunk_size, std::shared_ptr<std::basic_istream<char>> reader): std::basic_istream<char>(std::move(*reader)) {
+            file_manager = file_manager;
+            path = path;
+            file_offset = initial_offset;
+            chunk_size = chunk_size;
+            reader = reader;
+        }
+        // peek until doesn't make much sense with static sized buffer... so let's omit for now...
+        // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...
+        virtual ~ReaderEStream() = default;
+        virtual SharedArray<uint8_t> readBytes(const size_t n) {
+            // yuck
+            // TODO: casting is annoying...
+            return SharedArray<uint8_t>(std::reinterpret_pointer_cast<std::basic_istream<uint8_t>>(this->reader), n);
+        }
+        // ! IMPORTANT - inclusive means we read and consume the until character. 
+        //      inclusive value of false means the until character stays in the read buffer for the next read.
+        //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
+        //      The default value for the inclusive field is TRUE.
+        virtual SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
+
+        virtual void readDecimal(double& value, size_t& digit_count);
+        virtual void readNatural(double& value, size_t& digit_count);
+};
+
+class EStream: public ReaderEStream {
     /*
         Read and Write from file descriptor
     */
@@ -35,9 +78,9 @@ class EStream {
         size_t buf_size;
         size_t cursor;
         size_t bytes_in_buffer;
-        
-        virtual void fillBuffer();
-        virtual void cursorCheck();
+
+        void cursorCheck() override final;
+        void fillBuffer() override;
     public: 
         int fd;
         EStream() {}
@@ -65,20 +108,23 @@ class EStream {
             buf = newCArray<uint8_t>(buf_size);
         }
         virtual ~EStream() = default;
-        virtual ssize_t writeBuffer(void * p_buf, size_t size);
-        virtual uint8_t peek();
-        // peek until doesn't make much sense with static sized buffer... so let's omit for now...
-        // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...
-        virtual uint8_t get();
-        virtual SharedArray<uint8_t> readBytes(const size_t n);
+        // standard istream
+        char_type get() override;
+        char_type peek() override;
+        // char_type read() override;
+
+        // ReaderEstream
+        SharedArray<uint8_t> readBytes(const size_t n) override;
         // ! IMPORTANT - inclusive means we read and consume the until character. 
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
-        virtual SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
+        SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true) override;
+        void readDecimal(double& value, size_t& digit_count) override;
+        void readNatural(double& value, size_t& digit_count) override;
 
-        virtual void readDecimal(double& value, size_t& digit_count);
-        virtual void readNatural(double& value, size_t& digit_count);
+        // Write to FD
+        virtual ssize_t writeBuffer(void * p_buf, size_t size);
 };
 
 #ifdef WYLESLIBS_SSL_ENABLED
@@ -101,76 +147,6 @@ class SSLEStream: public EStream {
         ssize_t writeBuffer(void * p_buf, size_t size) override final;
 };
 #endif
-
-// TODO: timeouts but for files should be fine? And I trust google, I think...
-static const std::string read_only_msg("This EStream is locked for reading only");
-class ReaderEStream: public EStream, public std::basic_istream<char> {
-    /*
-        Read from stream
-    */
-    protected:
-        void cursorCheck() override final {}
-        void fillBuffer() override final {}
-    public:        
-        std::shared_ptr<std::basic_istream<char>> reader;
-
-        // TODO: std::move? that's interesting
-        ReaderEStream(std::shared_ptr<std::basic_istream<char>> reader): EStream(0), std::basic_istream<char>(std::move(*reader)) {
-            reader = reader;
-        }
-        virtual ~ReaderEStream() = default;
-        // also, how does it handle EStream::get vs istream::get? Do I really need to explicitly override that.
-        uint8_t get() override final { return this->reader->get(); }
-        uint8_t peek() override final { return this->reader->peek(); }
-        SharedArray<uint8_t> readBytes(const size_t n) override final {
-            // yuck
-            // TODO: casting is annoying...
-            return SharedArray<uint8_t>(std::reinterpret_pointer_cast<std::basic_istream<uint8_t>>(this->reader), n);
-        }
-        // disabled functionality from EStream
-        ssize_t writeBuffer(void * p_buf, size_t size) override final {
-            throw std::runtime_error(read_only_msg);
-        }
-};
-
-static const std::string write_only_msg("This EStream is locked for writing only");
-class WriterEStream: public EStream, public std::ostream {
-    /*
-        Write to stream
-    */
-    protected:
-        void cursorCheck() override final {
-            throw std::runtime_error(write_only_msg);
-        }
-        void fillBuffer() override final {
-            throw std::runtime_error(write_only_msg);
-        }
-    public:        
-        std::shared_ptr<std::basic_istream<char>> writer;
-
-        WriterEStream(std::shared_ptr<std::ostream> writer): EStream(0), std::ostream(std::move(*writer)) {
-            writer = writer;
-        }
-        virtual ~WriterEStream() = default;
-        // disabled functionality from EStream
-        uint8_t get() override final { 
-            throw std::runtime_error(write_only_msg);
-        }
-        uint8_t peek() override final { 
-            throw std::runtime_error(write_only_msg);
-        }
-        SharedArray<uint8_t> readBytes(const size_t n) override final {
-            throw std::runtime_error(write_only_msg);
-        }
-        SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true) override final {
-            throw std::runtime_error(write_only_msg);
-        }
-        void readDecimal(double& value, size_t& digit_count) {
-            throw std::runtime_error(write_only_msg);
-        }
-        void readNatural(double& value, size_t& digit_count) {
-            throw std::runtime_error(write_only_msg);
-        }
 };
 
 // @ static
@@ -186,6 +162,5 @@ class WriterEStream: public EStream, public std::ostream {
 // );
 // static_assert(sizeof(EStream) == 32);
 
-}
 
 #endif

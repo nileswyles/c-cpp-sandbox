@@ -3,19 +3,66 @@
 
 using namespace WylesLibs;
 using namespace WylesLibs::File;
+namespace gcs = ::google::cloud::storage;
 
-std::shared_ptr<ReaderEStream> GCSFileManager::reader(std::string path) {
-    auto reader = this->client.ReadObject(this->bucket_name, path);
-    if (!reader) {
-        // TODO: log these error messages here..
-        throw std::runtime_error("Failed to create reader.");
+// ! IMPORTANT - It's important the user understands how the ReadObject functionality works.
+//               Normally (size == SIZE_MAX), the ReadObject call returns a stream representing a file on GCS. 
+//               Read's are buffered, the entire file is not held in memory and apparently seek functionality is non-existent. 
+//
+//               This method provides a way of getting a stream representing a range of bytes of a file on GCS.
+//               With trade-off of slightly more overhead, you are provided control of chunk sizes and "better" seeking functionality.
+
+//               TODO: think about whether it should be it's own function called ranges_reader or something?
+std::shared_ptr<ReaderEStream> GCSFileManager::reader(std::string path, size_t offset, size_t size) {
+    if (this->this_shared == nullptr) {
+        this->this_shared = std::make_shared<FileManager>(dynamic_cast<FileManager>(this));
     }
-    // TODO: cast then shared or shared then cast?
-    std::shared_ptr<std::basic_istream<char>> s = std::dynamic_pointer_cast<std::basic_istream<char>>(std::make_shared<google::cloud::storage::ObjectReadStream>(std::move(reader)));
-    return std::make_shared<ReaderEStream>(s);
+    std::shared_ptr<ReaderEStream> stream;
+    gcs::ObjectReadStream reader;
+    if (size == SIZE_MAX) {
+        if (0 != offset) {
+            // TODO: can I read from offset to end of file? I think so. What happens if size is past offset? if so, then can use same ReadObj call?
+            reader = this->client.ReadObject(this->bucket_name, path, gcs::ReadRange(static_cast<std::int64_t>(offset), static_cast<std::int64_t>(offset + size)));
+            if (!reader) {
+                // TODO: log these error messages here..
+                throw std::runtime_error("Failed to create reader.");
+            }
+            stream = std::make_shared<ReaderEStream>(
+                        std::dynamic_pointer_cast<std::basic_istream<char>>(
+                            std::make_shared<gcs::ObjectReadStream>(std::move(reader))
+                        )
+                     );
+        } else {
+            reader = this->client.ReadObject(this->bucket_name, path);
+            if (!reader) {
+                // TODO: log these error messages here..
+                throw std::runtime_error("Failed to create reader.");
+            }
+            stream = std::make_shared<ReaderEStream>(
+                        std::dynamic_pointer_cast<std::basic_istream<char>>(
+                            std::make_shared<gcs::ObjectReadStream>(std::move(reader))
+                        )
+                     );
+        }
+    } else {
+        // TODO: can I read from offset to end of file? I think so. 
+        // TODO: inclusive?
+        reader = this->client.ReadObject(this->bucket_name, path, gcs::ReadRange(static_cast<std::int64_t>(offset), static_cast<std::int64_t>(offset + size)));
+        if (!reader) {
+            // TODO: log these error messages here..
+            throw std::runtime_error("Failed to create range reader.");
+        }
+        // TODO: cast then shared or shared then cast?
+        stream = std::make_shared<ReaderEStream>(this->this_shared, path, offset, size, 
+                                                 std::dynamic_pointer_cast<std::basic_istream<char>>(
+                                                    std::make_shared<gcs::ObjectReadStream>(std::move(reader))
+                                                )
+                 );
+    }
+    return stream;
 }
 
-std::shared_ptr<WriterEStream> GCSFileManager::writer(std::string path) {
+std::shared_ptr<std::basic_ostream<char>> GCSFileManager::writer(std::string path) {
     pthread_mutex_lock(&this->writers_lock);
     if (false == this->writers.contains(path)) {
         return nullptr;
@@ -25,8 +72,11 @@ std::shared_ptr<WriterEStream> GCSFileManager::writer(std::string path) {
         // TODO: log these error messages here..
         throw std::runtime_error("Failed to create writer.");
     }
-    std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(std::make_shared<google::cloud::storage::ObjectWriteStream>(std::move(writer)));
-    std::shared_ptr<WriterEStream> w = std::make_shared<WriterEStream>(s);
+    std::shared_ptr<std::basic_ostream<char>> w = std::make_shared<std::basic_ostream<char>>(
+                                                      std::dynamic_pointer_cast<std::ostream>(
+                                                          std::make_shared<google::cloud::storage::ObjectWriteStream>(std::move(writer))
+                                                      )
+                                                  );
     this->writers.insert(path); 
     pthread_mutex_unlock(&this->writers_lock);
     return w;
@@ -40,9 +90,8 @@ uint64_t GCSFileManager::stat(std::string path) {
 }
 
 SharedArray<std::string> GCSFileManager::list(std::string path) {
-    namespace gcs = ::google::cloud::storage;
     SharedArray<std::string> data;
-    for (auto&& object_metadata : client.ListObjects(this->bucket_name, gcs::Prefix(path))) {
+    for (auto&& object_metadata : client.ListObjects(this->bucket_name, gcs::MatchGlob(Paths::join(path, "/*")))) {
         // TODO: log these error messages here..
         if (!object_metadata) throw std::move(object_metadata).status();
         data.append(object_metadata->name());
@@ -58,7 +107,6 @@ void GCSFileManager::remove(std::string path) {
 }
 
 void GCSFileManager::move(std::string path, std::string destination_path) {
-    namespace gcs = ::google::cloud::storage;
     google::cloud::StatusOr<gcs::ObjectMetadata> object_metadata = client.GetObjectMetadata(this->bucket_name, path);
     if (!object_metadata) throw std::move(object_metadata).status();
 

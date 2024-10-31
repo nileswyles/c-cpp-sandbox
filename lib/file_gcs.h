@@ -28,11 +28,13 @@ class GCSFileManager: public FileManager {
     public:
         google::cloud::storage::Client client;
 
-        GCSFileManager(std::string bucket_name): bucket_name(bucket_name), client(google::cloud::storage::Client()) {};
+        GCSFileManager(std::string bucket_name): bucket_name(bucket_name), 
+                                                 client(google::cloud::storage::Client()),
+                                                 FileManager() {};
         ~GCSFileManager() override final = default;
 
-        std::shared_ptr<ReaderEStream> reader(std::string path) override final;
-        std::shared_ptr<WriterEStream> writer(std::string path) override final;
+        std::shared_ptr<ReaderEStream> reader(std::string path, size_t offset, size_t size) override final;
+        std::shared_ptr<std::basic_ostream<char>> writer(std::string path) override final;
 
         uint64_t stat(std::string path) override final;
 

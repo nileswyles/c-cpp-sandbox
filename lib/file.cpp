@@ -15,18 +15,26 @@
 using namespace WylesLibs;
 using namespace WylesLibs::File;
 
-std::shared_ptr<ReaderEStream> FileManager::reader(std::string path) {
-    std::shared_ptr<std::basic_istream<char>> s = std::dynamic_pointer_cast<std::basic_istream<char>>(std::make_shared<std::ifstream>(path));
-    return std::make_shared<ReaderEStream>(s);
+std::shared_ptr<ReaderEStream> FileManager::reader(std::string path, size_t offset, size_t size) {
+    std::shared_ptr<std::basic_ifstream<char>> ifstream = std::make_shared<std::ifstream>(path)
+    ifstream->seekg(offset);
+    return std::make_shared<ReaderEStream>(
+               std::dynamic_pointer_cast<std::basic_istream<char>>(
+                   ifstream;
+               )
+           );
 }
 
-std::shared_ptr<WriterEStream> FileManager::writer(std::string path) {
+std::shared_ptr<std::basic_ostream<char>> FileManager::writer(std::string path) {
     pthread_mutex_lock(&this->writers_lock);
     if (false == this->writers.contains(path)) {
         return nullptr;
     }
-    std::shared_ptr<std::ostream> s = std::dynamic_pointer_cast<std::ostream>(std::make_shared<std::ofstream>(path, std::fstream::binary | std::fstream::out));
-    std::shared_ptr<WriterEStream> w = std::make_shared<WriterEStream>(s);
+    std::shared_ptr<std::basic_ostream<char>> w = std::make_shared<std::basic_ostream<char>>(
+        std::dynamic_pointer_cast<std::ostream>(
+            std::make_shared<std::ofstream>(path, std::fstream::binary | std::fstream::out)
+        )
+    );
     this->writers.insert(path); 
     pthread_mutex_unlock(&this->writers_lock);
     return w;

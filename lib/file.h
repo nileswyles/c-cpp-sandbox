@@ -26,7 +26,7 @@ using namespace WylesLibs;
 
 namespace WylesLibs::File {
 
-static void write(std::shared_ptr<WriterEStream> s, SharedArray<uint8_t> buffer, bool append = false) {
+static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8_t> buffer, bool append = false) {
     if (append) {
         s->seekp(std::ios_base::end);
     } else {
@@ -37,7 +37,7 @@ static void write(std::shared_ptr<WriterEStream> s, SharedArray<uint8_t> buffer,
     s->flush();
 }
 
-static void write(std::shared_ptr<WriterEStream> s, SharedArray<uint8_t> buffer, size_t offset = 0) {
+static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8_t> buffer, size_t offset = 0) {
     s->seekp(offset);
     s->write((const char *)buffer.start(), buffer.size()); // binary output
     s->flush();
@@ -45,7 +45,9 @@ static void write(std::shared_ptr<WriterEStream> s, SharedArray<uint8_t> buffer,
 
 static SharedArray<uint8_t> read(std::shared_ptr<ReaderEStream> s, size_t offset = 0, size_t size = SIZE_MAX) {
     SharedArray<uint8_t> file_data;
-    s->seekg(offset);
+    if (offset != 0) {
+        s->seekg(offset); // read from absolute position defined by offset
+    } // else read from current (relative) position.
     if (size == SIZE_MAX) {
         // read until EOF
         while (s->good() && !s->eof()) {
@@ -62,10 +64,13 @@ static SharedArray<uint8_t> read(std::shared_ptr<ReaderEStream> s, size_t offset
 
 class FileManager {
     protected:
+        std::shared_ptr<FileManager> this_shared;
         std::set<std::string> writers;
         pthread_mutex_t writers_lock;
     public:
-        FileManager() = default;
+        FileManager() {
+            pthread_mutex_init(&writers_lock, nullptr);
+        };
         virtual ~FileManager() = default;
 
         void write(std::string path, SharedArray<uint8_t> buffer, bool append) {
@@ -88,8 +93,8 @@ class FileManager {
             return File::read(this->reader(path), offset, size);
         }
 
-        virtual std::shared_ptr<ReaderEStream> reader(std::string path);
-        virtual std::shared_ptr<WriterEStream> writer(std::string path);
+        virtual std::shared_ptr<ReaderEStream> reader(std::string path, size_t offset = 0, size_t size = SIZE_MAX);
+        virtual std::shared_ptr<std::basic_ostream<char>> writer(std::string path);
         // ! IMPORTANT - implementation should call this function when done with writer...
         //      is there a better way? yeah, maybe different ostream type with shared_ptr to this stuff... that removes when close is called...? too complicated?
         virtual void removeWriter(std::string path);

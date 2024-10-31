@@ -23,7 +23,7 @@ class S3FileManager: public FileManager {
         ~S3FileManager() override final = default;
 
         std::shared_ptr<ReaderEStream> reader(std::string path) override final;
-        std::shared_ptr<WriterEStream> writer(std::string path) override final;
+        std::shared_ptr<std::basic_ostream<char>> writer(std::string path) override final;
 
         struct stat stat(std::string path) override final;
 

@@ -33,91 +33,28 @@
 
 using namespace WylesLibs;
 
-uint8_t EStream::peek() {
-    this->cursorCheck();
-    return this->buf[this->cursor];
+void ReaderEStream::cursorCheck() {
+    if (false == this->reader->good()) {
+        this->fillBuffer();
+    }
 }
 
-uint8_t EStream::get() {
-    uint8_t byte = peek();
-    this->cursor++;
-    return byte;
+void EStream::cursorCheck() {
+    if (this->cursor >= this->bytes_in_buffer) {
+        this->fillBuffer();
+    }
 }
 
-ssize_t EStream::writeBuffer(void * p_buf, size_t size) {
-    return write(this->fd, p_buf, size);
-}
-
-#ifdef WYLESLIBS_SSL_ENABLED
-ssize_t SSLEStream::writeBuffer(void * p_buf, size_t size) {
-    return SSL_write(this->ssl, p_buf, size);
-}
-#endif
-
-SharedArray<uint8_t> EStream::readBytes(const size_t n) {
-    this->cursorCheck();
-
-    if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
-        throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
+void ReaderEStream::fillBuffer() {
+    // get new stream from underlying transport...
+    if (this->file_manager == nullptr) {
+        this->bytes_in_buffer = 0;
+        loggerPrintf(LOGGER_ERROR, "Read error: %d, ret: %ld\n", errno, ret);
+        throw std::runtime_error("Read error.");
+    } else {
+        this->file_offset += this->chunk_size;
+        this->file_manager->reader(path, this->file_offset, this->chunk_size);
     }
-
-    SharedArray<uint8_t> data;
-    size_t bytes_read = 0;
-    while (bytes_read < n) {
-        size_t bytes_left_to_read = n - bytes_read;
-        size_t bytes_left_in_buffer = this->bytes_in_buffer - this->cursor;
-        if (bytes_left_to_read > bytes_left_in_buffer) {
-            // copy data left in buffer and read more
-            data.append(this->buf + this->cursor, bytes_left_in_buffer);
-            bytes_read += bytes_left_in_buffer;
-
-            fillBuffer();
-        } else {
-            // else enough data in buffer
-            data.append(this->buf + this->cursor, bytes_left_to_read);
-            this->cursor += bytes_left_to_read;
-            bytes_read += bytes_left_to_read;
-        }
-    } 
-    return data;
-}
-
-SharedArray<uint8_t> EStream::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
-    // # less clunky
-    if (operation != nullptr) {
-        operation->read_until = until;
-    }
-
-    SharedArray<uint8_t> data;
-    uint8_t c = this->peek();
-    while (until.find(c) == std::string::npos) {
-        this->get(); // consume
-        // commit character
-        if (operation != nullptr) {
-            operation->perform(data, c);
-        } else {
-            data.append(c);
-        }
-        c = this->peek();
-    }
-    if (inclusive) {
-        // commit character
-        if (operation != nullptr) {
-            operation->perform(data, c);
-        } else {
-            data.append(c);
-        }
-        // make sure to move cursor past until char. else still point to until char for next read...
-        this->get();
-    }
-    if (operation != nullptr) {
-        operation->flush(data);
-    }
-
-    loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);
-    loggerPrintf(LOGGER_DEBUG, "reader_read_until string: '%s'\n", data.toString().c_str());
-
-    return data;
 }
 
 void EStream::fillBuffer() {
@@ -158,17 +95,94 @@ void SSLEStream::fillBuffer() {
 }
 #endif
 
-void EStream::cursorCheck() {
-    if (this->cursor >= this->bytes_in_buffer) {
-        fillBuffer();
+char_type EStream::get() {
+    char_type byte = this->peek();
+    this->cursor++;
+    return byte;
+}
+char_type EStream::peek() {
+    this->cursorCheck();
+    return this->buf[this->cursor];
+}
+// char_type EStream::read() override;
+
+SharedArray<uint8_t> ReaderEStream::readBytes(const size_t n) {
+    // yuck
+    // TODO: casting is annoying...
+    return SharedArray<uint8_t>(std::reinterpret_pointer_cast<std::basic_istream<uint8_t>>(this->reader), n);
+}
+
+SharedArray<uint8_t> EStream::readBytes(const size_t n) {
+    this->cursorCheck();
+
+    if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
+        throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
     }
+
+    SharedArray<uint8_t> data;
+    size_t bytes_read = 0;
+    while (bytes_read < n) {
+        size_t bytes_left_to_read = n - bytes_read;
+        size_t bytes_left_in_buffer = this->bytes_in_buffer - this->cursor;
+        if (bytes_left_to_read > bytes_left_in_buffer) {
+            // copy data left in buffer and read more
+            data.append(this->buf + this->cursor, bytes_left_in_buffer);
+            bytes_read += bytes_left_in_buffer;
+
+            fillBuffer();
+        } else {
+            // else enough data in buffer
+            data.append(this->buf + this->cursor, bytes_left_to_read);
+            this->cursor += bytes_left_to_read;
+            bytes_read += bytes_left_to_read;
+        }
+    } 
+    return data;
+}
+
+SharedArray<uint8_t> ReaderEStream::readUntil(std::string until, ReaderTask * operation, bool inclusive) {
+    // # less clunky
+    if (operation != nullptr) {
+        operation->read_until = until;
+    }
+
+    SharedArray<uint8_t> data;
+    uint8_t c = this->peek();
+    while (until.find(c) == std::string::npos) {
+        this->get(); // consume
+        // commit character
+        if (operation != nullptr) {
+            operation->perform(data, c);
+        } else {
+            data.append(c);
+        }
+        c = this->peek();
+    }
+    if (inclusive) {
+        // commit character
+        if (operation != nullptr) {
+            operation->perform(data, c);
+        } else {
+            data.append(c);
+        }
+        // make sure to move cursor past until char. else still point to until char for next read...
+        this->get();
+    }
+    if (operation != nullptr) {
+        operation->flush(data);
+    }
+
+    loggerPrintf(LOGGER_DEBUG, "reader_read_until end cursor: %lu\n", this->cursor);
+    loggerPrintf(LOGGER_DEBUG, "reader_read_until string: '%s'\n", data.toString().c_str());
+
+    return data;
 }
 
 // TODO: 
 //  streamify, these as well.
 //  also, think about what other generalizations can be made - think map/reduce/filter/collect
 //  some of the afforementioned operations are already accounted for.
-void EStream::readDecimal(double& value, size_t& digit_count) {
+void ReaderEStream::readDecimal(double& value, size_t& digit_count) {
     double decimal_divisor = 10;
     char c = this->peek();
     while (isDigit(c)) {
@@ -185,7 +199,7 @@ void EStream::readDecimal(double& value, size_t& digit_count) {
     }
 }
 
-void EStream::readNatural(double& value, size_t& digit_count) {
+void ReaderEStream::readNatural(double& value, size_t& digit_count) {
     char c = this->peek();
     while (isDigit(c)) {
         this->get();
@@ -199,3 +213,13 @@ void EStream::readNatural(double& value, size_t& digit_count) {
         }
     }
 }
+
+ssize_t EStream::writeBuffer(void * p_buf, size_t size) {
+    return write(this->fd, p_buf, size);
+}
+
+#ifdef WYLESLIBS_SSL_ENABLED
+ssize_t SSLEStream::writeBuffer(void * p_buf, size_t size) {
+    return SSL_write(this->ssl, p_buf, size);
+}
+#endif

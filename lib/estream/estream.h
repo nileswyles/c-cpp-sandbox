@@ -3,6 +3,7 @@
 
 #include "reader_task.h"
 
+#include "file.h"
 #include "datastructures/array.h"
 #include "string_utils.h"
 
@@ -83,7 +84,7 @@ class EStream: public ReaderEStream {
         void fillBuffer() override;
     public: 
         int fd;
-        EStream() {}
+        EStream() = default;
         EStream(uint8_t * p_buf, const size_t p_buf_size) {
             // # testing.
             buf = p_buf;

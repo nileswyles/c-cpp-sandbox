@@ -19,46 +19,19 @@ std::shared_ptr<ReaderEStream> GCSFileManager::reader(std::string path, size_t o
     }
     std::shared_ptr<ReaderEStream> stream;
     gcs::ObjectReadStream reader;
-    if (size == SIZE_MAX) {
-        if (0 != offset) {
-            // TODO: can I read from offset to end of file? I think so. What happens if size is past offset? if so, then can use same ReadObj call?
-            reader = this->client.ReadObject(this->bucket_name, path, gcs::ReadRange(static_cast<std::int64_t>(offset), static_cast<std::int64_t>(offset + size)));
-            if (!reader) {
-                // TODO: log these error messages here..
-                throw std::runtime_error("Failed to create reader.");
-            }
-            stream = std::make_shared<ReaderEStream>(
-                        std::dynamic_pointer_cast<std::basic_istream<char>>(
-                            std::make_shared<gcs::ObjectReadStream>(std::move(reader))
-                        )
-                     );
-        } else {
-            reader = this->client.ReadObject(this->bucket_name, path);
-            if (!reader) {
-                // TODO: log these error messages here..
-                throw std::runtime_error("Failed to create reader.");
-            }
-            stream = std::make_shared<ReaderEStream>(
-                        std::dynamic_pointer_cast<std::basic_istream<char>>(
-                            std::make_shared<gcs::ObjectReadStream>(std::move(reader))
-                        )
-                     );
-        }
-    } else {
-        // TODO: can I read from offset to end of file? I think so. 
-        // TODO: inclusive?
-        reader = this->client.ReadObject(this->bucket_name, path, gcs::ReadRange(static_cast<std::int64_t>(offset), static_cast<std::int64_t>(offset + size)));
-        if (!reader) {
-            // TODO: log these error messages here..
-            throw std::runtime_error("Failed to create range reader.");
-        }
-        // TODO: cast then shared or shared then cast?
-        stream = std::make_shared<ReaderEStream>(this->this_shared, path, offset, size, 
-                                                 std::dynamic_pointer_cast<std::basic_istream<char>>(
-                                                    std::make_shared<gcs::ObjectReadStream>(std::move(reader))
-                                                )
-                 );
+    // TODO: can I read from offset to end of file? I think so. 
+    // TODO: inclusive?
+    reader = this->client.ReadObject(this->bucket_name, path, gcs::ReadRange(static_cast<std::int64_t>(offset), static_cast<std::int64_t>(offset + size)));
+    if (!reader) {
+        // TODO: log these error messages here..
+        throw std::runtime_error("Failed to create range reader.");
     }
+    // TODO: cast then shared or shared then cast?
+    stream = std::make_shared<ReaderEStream>(this->this_shared, path, offset, size, 
+                                             std::dynamic_pointer_cast<std::basic_istream<char>>(
+                                                std::make_shared<gcs::ObjectReadStream>(std::move(reader))
+                                            )
+             );
     return stream;
 }
 
@@ -84,7 +57,7 @@ std::shared_ptr<std::basic_ostream<char>> GCSFileManager::writer(std::string pat
 
 // TODO: this can probably be getSize instead...
 uint64_t GCSFileManager::stat(std::string path) {
-    google::cloud::StatusOr<google::cloud::storage::ObjectMetadata> object_metadata = client.GetObjectMetadata(this->bucket_name, path);
+    google::cloud::StatusOr<gcs::ObjectMetadata> object_metadata = client.GetObjectMetadata(this->bucket_name, path);
     if (!object_metadata) throw std::move(object_metadata).status();
     return static_cast<uint64_t>(object_metadata->size());
 }
@@ -120,7 +93,7 @@ void GCSFileManager::move(std::string path, std::string destination_path) {
     if (!updated) throw std::move(updated).status();
 }
 void GCSFileManager::copy(std::string path, std::string destination_path) {
-    google::cloud::StatusOr<google::cloud::storage::ObjectMetadata> new_copy_meta = client.CopyObject(this->bucket_name, path, this->bucket_name, destination_path);
+    google::cloud::StatusOr<gcs::ObjectMetadata> new_copy_meta = client.CopyObject(this->bucket_name, path, this->bucket_name, destination_path);
     // TODO: log these error messages here..
     if (!new_copy_meta) throw std::move(new_copy_meta).status();
 }

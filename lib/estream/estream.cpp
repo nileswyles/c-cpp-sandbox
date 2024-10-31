@@ -53,7 +53,9 @@ void ReaderEStream::fillBuffer() {
         throw std::runtime_error("Read error.");
     } else {
         this->file_offset += this->chunk_size;
-        this->file_manager->reader(path, this->file_offset, this->chunk_size);
+        reader = this->file_manager->reader(path, this->file_offset, this->chunk_size);
+        // LOL,,,.... need to update 
+        *this = *reader;
     }
 }
 

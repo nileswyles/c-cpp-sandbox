@@ -15,7 +15,7 @@ ROOT_DIR="."
 
 SRC_FILES="
 -s $ROOT_DIR/lib/test/file_watcher_test.cpp
--s $ROOT_DIR/lib/file_watcher.cpp
+-s $ROOT_DIR/lib/file/file_watcher.cpp
 -s $ROOT_DIR/lib/test/tester.cpp
 -s $ROOT_DIR/lib/datastructures/array.cpp
 "

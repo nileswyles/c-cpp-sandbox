@@ -17,7 +17,7 @@ class ServerConfig: public JsonBase {
 
         ServerConfig(): resources_root("./") {}
         ServerConfig(std::string filepath): 
-            ServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>>(), filepath))) {}
+            ServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>(), filepath))) {}
         ServerConfig(std::shared_ptr<JsonObject> obj) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {

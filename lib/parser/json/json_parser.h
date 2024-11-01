@@ -144,10 +144,10 @@ class JsonString: public JsonValue {
 
 // LOL, over optimizating? probably but this should definitely minimize memory footprint some... probably not as much as one would think though?
 //  if nothing else, let's keep parsing stuff consistent... 
-extern JsonValue * parseFile(std::shared_ptr<FileManager> file_manager, std::string file_path);
-extern JsonValue * parse(std::string json);
-extern JsonValue * parse(SharedArray<uint8_t> json);
-extern JsonValue * parse(EStream * r, size_t& i);
+extern std::shared_ptr<JsonValue> parseFile(std::shared_ptr<StreamFactory> stream_factory, std::string file_path);
+extern std::shared_ptr<JsonValue> parse(std::string json);
+extern std::shared_ptr<JsonValue> parse(SharedArray<uint8_t> json);
+extern std::shared_ptr<JsonValue> parse(EStream * r, size_t& i);
 
 extern std::string pretty(std::string json);
 

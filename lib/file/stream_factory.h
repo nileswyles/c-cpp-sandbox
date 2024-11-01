@@ -5,15 +5,14 @@
 #include <memory>
 #include <string>
 
-// TODO: so this is no longer estream stuff...
-namespace WylesLibs {
-class FileStreamFactory {
+namespace WylesLibs::File {
+class StreamFactory {
     protected:
-        std::shared_ptr<FileStreamFactory> this_shared;
+        std::shared_ptr<StreamFactory> this_shared;
         std::set<std::string> writers;
         pthread_mutex_t writers_lock;
     public:
-        FileStreamFactory() {
+        StreamFactory() {
             pthread_mutex_init(&writers_lock, nullptr);
         };
         virtual std::shared_ptr<std::basic_istream<char>> reader(std::string path, size_t offset = 0, size_t size = SIZE_MAX);

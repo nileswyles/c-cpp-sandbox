@@ -2,6 +2,7 @@
 #include "paths.h"
 
 using namespace WylesLibs;
+using namespace WylesLibs::File;
 
 namespace gcs = ::google::cloud::storage;
 // ! IMPORTANT - It's important the user understands how the ReadObject functionality works.
@@ -13,7 +14,7 @@ namespace gcs = ::google::cloud::storage;
 
 //               Additionally, this extra "factory" abstraction is only required because of this ranging functionality.
 //               TODO: think about whether it should be it's own function called ranges_reader or something?
-std::shared_ptr<std::basic_istream<char>> GCSFileStreamFactory::reader(std::string path, size_t offset, size_t size) {
+std::shared_ptr<std::basic_istream<char>> GCSStreamFactory::reader(std::string path, size_t offset, size_t size) {
     std::shared_ptr<std::basic_istream<char>> stream;
     gcs::ObjectReadStream reader;
     // TODO: can I read from offset to end of file? I think so. ReadFromOffset option implies otherwise?
@@ -30,7 +31,7 @@ std::shared_ptr<std::basic_istream<char>> GCSFileStreamFactory::reader(std::stri
     return stream;
 }
 
-std::shared_ptr<std::basic_ostream<char>> GCSFileStreamFactory::writer(std::string path) {
+std::shared_ptr<std::basic_ostream<char>> GCSStreamFactory::writer(std::string path) {
     pthread_mutex_lock(&this->writers_lock);
     if (false == this->writers.contains(path)) {
         return nullptr;

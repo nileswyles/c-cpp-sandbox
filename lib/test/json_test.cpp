@@ -1,5 +1,6 @@
 #include "parser/json/json.h"
 #include <iostream>
+#include <memory>
 
 // #include "test/tester.h"
 #include "tester.h"
@@ -219,7 +220,6 @@ static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size
                 t->fail = false;
             }
         }
-        delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
     }
@@ -228,7 +228,7 @@ static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size
 static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
     try {
         size_t i = 0;
-        JsonValue * obj = parse(s);
+        std::shared_ptr<JsonValue> obj = parse(s);
 
         std::string actual;
         if (obj->type == OBJECT) {
@@ -255,8 +255,6 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
         if (actual == expected) {
             t->fail = false;
         }
-
-        delete obj;
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
     }
@@ -265,8 +263,7 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
 static void parseObjectAndAssertMalformedJson(TestArg * t, std::string s) {
     try {
         size_t i = 0;
-        JsonValue * obj = parse(s);
-        delete obj;
+        std::shared_ptr<JsonValue> obj = parse(s);
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';
         t->fail = false;
@@ -338,7 +335,7 @@ static void testJsonArray(TestArg * t) {
     std::vector<bool> expected{false, true, false, false};
     try {
         size_t i = 0;
-        JsonValue * obj = parse(s);
+        std::shared_ptr<JsonValue> obj = parse(s);
         if (obj != nullptr) {
             if (obj->type == ARRAY) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "JSON to Parse: \n");

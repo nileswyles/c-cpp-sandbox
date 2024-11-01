@@ -19,28 +19,28 @@ using namespace WylesLibs::Parser;
 using namespace WylesLibs::File;
 using namespace WylesLibs;
 
-static void readWhiteSpaceUntil(EStream * r, std::string until);
+static void readWhiteSpaceUntil(ReaderEStream * r, std::string until);
 
 // tree base
-static void parseNumber(JsonArray * obj, EStream * r);
-static void parseString(JsonArray * obj, EStream * r);
-static void parseImmediate(JsonArray * obj, EStream * r, std::string comp, JsonValue * value);
+static void parseNumber(JsonArray * obj, ReaderEStream * r);
+static void parseString(JsonArray * obj, ReaderEStream * r);
+static void parseImmediate(JsonArray * obj, ReaderEStream * r, std::string comp, JsonValue * value);
 
 // base-ish (base and 1 at same time)...
-static void parseNestedObject(JsonArray * obj, EStream * r);
-static void parseArray(JsonArray * obj, EStream * r);
+static void parseNestedObject(JsonArray * obj, ReaderEStream * r);
+static void parseArray(JsonArray * obj, ReaderEStream * r);
 
 // 2 
-static void parseValue(JsonArray * obj, EStream * r);
-static bool parseKey(JsonObject * obj, EStream * r);
+static void parseValue(JsonArray * obj, ReaderEStream * r);
+static bool parseKey(JsonObject * obj, ReaderEStream * r);
 
 // 1
-static void parseObject(JsonObject * obj, EStream * r);
+static void parseObject(JsonObject * obj, ReaderEStream * r);
 
 // LMAO ! IMPORTANT - design choice no unnecessary checks because not exposed to the world and code within this module should be trusted.
 //      SO, know what your doing if you edit this file.
 
-static void readWhiteSpaceUntil(EStream * r, std::string until) {
+static void readWhiteSpaceUntil(ReaderEStream * r, std::string until) {
     char c = r->peek();
     loggerPrintf(LOGGER_DEBUG, "Reading Whitespace Until: %s, %c\n", until.c_str(), c);
     if (until.find(c) != std::string::npos) {
@@ -58,7 +58,7 @@ static void readWhiteSpaceUntil(EStream * r, std::string until) {
     // cursor == until...
 }
 
-static void parseNumber(JsonArray * obj, EStream * r) {
+static void parseNumber(JsonArray * obj, ReaderEStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Number\n");
     int8_t sign = 1;
     int8_t exponential_sign = 0;
@@ -139,7 +139,7 @@ static void parseNumber(JsonArray * obj, EStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsed Number\n");
 }
 
-static void parseString(JsonArray * obj, EStream * r) {
+static void parseString(JsonArray * obj, ReaderEStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing String\n");
 
     r->get(); // consume starting quote
@@ -201,7 +201,7 @@ static void parseString(JsonArray * obj, EStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
 }
 
-static void parseImmediate(JsonArray * obj, EStream * r, std::string comp, JsonValue * value) {
+static void parseImmediate(JsonArray * obj, ReaderEStream * r, std::string comp, JsonValue * value) {
     loggerPrintf(LOGGER_DEBUG, "Parsing %s\n", comp.c_str());
 
     std::string actual = r->readBytes(comp.size()).toString();
@@ -215,7 +215,7 @@ static void parseImmediate(JsonArray * obj, EStream * r, std::string comp, JsonV
     }
 }
 
-static void parseNestedObject(JsonArray * arr, EStream * r) {
+static void parseNestedObject(JsonArray * arr, ReaderEStream * r) {
     char c = r->peek();
     if (c == '{') {
         JsonObject * new_obj = new JsonObject(arr->depth + 1);
@@ -225,7 +225,7 @@ static void parseNestedObject(JsonArray * arr, EStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Returning object, found %c\n", c);
 }
 
-static void parseArray(JsonArray * arr, EStream * r) {
+static void parseArray(JsonArray * arr, ReaderEStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Array\n");
 
     char c = r->get();
@@ -242,7 +242,7 @@ static void parseArray(JsonArray * arr, EStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsed Array\n");
 }
 
-static void parseValue(JsonArray * obj, EStream * r) {
+static void parseValue(JsonArray * obj, ReaderEStream * r) {
     char c = r->peek();
     bool parsed = false;
     // read until , or } or parsed token...
@@ -298,7 +298,7 @@ static void parseValue(JsonArray * obj, EStream * r) {
     }
 }
 
-static bool parseKey(JsonObject * obj, EStream * r) {
+static bool parseKey(JsonObject * obj, ReaderEStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Parsing Key. %c\n", r->peek());
 
     ReaderTaskExtract extract('"', '"');
@@ -336,7 +336,7 @@ static bool parseKey(JsonObject * obj, EStream * r) {
     return true;
 }
 
-static void parseObject(JsonObject * obj, EStream * r) {
+static void parseObject(JsonObject * obj, ReaderEStream * r) {
     char c = r->get();
     while (c != '}') {
         if (c == '{' || c == ',') {
@@ -353,14 +353,14 @@ static void parseObject(JsonObject * obj, EStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");
 }
 
-extern JsonValue * WylesLibs::Parser::Json::parseFile(std::shared_ptr<FileManager> file_manager, std::string file_path) {
+extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parseFile(std::shared_ptr<StreamFactory> stream_factory, std::string file_path) {
     size_t i = 0;
-    std::shared_ptr<ReaderEStream> s = file_manager->reader(file_path);
-    JsonValue * json = parse((EStream *)s.get(), i);
+    ReaderEStream r(stream_factory, file_path);
+    std::shared_ptr<JsonValue> json = parse(&r, i);
     return json;
 }
 
-extern JsonValue * WylesLibs::Parser::Json::parse(std::string json) {
+extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(std::string json) {
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", json.c_str());
     if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
@@ -369,11 +369,11 @@ extern JsonValue * WylesLibs::Parser::Json::parse(std::string json) {
         throw std::runtime_error(msg);
     }
     size_t i = 0;
-    EStream r((uint8_t *)json.data(), json.size());
-    return parse(&r, i);
+    ReaderEStream r((uint8_t *)json.data(), json.size());
+    return parse(dynamic_cast<ReaderEStream>(&r), i);
 }
 
-extern JsonValue * WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
+extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
     if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
         std::string msg = "Json data to loooonnnng!";
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
@@ -381,7 +381,7 @@ extern JsonValue * WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
     }
     size_t i = 0;
     EStream r(json.begin(), json.size());
-    return parse(&r, i);
+    return parse(dynamic_cast<ReaderEStream>(&r), i);
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token (one before delimeter).
@@ -390,21 +390,21 @@ extern JsonValue * WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
 //      and .at() bounds checks (exceptions), [] doesn't
     // string construction? iterates over string to get length? that might be reason enough to change back to pointers lol... or maybe copy constructor is optimized? yeah
     //  but still that initial creation... 
-extern JsonValue * WylesLibs::Parser::Json::parse(EStream * r, size_t& i) {
+extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(ReaderEStream * r, size_t& i) {
     readWhiteSpaceUntil(r, "{[");
 
-    JsonValue * obj = nullptr;
+    std::shared_ptr<JsonValue> obj = nullptr;
     char c = r->peek();
     loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {
-        JsonObject * new_obj = new JsonObject(0);
+        JsonObject * new_obj = std::make_shared<JsonObject>(0);
         parseObject(new_obj, r);
-        obj = (JsonValue *) new_obj;
+        obj = std::dynamic_pointer_cast<JsonValue>(new_obj);
     } else if (c == '[') {
         JsonArray * new_obj = new JsonArray(0);
         // [1, 2, 3, 4] is valid JSON lol...
         parseArray(new_obj, r);
-        obj = (JsonValue *) new_obj;
+        obj = std::dynamic_pointer_cast<JsonValue>(new_obj);
     } else {
         std::string msg = "Invalid JSON data.";
         loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());

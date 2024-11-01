@@ -2,7 +2,7 @@
 #define WYLESLIBS_SERVER_CONFIG_H
 
 #include "parser/json/json.h"
-#include "file/file.h"
+#include "file/stream_factory.h"
 
 #include <memory>
 
@@ -17,8 +17,8 @@ class ServerConfig: public JsonBase {
 
         ServerConfig(): resources_root("./") {}
         ServerConfig(std::string filepath): 
-            ServerConfig((JsonObject *)parseFile(std::make_shared<FileManager>(), filepath)) {}
-        ServerConfig(JsonObject * obj) {
+            ServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>>(), filepath))) {}
+        ServerConfig(std::shared_ptr<JsonObject> obj) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);

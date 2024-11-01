@@ -3,14 +3,15 @@
 
 #include <fstream>
 using namespace WylesLibs;
+using namespace WylesLibs::File;
 
-std::shared_ptr<std::basic_istream<char>> FileStreamFactory::reader(std::string path, size_t offset, size_t size) {
+std::shared_ptr<std::basic_istream<char>> StreamFactory::reader(std::string path, size_t offset, size_t size) {
     std::shared_ptr<std::basic_ifstream<char>> ifstream = std::make_shared<std::ifstream>(path);
     ifstream->seekg(offset);
     return std::dynamic_pointer_cast<std::basic_istream<char>>(ifstream);
 }
 
-std::shared_ptr<std::basic_ostream<char>> FileStreamFactory::writer(std::string path) {
+std::shared_ptr<std::basic_ostream<char>> StreamFactory::writer(std::string path) {
     pthread_mutex_lock(&this->writers_lock);
     if (false == this->writers.contains(path)) {
         return nullptr;
@@ -26,7 +27,7 @@ std::shared_ptr<std::basic_ostream<char>> FileStreamFactory::writer(std::string 
 // TODO: store stream ptrs, up-cast flush and close?
 //      or implement my own streams that implements close... gcs doesn't support close anyways? but will this be an issue for other solutions?
 //      not as extensible?
-void FileStreamFactory::removeWriter(std::string path) {
+void StreamFactory::removeWriter(std::string path) {
     pthread_mutex_lock(&this->writers_lock);
 //      for now let's assume destructors flush and close appropriately...
     this->writers.erase(path);

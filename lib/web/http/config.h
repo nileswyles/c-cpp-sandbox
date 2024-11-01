@@ -3,7 +3,7 @@
 
 #include "parser/json/json.h"
 #include "web/server_config.h"
-#include "file/file.h"
+#include "file/stream_factory.h"
 
 #include <memory>
 
@@ -34,8 +34,8 @@ class HttpServerConfig: public ServerConfig {
         bool client_auth_enabled;
 
         HttpServerConfig(): static_path("./"), root_html_file("index.html"), address("127.0.0.1"), port(8080) {}
-        HttpServerConfig(std::string filepath): HttpServerConfig((JsonObject *)parseFile(std::make_shared<FileManager>(), filepath)) {}
-        HttpServerConfig(JsonObject * obj): ServerConfig(obj) {
+        HttpServerConfig(std::string filepath): HttpServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>(), filepath))) {}
+        HttpServerConfig(std::shared_ptr<JsonObject> obj): ServerConfig(obj) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             // Defaults for optional fields...
             // string defaults are already "" but let's be explicit....

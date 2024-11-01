@@ -23,6 +23,8 @@
 // TODO: think about this value again... 8k * 1Million is what? 8G seems like alot...?
 #define READER_RECOMMENDED_BUF_SIZE 8096
 
+using namespace WylesLibs::File;
+
 namespace WylesLibs {
 class ReaderEStream {
     /*
@@ -31,7 +33,7 @@ class ReaderEStream {
     // TODO: does this incur any additional overhead in inherited even though private?
     private:
         std::shared_ptr<std::basic_istream<char>> reader;
-        std::shared_ptr<FileStreamFactory> factory;
+        std::shared_ptr<StreamFactory> factory;
         std::string path;
         size_t file_offset;
         size_t chunk_size;
@@ -45,13 +47,12 @@ class ReaderEStream {
             factory = nullptr;
             reader = reader;
         }
-        ReaderEStream(std::shared_ptr<FileStreamFactory> factory, std::string path, size_t initial_offset, 
-                      size_t chunk_size, std::shared_ptr<std::basic_istream<char>> reader) {
+        ReaderEStream(std::shared_ptr<StreamFactory> factory, std::string path, size_t initial_offset = 0, size_t chunk_size = SIZE_MAX) {
             factory = factory;
             path = path;
             file_offset = initial_offset;
             chunk_size = chunk_size;
-            reader = reader;
+            reader = factory->reader(path, initial_offset, chunk_size);
         }
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...
         // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...

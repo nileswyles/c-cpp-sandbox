@@ -19,7 +19,8 @@ SRC_FILES="
 -s $ROOT_DIR/lib/estream/estream.cpp
 -s $ROOT_DIR/lib/datastructures/array.cpp
 -s $ROOT_DIR/lib/estream/reader_task.cpp
--s $ROOT_DIR/lib/file.cpp
+-s $ROOT_DIR/lib/file/file.cpp
+-s $ROOT_DIR/lib/file/stream_factory.cpp
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n file_manager_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"

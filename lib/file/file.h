@@ -4,14 +4,10 @@
 #include "estream/estream.h"
 #include "file/stream_factory.h"
 
-#include <stdio.h>
-#include <fcntl.h>
+#include <ios>
 #include <unistd.h>
-#include <sys/types.h>
 #include <string>
-#include <sys/stat.h>
 
-#include <fstream>
 #include <memory>
 
 #ifndef LOGGER_FILE
@@ -26,12 +22,12 @@ namespace WylesLibs::File {
 
 static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8_t> buffer, bool append = false) {
     if (append) {
-        s->seekp(std::ios_base::end);
+        s->seekp(0, std::ios_base::end);
     } else {
         // TODO: I think expected behavior here is to overwrite file... if size < current size, this file should end at new size....
         s->seekp(0);
     }
-    s->write((const char *)buffer.begin(), buffer.size()); // binary output
+    s->write((char *)buffer.begin(), buffer.size()); // binary output
     s->flush();
 }
 

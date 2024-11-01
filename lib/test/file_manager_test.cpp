@@ -22,23 +22,31 @@ static std::string test_directory = "./file_manager_test_dir";
 static const std::string test_file = Paths::join(test_directory, "file_manager_test.txt");
 
 void testFileManager(TestArg * t) {
+    printf("?\n");
     uint64_t size = file_manager->stat(test_file);
+    printf("lol?\n");
     if (size > 0) {
+        printf("SIZE: %lu", size);
         t->fail = true;
         return;
     }
 
     SharedArray<uint8_t> file_data("Store some information in the file.");
+    printf("lol2?\n");
     file_manager->write(test_file, file_data, false); // >
+    printf("lol3?\n");
     SharedArray<uint8_t> read_file_data = file_manager->read(test_file);
     size = file_manager->stat(test_file);
+    printf("lol4?\n");
     if (file_data != read_file_data || size != file_data.size()) {
         t->fail = true;
         return;
     }
 
+    printf("lol5?\n");
     SharedArray<uint8_t> appended_file_data(" Append some information in the file.");
     file_manager->write(test_file, appended_file_data, true); // >>
+    printf("lol6?\n");
     read_file_data = file_manager->read(test_file);
     if (file_data + appended_file_data != read_file_data) {
         t->fail = true;
@@ -63,8 +71,18 @@ void testFileManager(TestArg * t) {
     file_manager->remove(test_file);
 }
 
+void beforeSuite() {
+    system(("rm -r " + test_directory + " 2> /dev/null").c_str());
+    system(("mkdir " + test_directory + " 2> /dev/null").c_str());
+    system(("echo -n \"\" > " + test_file + " 2> /dev/null").c_str());
+}
+
+void afterSuite() {
+    system(("rm -r " + test_directory + " 2> /dev/null").c_str());
+}
+
 int main(int argc, char * argv[]) {
-    Tester t("File Manager Tests");
+    Tester t("File Manager Tests", beforeSuite, nullptr, afterSuite, nullptr);
 
     t.addTest(testFileManager);
 

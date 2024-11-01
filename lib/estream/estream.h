@@ -3,7 +3,6 @@
 
 #include "estream/reader_task.h"
 
-#include "file/file.h"
 #include "file/stream_factory.h"
 #include "datastructures/array.h"
 #include "string_utils.h"
@@ -123,14 +122,6 @@ class EStream: public ReaderEStream {
 
         // ReaderEstream
         SharedArray<uint8_t> readBytes(const size_t n) override;
-        // ! IMPORTANT - inclusive means we read and consume the until character. 
-        //      inclusive value of false means the until character stays in the read buffer for the next read.
-        //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
-        //      The default value for the inclusive field is TRUE.
-        SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true) override;
-        void readDecimal(double& value, size_t& digit_count) override;
-        void readNatural(double& value, size_t& digit_count) override;
-
         // Write to FD
         virtual ssize_t write(void * p_buf, size_t size);
 };

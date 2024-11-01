@@ -12,17 +12,11 @@
 #include "logger.h"
 
 using namespace WylesLibs;
+using namespace WylesLibs::File;
 
 uint64_t FileManager::stat(std::string path) {
-    int fd = open(path.c_str(), O_RDONLY);
-    if (fd == -1) {
-        throw std::runtime_error("Unable to read file at: " + path);
-    }
-    struct stat stat_info = {};
-    int lol = fstat(fd, &stat_info);
-    close(fd);
-
-    return static_cast<uint64_t>(stat_info.st_size);
+    // TODO: throw exception or return UINT64_MAX or 0?
+    return std::filesystem::file_size(path);
 }
 SharedArray<std::string> FileManager::list(std::string path) {
     // if not directory (or is file)

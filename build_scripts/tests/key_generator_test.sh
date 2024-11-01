@@ -18,7 +18,7 @@ SRC_FILES="
 -s $ROOT_DIR/lib/test/tester.cpp
 -s $ROOT_DIR/lib/estream/estream.cpp
 -s $ROOT_DIR/lib/datastructures/array.cpp
--s $ROOT_DIR/lib/file.cpp
+-s $ROOT_DIR/lib/file/file.cpp
 "
 
 CMD="$ROOT_DIR/build_scripts/build_common.sh -n key_generator_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"

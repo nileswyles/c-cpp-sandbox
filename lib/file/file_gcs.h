@@ -29,7 +29,7 @@ class GCSFileManager: public FileManager {
     public:
         GCSFileManager(std::string bucket_name): bucket_name(bucket_name), 
                                                  client(google::cloud::storage::Client()),
-                                                 FileManager(std::dynamic_pointer_cast<FileStreamFactory>(std::make_shared<GCSFileStreamFactory>(client))) {
+                                                 FileManager(std::dynamic_pointer_cast<FileStreamFactory>(std::make_shared<GCSFileStreamFactory>(client, bucket_name))) {
 
                                                  };
         ~GCSFileManager() override final = default;

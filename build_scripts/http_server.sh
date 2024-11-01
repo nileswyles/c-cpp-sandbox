@@ -31,7 +31,7 @@ SRC_FILES="
 -s $ROOT_DIR/lib/file_watcher.cpp
 -s $ROOT_DIR/lib/web/http/http_file_watcher.cpp
 -s $ROOT_DIR/lib/datastructures/array.cpp
--s $ROOT_DIR/lib/file.cpp
+-s $ROOT_DIR/lib/file/file.cpp
 -s $ROOT_DIR/lib/file_gcs.cpp
 -s $ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/libgoogle_cloud_cpp_common.a
 -s $ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/libgoogle_cloud_cpp_rest_internal.a

@@ -369,8 +369,8 @@ extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(std::string jso
         throw std::runtime_error(msg);
     }
     size_t i = 0;
-    ReaderEStream r((uint8_t *)json.data(), json.size());
-    return parse(dynamic_cast<ReaderEStream>(&r), i);
+    EStream r((uint8_t *)json.data(), json.size());
+    return parse(dynamic_cast<ReaderEStream *>(&r), i);
 }
 
 extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
@@ -381,7 +381,7 @@ extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(SharedArray<uin
     }
     size_t i = 0;
     EStream r(json.begin(), json.size());
-    return parse(dynamic_cast<ReaderEStream>(&r), i);
+    return parse(dynamic_cast<ReaderEStream *>(&r), i);
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token (one before delimeter).
@@ -397,13 +397,13 @@ extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(ReaderEStream *
     char c = r->peek();
     loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {
-        JsonObject * new_obj = std::make_shared<JsonObject>(0);
-        parseObject(new_obj, r);
+        std::shared_ptr<JsonObject> new_obj = std::make_shared<JsonObject>(0);
+        parseObject(new_obj.get(), r);
         obj = std::dynamic_pointer_cast<JsonValue>(new_obj);
     } else if (c == '[') {
-        JsonArray * new_obj = new JsonArray(0);
+        std::shared_ptr<JsonArray> new_obj = std::make_shared<JsonArray>(0);
         // [1, 2, 3, 4] is valid JSON lol...
-        parseArray(new_obj, r);
+        parseArray(new_obj.get(), r);
         obj = std::dynamic_pointer_cast<JsonValue>(new_obj);
     } else {
         std::string msg = "Invalid JSON data.";

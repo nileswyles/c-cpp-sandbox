@@ -32,6 +32,11 @@ foreach(@TEST_SUITES_TO_SKIP) {
 
 my $DELIMETER= "\n\n@###################################################################\n";
 
+# TODO:
+#   eventually per test timeouts. also, doesn't respond to sig because bash -c?
+#my $timeout = 60 * 1; # 2 minutes
+my $timeout = 27; 
+
 my %passed_map = ();
 my %failed_map = ();
 foreach (@TEST_SUITES) {
@@ -47,8 +52,23 @@ foreach (@TEST_SUITES) {
     if (!$skip) {
         my $CMD = "$PATH_TO_TEST_DIRECTORY/$test -l $LOG_LEVEL $DEFINES";
         print("~Executing test:\n\t$CMD\n");
-        my $result_code = system($CMD);
-        if ($result_code) {
+        my $time_before = time;
+        # TODO: vet timeout program? it's in coreutils
+        my $result = system("timeout --foreground $timeout $CMD");
+        my $result_code = $?;
+
+        my $time_elapsed = time - $time_before;
+        my $mins = int($time_elapsed / 60);
+        my $seconds = $time_elapsed - ($mins * 60);
+        # here because timeout...
+        printf("\nTime elapsed: \n$mins Minutes and $seconds Seconds \n");
+
+        if ($result != 0) {
+            if ($result_code == 124) {
+                printf("Timed out.\n");
+            } elsif ($result_code == 137) {
+                printf("Received termination signal.\n");
+            }
             $failed_map{$test} = $result_code;
         } else {
             $passed_map{$test} = $result_code;

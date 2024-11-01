@@ -32,6 +32,7 @@ class Nested: public JsonBase {
                 }
             }
         }
+        ~Nested() = default;
 
         std::string toJsonString() {
             std::string s("{");
@@ -95,6 +96,7 @@ class User: public JsonBase {
                 }
             }
         }
+        ~User() = default;
 
         std::string toJsonString() {
             std::string s("{");

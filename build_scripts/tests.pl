@@ -64,7 +64,7 @@ foreach (@TEST_SUITES) {
         printf("\nTime elapsed: \n$mins Minutes and $seconds Seconds \n");
 
         if ($result != 0) {
-            if ($result_code == 124) {
+            if ($result_code == 177) {
                 printf("Timed out.\n");
             } elsif ($result_code == 137) {
                 printf("Received termination signal.\n");

@@ -4,6 +4,7 @@ This project (mostly) uses shell scripts for building and executing programs. Th
 
 ## To run individual programs and tests: 
  ```./build_scripts/<build_script>.sh```
+
 Usage:
 ```
 	-l|--log        Log level.
@@ -22,6 +23,7 @@ The following example executes the iostream::testReadUntil test with log level 4
 
 ## To run all tests: 
 ```./build_scripts/tests.pl```
+
 Usage:
 ```
 	-p|--path       Path to tests directory. Default to build_scripts/tests.

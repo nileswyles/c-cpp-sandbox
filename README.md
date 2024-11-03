@@ -3,6 +3,8 @@
 This project (mostly) uses shell scripts for building and executing programs. The scripts are located under the <i>build_scripts</i> directory. Development container configuration files and dependency installation scripts are located under the <i>.devcontainer</i> directory. 
 
 ## To run individual programs and tests: 
+ ```./build_scripts/<build_script>.sh```
+
 Usage:
 ```
 	-l|--log        Log level.
@@ -20,6 +22,8 @@ The following example executes the iostream::testReadUntil test with log level 4
  ```./build_scripts/tests/iostream_test.sh -l 4 -D LOGGER_READER_TASK=0 testReadUntil```
 
 ## To run all tests: 
+```./build_scripts/tests.pl```
+
 Usage:
 ```
 	-p|--path       Path to tests directory. Default to build_scripts/tests.

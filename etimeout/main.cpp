@@ -8,6 +8,8 @@
 #include <spawn.h>
 #include <string.h>
 
+#include <ucontext.h>
+
 #include <string>
 
 #include "logger.h"
@@ -16,8 +18,8 @@
 #define VERSION "0.0.1"
 #define MAX_ARGS 64
 
-static int child_process_available = -1;
-static int child_process_code = -1;
+static volatile int child_process_available = -1;
+static volatile int child_process_code = -1;
 
 void logArgs(size_t argc, char * argv[]) {
     loggerExec(LOGGER_DEBUG,
@@ -97,15 +99,20 @@ std::string getEnvironmentShell(char * envp[]) {
 }
 
 void onProcessExit(int result_code, void * arg) {
-    loggerPrintf(LOGGER_DEBUG, "Process timed exited with code: %d.\n", result_code);
-    child_process_code = result_code;
-    child_process_available = 0;
+    loggerPrintf(LOGGER_DEBUG, "Process exited with code: %d.\n", result_code);
+}
+
+void sig_handler(int sig, siginfo_t * info, void * context) {
+    if (sig == SIGCHLD) {
+        child_process_code = info->si_status;
+        child_process_available = 0;
+        loggerPrintf(LOGGER_DEBUG, "Child Process exited with code: %d.\n", info->si_status);
+    }
 }
 
 int main(int int_argc, char * argv[], char * envp[]) {
     size_t argc = static_cast<size_t>(int_argc);
 
-    printf("argc: %lu\n", argc);
     if (3 > argc) {
         printHelp();
         exit(EXIT_FAILURE);
@@ -113,6 +120,7 @@ int main(int int_argc, char * argv[], char * envp[]) {
     logProcessArgs(argc, argv, envp);
 
     int exit_code = 0;
+
     // esystem command with timeout.
     // run's command using fork, exec and polls... instead of wait_pid
     int timeout = atoi(argv[1]);
@@ -125,40 +133,23 @@ int main(int int_argc, char * argv[], char * envp[]) {
 
     const char * shell = getEnvironmentShell(envp).c_str();
     loggerPrintf(LOGGER_DEBUG, "SHELL: %s\n", shell);
-
     // build shell args
     char * sh_argv[MAX_ARGS] = {};
     sh_argv[0] = const_cast<char *>("/bin/bash");
     sh_argv[1] = const_cast<char *>("-c");
-    std::string cmd("\"");
-    cmd += path;
+    // std::string cmd("\"");
+    // cmd += path;
+    std::string cmd(path);
     for (size_t i = 0; i < cmd_argc; i++) {
         cmd += ' ';
         cmd += cmd_argv[i];
     }
-    cmd += '"';
+    // cmd += '"';
     sh_argv[2] = const_cast<char *>(cmd.c_str());
-    // char cmd[64] = {};
-    // cmd[0] = '"';
-    // size_t x = 1;
-    // memcpy(cmd + x, path, strlen(path));
-    // x += strlen(path);
-    // for (size_t i = 0; i < cmd_argc; i++) {
-    //     cmd[x++] = ' ';
-    //     size_t len = strlen(cmd_argv[i]);
-    //     memcpy(cmd + x, cmd_argv[i], len);
-    //     x += len;
-    // }
-    // cmd[x] = '\"';
-    // sh_argv[2] = cmd;
     loggerPrintf(LOGGER_DEBUG, "SH ARGV: \n");
     logArgs(cmd_argc + 4, sh_argv);
 
     // fork and forward sigs to child process
-    if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
-        loggerPrintf(LOGGER_ERROR, "Failed to configure signals.\n");
-        exit(EXIT_FAILURE);
-    }
     int result = on_exit(onProcessExit, nullptr);
     if (result != 0) {
         loggerPrintf(LOGGER_ERROR, "Failed to register on_exit function handler.\n");
@@ -168,12 +159,6 @@ int main(int int_argc, char * argv[], char * envp[]) {
     struct timespec ts_start;
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
     pid_t child_process_id;
-    posix_spawn_file_actions_t actions;
-    posix_spawn_file_actions_init(&actions);
-    posix_spawnattr_t attr;
-    posix_spawnattr_init(&attr);
-    // TODO: execvpe vs execve
-    // result = posix_spawn(&child_process_id, shell, &actions, &attr, sh_argv, envp);
     result = posix_spawn(&child_process_id, sh_argv[0], nullptr, nullptr, sh_argv, envp);
     if (result == -1) { 
         loggerPrintf(LOGGER_ERROR, "Failed to execute program at %s with shell %s.\n", shell, shell);
@@ -184,15 +169,18 @@ int main(int int_argc, char * argv[], char * envp[]) {
     } else {
         loggerPrintf(LOGGER_DEBUG, "Forked process: %u\n", child_process_id);
     }
-    // int child_fd = pidfd_open(child_process_id, PIDFD_NONBLOCK);
-    // if (child_fd == -1) { exit(EXIT_FAILURE); }
+
+    struct sigaction act = { 0 };
+    act.sa_flags = SA_SIGINFO;
+    act.sa_sigaction = &sig_handler;
+    if (sigaction(SIGCHLD, &act, NULL) == -1) {
+        loggerPrintf(LOGGER_DEBUG, "Failed to configure sig action and sig handler.\n");
+        exit(EXIT_FAILURE);
+    }
 
     // my wait
     child_process_available = 1;
     bool has_timed_out = false;
-    // struct pollfd pollfd;
-    // pollfd.fd = child_fd;
-    // pollfd.events = POLLIN;
     struct timespec ts;
     #define POLL_TIMEOUT 0 // return immediately
     while (child_process_available && false == has_timed_out) {
@@ -204,13 +192,10 @@ int main(int int_argc, char * argv[], char * envp[]) {
             has_timed_out = true;
             exit_code = 177;
         }
-        // TODO: read about polling
-        // might not need polling...
-        // child_process_available = poll(&pollfd, 1, POLL_TIMEOUT); 
-        // if (child_process_available == -1) { exit(EXIT_FAILURE); }
     }
     if (child_process_available == 0) {
         // process terminated normally, get exit code somehow.
+        loggerPrintf(LOGGER_DEBUG, "Child process exited normally.\n");
         exit_code = child_process_code;
     }
 

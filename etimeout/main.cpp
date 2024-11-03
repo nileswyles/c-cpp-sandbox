@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <time.h>
 #include <stdio.h>
+#include <spawn.h>
+#include <string.h>
 
 #include <string>
 
@@ -95,6 +97,7 @@ std::string getEnvironmentShell(char * envp[]) {
 }
 
 void onProcessExit(int result_code, void * arg) {
+    loggerPrintf(LOGGER_DEBUG, "Process timed exited with code: %d.\n", result_code);
     child_process_code = result_code;
     child_process_available = 0;
 }
@@ -102,7 +105,8 @@ void onProcessExit(int result_code, void * arg) {
 int main(int int_argc, char * argv[], char * envp[]) {
     size_t argc = static_cast<size_t>(int_argc);
 
-    if (argc < 3) {
+    printf("argc: %lu\n", argc);
+    if (3 > argc) {
         printHelp();
         exit(EXIT_FAILURE);
     }
@@ -116,26 +120,65 @@ int main(int int_argc, char * argv[], char * envp[]) {
     // extract cmd and args
     char * path = argv[2];
     char ** cmd_argv = argv + 3;
-    size_t cmd_argc = argc - 2; // because we want to include null string at end? lol...
+    size_t cmd_argc = argc - 3; // because we want to include null string at end? lol...
     logChildProcessArgs(cmd_argc, cmd_argv);
+
+    const char * shell = getEnvironmentShell(envp).c_str();
+    loggerPrintf(LOGGER_DEBUG, "SHELL: %s\n", shell);
 
     // build shell args
     char * sh_argv[MAX_ARGS] = {};
-    sh_argv[0] = "-c";
-    sh_argv[1] = path;
+    sh_argv[0] = const_cast<char *>("/bin/bash");
+    sh_argv[1] = const_cast<char *>("-c");
+    std::string cmd("\"");
+    cmd += path;
     for (size_t i = 0; i < cmd_argc; i++) {
-        sh_argv[i + 2] = cmd_argv[i];
+        cmd += ' ';
+        cmd += cmd_argv[i];
     }
+    cmd += '"';
+    sh_argv[2] = const_cast<char *>(cmd.c_str());
+    // char cmd[64] = {};
+    // cmd[0] = '"';
+    // size_t x = 1;
+    // memcpy(cmd + x, path, strlen(path));
+    // x += strlen(path);
+    // for (size_t i = 0; i < cmd_argc; i++) {
+    //     cmd[x++] = ' ';
+    //     size_t len = strlen(cmd_argv[i]);
+    //     memcpy(cmd + x, cmd_argv[i], len);
+    //     x += len;
+    // }
+    // cmd[x] = '\"';
+    // sh_argv[2] = cmd;
     loggerPrintf(LOGGER_DEBUG, "SH ARGV: \n");
-    logArgs(cmd_argc + 2, sh_argv);
+    logArgs(cmd_argc + 4, sh_argv);
 
     // fork and forward sigs to child process
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
         loggerPrintf(LOGGER_ERROR, "Failed to configure signals.\n");
         exit(EXIT_FAILURE);
     }
-    pid_t child_process_id = fork();
-    if (child_process_id <= 0) { 
+    int result = on_exit(onProcessExit, nullptr);
+    if (result != 0) {
+        loggerPrintf(LOGGER_ERROR, "Failed to register on_exit function handler.\n");
+        exit(EXIT_FAILURE); 
+    }
+    // exec
+    struct timespec ts_start;
+    clock_gettime(CLOCK_MONOTONIC, &ts_start);
+    pid_t child_process_id;
+    posix_spawn_file_actions_t actions;
+    posix_spawn_file_actions_init(&actions);
+    posix_spawnattr_t attr;
+    posix_spawnattr_init(&attr);
+    // TODO: execvpe vs execve
+    // result = posix_spawn(&child_process_id, shell, &actions, &attr, sh_argv, envp);
+    result = posix_spawn(&child_process_id, sh_argv[0], nullptr, nullptr, sh_argv, envp);
+    if (result == -1) { 
+        loggerPrintf(LOGGER_ERROR, "Failed to execute program at %s with shell %s.\n", shell, shell);
+        exit(EXIT_FAILURE); 
+    } else if (child_process_id <= 0) { 
         loggerPrintf(LOGGER_ERROR, "Failed to fork from process.\n");
         exit(EXIT_FAILURE); 
     } else {
@@ -143,22 +186,6 @@ int main(int int_argc, char * argv[], char * envp[]) {
     }
     // int child_fd = pidfd_open(child_process_id, PIDFD_NONBLOCK);
     // if (child_fd == -1) { exit(EXIT_FAILURE); }
-    int result = on_exit(onProcessExit, nullptr);
-    if (result != 0) {
-        loggerPrintf(LOGGER_ERROR, "Failed to register on_exit function handler.\n");
-        exit(EXIT_FAILURE); 
-    }
-    // exec
-    const char * shell = getEnvironmentShell(envp).c_str();
-    loggerPrintf(LOGGER_DEBUG, "SHELL: %s\n", shell);
-    struct timespec ts_start;
-    clock_gettime(CLOCK_MONOTONIC, &ts_start);
-    // TODO: execvpe vs execve
-    result = execvpe(shell, sh_argv, envp);
-    if (result == -1) { 
-        loggerPrintf(LOGGER_ERROR, "Failed to execute program at %s with shell %s.\n", path, shell);
-        exit(EXIT_FAILURE); 
-    }
 
     // my wait
     child_process_available = 1;
@@ -172,6 +199,7 @@ int main(int int_argc, char * argv[], char * envp[]) {
         sleep(1);
         clock_gettime(CLOCK_MONOTONIC, &ts);
         if (ts.tv_sec >= ts_start.tv_sec + timeout) {
+            loggerPrintf(LOGGER_DEBUG, "Child process timed out.\n");
             kill(child_process_id, SIGKILL);
             has_timed_out = true;
             exit_code = 177;

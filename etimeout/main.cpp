@@ -1,7 +1,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <poll.h>
 #include <stdbool.h>
 #include <time.h>
 #include <stdio.h>
@@ -18,7 +17,7 @@
 #define VERSION "0.0.1"
 #define MAX_ARGS 64
 
-static volatile int child_process_available = -1;
+static volatile int8_t child_process_available = -1;
 static volatile int child_process_code = -1;
 
 void logArgs(size_t argc, char * argv[]) {
@@ -133,33 +132,20 @@ int main(int int_argc, char * argv[], char * envp[]) {
 
     const char * shell = getEnvironmentShell(envp).c_str();
     loggerPrintf(LOGGER_DEBUG, "SHELL: %s\n", shell);
-    // build shell args
-    char * sh_argv[MAX_ARGS] = {};
-    sh_argv[0] = const_cast<char *>("/bin/bash");
-    sh_argv[1] = const_cast<char *>("-c");
-    // std::string cmd("\"");
-    // cmd += path;
-    std::string cmd(path);
+    // build exec args
+    char * exec_argv[MAX_ARGS] = { nullptr };
+    exec_argv[0] = path;
     for (size_t i = 0; i < cmd_argc; i++) {
-        cmd += ' ';
-        cmd += cmd_argv[i];
+        exec_argv[i + 1] = cmd_argv[i];
     }
-    // cmd += '"';
-    sh_argv[2] = const_cast<char *>(cmd.c_str());
     loggerPrintf(LOGGER_DEBUG, "SH ARGV: \n");
-    logArgs(cmd_argc + 4, sh_argv);
+    logArgs(cmd_argc + 2, exec_argv);
 
-    // fork and forward sigs to child process
-    int result = on_exit(onProcessExit, nullptr);
-    if (result != 0) {
-        loggerPrintf(LOGGER_ERROR, "Failed to register on_exit function handler.\n");
-        exit(EXIT_FAILURE); 
-    }
     // exec
     struct timespec ts_start;
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
     pid_t child_process_id;
-    result = posix_spawn(&child_process_id, sh_argv[0], nullptr, nullptr, sh_argv, envp);
+    int result = posix_spawn(&child_process_id, exec_argv[0], nullptr, nullptr, exec_argv, envp);
     if (result == -1) { 
         loggerPrintf(LOGGER_ERROR, "Failed to execute program at %s with shell %s.\n", shell, shell);
         exit(EXIT_FAILURE); 

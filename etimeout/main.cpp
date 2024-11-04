@@ -97,10 +97,6 @@ std::string getEnvironmentShell(char * envp[]) {
     return shell;
 }
 
-void onProcessExit(int result_code, void * arg) {
-    loggerPrintf(LOGGER_DEBUG, "Process exited with code: %d.\n", result_code);
-}
-
 void sig_handler(int sig, siginfo_t * info, void * context) {
     if (sig == SIGCHLD) {
         child_process_code = info->si_status;

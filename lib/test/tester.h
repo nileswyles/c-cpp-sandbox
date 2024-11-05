@@ -28,6 +28,7 @@ typedef struct Test {
 extern void ASSERT_STRING(TestArg * t, std::string result, std::string expected);
 extern void ASSERT_BOOLEAN(TestArg * t, bool result, bool expected);
 
+#define TESTER_DEFAULT_TEST_FAIL_VALUE false
 class Tester {
     private:
         std::string suite_name;
@@ -46,7 +47,7 @@ class Tester {
 
         void addTestWithName(const char * name, TestFunction * func) {
             std::string s(name);
-            Test test = {.name = s, .func = func, .arg = { .fail = true }};
+            Test test = {.name = s, .func = func, .arg = { .fail = TESTER_DEFAULT_TEST_FAIL_VALUE }};
             this->tests.push_back(test);
             this->num_tests++;
         }

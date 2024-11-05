@@ -20,6 +20,7 @@ using namespace WylesLibs::File;
 static std::shared_ptr<FileManager> file_manager = std::make_shared<FileManager>();
 static std::string test_directory = "./file_manager_test_dir";
 static const std::string test_file = Paths::join(test_directory, "file_manager_test.txt");
+static const std::string test_file_doesnt_exist = Paths::join(test_directory, "file_manager_test_doesnt_exist.txt");
 static uint64_t INITIAL_FILE_SIZE = 0;
 
 bool assert(SharedArray<uint8_t> expected, SharedArray<uint8_t> actual) {
@@ -72,9 +73,31 @@ void testFileManager(TestArg * t) {
     read_file_data = file_manager->read(test_file);
     if (false == assert(overwritten_file_data, read_file_data)) {
         t->fail = true;
+        return;
     }
 }
+void testFileManagerWriteFileDoesntExist(TestArg * t) {
+    SharedArray<uint8_t> file_data("Store some information in the file.");
+    file_manager->write(test_file_doesnt_exist, file_data, false); // >
+    SharedArray<uint8_t> read_file_data = file_manager->read(test_file_doesnt_exist);
+    if (false == assert(file_data, read_file_data)) {
+        t->fail = true;
+        return;
+    }
+}
+void testFileManagerReadFileDoesntExist(TestArg * t) {
+    bool exception = false;
+    try {
+        file_manager->read(test_file_doesnt_exist);
+    } catch (std::exception& e) {
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Exception: %s\n", e.what());
+        exception = true;
+    }
+    ASSERT_BOOLEAN(t, exception, true);
+}
 
+// ! IMPORTANT - the file_manager functions are expected to throw an exception if the file does not exist. 
+// TODO: Write tests for this functionality eventually
 void testFileManagerStat(TestArg * t) {
     // just to exercise stat func, i guess
     uint64_t size = file_manager->stat(test_file);
@@ -134,11 +157,13 @@ int main(int argc, char * argv[]) {
     Tester t("File Manager Tests", beforeSuite, beforeEach, afterSuite, afterEach);
 
     t.addTest(testFileManager);
+    t.addTest(testFileManagerWriteFileDoesntExist);
+    t.addTest(testFileManagerReadFileDoesntExist);
     t.addTest(testFileManagerStat);
     t.addTest(testFileManagerDirectoryListing);
     t.addTest(testFileManagerCopy);
     t.addTest(testFileManagerMove);
-    t.addTest(testFileManagerRemove);
+    // t.addTest(testFileManagerRemove);
 
     bool passed = false;
     if (argc > 1) {

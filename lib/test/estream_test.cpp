@@ -229,13 +229,14 @@ static void testReadUntilExtractNonWhiteCharacterAfterRightToken(TestArg * t) {
     buffer = test_string;
 
     ReaderTaskExtract extract('"','"');
+    bool exception = false;
     try {
         std::string result = reader.readUntil(" ", (ReaderTask *)&extract).toString();
         loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n'%s'\n", result.c_str());
-        t->fail = true;
     } catch (std::exception& e) {
-        t->fail = false;
+        exception = true;
     }
+    ASSERT_BOOLEAN(t, exception, true);
 }
 
 static void testReadUntilAllowExtract(TestArg * t) {
@@ -262,13 +263,13 @@ static void testReadUntilAllowExtractException(TestArg * t) {
     ReaderTaskAllow allow("ABC");
     ReaderTaskExtract extract('"', '"');
     allow.nextOperation = &extract;
+    bool exception = false;
     try {
         reader.readUntil(" ", (ReaderTask *)&allow).toString();
-        t->fail = true;
     } catch (std::exception& e) {
-        // TODO: dumb
-        t->fail = false;
+        exception = true;
     }
+    ASSERT_BOOLEAN(t, exception, true);
 }
 
 static void testReadUntilDisallowExtract(TestArg * t) {

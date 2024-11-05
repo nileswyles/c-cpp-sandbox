@@ -108,7 +108,7 @@ void HttpConnection::parseRequest(HttpRequest * request, EStream * io) {
         loggerPrintf(LOGGER_DEBUG, "Content-Type: %s, Content-Length: %ld\n", request->fields["content-type"].front().c_str(), request->content_length);
         if ("application/json" == request->fields["content-type"].front()) {
             size_t i = 0;
-            request->json_content = Json::parse(io, i);
+            request->json_content = Json::parse(dynamic_cast<ReaderEStream *>(io), i);
         } else if ("application/x-www-form-urlencoded" == request->fields["content-type"].front()) {
             request->form_content = KeyValue::parse(io, '&');
         } else if ("multipart/formdata" == request->fields["content-type"].front()) {

@@ -1,4 +1,4 @@
-#include "file/stream_factory.h"
+#include "file/stream_factory_gcs.h"
 #include "paths.h"
 
 using namespace WylesLibs;

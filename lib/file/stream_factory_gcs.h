@@ -1,5 +1,5 @@
-#ifndef WYLESLIBS_ESTREAM_FACTORY_H
-#define WYLESLIBS_ESTREAM_FACTORY_H
+#ifndef WYLESLIBS_GCS_STREAM_FACTORY_H
+#define WYLESLIBS_GCS_STREAM_FACTORY_H
 
 #include "file/stream_factory.h"
 #include <memory>

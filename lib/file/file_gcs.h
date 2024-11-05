@@ -3,6 +3,7 @@
 
 #include "estream/estream.h"
 #include "file/file.h"
+#include "file/stream_factory_gcs.h"
 
 #include <string>
 #include <fstream>

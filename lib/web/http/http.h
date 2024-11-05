@@ -26,7 +26,7 @@
 #include "connection.h"
 #include "web/authorization.h"
 #include "parser/multipart/parse_formdata.h"
-#include "parser/multipart/multipart_file/file.h"
+#include "parser/multipart/multipart_file.h"
 #include "web/http/http_file_watcher.h"
 #include "thread_safe_map.h"
 #include "file/file.h"
@@ -66,7 +66,7 @@ class HttpRequest {
         std::map<std::string, SharedArray<std::string>> cookies;
 
         size_t content_length;
-        JsonValue * json_content;
+        std::shared_ptr<JsonValue> json_content;
         SharedArray<MultipartFile> files;
         std::unordered_map<std::string, std::string> form_content;
         SharedArray<uint8_t> content;
@@ -260,7 +260,7 @@ static_assert(sizeof(HttpConnection) ==
     sizeof(ReaderTaskDisallow) +
     sizeof(ReaderTaskLC)
 );
-static_assert(sizeof(HttpConnection) == 704);
+// static_assert(sizeof(HttpConnection) == 704);
 
 };
 

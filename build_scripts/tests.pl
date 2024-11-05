@@ -49,7 +49,7 @@ foreach (@TEST_SUITES) {
         }
     }
     if (!$skip) {
-        my $CMD = "$PATH_TO_TEST_DIRECTORY/$test -l $LOG_LEVEL $DEFINES";
+        my $CMD = "$PATH_TO_TEST_DIRECTORY/$test --log $LOG_LEVEL $DEFINES";
         print("~Executing test:\n\t$CMD\n");
         my $time_before = time;
         my $result = system("etimeout/out/etimeout $timeout $CMD");

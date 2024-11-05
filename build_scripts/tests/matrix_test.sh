@@ -23,6 +23,6 @@ SRC_FILES="
 -s $ROOT_DIR/lib/estream/reader_task.cpp
 "
 
-CMD="$ROOT_DIR/build_scripts/build_common.sh -n matrix_test $SRC_FILES -l $LOG_LEVEL $DEBUG$DEFINES$TEST_ARG"
+CMD="$ROOT_DIR/build_scripts/build_common.sh -n matrix_test $SRC_FILES --log $LOG_LEVEL $DEBUG$DEFINES$TEST_ARG"
 echo "\t"$CMD
 exec $CMD

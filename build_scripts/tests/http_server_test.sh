@@ -18,6 +18,6 @@ SRC_FILES="
 -s $ROOT_DIR/lib/test/tester.cpp
 "
 
-CMD="$ROOT_DIR/build_scripts/build_common.sh -n http_server_test $SRC_FILES -l $LOG_LEVEL $DEFINES$TEST_ARG"
+CMD="$ROOT_DIR/build_scripts/build_common.sh -n http_server_test $SRC_FILES --log $LOG_LEVEL $DEFINES$TEST_ARG"
 echo "\t"$CMD
 exec $CMD

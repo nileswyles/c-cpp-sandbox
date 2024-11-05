@@ -119,6 +119,7 @@ int main(int argc, char * argv[]) {
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
         serverListen(config.address.c_str(), (uint16_t)config.port, connectionHandler);
     } catch (const std::exception& e) {
+        loggerPrintf(LOGGER_ERROR, "%s\n", std::stacktrace::current().to_string().c_str());
         // redundant try/catch? let's show where exception handled...
         loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
         // exit program same way as if this weren't caught...

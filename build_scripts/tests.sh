@@ -34,7 +34,7 @@ for test in $TEST_SUITES; do
         fi
     done
     if [ "$SKIP" = "no" ]; then
-        CMD="$PATH_TO_TEST_DIRECTORY/$test -l $LOG_LEVEL $DEFINES"
+        CMD="$PATH_TO_TEST_DIRECTORY/$test --log $LOG_LEVEL $DEFINES"
         echo "~Executing test:\n\t$CMD"
         `$CMD`
     else

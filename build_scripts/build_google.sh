@@ -19,13 +19,14 @@ env VCPKG_ROOT=$HOME/vcpkg $HOME/vcpkg/bootstrap-vcpkg.sh
 # sudo ldconfig
 # ```
 
-cmake -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_SHARED_LIBS=no \
-    -DWITH_EXAMPLES=OFF \
+# -DCMAKE_BUILD_TYPE=Release \
+# -DOPENTELEMETRY_INSTALL=OFF \
+# -DGOOGLE_CLOUD_CPP_ENABLE=storage \
+cmake -DBUILD_SHARED_LIBS=yes \
+    -DWITH_EXAMPLES=ON \
     -DWITH_ABSEIL=OFF \
-    -DBUILD_TESTING=OFF \
-    -DOPENTELEMETRY_INSTALL=OFF \
-    -DGOOGLE_CLOUD_CPP_ENABLE=storage \
+    -DBUILD_TESTING=ON \
     -S google-cloud-cpp -B google-cloud-cpp/cmake-out/ -DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake
 cmake --build google-cloud-cpp/cmake-out -- -j $(nproc)
+cmake --build google-cloud-cpp/cmake-out --target install
 # cmake --build google-cloud-cpp/cmake-out -- -j 1

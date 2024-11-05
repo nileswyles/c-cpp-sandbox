@@ -1,19 +1,27 @@
 #!/bin/sh
 
 NAME="program"
-SRC_FILES=""
-DEFINES=""
 LD_FLAGS=""
+LIB_SEARCH_PATHS=""
+INCLUDE_FILES=""
+DEFINES=""
+SRC_FILES=""
 LOG_LEVEL=0
 PROGRAM_ARG=""
 DEBUG=""
 while true; do
 	case "$1" in
         -n|--name) NAME="$2"; shift 2 ;;
-		-l|--log) LOG_LEVEL="$2"; shift 2 ;;
-		-s|--source) SRC_FILES="$SRC_FILES$2 "; shift 2 ;;
-		-f) LD_FLAGS="$LD_FLAGS-l$2 "; shift 2 ;;
+		--log) LOG_LEVEL="$2"; shift 2 ;;
+		-l) LD_FLAGS="$LD_FLAGS-l $2 "; shift 2 ;;
+		@(-l*)) LD_FLAGS="$LD_FLAGS$2 "; shift 2 ;;
+		-L|) LIB_SEARCH_PATHS="$LIB_SEARCH_PATHS-L $2 "; shift 2 ;;
+		@(-L*)) LIB_SEARCH_PATHS="$LIB_SEARCH_PATHS$2 "; shift 2 ;;
+		-I|--include) INCLUDE_FILES="$INCLUDE_FILES-I $2 "; shift 2 ;;
+		@(-I*)) INCLUDE_FILES="$INCLUDE_FILES$2 "; shift 2 ;;
 		-D) DEFINES="$DEFINES-D $2 "; shift 2 ;;
+		@(-D*)) DEFINES="$DEFINES$2 "; shift 2 ;;
+		-s|--source) SRC_FILES="$SRC_FILES$2 "; shift 2 ;;
 		-g) DEBUG="-g "; shift ;;
 		# --) echo "PROGRAM ARG: $@"; break ;;
 		*) PROGRAM_ARG=$@; break;;
@@ -40,7 +48,7 @@ fi
 REMOVED_WARNING_FLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-function -Wno-reorder -Wno-deprecated-declarations"
 
 echo "\n~Build: "
-BUILD_CMD="$CXX_COMPILER $DEBUG$SRC_FILES-iquote $QUOTE_INCLUDE_ROOT -iquote $ROOT_DIR/http_test -iquote $ROOT_DIR/google-cloud-cpp $DEFINES$LD_FLAGS-std=c++20 -Wall $REMOVED_WARNING_FLAGS -o $PROGRAM_PATH"
+BUILD_CMD="$CXX_COMPILER $DEBUG$SRC_FILES-iquote $QUOTE_INCLUDE_ROOT -iquote $ROOT_DIR/http_test -iquote $INCLUDE_FILES$LIB_SEARCH_PATHS$DEFINES$LD_FLAGS-std=c++20 -Wall $REMOVED_WARNING_FLAGS -o $PROGRAM_PATH"
 echo "\t$BUILD_CMD"
 eval $BUILD_CMD
 

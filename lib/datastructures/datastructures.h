@@ -73,7 +73,7 @@ namespace WylesLibs {
                 if (this->ctrl == nullptr || this->ctrl->instance_count == 1) {
                     delete this->view;
                 }
-                // ~MatrixVector();
+                // ~SharedArray();
             };
             size_t viewEnd() {
                 if (this->view == nullptr) {

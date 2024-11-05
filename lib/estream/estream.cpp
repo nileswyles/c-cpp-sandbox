@@ -107,6 +107,9 @@ bool ReaderEStream::eof() {
 bool ReaderEStream::good() {
     return this->reader->good();
 }
+bool ReaderEStream::fail() {
+    return this->reader->fail();
+}
 void ReaderEStream::seekg(size_t offset) {
     this->reader->seekg(offset);
 }
@@ -126,6 +129,9 @@ bool EStream::eof() {
 }
 bool EStream::good() {
     return true;
+}
+bool EStream::fail() {
+    return false;
 }
 // char_type EStream::read() override;
 SharedArray<uint8_t> ReaderEStream::readBytes(const size_t n) {

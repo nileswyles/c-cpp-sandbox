@@ -62,6 +62,7 @@ class ReaderEStream {
         virtual uint8_t peek();
         virtual bool eof();
         virtual bool good();
+        virtual bool fail();
         void seekg(size_t offset);
 
         virtual SharedArray<uint8_t> readBytes(const size_t n);
@@ -119,6 +120,7 @@ class EStream: public ReaderEStream {
         uint8_t peek() override;
         bool eof() override;
         bool good() override;
+        bool fail() override;
         // char_type read() override;
 
         // ReaderEstream

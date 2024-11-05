@@ -13,7 +13,7 @@ std::shared_ptr<std::basic_istream<char>> StreamFactory::reader(std::string path
 
 std::shared_ptr<std::basic_ostream<char>> StreamFactory::writer(std::string path) {
     pthread_mutex_lock(&this->writers_lock);
-    if (false == this->writers.contains(path)) {
+    if (true == this->writers.contains(path)) {
         return nullptr;
     }
     std::shared_ptr<std::basic_ostream<char>> w = std::dynamic_pointer_cast<std::basic_ostream<char>>(

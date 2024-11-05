@@ -6,8 +6,8 @@
 using namespace WylesLibs::Test;
 
 extern void WylesLibs::Test::ASSERT_STRING(TestArg * t, std::string result, std::string expected) {
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", result.c_str());
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected.c_str());
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n'%s'\n", result.c_str());
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n'%s'\n", expected.c_str());
 
     if (result == expected) {
         t->fail = false;

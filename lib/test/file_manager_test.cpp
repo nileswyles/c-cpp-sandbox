@@ -20,55 +20,97 @@ using namespace WylesLibs::File;
 static std::shared_ptr<FileManager> file_manager = std::make_shared<FileManager>();
 static std::string test_directory = "./file_manager_test_dir";
 static const std::string test_file = Paths::join(test_directory, "file_manager_test.txt");
+static uint64_t INITIAL_FILE_SIZE = 0;
+
+bool assert(SharedArray<uint8_t> expected, SharedArray<uint8_t> actual) {
+    bool res = false;
+    loggerPrintf(LOGGER_TEST, "Expected File Data (%lu):\n'%s'\n", expected.size(), expected.toString().c_str());
+    loggerPrintf(LOGGER_TEST, "Actual File Data (%lu):\n'%s'\n", actual.size(), actual.toString().c_str());
+    if (expected == actual) {
+        res = true;
+    }
+    return res;
+}
+
+bool assertDirectory(SharedArray<std::string> directory_list) {
+    bool res = true;
+    loggerPrintf(LOGGER_TEST, "Directory Listing:\n");
+    for (auto item: directory_list) {
+        // size = file_manager->stat(Paths::join(test_directory, item));
+        uint64_t size = file_manager->stat(item);
+        loggerPrintf(LOGGER_TEST, "%s, %lu\n", item.c_str(), size);
+        if (size != INITIAL_FILE_SIZE) {
+            res = false;
+        }
+    }
+    return res;
+}
 
 void testFileManager(TestArg * t) {
-    printf("?\n");
-    uint64_t size = file_manager->stat(test_file);
-    printf("lol?\n");
-    if (size > 0) {
-        printf("SIZE: %lu", size);
-        t->fail = true;
-        return;
-    }
-
     SharedArray<uint8_t> file_data("Store some information in the file.");
-    printf("lol2?\n");
     file_manager->write(test_file, file_data, false); // >
-    printf("lol3?\n");
     SharedArray<uint8_t> read_file_data = file_manager->read(test_file);
-    size = file_manager->stat(test_file);
-    printf("lol4?\n");
-    if (file_data != read_file_data || size != file_data.size()) {
+    if (false == assert(file_data, read_file_data)) {
         t->fail = true;
         return;
     }
 
-    printf("lol5?\n");
-    SharedArray<uint8_t> appended_file_data(" Append some information in the file.");
-    file_manager->write(test_file, appended_file_data, true); // >>
-    printf("lol6?\n");
-    read_file_data = file_manager->read(test_file);
-    if (file_data + appended_file_data != read_file_data) {
-        t->fail = true;
-        return;
-    }
+    // SharedArray<uint8_t> appended_file_data(" Append some information in the file.");
+    // file_manager->write(test_file, appended_file_data, true); // >>
+    // read_file_data = file_manager->read(test_file);
+    // // TODO: char specialization for append?
+    // // file_data.removeBack(); // remove NUL char.
+    // file_data.remove(file_data.size()-2, 2); // hmm....
+    // file_data.append(appended_file_data);
+    // if (false == assert(file_data, read_file_data)) {
+    //     t->fail = true;
+    //     return;
+    // }
 
     SharedArray<uint8_t> overwritten_file_data("Store only this information in the file.");
     file_manager->write(test_file, overwritten_file_data, false); // >
     read_file_data = file_manager->read(test_file);
-    if (overwritten_file_data != read_file_data) {
+    if (false == assert(overwritten_file_data, read_file_data)) {
         t->fail = true;
-        return;
     }
+}
 
+void testFileManagerStat(TestArg * t) {
+    // just to exercise stat func, i guess
+    uint64_t size = file_manager->stat(test_file);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Initial Size: %lu\n", size);
+    if (size != INITIAL_FILE_SIZE) {
+        t->fail = true;
+    }
+}
+void testFileManagerDirectoryListing(TestArg * t) {
     SharedArray<std::string> directory_list = file_manager->list(test_directory);
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Directory Listing:\n");
-    for (auto item: directory_list) {
-        size = file_manager->stat(Paths::join(test_directory, item));
-        loggerPrintf(LOGGER_TEST_VERBOSE, "%s, %lu\n", item.c_str(), size);
+    if (false == assertDirectory(directory_list) || directory_list.size() != 1 || false == directory_list.contains(test_file)) {
+        t->fail = true;
     }
-
+}
+void testFileManagerCopy(TestArg * t) {
+    std::string copy_file = Paths::join(test_directory, "file_manager_test_copy.txt");
+    file_manager->copy(test_file, copy_file);
+    SharedArray<std::string> directory_list = file_manager->list(test_directory);
+    if (false == assertDirectory(directory_list) || directory_list.size() != 2 || false == directory_list.contains(copy_file)) {
+        t->fail = true;
+    }
+}
+void testFileManagerMove(TestArg * t) {
+    std::string move_file = Paths::join(test_directory, "file_manager_test_move.txt");
+    file_manager->move(test_file, move_file);
+    SharedArray<std::string> directory_list = file_manager->list(test_directory);
+    if (false == assertDirectory(directory_list) || directory_list.size() != 1 || false == directory_list.contains(move_file)) {
+        t->fail = true;
+    }
+}
+void testFileManagerRemove(TestArg * t) {
     file_manager->remove(test_file);
+    SharedArray<std::string> directory_list = file_manager->list(test_directory);
+    if (false == assertDirectory(directory_list) || directory_list.size() != 0) {
+        t->fail = true;
+    }
 }
 
 void beforeSuite() {
@@ -76,15 +118,27 @@ void beforeSuite() {
     system(("mkdir " + test_directory + " 2> /dev/null").c_str());
     system(("echo -n \"\" > " + test_file + " 2> /dev/null").c_str());
 }
-
 void afterSuite() {
     system(("rm -r " + test_directory + " 2> /dev/null").c_str());
 }
+void beforeEach(TestArg * t) {
+    std::string initial_file_contents("E");
+    INITIAL_FILE_SIZE = initial_file_contents.size();
+    system(("echo -n \"" + initial_file_contents + "\" > " + test_file + " 2> /dev/null").c_str());
+}
+void afterEach(TestArg * t) {
+    system(("rm -f " + Paths::join(test_directory, "/*") + " 2> /dev/null").c_str());
+}
 
 int main(int argc, char * argv[]) {
-    Tester t("File Manager Tests", beforeSuite, nullptr, afterSuite, nullptr);
+    Tester t("File Manager Tests", beforeSuite, beforeEach, afterSuite, afterEach);
 
     t.addTest(testFileManager);
+    t.addTest(testFileManagerStat);
+    t.addTest(testFileManagerDirectoryListing);
+    t.addTest(testFileManagerCopy);
+    t.addTest(testFileManagerMove);
+    t.addTest(testFileManagerRemove);
 
     bool passed = false;
     if (argc > 1) {

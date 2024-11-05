@@ -90,7 +90,9 @@ class ReaderTaskChain: public ReaderTask {
             }
         }
         void flush(SharedArray<uint8_t>& buffer) override {
-            this->nextOperation->flush(buffer);
+            if (this->nextOperation != nullptr) {
+                this->nextOperation->flush(buffer);
+            }
         }
         virtual void perform(SharedArray<uint8_t>& buffer, uint8_t c) = 0;
 };
@@ -195,6 +197,7 @@ class ReaderTaskExtract: public ReaderTask {
         uint8_t left_most_char;
         uint8_t right_most_char;
 
+        // TODO: might be good to initialize these (just read_until?) to something other than NUL in case that's the character... maybe some >128 but not 255...
         ReaderTaskExtract(char left_most_char, char right_most_char): 
             l_trimming(true), r_trimming(false), 
                                                                       left_most_char(left_most_char), right_most_char(right_most_char), 

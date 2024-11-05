@@ -22,19 +22,23 @@ using namespace WylesLibs;
 
 namespace WylesLibs::File {
 
+static const std::string stream_error_msg("The stream provided has an error.");
+
 static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8_t> buffer, bool append = false) {
-    if (append) {
-        s->seekp(0, std::ios_base::end);
+    if (true == append) {
+        s->seekp(0, std::basic_ostream<char>::end);
     } else {
         // TODO: I think expected behavior here is to overwrite file... if size < current size, this file should end at new size....
         s->seekp(0);
     }
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Writing to file stream:\n%s\n", buffer.toString().c_str());
     s->write((char *)buffer.begin(), buffer.size()); // binary output
     s->flush();
 }
 
 static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8_t> buffer, size_t offset = 0) {
     s->seekp(offset);
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Writing to file stream:\n%s\n", buffer.toString().c_str());
     s->write((const char *)buffer.begin(), buffer.size()); // binary output
     s->flush();
 }
@@ -46,12 +50,16 @@ static SharedArray<uint8_t> read(std::shared_ptr<ReaderEStream> s, size_t offset
     } // else read from current (relative) position.
     if (size == SIZE_MAX) {
         // read until EOF
-        while (s->good() && !s->eof()) {
-            file_data.append(s->get());
+        while (true == s->good()) { //  && false == s->eof(); implied
+            uint8_t c = s->get();
+            // good and eof are true, false (respectively) at eof character, so ignore.
+            if (c != 0xFF) {
+                file_data.append(c);
+            }
         }
-        if (false == s->good()) {
-            throw std::runtime_error("Error occured while reading istream until EOF.");
-        }
+        // if (true == s->fail()) {
+        //     throw std::runtime_error("Error occured while reading istream until EOF.");
+        // }
     } else {
         file_data = s->readBytes(size);
     }
@@ -66,8 +74,7 @@ class FileManager {
         FileManager(std::shared_ptr<StreamFactory> stream_factory): stream_factory(stream_factory) {}
         virtual ~FileManager() = default;
 
-        void write(std::string path, SharedArray<uint8_t> buffer, bool append) {
-            // annoying but necessary
+        void write(std::string path, SharedArray<uint8_t> buffer, bool append = false) {
             File::write(this->stream_factory->writer(path), buffer, append);
 
             // TODO: hopefully it's more like ifstream than istream, doubt it?

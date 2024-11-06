@@ -6,6 +6,8 @@
 #include "file/stream_factory.h"
 
 #include <memory>
+#include <set>
+#include <string>
 
 #ifndef LOGGER_HTTP_SERVER_CONFIG
 #define LOGGER_HTTP_SERVER_CONFIG 1
@@ -20,7 +22,6 @@ using namespace WylesLibs::Parser::Json;
 using namespace WylesLibs::File;
 
 namespace WylesLibs::Http {
-
 class HttpServerConfig: public ServerConfig {
     public:
         std::string static_path;
@@ -45,44 +46,65 @@ class HttpServerConfig: public ServerConfig {
             path_to_private_key = "";
             client_auth_enabled = false;
 
-            bool static_path_required = true;
-            bool address_required = true;
-            bool port_required = true;
-            bool root_html_file_required = true;
+            std::set<std::string> required_fields{
+                "static_path",
+                "address",
+                "port",
+                "address",
+                "root_html_file"
+            };
+            // TODO: Implement better verification? Maybe some class to better support "required if field is enabled". Not strictly necessary now because we check that SSL is enabled properly.
+            std::set<std::string> tls_required_fields{
+                "path_to_trust_chain_cert",
+                "path_to_cert",
+                "path_to_private_key"
+            };
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if (key == "static_path") {
                     static_path = setVariableFromJsonValue<std::string>(value);
-                    static_path_required = false;
+                    required_fields.erase("static_path");
                 } else if (key == "address") {
                     address = setVariableFromJsonValue<std::string>(value);
-                    address_required = false;
+                    required_fields.erase("address");
                 } else if (key == "port") {
                     port = (uint16_t)setVariableFromJsonValue<double>(value);
-                    port_required = false;
+                    required_fields.erase("port");
                 } else if (key == "root_html_file") {
                     root_html_file = setVariableFromJsonValue<std::string>(value);
-                    root_html_file_required = false;
+                    required_fields.erase("root_html_file");
                 } else if (key == "tls_enabled") {
                     tls_enabled = setVariableFromJsonValue<bool>(value);
                 } else if (key == "path_to_trust_chain_cert") {
                     path_to_trust_chain_cert = setVariableFromJsonValue<std::string>(value);
+                    tls_required_fields.erase("path_to_trust_chain_cert");
                 } else if (key == "path_to_cert") {
                     path_to_cert = setVariableFromJsonValue<std::string>(value);
+                    tls_required_fields.erase("path_to_cert");
                 } else if (key == "path_to_private_key") {
                     path_to_private_key = setVariableFromJsonValue<std::string>(value);
+                    tls_required_fields.erase("path_to_private_key");
                 } else if (key == "client_auth_enabled") {
                     client_auth_enabled = setVariableFromJsonValue<bool>(value);
                 }
             }
 
-            if (static_path_required 
-                    || address_required
-                    || port_required
-                    || root_html_file_required) {
-                std::runtime_error("One of the required fields were missing... Check the configuration file.");
+            if (required_fields.size() > 0 || tls_enabled && tls_required_fields.size() > 0) {
+                std::string msg = "The configuration file is missing required fields... Check the configuration file at path: " + filepath + ".\n The missing fields are listed below: ";
+                for (auto field: required_fields) {
+                    msg += '\n';
+                    msg += field;
+                }
+                if (tls_enabled) {
+                    for (auto field: tls_required_fields) {
+                        msg += '\n';
+                        msg += field;
+                    }
+                }
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                std::runtime_error(msg);
             }
         }
         ~HttpServerConfig() override = default;

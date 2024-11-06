@@ -20,13 +20,20 @@ class ServerConfig: public JsonBase {
             ServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>(), filepath))) {}
         ServerConfig(std::shared_ptr<JsonObject> obj) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
+            bool resources_root_required = true;
             for (size_t i = 0; i < obj->keys.size(); i++) {
                 std::string key = obj->keys.at(i);
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if (key == "resources_root") {
                     resources_root = setVariableFromJsonValue<std::string>(value);
+                    resources_root_required = false;
                 }
+            }
+            if (resources_root_required) {
+                std::string msg = "The 'resources_root' field is missing... Check the configuration file at path: " + filepath;
+                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                std::runtime_error(msg);
             }
         }
         ~ServerConfig() override = default;

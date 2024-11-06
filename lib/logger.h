@@ -3,12 +3,12 @@
 #include <stdarg.h>
 
 #ifndef LOGGER_LEVEL
-// default to "LOGGER_ERROR"
+// default to "LOGGER_INFO"
 #define LOGGER_LEVEL 0
 #endif
 
 #ifndef LOGGER_MODULE_ENABLED
-// default to "LOGGER_ERROR"
+// default to "LOGGER_INFO"
 #define LOGGER_MODULE_ENABLED 1
 #endif
 
@@ -54,7 +54,7 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 typedef enum log_level {
-    LOGGER_ERROR, // 0
+    LOGGER_INFO, // 0
     LOGGER_TEST,
     LOGGER_TEST_VERBOSE,
     LOGGER_DEBUG,

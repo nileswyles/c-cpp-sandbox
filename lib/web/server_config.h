@@ -33,7 +33,7 @@ class ServerConfig: public JsonBase {
             if (true == resources_root_required) {
                 std::string msg = "The 'resources_root' field is missing... Check the configuration file at path: ";
                 // msg += filepath;
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
         }

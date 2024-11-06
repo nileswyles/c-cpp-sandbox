@@ -152,7 +152,7 @@ void HttpConnection::processRequest(EStream * io, HttpRequest * request) {
         }
         if (response == nullptr) {
             std::string msg = "HttpResponse object is a nullptr.";
-            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         } else {
             writeResponse(response, io);
@@ -388,7 +388,7 @@ uint8_t HttpConnection::onConnection(int fd) {
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
         this->processRequest(io, &request);
     } catch (const std::exception& e) {
-        loggerPrintf(LOGGER_ERROR, "Exception thrown while processing request: %s\n", e.what());
+        loggerPrintf(LOGGER_INFO, "Exception thrown while processing request: %s\n", e.what());
         if (this->config.tls_enabled && false == acceptedTLS) {
             // then deduce error occured while initializing ssl
             loggerPrintf(LOGGER_DEBUG, "Error accepting and configuring TLS connection.\n");

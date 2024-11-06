@@ -134,7 +134,7 @@ class ReaderTaskDisallow: public ReaderTaskChain {
             if (this->to_disallow.find(c) != std::string::npos) { 
                 if (strict) {
                     std::string msg = "Banned character found:";
-                    loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
+                    loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
                     throw std::runtime_error(msg);
                 } else {
                     ignored = true;
@@ -163,7 +163,7 @@ class ReaderTaskAllow: public ReaderTaskChain {
             } else {
                 if (strict) {
                     std::string msg = "Banned character found:";
-                    loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
+                    loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
                     throw std::runtime_error(msg);
                 }
             }

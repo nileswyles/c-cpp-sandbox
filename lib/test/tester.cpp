@@ -46,7 +46,7 @@ bool Tester::run(const char * name) {
         } catch(std::exception &e) {
             test.arg.fail = true;
             ran_test = true;
-            loggerPrintf(LOGGER_ERROR, "Exception: %s\n", e.what());
+            loggerPrintf(LOGGER_INFO, "Exception: %s\n", e.what());
         }
         if (ran_test) {
             if (test.arg.fail) {

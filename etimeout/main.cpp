@@ -143,10 +143,10 @@ int main(int int_argc, char * argv[], char * envp[]) {
     pid_t child_process_id;
     int result = posix_spawn(&child_process_id, exec_argv[0], nullptr, nullptr, exec_argv, envp);
     if (result == -1) { 
-        loggerPrintf(LOGGER_ERROR, "Failed to execute program at %s with shell %s.\n", shell, shell);
+        loggerPrintf(LOGGER_INFO, "Failed to execute program at %s with shell %s.\n", shell, shell);
         exit(EXIT_FAILURE); 
     } else if (child_process_id <= 0) { 
-        loggerPrintf(LOGGER_ERROR, "Failed to fork from process.\n");
+        loggerPrintf(LOGGER_INFO, "Failed to fork from process.\n");
         exit(EXIT_FAILURE); 
     } else {
         loggerPrintf(LOGGER_DEBUG, "Forked process: %u\n", child_process_id);

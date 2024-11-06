@@ -258,7 +258,7 @@ class Array {
                 try {
                     nlognSort(this->e_buf, this->e_size);
                 } catch (const std::exception& e) {
-                    loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
+                    loggerPrintf(LOGGER_INFO, "%s\n", e.what());
                     // inserts, removes and bad allocs makes it so that we can't assume array is sorted.
                     e_sorted = ARRAY_SORT_UNSORTED;
                     throw e;
@@ -271,7 +271,7 @@ class Array {
             // pos out of bounds, return error...
             if (pos > this->size()) {
                 std::string msg = "Position out of range.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
         
@@ -285,7 +285,7 @@ class Array {
                 if (new_buf == nullptr) {
                     // if no bad_alloc thrown? lol whatever...
                     std::string msg = "Failed to allocate new array.";
-                    loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 } else {
                     recapped = true;
@@ -303,7 +303,7 @@ class Array {
             if (bucket == nullptr) {
                 // if no bad_alloc thrown? lol whatever...
                 std::string msg = "Failed to allocate new array.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
             size_t bucket_push = 0;
@@ -362,7 +362,7 @@ class Array {
             // pos out of bounds, return error...
             if (pos + num_els > this->size()) {
                 std::string msg = "Position out of range.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
         
@@ -376,7 +376,7 @@ class Array {
                 if (new_buf == nullptr) {
                     // if no bad_alloc thrown? lol whatever...
                     std::string msg = "Failed to allocate new array.";
-                    loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 } else {
                     recapped = true;
@@ -426,7 +426,7 @@ class Array {
         Array<T>& removeFront() {
             if (this->size() == 0) {
                 std::string msg = "No element to remove.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
             return remove(0);
@@ -434,7 +434,7 @@ class Array {
         Array<T>& removeBack() {
             if (this->size() == 0) {
                 std::string msg = "No element to remove.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
             return remove(this->size()-1);
@@ -468,7 +468,7 @@ class Array {
         T& front() {
             if (this->size() == 0) {
                 std::string msg = "No element to return.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
             return (this->e_buf)[0];
@@ -476,7 +476,7 @@ class Array {
         T& back() {
             if (this->size() == 0) {
                 std::string msg = "No element to return.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
             return (this->e_buf)[this->size()-1];

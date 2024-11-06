@@ -5,7 +5,7 @@ std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(
     loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
     if (s.size() > MAX_LENGTH_OF_KEYVALUE_STRING) {
         std::string msg = "String to loooonnnng!";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
     EStream r((uint8_t *)s.data(), s.size());

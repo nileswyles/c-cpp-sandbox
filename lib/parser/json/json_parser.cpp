@@ -52,7 +52,7 @@ static void readWhiteSpaceUntil(ReaderEStream * r, std::string until) {
     }
     if (until.find(c) == std::string::npos) {
         std::string msg = "Only allow whitespace between tokens...";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
     // cursor == until...
@@ -79,7 +79,7 @@ static void parseNumber(JsonArray * obj, ReaderEStream * r) {
     } else {
         // throw exception...
         std::string msg = "Invalid number.";
-        loggerPrintf(LOGGER_ERROR, "%s, found '%c'\n", msg.c_str(), c);
+        loggerPrintf(LOGGER_INFO, "%s, found '%c'\n", msg.c_str(), c);
         throw std::runtime_error(msg);
     }
 
@@ -90,7 +90,7 @@ static void parseNumber(JsonArray * obj, ReaderEStream * r) {
         r->readDecimal(value, decimal_digits);
     } else if (comp.find(c) == std::string::npos) { // if not one of the characters in comp throw exception...
         std::string msg = "Invalid number.";
-        loggerPrintf(LOGGER_ERROR, "%s, found '%c'\n", msg.c_str(), c);
+        loggerPrintf(LOGGER_INFO, "%s, found '%c'\n", msg.c_str(), c);
         throw std::runtime_error(msg);
     }
 
@@ -111,7 +111,7 @@ static void parseNumber(JsonArray * obj, ReaderEStream * r) {
         
         if (exp > FLT_MAX_EXP_ABS) {
             std::string msg = "parseNumber: exponential to large.";
-            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }
         for (size_t x = 0; x < (size_t)exp; x++) {
@@ -120,7 +120,7 @@ static void parseNumber(JsonArray * obj, ReaderEStream * r) {
         loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
     } else if (comp.find(c) == std::string::npos) { // if not one of the characters in comp throw exception...
         std::string msg = "Invalid number.";
-        loggerPrintf(LOGGER_ERROR, "%s, found '%c'\n", msg.c_str(), c);
+        loggerPrintf(LOGGER_INFO, "%s, found '%c'\n", msg.c_str(), c);
         throw std::runtime_error(msg);
     }
 
@@ -192,7 +192,7 @@ static void parseString(JsonArray * obj, ReaderEStream * r) {
 
     if (s.size() > MAX_LENGTH_OF_JSON_STRING_VALUES) {
         std::string msg = "parseString: string value too looooooonnnng!";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
 
@@ -210,7 +210,7 @@ static void parseImmediate(JsonArray * obj, ReaderEStream * r, std::string comp,
         obj->addValue(value);
     } else {
         std::string msg = "Invalid immediate value - throw away the whole object. Don't rest on your laurels!";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
 }
@@ -280,7 +280,7 @@ static void parseValue(JsonArray * obj, ReaderEStream * r) {
                 parsed = true;
             } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
                 std::string msg = "Non-whitespace found left of value token.";
-                loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
+                loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
                 throw std::runtime_error(msg);
             } else {
                 // consume whitespace...
@@ -288,7 +288,7 @@ static void parseValue(JsonArray * obj, ReaderEStream * r) {
             }
         } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
             std::string msg = "Non-whitespace found right of value token.";
-            loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
+            loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
             throw std::runtime_error(msg);
         } else {
             // consume whitespace...
@@ -309,7 +309,7 @@ static bool parseKey(JsonObject * obj, ReaderEStream * r) {
     size_t size = key_string.size();
     if (size < 1) {
         std::string msg = "Empty key string found.";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
     uint8_t until_match = key_string.substr(size-1, 1)[0];
@@ -325,7 +325,7 @@ static bool parseKey(JsonObject * obj, ReaderEStream * r) {
     key_string = key_string.substr(0, size-1);
     if (size > MAX_LENGTH_OF_JSON_STRING_KEYS) {
         std::string msg = "Key string to loooooonnng!";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
 
@@ -365,7 +365,7 @@ extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(std::string jso
     loggerPrintf(LOGGER_DEBUG, "%s\n", json.c_str());
     if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
         std::string msg = "String to loooonnnng!";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
     size_t i = 0;
@@ -376,7 +376,7 @@ extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(std::string jso
 extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
     if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
         std::string msg = "Json data to loooonnnng!";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
     size_t i = 0;
@@ -407,7 +407,7 @@ extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(ReaderEStream *
         obj = std::dynamic_pointer_cast<JsonValue>(new_obj);
     } else {
         std::string msg = "Invalid JSON data.";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
 

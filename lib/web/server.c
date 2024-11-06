@@ -95,7 +95,7 @@ extern void serverListen(const char * address, const uint16_t port, connection_h
                 if (listen(fd, MAX_CONNECTIONS) == -1) {
                     loggerPrintf(LOGGER_DEBUG, "Error listening\n");
                 } else {
-                    loggerPrintf(LOGGER_DEBUG, "Listening on %s:%u\n", address, port);
+                    loggerPrintf(LOGGER_INFO, "Listening on %s:%u\n", address, port);
                     timerStart();
                     pthread_attr_t attr;
                     pthread_attr_init(&attr);

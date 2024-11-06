@@ -61,7 +61,7 @@ void EStream::fillBuffer() {
     // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
-        loggerPrintf(LOGGER_ERROR, "Read error: %d, ret: %ld\n", errno, ret);
+        loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
         throw std::runtime_error("Read error.");
     } else {
         this->bytes_in_buffer = ret;
@@ -78,7 +78,7 @@ void SSLEStream::fillBuffer() {
     // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
-        loggerPrintf(LOGGER_ERROR, "Read error: %d, ret: %ld\n", errno, ret);
+        loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
         throw std::runtime_error("Read error.");
     } else {
         this->bytes_in_buffer = ret;
@@ -220,7 +220,7 @@ void ReaderEStream::readDecimal(double& value, size_t& digit_count) {
         c = this->peek();
         if (++digit_count > NUMBER_MAX_DIGITS) {
             std::string msg = "parseDecimal: Exceeded decimal digit limit.";
-            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }
     }
@@ -235,7 +235,7 @@ void ReaderEStream::readNatural(double& value, size_t& digit_count) {
         c = this->peek();
         if (++digit_count > NUMBER_MAX_DIGITS) {
             std::string msg = "parseNatural: Exceeded natural digit limit.";
-            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }
     }

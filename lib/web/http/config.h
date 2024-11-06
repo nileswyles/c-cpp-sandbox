@@ -105,7 +105,7 @@ class HttpServerConfig: public ServerConfig {
                         msg += field;
                     }
                 }
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
         }

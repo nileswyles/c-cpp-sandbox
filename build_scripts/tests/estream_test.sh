@@ -11,14 +11,16 @@ while true; do
 	esac
 done
 
-ROOT_DIR="."
+if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
+	WYLESLIBS_BUILD_ROOT_DIR="."
+fi
 
-# $ROOT_DIR/lib/json/json_mapper.cpp
+# $WYLESLIBS_BUILD_ROOT_DIR/lib/json/json_mapper.cpp
 SRC_FILES="
--s $ROOT_DIR/lib/test/estream_test.cpp
--s $ROOT_DIR/lib/estream/estream.cpp
--s $ROOT_DIR/lib/estream/reader_task.cpp
--s $ROOT_DIR/lib/test/tester.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/estream_test.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/estream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
 "
 
 LD_FLAGS="
@@ -26,6 +28,6 @@ LD_FLAGS="
 -l crypto
 "
 
-CMD="$ROOT_DIR/build_scripts/build_common.sh -n iostream_test $SRC_FILES --log $LOG_LEVEL $LD_FLAGS $DEFINES$TEST_ARG"
+CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n iostream_test $SRC_FILES --log $LOG_LEVEL $LD_FLAGS $DEFINES$TEST_ARG"
 echo "\t"$CMD
 exec $CMD

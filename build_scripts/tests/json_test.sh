@@ -13,20 +13,22 @@ while true; do
 	esac
 done
 
-ROOT_DIR="."
+if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
+	WYLESLIBS_BUILD_ROOT_DIR="."
+fi
 
-# $ROOT_DIR/lib/json/json_mapper.cpp
+# $WYLESLIBS_BUILD_ROOT_DIR/lib/json/json_mapper.cpp
 SRC_FILES="
--s $ROOT_DIR/lib/test/json_test.cpp
--s $ROOT_DIR/lib/parser/json/json_parser.cpp
--s $ROOT_DIR/lib/parser/json/json_mapper.cpp
--s $ROOT_DIR/lib/parser/json/json_object.cpp
--s $ROOT_DIR/lib/parser/json/json_array.cpp
--s $ROOT_DIR/lib/test/tester.cpp
--s $ROOT_DIR/lib/estream/estream.cpp
--s $ROOT_DIR/lib/estream/reader_task.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/json_test.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_parser.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_mapper.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_object.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_array.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/estream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
 "
 
-CMD="$ROOT_DIR/build_scripts/build_common.sh -n json_test $SRC_FILES --log $LOG_LEVEL $DEBUG$DEFINES$TEST_ARG"
+CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n json_test $SRC_FILES --log $LOG_LEVEL $DEBUG$DEFINES$TEST_ARG"
 echo "\t"$CMD
 exec $CMD

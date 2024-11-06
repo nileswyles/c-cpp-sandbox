@@ -31,14 +31,15 @@ done
 # see logger.h for log level values
 DEFINES=$DEFINES"-D GLOBAL_LOGGER_LEVEL=$LOG_LEVEL -D LOGGER_LEVEL=$LOG_LEVEL "
 
-# TODO: I think I left this here because need would like to support different cwd paths eventually? (other than project root)
-ROOT_DIR="."
+if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
+	WYLESLIBS_BUILD_ROOT_DIR="."
+fi
 
 # Standardize this
-QUOTE_INCLUDE_ROOT=$ROOT_DIR/lib
+QUOTE_INCLUDE_ROOT=$WYLESLIBS_BUILD_ROOT_DIR/lib
 
-mkdir $ROOT_DIR/out 2> /dev/null
-PROGRAM_PATH=$ROOT_DIR/out/$NAME.out
+mkdir $WYLESLIBS_BUILD_ROOT_DIR/out 2> /dev/null
+PROGRAM_PATH=$WYLESLIBS_BUILD_ROOT_DIR/out/$NAME.out
 rm $PROGRAM_PATH 2> /dev/null
 
 if [ -z $CXX_COMPILER ]; then
@@ -48,7 +49,7 @@ fi
 REMOVED_WARNING_FLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-function -Wno-reorder -Wno-deprecated-declarations"
 
 echo "\n~Build: "
-BUILD_CMD="$CXX_COMPILER $DEBUG$SRC_FILES-iquote $QUOTE_INCLUDE_ROOT -iquote $ROOT_DIR/http_test $INCLUDE_FILES$LIB_SEARCH_PATHS$DEFINES$LD_FLAGS-std=c++20 -Wall $REMOVED_WARNING_FLAGS -o $PROGRAM_PATH"
+BUILD_CMD="$CXX_COMPILER $DEBUG$SRC_FILES-iquote $QUOTE_INCLUDE_ROOT $INCLUDE_FILES$LIB_SEARCH_PATHS$DEFINES$LD_FLAGS-std=c++20 -Wall $REMOVED_WARNING_FLAGS -o $PROGRAM_PATH"
 echo "\t$BUILD_CMD"
 eval $BUILD_CMD
 

@@ -58,13 +58,13 @@ if [ -z $GOOGLE_CLOUD_SRC_DIR ]; then
 fi
 
 if [ -z $GOOGLE_CLOUD_BUILD_DIR ]; then
-    GOOGLE_CLOUD_BUILD_DIR="$GOOGLE_CLOUD_SRC_DIR/cmake_build"
+    GOOGLE_CLOUD_BUILD_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google_cloud_cpp_cmake_build"
 fi
 
 if [ -z $GOOGLE_CLOUD_INSTALL_DIR ]; then
 	if [ $GCS_INSTALLED_FROM_VCPKG_REPO == "NO" ]; then
 		# assuming BUILD_FROM_SOURCE default location.
-    	GOOGLE_CLOUD_INSTALL_DIR="$GOOGLE_CLOUD_SRC_DIR/cmake_install"
+    	GOOGLE_CLOUD_INSTALL_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google_cloud_cpp_cmake_install"
 	else
     	GOOGLE_CLOUD_INSTALL_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google_cloud_cpp_vcpkg_install"
 	fi

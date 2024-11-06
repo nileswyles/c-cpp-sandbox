@@ -15,10 +15,10 @@ if [ -z $GOOGLE_CLOUD_SRC_DIR ]; then
     GOOGLE_CLOUD_SRC_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google-cloud-cpp"
 fi
 if [ -z $GOOGLE_CLOUD_BUILD_DIR ]; then
-    GOOGLE_CLOUD_BUILD_DIR="$WYLESLIBS_BUILD_ROOT_DIR/$GOOGLE_CLOUD_SRC_DIR/cmake-out"
+    GOOGLE_CLOUD_BUILD_DIR="$GOOGLE_CLOUD_SRC_DIR/cmake-out"
 fi
 if [ -z $GOOGLE_CLOUD_INSTALL_DIR ]; then
-    GOOGLE_CLOUD_INSTALL_DIR="$WYLESLIBS_BUILD_ROOT_DIR/$GOOGLE_CLOUD_SRC_DIR/install"
+    GOOGLE_CLOUD_INSTALL_DIR="$GOOGLE_CLOUD_SRC_DIR/install"
 fi
 if [ "$1" == "CLEAN" ]; then
     rm -rf $GOOGLE_CLOUD_BUILD_DIR $GOOGLE_CLOUD_INSTALL_DIR
@@ -33,18 +33,17 @@ elif [ "$1" == "BUILD_FROM_SOURCE" ]; then
 
     # default install appears to be /usr/local
     cmake -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_INSTALL_PREFIX="$GOOGLE_CLOUD_INSTALL_DIR" \
+        -DCMAKE_INSTALL_PREFIX="${GOOGLE_CLOUD_INSTALL_DIR}" \
         -DBUILD_SHARED_LIBS=yes \
         -DBUILD_TESTING=OFF \
+        -DGOOGLE_CLOUD_CPP_ENABLE_EXAMPLES=OFF \
         -DGOOGLE_CLOUD_CPP_ENABLE=storage \
         -S $GOOGLE_CLOUD_SRC_DIR -B $GOOGLE_CLOUD_BUILD_DIR -DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake
     cmake --build $GOOGLE_CLOUD_BUILD_DIR -- -j $(nproc)
     # if this installs to same directory as vcpkg then can simplify http_server.sh
     if [ "$2" == "AND_INSTALL" ]; then
         # default install location appears to be /usr/local
-        # TODO: I AM NOT SURE WHAT'S GAINED FROM INSTALLING 
-        # sudo cmake --build $GOOGLE_CLOUD_BUILD_DIR --target install
-        echo "NOT SURE WHAT'S GAINED FROM INSTALLING SO DO NOTHING HERE FOR NOW"
+        cmake --build $GOOGLE_CLOUD_BUILD_DIR --target install
     fi
 else
     $HOME/vcpkg/vcpkg install google-cloud-cpp --x-install-root=$GOOGLE_CLOUD_INSTALL_DIR

@@ -343,6 +343,7 @@ uint8_t HttpConnection::onConnection(int fd) {
     EStream * io;
     bool acceptedTLS = false;
     try {
+#ifdef WYLESLIBS_SSL_ENABLED
         if (this->config.tls_enabled) {
             sslio = SSLEStream(this->context, fd, this->config.client_auth_enabled); // initializes ssl object for connection
             acceptedTLS = true;
@@ -351,6 +352,10 @@ uint8_t HttpConnection::onConnection(int fd) {
             eio = EStream(fd);
             io = &eio;
         }
+#else
+            eio = EStream(fd);
+            io = &eio;
+#endif
         this->parseRequest(&request, io);
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
         this->processRequest(io, &request);

@@ -156,7 +156,6 @@ class UUIDGeneratorV4: public UniqueKeyGenerator {
                 num_randoms = val;
             }
         }
-        UUIDGeneratorInitializer init;
         UUIDGeneratorV4(): UUIDGeneratorV4(4, UUIDGeneratorV4::initialize) {}
         UUIDGeneratorV4(uint8_t num_randoms): UUIDGeneratorV4(num_randoms, UUIDGeneratorV4::initialize) {}
         UUIDGeneratorV4(uint8_t randoms_arg, UUIDGeneratorInitializer initializer) {

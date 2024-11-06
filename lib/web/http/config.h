@@ -91,8 +91,10 @@ class HttpServerConfig: public ServerConfig {
                 }
             }
 
-            if (required_fields.size() > 0 || tls_enabled && tls_required_fields.size() > 0) {
-                std::string msg = "The configuration file is missing required fields... Check the configuration file at path: " + filepath + ".\n The missing fields are listed below: ";
+            if (required_fields.size() > 0 || (true == tls_enabled && tls_required_fields.size() > 0)) {
+                std::string msg = "The configuration file is missing required fields... Check the configuration file at path: ";
+                // msg += filepath;
+                msg += ".\n The missing fields are listed below: ";
                 for (auto field: required_fields) {
                     msg += '\n';
                     msg += field;
@@ -104,7 +106,7 @@ class HttpServerConfig: public ServerConfig {
                     }
                 }
                 loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-                std::runtime_error(msg);
+                throw std::runtime_error(msg);
             }
         }
         ~HttpServerConfig() override = default;

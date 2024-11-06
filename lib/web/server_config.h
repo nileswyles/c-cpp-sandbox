@@ -13,11 +13,11 @@ namespace WylesLibs {
 
 class ServerConfig: public JsonBase {
     public:
+        std::string filepath;
         std::string resources_root;
 
         ServerConfig(): resources_root("./") {}
-        ServerConfig(std::string filepath): 
-            ServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>(), filepath))) {}
+        ServerConfig(std::string filepath): ServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>(), filepath))) {}
         ServerConfig(std::shared_ptr<JsonObject> obj) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             bool resources_root_required = true;
@@ -30,10 +30,11 @@ class ServerConfig: public JsonBase {
                     resources_root_required = false;
                 }
             }
-            if (resources_root_required) {
-                std::string msg = "The 'resources_root' field is missing... Check the configuration file at path: " + filepath;
+            if (true == resources_root_required) {
+                std::string msg = "The 'resources_root' field is missing... Check the configuration file at path: ";
+                // msg += filepath;
                 loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
-                std::runtime_error(msg);
+                throw std::runtime_error(msg);
             }
         }
         ~ServerConfig() override = default;

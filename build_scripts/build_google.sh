@@ -15,13 +15,13 @@ if [ -z $GOOGLE_CLOUD_SRC_DIR ]; then
     GOOGLE_CLOUD_SRC_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google-cloud-cpp"
 fi
 if [ -z $GOOGLE_CLOUD_BUILD_DIR ]; then
-    GOOGLE_CLOUD_BUILD_DIR="$GOOGLE_CLOUD_SRC_DIR/cmake-out"
+    GOOGLE_CLOUD_BUILD_DIR="$GOOGLE_CLOUD_SRC_DIR/cmake_build"
 fi
 if [ "$1" == "CLEAN" ]; then
     rm -rf $GOOGLE_CLOUD_BUILD_DIR $GOOGLE_CLOUD_INSTALL_DIR
 elif [ "$1" == "BUILD_FROM_SOURCE" ]; then
     if [ -z $GOOGLE_CLOUD_INSTALL_DIR ]; then
-        GOOGLE_CLOUD_INSTALL_DIR="$GOOGLE_CLOUD_SRC_DIR/install"
+        GOOGLE_CLOUD_INSTALL_DIR="$GOOGLE_CLOUD_SRC_DIR/cmake_install"
     fi
     # ! IMPORTANT
     # need to make sure we link to correct ssl, crypto. Make sure to check where google get's theirs from if it does an installation.

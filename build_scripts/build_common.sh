@@ -7,6 +7,7 @@ INCLUDE_FILES=""
 DEFINES=""
 SRC_FILES=""
 LOG_LEVEL=0
+RUN_FROM=""
 PROGRAM_ARG=""
 DEBUG=""
 while true; do
@@ -22,6 +23,7 @@ while true; do
 		-D) DEFINES="$DEFINES-D $2 "; shift 2 ;;
 		-D*) DEFINES="$DEFINES$1 "; shift 1 ;;
 		-s|--source) SRC_FILES="$SRC_FILES$2 "; shift 2 ;;
+		-r|--run-from) RUN_FROM="$2"; shift 2 ;;
 		-g) DEBUG="-g "; shift ;;
 		# --) echo "PROGRAM ARG: $@"; break ;;
 		*) PROGRAM_ARG=$@; break;;
@@ -38,8 +40,13 @@ fi
 # Standardize this
 QUOTE_INCLUDE_ROOT=$WYLESLIBS_BUILD_ROOT_DIR/lib
 
-mkdir $WYLESLIBS_BUILD_ROOT_DIR/out 2> /dev/null
-PROGRAM_PATH=$WYLESLIBS_BUILD_ROOT_DIR/out/$NAME.out
+if [ $RUN_FROM != "" ]; then
+	mkdir $RUN_FROM/out 2> /dev/null
+	PROGRAM_PATH=$RUN_FROM/out/$NAME.out
+else
+	mkdir $WYLESLIBS_BUILD_ROOT_DIR/out 2> /dev/null
+	PROGRAM_PATH=$WYLESLIBS_BUILD_ROOT_DIR/out/$NAME.out
+fi
 rm $PROGRAM_PATH 2> /dev/null
 
 if [ -z $CXX_COMPILER ]; then
@@ -54,6 +61,10 @@ echo "\t$BUILD_CMD"
 eval $BUILD_CMD
 
 echo "\n~Executing Program: "
-EXEC_CMD="$PROGRAM_PATH $PROGRAM_ARG"
+if [ $RUN_FROM != "" ]; then
+	EXEC_CMD="cd $RUN_FROM && out/$NAME.out $PROGRAM_ARG"
+else
+	EXEC_CMD="$PROGRAM_PATH $PROGRAM_ARG"
+fi
 echo "\t$EXEC_CMD"
 eval $EXEC_CMD

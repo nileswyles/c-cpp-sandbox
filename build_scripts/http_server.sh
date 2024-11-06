@@ -52,19 +52,19 @@ LD_FLAGS="
 # Google Cloud Storage
 # ! IMPORTANT -
 # 		Make sure to run `$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_google.sh` before this script to make sure google deps are initialized.
-# 		if installed using vcpkg then non-shared is assumed and SOURCE_DIR = $GOOGLE_CLOUD_INSTALL_DIR/x64-linux/include
+# 		if installed using vcpkg then paths are appropriately defaulted to suit that install directory stucture.
 if [ -z $GOOGLE_CLOUD_SRC_DIR ]; then
     GOOGLE_CLOUD_SRC_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google-cloud-cpp"
 fi
 
 if [ -z $GOOGLE_CLOUD_BUILD_DIR ]; then
-    GOOGLE_CLOUD_BUILD_DIR="$GOOGLE_CLOUD_SRC_DIR/cmake-out"
+    GOOGLE_CLOUD_BUILD_DIR="$GOOGLE_CLOUD_SRC_DIR/cmake_build"
 fi
 
 if [ -z $GOOGLE_CLOUD_INSTALL_DIR ]; then
 	if [ $GCS_INSTALLED_FROM_VCPKG_REPO == "NO" ]; then
 		# assuming BUILD_FROM_SOURCE default location.
-    	GOOGLE_CLOUD_INSTALL_DIR="$GOOGLE_CLOUD_SRC_DIR/install"
+    	GOOGLE_CLOUD_INSTALL_DIR="$GOOGLE_CLOUD_SRC_DIR/cmake_install"
 	else
     	GOOGLE_CLOUD_INSTALL_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google_cloud_cpp_vcpkg_install"
 	fi
@@ -83,42 +83,15 @@ GCS_PKG_CONFIG_PATH="$GCS_PKG_CONFIG_PATH:$GOOGLE_CLOUD_VCPKG_INSTALL_DIR/lib/pk
 
 PKG_NAMES="google_cloud_cpp_storage google_cloud_cpp_common google_cloud_cpp_rest_internal"
 # if empty then won't build.
-# GCS_LIBS=`PKG_CONFIG_PATH=${GCS_PKG_CONFIG_PATH} pkg-config $PKG_NAMES --libs-only-l`
-# echo $GCS_LIBS
-GCS_LIBS="
--lgoogle_cloud_cpp_storage 
--lcrc32c 
--labsl_cord 
--labsl_str_format_internal 
--lgoogle_cloud_cpp_rest_internal 
--lgoogle_cloud_cpp_common 
--labsl_bad_optional_access 
--labsl_time 
--labsl_civil_time 
--labsl_strings 
--labsl_strings_internal 
--labsl_base 
--labsl_spinlock_wait 
--labsl_int128 
--labsl_throw_delegate 
--labsl_time_zone 
--labsl_bad_variant_access 
--labsl_raw_logging_internal 
--labsl_log_severity 
--lcurl 
--lssl 
--lcrypto
-"
+GCS_LIBS=`PKG_CONFIG_PATH=${GCS_PKG_CONFIG_PATH} pkg-config $PKG_NAMES --libs-only-l`
 
 # ! IMPORTANT - g++ manual says shared libs are prioritized unless -static option is used
 # TODO: libs with debug symbols?
 GCS_LIBS_SEARCH_PATH="-L $GOOGLE_CLOUD_INSTALL_DIR/lib"
-# GCS_LIBS_SEARCH_PATH="$GCS_LIBS_SEARCH_PATH -L $GOOGLE_CLOUD_INSTALL_DIR/google/cloud"
-# GCS_LIBS_SEARCH_PATH="$GCS_LIBS_SEARCH_PATH -L $GOOGLE_CLOUD_INSTALL_DIR/google/cloud/storage"
 # then need to include absl, and all other static libs too ?  
 GCS_LIBS_SEARCH_PATH="$GCS_LIBS_SEARCH_PATH -L $GOOGLE_CLOUD_VCPKG_INSTALL_DIR/lib"
 
-CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES --log $LOG_LEVEL $INCLUDE_DIRS $LD_FLAGS $GCS_INCLUDE_DIRS $GCS_LIBS_SEARCH_PATH $GCS_LIBS $DEFINES$PROGRAM_ARG"
+CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -r $WYLESLIBS_BUILD_ROOT_DIR/http_test --log $LOG_LEVEL $INCLUDE_DIRS $LD_FLAGS $GCS_INCLUDE_DIRS $GCS_LIBS_SEARCH_PATH $GCS_LIBS $DEFINES$PROGRAM_ARG"
 # TODO: revisit quoted strings and whitespace (nl, tabs, etc) for bash shell... Also, wtf is dash shell? zsh and bash I think are mostly identical for most basic things?
 echo "\t"$CMD
 exec $CMD

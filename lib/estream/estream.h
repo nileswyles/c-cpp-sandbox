@@ -18,10 +18,14 @@
 
 #ifdef WYLESLIBS_SSL_ENABLED
 #include <openssl/ssl.h>
-#endif 
+#endif
 
-// TODO: think about this value again... 8k * 1Million is what? 8G seems like alot...?
 #define READER_RECOMMENDED_BUF_SIZE 8096
+
+// ! IMPORTANT - 
+//      server.c::MAX_CONNECTIONS is (1 << 16) 64KB... 
+//       64k * 4048 == 249072KB or ~256MB
+#define READER_RECOMMENDED_BUF_SIZE_SSL 4048
 
 using namespace WylesLibs::File;
 
@@ -37,10 +41,12 @@ class ReaderEStream {
         std::string path;
         size_t file_offset;
         size_t chunk_size;
+
     protected:
         virtual void cursorCheck();
         virtual void fillBuffer();
-    public: 
+
+    public:
         ReaderEStream() = default;
         // TODO: std::move? that's interesting
         ReaderEStream(std::shared_ptr<std::basic_istream<char>> reader) {
@@ -66,14 +72,14 @@ class ReaderEStream {
         void seekg(size_t offset);
 
         virtual SharedArray<uint8_t> readBytes(const size_t n);
-        // ! IMPORTANT - inclusive means we read and consume the until character. 
+        // ! IMPORTANT - inclusive means we read and consume the until character.
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
-        virtual SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
+        virtual SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask *operation = nullptr, bool inclusive = true);
 
-        virtual void readDecimal(double& value, size_t& digit_count);
-        virtual void readNatural(double& value, size_t& digit_count);
+        virtual void readDecimal(double &value, size_t &digit_count);
+        virtual void readNatural(double &value, size_t &digit_count);
 };
 
 class EStream: public ReaderEStream {
@@ -81,17 +87,17 @@ class EStream: public ReaderEStream {
         Read and Write from file descriptor
     */
     protected:
-        uint8_t * buf;
+        uint8_t *buf;
         size_t buf_size;
         size_t cursor;
         size_t bytes_in_buffer;
 
         void cursorCheck() override final;
         void fillBuffer() override;
-    public: 
+    public:
         int fd;
         EStream() = default;
-        EStream(uint8_t * p_buf, const size_t p_buf_size): ReaderEStream() {
+        EStream(uint8_t *p_buf, const size_t p_buf_size): ReaderEStream() {
             // # testing.
             buf = p_buf;
             buf_size = p_buf_size;
@@ -126,7 +132,7 @@ class EStream: public ReaderEStream {
         // ReaderEstream
         SharedArray<uint8_t> readBytes(const size_t n) override;
         // Write to FD
-        virtual ssize_t write(void * p_buf, size_t size);
+        virtual ssize_t write(void *p_buf, size_t size);
 };
 
 #ifdef WYLESLIBS_SSL_ENABLED
@@ -134,20 +140,23 @@ class SSLEStream: public EStream {
     /*
         Read and Write from openssl object
     */
+    private:
+        SSL * ssl;
+        static SSL * acceptTLS(SSL_CTX * context, int fd, bool client_auth_enabled);
     protected:
         void fillBuffer() override final;
-    public:        
-        SSL * ssl;
+    public:
         SSLEStream() = default;
-        SSLEStream(SSL * ssl): EStream(0) {
-            ssl = ssl;
+        SSLEStream(SSL_CTX * context, int fd, bool client_auth_enabled): EStream(fd, READER_RECOMMENDED_BUF_SIZE_SSL) {
+            ssl = acceptTLS(context, fd, client_auth_enabled);
         }
         ~SSLEStream() override final {
-            // Move acceptTLS here?
-            SSL_shutdown(this->ssl);
-            SSL_free(this->ssl);
-        };
-        ssize_t write(void * p_buf, size_t size) override final;
+            if (this->ssl != nullptr) {
+                SSL_shutdown(this->ssl);
+                SSL_free(this->ssl);
+            }
+        }
+        ssize_t write(void *p_buf, size_t size) override final;
 };
 #endif
 };
@@ -155,15 +164,14 @@ class SSLEStream: public EStream {
 // @ static
 
 // assuming amd64 - what year are we in? LMAO
-// static_assert(sizeof(EStream) == 
-//     sizeof(char *) + 
-//     sizeof(size_t) + 
-//     sizeof(size_t) + 
+// static_assert(sizeof(EStream) ==
+//     sizeof(char *) +
+//     sizeof(size_t) +
+//     sizeof(size_t) +
 //     sizeof(size_t) +
 //     sizeof(int) +
 //     4 // just because?
 // );
 // static_assert(sizeof(EStream) == 32);
-
 
 #endif

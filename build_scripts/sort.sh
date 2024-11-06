@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 BENCH=0
 LOG_LEVEL=0

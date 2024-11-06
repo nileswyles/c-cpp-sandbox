@@ -249,4 +249,41 @@ ssize_t EStream::write(void * p_buf, size_t size) {
 ssize_t SSLEStream::write(void * p_buf, size_t size) {
     return SSL_write(this->ssl, p_buf, size);
 }
+
+SSL * SSLEStream::acceptTLS(SSL_CTX * context, int fd, bool client_auth_enabled) {
+    if (context == nullptr) {
+        throw std::runtime_error("Server SSL Context isn't initialized. Check server configuration.");
+    } else {
+        SSL * ssl = SSL_new(context);
+        if (ssl == nullptr) {
+            throw std::runtime_error("Error initializing SSL object for connection.");
+        }
+
+        int verify_mode = SSL_VERIFY_NONE;
+        if (true == client_auth_enabled) {
+            verify_mode = SSL_VERIFY_PEER;
+        }
+        SSL_set_verify(ssl, verify_mode, nullptr);
+        SSL_set_accept_state(ssl);
+
+        SSL_set_fd(ssl, fd);
+
+        SSL_clear_mode(ssl, 0);
+        // SSL_MODE_AUTO_RETRY
+
+        // TODO: so apparently this is optional lol... SSL_read will perform handshake...
+        //  also, investigate renegotiation, auto retry...
+        int accept_result = SSL_accept(ssl);
+        loggerPrintf(LOGGER_DEBUG, "ACCEPT RESULT: %d\n", accept_result);
+        loggerPrintf(LOGGER_DEBUG, "MODE: %lx, VERSION: %s, IS SERVER: %d\n", SSL_get_mode(ssl), SSL_get_version(ssl), SSL_is_server(ssl));
+        loggerExec(LOGGER_DEBUG, SSL_SESSION_print_fp(stdout, SSL_get_session(ssl)););
+        if (accept_result != 1) {
+            int error_code = SSL_get_error(ssl, accept_result) + 0x30;
+            // SSL_ERROR_NONE
+            throw std::runtime_error("SSL handshake failed. ERROR CODE: " + std::string((char *)&error_code));
+        } // connection accepted if accepted_result == 1
+
+        return ssl;
+    }
+}
 #endif

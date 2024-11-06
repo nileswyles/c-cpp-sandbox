@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 NAME="program"
 LD_FLAGS=""
@@ -40,7 +40,7 @@ fi
 # Standardize this
 QUOTE_INCLUDE_ROOT=$WYLESLIBS_BUILD_ROOT_DIR/lib
 
-if [ $RUN_FROM != "" ]; then
+if [ "$RUN_FROM" != "" ]; then
 	mkdir $RUN_FROM/out 2> /dev/null
 	PROGRAM_PATH=$RUN_FROM/out/$NAME.out
 else

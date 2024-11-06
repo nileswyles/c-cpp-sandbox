@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # run all of the test suites... 
 PATH_TO_TEST_DIRECTORY="build_scripts/tests"

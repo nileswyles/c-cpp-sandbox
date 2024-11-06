@@ -139,7 +139,6 @@ class HttpConnection {
 #endif
         HttpResponse * requestDispatcher(HttpRequest * request);
 
-        SSL * acceptTLS(int conn_fd);
         ReaderTaskDisallow whitespace_chain;
         ReaderTaskDisallow whitespace_lc_chain;
         ReaderTaskLC lowercase_task;

@@ -121,7 +121,7 @@ extern void serverListen(const char * address, const uint16_t port, connection_h
                             usleep(1000); // sleep for 1 ms
                             ret = pthread_create(&thread, &attr, handler_wrapper_func, arg);
                         }
-                        loggerPrintf(LOGGER_DEBUG, "Failed to create thread! Trying again.\n");
+                        loggerPrintf(LOGGER_INFO, "Failed to create thread! Trying again.\n");
                         conn = accept(fd, NULL, NULL);
                     }
                     timerStop();

@@ -330,58 +330,25 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
     return response;
 }
 
-SSL * HttpConnection::acceptTLS(int fd) {
-    if (this->context == nullptr) {
-        throw std::runtime_error("Server SSL Context isn't initialized. Check server configuration.");
-    } else {
-        SSL * ssl = SSL_new(this->context);
-        if (ssl == nullptr) {
-            throw std::runtime_error("Error initializing SSL object for connection.");
-        }
-
-        int verify_mode = SSL_VERIFY_NONE;
-        if (this->config.client_auth_enabled) {
-            verify_mode = SSL_VERIFY_PEER;
-        }
-        SSL_set_verify(ssl, verify_mode, nullptr);
-        SSL_set_accept_state(ssl);
-
-        SSL_set_fd(ssl, fd);
-
-        SSL_clear_mode(ssl, 0);
-        // SSL_MODE_AUTO_RETRY
-
-        // TODO: so apparently this is optional lol... SSL_read will perform handshake...
-        //  also, investigate renegotiation, auto retry...
-        int accept_result = SSL_accept(ssl);
-        loggerPrintf(LOGGER_DEBUG, "ACCEPT RESULT: %d\n", accept_result);
-        loggerPrintf(LOGGER_DEBUG, "MODE: %lx, VERSION: %s, IS SERVER: %d\n", SSL_get_mode(ssl), SSL_get_version(ssl), SSL_is_server(ssl));
-        loggerExec(LOGGER_DEBUG, SSL_SESSION_print_fp(stdout, SSL_get_session(ssl)););
-        if (accept_result != 1) {
-            int error_code = SSL_get_error(ssl, accept_result) + 0x30;
-            // SSL_ERROR_NONE
-            throw std::runtime_error("SSL handshake failed. ERROR CODE: " + std::string((char *)&error_code));
-        } // connection accepted if accepted_result == 1
-
-        return ssl;
-    }
-}
 
 uint8_t HttpConnection::onConnection(int fd) {
     // ! IMPORTANT -
     //  expanding on thoughts on mallocs/new vs stack
     //  so, if need access to more memory you can call new where needed at point of creation of each thread.
-
+    EStream eio;
+#ifdef WYLESLIBS_SSL_ENABLED
+    SSLEStream sslio;
+#endif
     HttpRequest request;
     EStream * io;
     bool acceptedTLS = false;
     try {
         if (this->config.tls_enabled) {
-            SSLEStream sslio (this->acceptTLS(fd)); // initializes ssl object for connection
+            sslio = SSLEStream(this->context, fd, this->config.client_auth_enabled); // initializes ssl object for connection
             acceptedTLS = true;
-            io = (EStream *)&sslio;
+            io = dynamic_cast<EStream *>(&sslio);
         } else {
-            EStream eio(fd);
+            eio = EStream(fd);
             io = &eio;
         }
         this->parseRequest(&request, io);

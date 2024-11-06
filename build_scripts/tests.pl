@@ -52,7 +52,7 @@ foreach (@TEST_SUITES) {
         my $CMD = "$PATH_TO_TEST_DIRECTORY/$test --log $LOG_LEVEL $DEFINES";
         print("~Executing test:\n\t$CMD\n");
         my $time_before = time;
-        my $result = system("etimeout/out/etimeout $timeout $CMD");
+        my $result = system("etimeout/bin/etimeout $timeout $CMD");
         my $result_code = $?;
         printf("\n~Finished executing test.\n");
         # printf("system result $result vs result code $result_code\n");

@@ -28,11 +28,11 @@ class GCSFileManager: public FileManager {
         std::string bucket_name;
         google::cloud::storage::Client client;
     public:
-        GCSFileManager(std::string bucket_name): bucket_name(bucket_name), 
-                                                 client(google::cloud::storage::Client()),
-                                                 FileManager(std::dynamic_pointer_cast<StreamFactory>(std::make_shared<GCSStreamFactory>(client, bucket_name))) {
-
-                                                 };
+        GCSFileManager() = default;
+        GCSFileManager(std::string bucket_name): bucket_name(bucket_name) {
+            client = google::cloud::storage::Client(google::cloud::Options{}.set<google::cloud::LoggingComponentsOption>({"rpc", "rpc-streams", "auth"}));
+            FileManager(std::dynamic_pointer_cast<StreamFactory>(std::make_shared<GCSStreamFactory>(client, bucket_name)));
+        }
         ~GCSFileManager() override final = default;
 
         uint64_t stat(std::string path) override final;

@@ -3,12 +3,12 @@
 TEST_ARG=""
 DEFINES=""
 LOG_LEVEL=0
-GCS_INSTALLED_FROM_VCPKG_REPO="NO"
+GCS_INSTALLED_FROM_VCPKG_REPO=""
 while true; do
 	case "$1" in
 		-l|--log) LOG_LEVEL="$2"; shift 2 ;;
 		-D) DEFINES="$DEFINES-D $2 "; shift 2 ;;
-		--gcs_installed_from_vcpkg_repo) GCS_INSTALLED_FROM_VCPKG_REPO="YES"; shift 1 ;;
+		--gcs_installed_from_vcpkg_repo) GCS_INSTALLED_FROM_VCPKG_REPO="--gcs_installed_from_vcpkg_repo"; shift 1 ;;
 		*) PROGRAM_ARG=$@; break;;
 	esac
 done
@@ -49,49 +49,9 @@ LD_FLAGS="
 -l crypto
 "
 
-# Google Cloud Storage
-# ! IMPORTANT -
-# 		Make sure to run `$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_google.sh` before this script to make sure google deps are initialized.
-# 		if installed using vcpkg then paths are appropriately defaulted to suit that install directory stucture.
-if [ -z $GOOGLE_CLOUD_SRC_DIR ]; then
-    GOOGLE_CLOUD_SRC_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google-cloud-cpp"
-fi
+GCS_ARGS=`$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/generate_gcs_arguments.sh $GCS_INSTALLED_FROM_VCPKG_REPO`
 
-if [ -z $GOOGLE_CLOUD_BUILD_DIR ]; then
-    GOOGLE_CLOUD_BUILD_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google_cloud_cpp_cmake_build"
-fi
-
-if [ -z $GOOGLE_CLOUD_INSTALL_DIR ]; then
-	if [ $GCS_INSTALLED_FROM_VCPKG_REPO == "NO" ]; then
-		# assuming BUILD_FROM_SOURCE default location.
-    	GOOGLE_CLOUD_INSTALL_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google_cloud_cpp_cmake_install"
-	else
-    	GOOGLE_CLOUD_INSTALL_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google_cloud_cpp_vcpkg_install"
-	fi
-fi
-if [ -z $GOOGLE_CLOUD_VCPKG_INSTALL_DIR ]; then
-	if [ $GCS_INSTALLED_FROM_VCPKG_REPO == "NO" ]; then
-    	GOOGLE_CLOUD_VCPKG_INSTALL_DIR="$GOOGLE_CLOUD_BUILD_DIR/vcpkg_installed/x64-linux"
-	else
-    	GOOGLE_CLOUD_VCPKG_INSTALL_DIR="$GOOGLE_CLOUD_INSTALL_DIR/x64-linux"
-	fi
-fi
-GCS_INCLUDE_DIRS="-I $GOOGLE_CLOUD_INSTALL_DIR/include -I $GOOGLE_CLOUD_VCPKG_INSTALL_DIR/include"
-
-GCS_PKG_CONFIG_PATH="$GOOGLE_CLOUD_INSTALL_DIR/lib/pkgconfig"
-GCS_PKG_CONFIG_PATH="$GCS_PKG_CONFIG_PATH:$GOOGLE_CLOUD_VCPKG_INSTALL_DIR/lib/pkgconfig"
-
-PKG_NAMES="google_cloud_cpp_storage google_cloud_cpp_common google_cloud_cpp_rest_internal"
-# if empty then won't build.
-GCS_LIBS=`PKG_CONFIG_PATH=${GCS_PKG_CONFIG_PATH} pkg-config $PKG_NAMES --libs-only-l`
-
-# ! IMPORTANT - g++ manual says shared libs are prioritized unless -static option is used
-# TODO: libs with debug symbols?
-GCS_LIBS_SEARCH_PATH="-L $GOOGLE_CLOUD_INSTALL_DIR/lib"
-# then need to include absl, and all other static libs too ?  
-GCS_LIBS_SEARCH_PATH="$GCS_LIBS_SEARCH_PATH -L $GOOGLE_CLOUD_VCPKG_INSTALL_DIR/lib"
-
-CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -r $WYLESLIBS_BUILD_ROOT_DIR/http_test --log $LOG_LEVEL $INCLUDE_DIRS $LD_FLAGS $GCS_INCLUDE_DIRS $GCS_LIBS_SEARCH_PATH $GCS_LIBS $DEFINES$PROGRAM_ARG"
+CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -r $WYLESLIBS_BUILD_ROOT_DIR/http_test --log $LOG_LEVEL $INCLUDE_DIRS $LD_FLAGS $GCS_ARGS $DEFINES$PROGRAM_ARG"
 # TODO: revisit quoted strings and whitespace (nl, tabs, etc) for bash shell... Also, wtf is dash shell? zsh and bash I think are mostly identical for most basic things?
 echo "\t"$CMD
 exec $CMD

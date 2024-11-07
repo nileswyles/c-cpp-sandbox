@@ -61,7 +61,7 @@ echo "\t$BUILD_CMD"
 eval $BUILD_CMD
 
 echo "\n~Executing Program: "
-if [ $RUN_FROM != "" ]; then
+if [ "$RUN_FROM" != "" ]; then
 	EXEC_CMD="cd $RUN_FROM && out/$NAME.out $PROGRAM_ARG"
 else
 	EXEC_CMD="$PROGRAM_PATH $PROGRAM_ARG"

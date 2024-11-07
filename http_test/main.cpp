@@ -98,8 +98,7 @@ int main(int argc, char * argv[]) {
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
         HttpServerConfig config("config.json");
-        
-        // ServerContext context(config, std::shared_ptr<GCSFileManager>());
+        // ServerContext context(config, std::dynamic_pointer_cast<FileManager>(std::make_shared<GCSFileManager>("test-bucket-free-tier")));
         ServerContext context(config);
         server_context = &context;
 

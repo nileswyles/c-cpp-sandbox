@@ -2,15 +2,6 @@
 
 #include <filesystem>
 
-// TODO: I think this might be better in .h file because polymorphism but let's see...
-#ifndef LOGGER_FILE
-#define LOGGER_FILE 1
-#endif
-
-#undef LOGGER_MODULE_ENABLED
-#define LOGGER_MODULE_ENABLED LOGGER_FILE
-#include "logger.h"
-
 using namespace WylesLibs;
 using namespace WylesLibs::File;
 

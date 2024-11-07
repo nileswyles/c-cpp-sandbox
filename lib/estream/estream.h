@@ -120,7 +120,7 @@ class EStream: public ReaderEStream {
             bytes_in_buffer = 0;
             buf = newCArray<uint8_t>(buf_size);
         }
-        virtual ~EStream() = default;
+        ~EStream() override = default;
         // standard istream
         uint8_t get() override;
         uint8_t peek() override;

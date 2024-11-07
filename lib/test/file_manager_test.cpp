@@ -1,7 +1,15 @@
 #include "tester.h"
+#ifdef FILE_MANAGER_GCS_TEST
+#include "file/file_gcs.h"
+#else
 #include "file/file.h"
+#endif
 #include "datastructures/array.h"
 #include "paths.h"
+
+#include <iostream>
+
+#include "google/cloud/log.h"
 
 #include <memory>
 
@@ -17,13 +25,18 @@ using namespace WylesLibs;
 using namespace WylesLibs::Test;
 using namespace WylesLibs::File;
 
+#ifdef FILE_MANAGER_GCS_TEST
+static std::shared_ptr<FileManager> file_manager = std::dynamic_pointer_cast<FileManager>(std::make_shared<GCSFileManager>("test-bucket-free-tier"));
+#else
 static std::shared_ptr<FileManager> file_manager = std::make_shared<FileManager>();
+#endif 
 static std::string test_directory = "./file_manager_test_dir";
 static const std::string test_file = Paths::join(test_directory, "file_manager_test.txt");
 static const std::string test_file_doesnt_exist = Paths::join(test_directory, "file_manager_test_doesnt_exist.txt");
 static uint64_t INITIAL_FILE_SIZE = 0;
 
-bool assert(SharedArray<uint8_t> expected, SharedArray<uint8_t> actual) {
+
+bool assertFileData(SharedArray<uint8_t> expected, SharedArray<uint8_t> actual) {
     bool res = false;
     loggerPrintf(LOGGER_TEST, "Expected File Data (%lu):\n'%s'\n", expected.size(), expected.toString().c_str());
     loggerPrintf(LOGGER_TEST, "Actual File Data (%lu):\n'%s'\n", actual.size(), actual.toString().c_str());
@@ -51,7 +64,7 @@ void testFileManager(TestArg * t) {
     SharedArray<uint8_t> file_data("Store some information in the file.");
     file_manager->write(test_file, file_data, false); // >
     SharedArray<uint8_t> read_file_data = file_manager->read(test_file);
-    if (false == assert(file_data, read_file_data)) {
+    if (false == assertFileData(file_data, read_file_data)) {
         t->fail = true;
         return;
     }
@@ -63,7 +76,7 @@ void testFileManager(TestArg * t) {
     // // file_data.removeBack(); // remove NUL char.
     // file_data.remove(file_data.size()-2, 2); // hmm....
     // file_data.append(appended_file_data);
-    // if (false == assert(file_data, read_file_data)) {
+    // if (false == assertFileData(file_data, read_file_data)) {
     //     t->fail = true;
     //     return;
     // }
@@ -71,7 +84,7 @@ void testFileManager(TestArg * t) {
     SharedArray<uint8_t> overwritten_file_data("Store only this information in the file.");
     file_manager->write(test_file, overwritten_file_data, false); // >
     read_file_data = file_manager->read(test_file);
-    if (false == assert(overwritten_file_data, read_file_data)) {
+    if (false == assertFileData(overwritten_file_data, read_file_data)) {
         t->fail = true;
         return;
     }
@@ -80,7 +93,7 @@ void testFileManagerWriteFileDoesntExist(TestArg * t) {
     SharedArray<uint8_t> file_data("Store some information in the file.");
     file_manager->write(test_file_doesnt_exist, file_data, false); // >
     SharedArray<uint8_t> read_file_data = file_manager->read(test_file_doesnt_exist);
-    if (false == assert(file_data, read_file_data)) {
+    if (false == assertFileData(file_data, read_file_data)) {
         t->fail = true;
         return;
     }
@@ -154,6 +167,13 @@ void afterEach(TestArg * t) {
 }
 
 int main(int argc, char * argv[]) {
+    // initialize logging
+    google::cloud::LogSink::EnableStdClog(google::cloud::Severity::GCP_LS_TRACE);
+    std::cout << google::cloud::Severity::GCP_LS_LOWEST_ENABLED << "\n";
+
+    // google::cloud::LogSink logSink = google::cloud::LogSink::Instance(); 
+    // logSink.set_minimum_severity(google::cloud::Severity::GCP_LS_TRACE);
+
     Tester t("File Manager Tests", beforeSuite, beforeEach, afterSuite, afterEach);
 
     t.addTest(testFileManager);

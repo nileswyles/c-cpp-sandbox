@@ -73,7 +73,7 @@ namespace WylesLibs {
                 if (this->ctrl == nullptr || this->ctrl->instance_count == 1) {
                     delete this->view;
                 }
-                // ~MatrixVector();
+                // ~SharedArray();
             };
             size_t viewEnd() {
                 if (this->view == nullptr) {
@@ -133,7 +133,7 @@ namespace WylesLibs {
             }
             MatrixVector<T>& append(const MatrixVector<T>& other) {
                 if (this->view == nullptr) {
-                    return this->append(other.start(), other.size());
+                    return this->append(other.begin(), other.size());
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
                     loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", message.c_str());

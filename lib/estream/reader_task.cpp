@@ -1,4 +1,4 @@
-#include "iostream/reader_task.h"
+#include "estream/reader_task.h"
 
 using namespace WylesLibs;
 
@@ -37,12 +37,13 @@ void ReaderTaskTrim::perform(SharedArray<uint8_t>& buffer, uint8_t c) {
 void ReaderTaskExtract::flush(SharedArray<uint8_t>& buffer) {
     // if extracting token and non whitespace after token throw an exception...
     if (r_trim_non_whitespace != 0) {
+        // TODO: maybe make this an option...
         std::string msg = "Found non-whitespace char right of token.";
-        loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), r_trim_non_whitespace);
+        loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), r_trim_non_whitespace);
         throw std::runtime_error(msg);
     } else if (!this->l_trimming && !this->r_trimming) {
         std::string msg = "Found open ended token.";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     } else if (this->r_trim_read_until != 0) {
         buffer.append(this->r_trim_read_until);
@@ -64,6 +65,7 @@ void ReaderTaskExtract::perform(SharedArray<uint8_t>& buffer, uint8_t c) {
         } else if (this->r_trimming) {
             if (this->right_most_char == c) {
                 // if extracting token and right_most_char found, flush and include right_most
+                // TODO: maybe make this an option...
                 // "blablbl" bblbnlbl    | == exception 
                 // "blablbl"    | == blablbl 
                 // "blablbl" " alknla| == blablbl - SEE TODO above... this might change.
@@ -75,6 +77,7 @@ void ReaderTaskExtract::perform(SharedArray<uint8_t>& buffer, uint8_t c) {
             } else {
                 this->r_trim.append(c);
                 if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos && read_until.find(c) == std::string::npos) {
+                    // TODO: maybe make this an option...
                     this->r_trim_non_whitespace = c;
                 } else if (read_until.find(c) != std::string::npos) {
                     this->r_trim_read_until = c;
@@ -92,7 +95,7 @@ void ReaderTaskExtract::perform(SharedArray<uint8_t>& buffer, uint8_t c) {
             buffer.append(c);
         } else {
             std::string msg = "Found non-whitespace char left of token.";
-            loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
+            loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
             throw std::runtime_error(msg);
         }
     }

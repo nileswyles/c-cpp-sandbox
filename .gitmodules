@@ -1,3 +1,6 @@
 [submodule ".devcontainer"]
 	path = .devcontainer
 	url = https://github.com/nileswyles/.devcontainer.git
+[submodule "google-cloud-cpp"]
+	path = google-cloud-cpp
+	url = https://github.com/googleapis/google-cloud-cpp.git

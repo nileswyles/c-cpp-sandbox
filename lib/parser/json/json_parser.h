@@ -1,16 +1,19 @@
 #ifndef WYLESLIBS_JSON_PARSER_H
 #define WYLESLIBS_JSON_PARSER_H
 
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "datastructures/array.h"
-#include "iostream/iostream.h"
+#include "estream/estream.h"
+#include "file/file.h"
 
 #include "global_consts.h"
 
 using namespace WylesLibs;
+using namespace WylesLibs::File;
 
 namespace WylesLibs::Parser::Json {
 
@@ -94,7 +97,7 @@ class JsonNumber: public JsonValue {
         size_t natural_digit_count;
         size_t decimal_digit_count;
     public:
-        JsonNumber(double number): number(number), natural_digit_count(-1), decimal_digit_count(-1), JsonValue(NUMBER) {}
+        JsonNumber(double number): number(number), natural_digit_count(SIZE_MAX), decimal_digit_count(SIZE_MAX), JsonValue(NUMBER) {}
         JsonNumber(double number, size_t natural_digit_count, size_t decimal_digit_count): number(number), natural_digit_count(natural_digit_count), decimal_digit_count(decimal_digit_count), JsonValue(NUMBER) {}
         ~JsonNumber() override = default;
 
@@ -104,7 +107,7 @@ class JsonNumber: public JsonValue {
 
         std::string toJsonString() final override {
             char format_i[JSON_NUMBER_FORMAT_STRING_SIZE] = {};
-            if (natural_digit_count == -1 || decimal_digit_count == -1) {
+            if (natural_digit_count == SIZE_MAX || decimal_digit_count == SIZE_MAX) {
                 sprintf(format_i, "%ld.%ldf", NUMBER_MAX_DIGITS, NUMBER_MAX_DIGITS);
             } else {
                 sprintf(format_i, "%ld.%ldf", natural_digit_count, decimal_digit_count);
@@ -141,10 +144,10 @@ class JsonString: public JsonValue {
 
 // LOL, over optimizating? probably but this should definitely minimize memory footprint some... probably not as much as one would think though?
 //  if nothing else, let's keep parsing stuff consistent... 
-extern JsonValue * parseFile(std::string file_path);
-extern JsonValue * parse(std::string json);
-extern JsonValue * parse(SharedArray<uint8_t> json);
-extern JsonValue * parse(IOStream * r, size_t& i);
+extern std::shared_ptr<JsonValue> parseFile(std::shared_ptr<StreamFactory> stream_factory, std::string file_path);
+extern std::shared_ptr<JsonValue> parse(std::string json);
+extern std::shared_ptr<JsonValue> parse(SharedArray<uint8_t> json);
+extern std::shared_ptr<JsonValue> parse(ReaderEStream * r, size_t& i);
 
 extern std::string pretty(std::string json);
 

@@ -1,4 +1,4 @@
-#include "file_watcher.h"
+#include "file/file_watcher.h"
 #include <unistd.h>
 
 #include <pthread.h>
@@ -15,7 +15,7 @@ static int fd = -1;
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-FileWatcher::FileWatcher(SharedArray<std::string> paths, uint32_t access_mask) {
+FileWatcher::FileWatcher(SharedArray<std::string> paths, uint32_t mask) {
     if (fd == -1) {
         std::runtime_error("File watcher thread has not been initialized!");
     }
@@ -23,7 +23,7 @@ FileWatcher::FileWatcher(SharedArray<std::string> paths, uint32_t access_mask) {
     for (size_t i = 0; i < watch_descriptor_size; i++) {
         paths_wd_map[paths[i]] = -1;
     }
-    access_mask = access_mask;
+    access_mask = mask;
 }
 
 FileWatcher::~FileWatcher() {
@@ -39,11 +39,8 @@ FileWatcher::~FileWatcher() {
 void FileWatcher::initialize(std::shared_ptr<FileWatcher> ptr) {
     pthread_mutex_lock(&mutex);
     for (auto w: this->paths_wd_map) {
-        // TODO:
-        // okay, so this needs absolute paths?
-        // std::string path = "/workspaces/c-cpp-sandbox/http_test/" + w.first;
         std::string path = w.first;
-        int wd = inotify_add_watch(fd, path.c_str(), IN_CREATE);
+        int wd = inotify_add_watch(fd, path.c_str(), this->access_mask);
         if (wd == -1) {
             throw std::runtime_error("Cannot watch path: " + path);
         }
@@ -61,32 +58,39 @@ static void * watcherRun(void * arg) {
     ssize_t len;
     try {
         /* Loop while events can be read from inotify file descriptor. */
-        bool loop = thread_run;
-        while (true == loop) {
+        struct pollfd poll_fd;
+        poll_fd.fd = fd;
+        poll_fd.events = POLLIN;
+        while (true == thread_run) {
             pthread_mutex_lock(&mutex);
             /* Read some events. */
-            len = read(fd, buf, sizeof(buf));
-            if (len <= 0) {
-                if (errno != EAGAIN) {
-                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Failed to read from inotify fd: %d\n", fd);
-                    throw std::runtime_error("Failed to read from inotify fd.");
+            int read_in = poll(&poll_fd, 1, 0);
+            if (read_in == -1) {
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Error detected while polling fd: %d, errno: %d\n", fd, errno);
+                throw std::runtime_error("Error detected while polling.");
+            } else if (read_in == 1) {
+                len = read(fd, buf, sizeof(buf));
+                if (len <= 0) {
+                    if (errno != EAGAIN) {
+                        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Failed to read from inotify fd: %d, errno: %d\n", fd, errno);
+                        throw std::runtime_error("Failed to read from inotify fd.");
+                    }
+                    continue;
                 }
-                continue;
-            }
-    
-            /* Loop over all events in the buffer. */
-            for (char *ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
-                event = (const struct inotify_event *) ptr;
-                if (auto watcher = registeredWatchers[event->wd].lock()) {
-                    watcher->handle(event);
+         
+                /* Loop over all events in the buffer. */
+                for (char *ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
+                    event = (const struct inotify_event *) ptr;
+                    if (auto watcher = registeredWatchers[event->wd].lock()) {
+                        watcher->handle(event);
+                    }
                 }
-            }
-            loop = thread_run;
+            } // else if read_in == 0, try again.
             pthread_mutex_unlock(&mutex);
         }
     } catch(const std::exception& e) {
         pthread_mutex_unlock(&mutex);
-        loggerPrintf(LOGGER_DEBUG, "Exception thrown proccessing FileWatcher->handle: '%s'", e.what());
+        loggerPrintf(LOGGER_DEBUG, "Exception thrown processing FileWatcher->handle: '%s'", e.what());
         fileWatcherThreadStop();
     }
     return nullptr;
@@ -96,9 +100,9 @@ extern void WylesLibs::fileWatcherThreadStart() {
     pthread_mutex_lock(&mutex);
 
     /* Create the file descriptor for accessing the inotify API. */
-    fd = inotify_init1(IN_NONBLOCK);
+    fd = inotify_init();
     if (fd == -1) {
-        throw std::runtime_error("inotify_init1");
+        throw std::runtime_error("inotify_init");
     }
 
     pthread_attr_t attr;
@@ -123,5 +127,5 @@ extern void WylesLibs::fileWatcherThreadStop() {
     fd = -1;
     thread_run = false;
 
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_unlock(&mutex);
 }

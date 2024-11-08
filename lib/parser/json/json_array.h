@@ -25,14 +25,20 @@ class JsonArray: public JsonValue, public std::vector<JsonValue *> {
                 throw std::runtime_error("JsonArray: creation error... TOO MUCH DEPTH!");
             }
         }
+        // ~JsonArray() override = default;
+        // ! IMPORTANT - 
+        //  given the seg fault when deleting the (OBJECT) JsonValues using the custom destructor, 
+        //      does this mean the default destructor didn't actually call delete on the pointers it held? 
+        //      Obviously? And it's why the below is required?
         ~JsonArray() override {
-            // TODO. let cpp do it's magic... and don't use pointers here?.... 
+            // TODO. let cpp do it's magic... and don't use pointers here? or use shared_ptrs?.... 
             //  Is that okay? think about limits... and how they actually work. 
-            for (size_t i = 0; i < this->size(); i++) {
-                loggerPrintf(LOGGER_DEBUG, "Making sure to free pointer! @ %p\n", this->at(i));
-                // because this->[] isn't valid :)
-                if (this->at(i) != nullptr) {
-                    delete this->at(i);
+            size_t size = this->size();
+            for (size_t i = 0; i < size; i++) {
+                JsonValue * value = (*this)[i];
+                if (value != nullptr) {
+                    loggerPrintf(LOGGER_DEBUG, "Making sure to free pointer! @ %p, '%s'\n", value, value->toJsonString().c_str());
+                    delete value;
                 }
             }
         }

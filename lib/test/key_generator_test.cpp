@@ -1,5 +1,10 @@
 #include "tester.h"
 #include "key_generator.h"
+#include "file/file.h"
+#include "datastructures/array.h"
+
+#include <memory>
+#include <sstream>
 
 #ifndef LOGGER_KEY_GENERATOR_TEST
 #define LOGGER_KEY_GENERATOR_TEST 1
@@ -11,11 +16,20 @@
 
 using namespace WylesLibs;
 using namespace WylesLibs::Test;
+using namespace WylesLibs::File;
+
+static std::shared_ptr<FileManager> file_manager = std::make_shared<FileManager>();
+static std::string file_name("sequence_store");
+
+static void removeStoreFile() {
+    system(("rm " + file_name + " 2> /dev/null").c_str());
+}
 
 void testUniqueKeyGenerator(TestArg * t) {
-    File::write("sequence_store", std::string("0000000000000000"), false); // clear file store
     ServerConfig config;
-    UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore("sequence_store"));
+    UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore(file_manager, "sequence_store"));
+
+    file_manager->write(file_name, SharedArray<uint8_t>("0000000000000000"), false); // clear file store
 
     bool failed = false;
     for (size_t i = 0; i < 7; i++) {
@@ -30,9 +44,8 @@ void testUniqueKeyGenerator(TestArg * t) {
 }
 
 void testUniqueKeyStringGenerator(TestArg * t) {
-    File::write("sequence_store", std::string("0000000000000000"), false); // clear file store
     ServerConfig config;
-    UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore("sequence_store"));
+    UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore(file_manager, "sequence_store"));
 
     SharedArray<std::string> expected_keys{
         "0000000000000000",
@@ -60,6 +73,7 @@ void testUniqueKeyStringGenerator(TestArg * t) {
         loggerPrintf(LOGGER_TEST, "expected key: %s\n", expected_keys[0].c_str());
         if (key != expected_keys[0]) {
             failed = true;
+            break;
         }
     }
     t->fail = failed;
@@ -70,11 +84,13 @@ void testUUIDGeneratorV4(TestArg * t) {
     UUIDGeneratorV4 generator;
 
     bool failed = false;
+    std::string prev_key;
     for (size_t i = 0; i < 7; i++) {
         std::string key = generator.next();
         loggerPrintf(LOGGER_TEST, "key: %s\n", key.c_str());
-        if (key.size() != 32) {
+        if (key.size() != 32 || key == prev_key) {
             failed = true;
+            break;
             // TODO: test random function? for randomness lol?
             //      maybe have applications run test at startup?
             //      lol, seems a bit much...
@@ -82,27 +98,31 @@ void testUUIDGeneratorV4(TestArg * t) {
             //      and by randomness test, I mean detect any patterns, regularities?
             //       
         }
+        prev_key = key;
     }
     t->fail = failed;
 }
 
 void testUUIDGeneratorV7(TestArg * t) {
     ServerConfig config;
-    UUIDGeneratorV7 generator;
+    UUIDGeneratorV7 generator(2);
 
     bool failed = false;
+    std::string prev_key;
     for (size_t i = 0; i < 7; i++) {
         std::string key = generator.next();
         loggerPrintf(LOGGER_TEST, "key: %s\n", key.c_str());
-        if (key.size() != 40) {
+        if (key.size() != 40 || key == prev_key) {
             failed = true;
+            break;
         }
+        prev_key = key;
     }
     t->fail = failed;
 }
 
 int main(int argc, char * argv[]) {
-    Tester t("Key Generator Tests");
+    Tester t("Key Generator Tests", removeStoreFile, nullptr, removeStoreFile, nullptr);
 
     t.addTest(testUniqueKeyGenerator);
     t.addTest(testUUIDGeneratorV4);

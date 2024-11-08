@@ -6,7 +6,8 @@
 
 #include "controllers/example.h"
 
-#include "file_watcher.h"
+#include "file/file_watcher.h"
+#include "file/file_gcs.h"
 
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1
@@ -25,7 +26,7 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
 
         // this makes more sense extension of some Connection class?
         //  alright, I know I "c@n'T gr@MM@R" but definetly not that bad...
-        uint8_t onConnection(IOStream * io) {
+        uint8_t onConnection(EStream * io) {
             printf("Established websocket connection...\n");
             printf("MESSAGE FROM CLIENT: %s\n", io->readUntil("}").toString().c_str());
             return 1;
@@ -64,7 +65,7 @@ extern ServerContext * WylesLibs::getServerContext() {
     // LOL
     if (server_context == nullptr) {
         std::string msg = "ServerContext is a null pointer.";
-        loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     } else {
         return server_context;
@@ -97,7 +98,7 @@ int main(int argc, char * argv[]) {
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
         HttpServerConfig config("config.json");
-        
+        // ServerContext context(config, std::dynamic_pointer_cast<FileManager>(std::make_shared<GCSFileManager>("test-bucket-free-tier")));
         ServerContext context(config);
         server_context = &context;
 
@@ -111,15 +112,15 @@ int main(int argc, char * argv[]) {
     
         fileWatcherThreadStart();
 
-        connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders); 
+        connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders, context.file_manager); 
         connection.initialize();
-
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
         serverListen(config.address.c_str(), (uint16_t)config.port, connectionHandler);
     } catch (const std::exception& e) {
+        // loggerPrintf(LOGGER_INFO, "%s\n", std::stacktrace::current().to_string().c_str());
         // redundant try/catch? let's show where exception handled...
-        loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
+        loggerPrintf(LOGGER_INFO, "%s\n", e.what());
         // exit program same way as if this weren't caught...
         throw e;
     }

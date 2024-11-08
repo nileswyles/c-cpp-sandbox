@@ -20,7 +20,7 @@
 // other
 #include <openssl/ssl.h>
 
-#include "iostream/iostream.h"
+#include "estream/estream.h"
 #include "web/server.h"
 #include "config.h"
 #include "connection.h"
@@ -29,7 +29,7 @@
 #include "parser/multipart/multipart_file.h"
 #include "web/http/http_file_watcher.h"
 #include "thread_safe_map.h"
-#include "file.h"
+#include "file/file.h"
 #include "paths.h"
 #include "datastructures/array.h"
 
@@ -42,6 +42,7 @@
 using namespace WylesLibs;
 using namespace WylesLibs::Parser::Multipart;
 using namespace WylesLibs::Paths;
+using namespace WylesLibs::File;
 
 namespace WylesLibs::Http {
 
@@ -65,7 +66,7 @@ class HttpRequest {
         std::map<std::string, SharedArray<std::string>> cookies;
 
         size_t content_length;
-        JsonValue * json_content;
+        std::shared_ptr<JsonValue> json_content;
         SharedArray<MultipartFile> files;
         std::unordered_map<std::string, std::string> form_content;
         SharedArray<uint8_t> content;
@@ -126,21 +127,22 @@ class HttpConnection {
         SSL_CTX * context;
 
         std::shared_ptr<HttpFileWatcher> file_watcher;
-        void parseRequest(HttpRequest * request, IOStream * reader);
-        void processRequest(IOStream * io, HttpRequest * request);
+        std::shared_ptr<FileManager> file_manager;
+
+        void parseRequest(HttpRequest * request, EStream * reader);
+        void processRequest(EStream * io, HttpRequest * request);
 
         HttpResponse * handleStaticRequest(HttpRequest * request);
-        bool handleWebsocketRequest(IOStream * io, HttpRequest * request);
+        bool handleWebsocketRequest(EStream * io, HttpRequest * request);
 #ifdef WYLESLIBS_HTTP_DEBUG
-        HttpResponse * handleTimeoutRequests(IOStream * io, HttpRequest * request);
+        HttpResponse * handleTimeoutRequests(EStream * io, HttpRequest * request);
 #endif
         HttpResponse * requestDispatcher(HttpRequest * request);
 
-        SSL * acceptTLS(int conn_fd);
         ReaderTaskDisallow whitespace_chain;
         ReaderTaskDisallow whitespace_lc_chain;
         ReaderTaskLC lowercase_task;
-        void writeResponse(HttpResponse * response, IOStream * io);
+        void writeResponse(HttpResponse * response, EStream * io);
 
         void initializeStaticPaths(HttpServerConfig config, ThreadSafeMap<std::string, std::string> static_paths) {
             loggerPrintf(LOGGER_DEBUG, "Static Paths: %s\n", config.static_path.c_str());
@@ -190,7 +192,7 @@ class HttpConnection {
                 this->context = nullptr;
             }
         }
-        void initializeIOStreamTasks() {
+        void initializeEStreamTasks() {
             this->lowercase_task = ReaderTaskLC();
             this->whitespace_chain.to_disallow = "\t ";
             this->whitespace_lc_chain.to_disallow = "\t ";
@@ -201,16 +203,17 @@ class HttpConnection {
         // haha, funny how that worked out...
         HttpConnection(HttpServerConfig pConfig, map<std::string, map<std::string, RequestProcessor *>> pRequest_map, 
                         SharedArray<RequestFilter> pRequest_filters, SharedArray<ResponseFilter> pResponse_filters, 
-                        SharedArray<ConnectionUpgrader *> pUpgraders) {
+                        SharedArray<ConnectionUpgrader *> pUpgraders, std::shared_ptr<FileManager> file_manager) {
             config = pConfig;
             request_map = pRequest_map;
             request_filters = pRequest_filters;
             response_filters = pResponse_filters;
             upgraders = pUpgraders;
             processor = nullptr;
+            file_manager = file_manager;
         }
-        HttpConnection(HttpServerConfig config, RequestProcessor * processor, SharedArray<ConnectionUpgrader *> upgraders): 
-            config(config), processor(processor), upgraders(upgraders) {
+        HttpConnection(HttpServerConfig config, RequestProcessor * processor, SharedArray<ConnectionUpgrader *> upgraders, std::shared_ptr<FileManager> file_manager): 
+            config(config), processor(processor), upgraders(upgraders), file_manager(file_manager) {
                 if (processor == nullptr) {
                     std::string msg = "Processor can not be a nullptr when invoking this constructor.";
                     loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
@@ -223,7 +226,7 @@ class HttpConnection {
 
         // ! IMPORTANT - this needs to be explicitly called by construction caller because CPP.
         void initialize() {
-            initializeIOStreamTasks();
+            initializeEStreamTasks();
             initializeStaticPaths(config, static_paths);
             initializeSSLContext();
             // Array<std::string> paths{config.static_path};
@@ -251,11 +254,12 @@ static_assert(sizeof(HttpConnection) ==
     sizeof(ThreadSafeMap<std::string, std::string>) +
     8 + // sizeof(SSL_CTX) +
     sizeof(std::shared_ptr<HttpFileWatcher>) +
+    sizeof(std::shared_ptr<FileManager>) +
     sizeof(ReaderTaskDisallow) +
     sizeof(ReaderTaskDisallow) +
     sizeof(ReaderTaskLC)
 );
-static_assert(sizeof(HttpConnection) == 688);
+// static_assert(sizeof(HttpConnection) == 704);
 
 };
 

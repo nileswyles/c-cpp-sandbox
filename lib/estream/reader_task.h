@@ -90,7 +90,9 @@ class ReaderTaskChain: public ReaderTask {
             }
         }
         void flush(SharedArray<uint8_t>& buffer) override {
-            this->nextOperation->flush(buffer);
+            if (this->nextOperation != nullptr) {
+                this->nextOperation->flush(buffer);
+            }
         }
         virtual void perform(SharedArray<uint8_t>& buffer, uint8_t c) = 0;
 };
@@ -132,7 +134,7 @@ class ReaderTaskDisallow: public ReaderTaskChain {
             if (this->to_disallow.find(c) != std::string::npos) { 
                 if (strict) {
                     std::string msg = "Banned character found:";
-                    loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
+                    loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
                     throw std::runtime_error(msg);
                 } else {
                     ignored = true;
@@ -161,7 +163,7 @@ class ReaderTaskAllow: public ReaderTaskChain {
             } else {
                 if (strict) {
                     std::string msg = "Banned character found:";
-                    loggerPrintf(LOGGER_ERROR, "%s '%c'\n", msg.c_str(), c);
+                    loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
                     throw std::runtime_error(msg);
                 }
             }
@@ -195,10 +197,11 @@ class ReaderTaskExtract: public ReaderTask {
         uint8_t left_most_char;
         uint8_t right_most_char;
 
+        // TODO: might be good to initialize these (just read_until?) to something other than NUL in case that's the character... maybe some >128 but not 255...
         ReaderTaskExtract(char left_most_char, char right_most_char): 
             l_trimming(true), r_trimming(false), 
-            left_most_char(left_most_char), right_most_char(right_most_char), 
-            r_trim_non_whitespace(0), r_trim_read_until(0) {}
+                                                                      left_most_char(left_most_char), right_most_char(right_most_char), 
+                                                                      r_trim_non_whitespace(0), r_trim_read_until(0) {}
         ~ReaderTaskExtract() override = default;
 
         void flush(SharedArray<uint8_t>& buffer) final override;

@@ -35,7 +35,7 @@ using namespace WylesLibs::Parser;
 #define LOGGER_LEVEL LOGGER_LEVEL_HTTP
 #include "logger.h"
 
-static Url parseUrl(IOStream * io) {
+static Url parseUrl(EStream * io) {
     Url url;
     // path = /aklmdla/aslmlamk(?)
     SharedArray<uint8_t> path = io->readUntil("? ");
@@ -45,7 +45,7 @@ static Url parseUrl(IOStream * io) {
     }
 
     // TODO: because removeBack functionality of the array class isn't working...
-    //  IOStream can probably use string for readuntil but let's roll with this for now.
+    //  EStream can probably use string for readuntil but let's roll with this for now.
     //  Hesitant for obvious reasons...
     std::string pathString = path.toString();
     url.path = pathString.substr(0, pathString.size()-1);
@@ -53,7 +53,7 @@ static Url parseUrl(IOStream * io) {
     return url;
 }
 
-void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
+void HttpConnection::parseRequest(HttpRequest * request, EStream * io) {
     if (request == NULL || io == NULL) {
         throw std::runtime_error("lol....");
     }
@@ -65,7 +65,7 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
     request->version = io->readUntil("\n").removeBack().toString();
     request->version = request->version.substr(0, request->version.size()-1);
 
-    request->content_length = -1;
+    request->content_length = SIZE_MAX;
     int field_idx = 0; 
     while (field_idx < HTTP_FIELD_MAX) {
         std::string field_name = io->readUntil(":\n", &this->whitespace_lc_chain).toString();
@@ -104,11 +104,11 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
         throw std::runtime_error("Too many fields in request.");
     }
 
-    if (request->method == "POST" && request->fields["content-type"].size() > 0 && request->content_length != -1) {
+    if (request->method == "POST" && request->fields["content-type"].size() > 0 && request->content_length != SIZE_MAX) {
         loggerPrintf(LOGGER_DEBUG, "Content-Type: %s, Content-Length: %ld\n", request->fields["content-type"].front().c_str(), request->content_length);
         if ("application/json" == request->fields["content-type"].front()) {
             size_t i = 0;
-            request->json_content = Json::parse(io, i);
+            request->json_content = Json::parse(dynamic_cast<ReaderEStream *>(io), i);
         } else if ("application/x-www-form-urlencoded" == request->fields["content-type"].front()) {
             request->form_content = KeyValue::parse(io, '&');
         } else if ("multipart/formdata" == request->fields["content-type"].front()) {
@@ -116,7 +116,7 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
             //  if set min transfer rate at 128Kb/s, 
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
             serverSetConnectionTimeout(io->fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
-            Multipart::FormData::parse(io, request->files, request->form_content);
+            Multipart::FormData::parse(io, request->files, request->form_content, this->file_manager);
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
             request->content = io->readBytes(request->content_length);
@@ -124,7 +124,7 @@ void HttpConnection::parseRequest(HttpRequest * request, IOStream * io) {
     }
 }
 
-void HttpConnection::processRequest(IOStream * io, HttpRequest * request) {
+void HttpConnection::processRequest(EStream * io, HttpRequest * request) {
         HttpResponse * response = this->handleStaticRequest(request); 
         if (response != nullptr) {
             this->writeResponse(response, io);
@@ -152,7 +152,7 @@ void HttpConnection::processRequest(IOStream * io, HttpRequest * request) {
         }
         if (response == nullptr) {
             std::string msg = "HttpResponse object is a nullptr.";
-            loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         } else {
             writeResponse(response, io);
@@ -171,10 +171,11 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
     }
     pthread_mutex_lock(this->static_paths.getMutex());
     std::string content_type = this->static_paths[path];
+    pthread_mutex_unlock(this->static_paths.getMutex());
 	if (content_type != "") {
         response = new HttpResponse;
 		if (request->method == "HEAD" || request->method == "GET") {
-            SharedArray<uint8_t> file_data = File::read(path);
+            SharedArray<uint8_t> file_data = this->file_manager->read(path);
             char content_length[17];
 			sprintf(content_length, "%ld", file_data.size());
             response->fields["Content-Length"] = std::string(content_length);
@@ -187,11 +188,10 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
             response->status_code = "500";
         }
 	}
-    pthread_mutex_unlock(this->static_paths.getMutex());
     return response;
 }
 
-bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request) {
+bool HttpConnection::handleWebsocketRequest(EStream * io, HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING WEBSOCKET REQUEST\n");
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
@@ -217,8 +217,11 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
                     char message_digest[20];
                     SHA_CTX context;
                     int result = SHA1_Init(&context);
+                    if (0 == result) { throw std::runtime_error("SHA1 Init failed."); }
                     result = SHA1_Update(&context, (void *)key_string.c_str(), key_string.size());
+                    if (0 == result) { throw std::runtime_error("SHA1 Update failed."); }
                     result = SHA1_Final((unsigned char *)message_digest, &context);
+                    if (0 == result) { throw std::runtime_error("SHA1 Final failed."); }
 
                     char base64_encoded[32] = {0};
                     EVP_EncodeBlock((unsigned char *)base64_encoded, (unsigned char *)message_digest, 20);
@@ -240,7 +243,7 @@ bool HttpConnection::handleWebsocketRequest(IOStream * io, HttpRequest * request
 }
 
 #ifdef WYLESLIBS_HTTP_DEBUG
-HttpResponse * HttpConnection::handleTimeoutRequests(IOStream * io, HttpRequest * request) {
+HttpResponse * HttpConnection::handleTimeoutRequests(EStream * io, HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING TIMEOUT REQUEST\n");
     HttpResponse * response = nullptr;
     if (request->url.path == "/timeout" && request->method == "POST") {
@@ -327,84 +330,58 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
     return response;
 }
 
-SSL * HttpConnection::acceptTLS(int fd) {
-    if (this->context == nullptr) {
-        throw std::runtime_error("Server SSL Context isn't initialized. Check server configuration.");
-    } else {
-        SSL * ssl = SSL_new(this->context);
-        if (ssl == nullptr) {
-            throw std::runtime_error("Error initializing SSL object for connection.");
-        }
-
-        int verify_mode = SSL_VERIFY_NONE;
-        if (this->config.client_auth_enabled) {
-            verify_mode = SSL_VERIFY_PEER;
-        }
-        SSL_set_verify(ssl, verify_mode, nullptr);
-        SSL_set_accept_state(ssl);
-
-        SSL_set_fd(ssl, fd);
-
-        SSL_clear_mode(ssl, 0);
-        // SSL_MODE_AUTO_RETRY
-
-        // TODO: so apparently this is optional lol... SSL_read will perform handshake...
-        //  also, investigate renegotiation, auto retry...
-        int accept_result = SSL_accept(ssl);
-        loggerPrintf(LOGGER_DEBUG, "ACCEPT RESULT: %d\n", accept_result);
-        loggerPrintf(LOGGER_DEBUG, "MODE: %lx, VERSION: %s, IS SERVER: %d\n", SSL_get_mode(ssl), SSL_get_version(ssl), SSL_is_server(ssl));
-        loggerExec(LOGGER_DEBUG, SSL_SESSION_print_fp(stdout, SSL_get_session(ssl)););
-        if (accept_result != 1) {
-            int error_code = SSL_get_error(ssl, accept_result) + 0x30;
-            // SSL_ERROR_NONE
-            throw std::runtime_error("SSL handshake failed. ERROR CODE: " + std::string((char *)&error_code));
-        } // connection accepted if accepted_result == 1
-
-        return ssl;
-    }
-}
 
 uint8_t HttpConnection::onConnection(int fd) {
     // ! IMPORTANT -
     //  expanding on thoughts on mallocs/new vs stack
     //  so, if need access to more memory you can call new where needed at point of creation of each thread.
-
+    EStream eio;
+#ifdef WYLESLIBS_SSL_ENABLED
+    SSLEStream sslio;
+#endif
     HttpRequest request;
-    IOStream io(fd);
+    EStream * io;
+    bool acceptedTLS = false;
     try {
+#ifdef WYLESLIBS_SSL_ENABLED
         if (this->config.tls_enabled) {
-            io.ssl = this->acceptTLS(fd); // initializes ssl object for connection
+            sslio = SSLEStream(this->context, fd, this->config.client_auth_enabled); // initializes ssl object for connection
+            acceptedTLS = true;
+            io = dynamic_cast<EStream *>(&sslio);
+        } else {
+            eio = EStream(fd);
+            io = &eio;
         }
-        this->parseRequest(&request, &io);
+#else
+            eio = EStream(fd);
+            io = &eio;
+#endif
+        this->parseRequest(&request, io);
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
-        this->processRequest(&io, &request);
+        this->processRequest(io, &request);
     } catch (const std::exception& e) {
-        loggerPrintf(LOGGER_ERROR, "Exception thrown while processing request: %s\n", e.what());
-        if (this->config.tls_enabled && io.ssl == nullptr) {
+        loggerPrintf(LOGGER_INFO, "Exception thrown while processing request: %s\n", e.what());
+        if (this->config.tls_enabled && false == acceptedTLS) {
             // then deduce error occured while initializing ssl
             loggerPrintf(LOGGER_DEBUG, "Error accepting and configuring TLS connection.\n");
         } else {
             // respond with empty HTTP status code 500
             HttpResponse * err = new HttpResponse;
-            writeResponse(err, &io);
+            writeResponse(err, io);
         }
     }
 
-    if (io.ssl != nullptr) {
-        SSL_shutdown(io.ssl);
-        SSL_free(io.ssl);
-    }
     close(fd); // doc's say you shouldn't retry close so ignore ret
 
     return 1;
 }
 
-void HttpConnection::writeResponse(HttpResponse * response, IOStream * io) {
+void HttpConnection::writeResponse(HttpResponse * response, EStream * io) {
     std::string data = response->toString();
     // ! IMPORTANT - this response pointer will potentially come from an end-user (another developer)... YOU WILL ENCOUNTER PROBLEMS IF THE POINTER IS CREATED USING MALLOC AND NOT NEW
     delete response;
 
-    if (io->writeBuffer((void *)data.c_str(), data.size()) == -1) {
+    if (io->write((void *)data.c_str(), data.size()) == -1) {
         loggerPrintf(LOGGER_DEBUG, "Error writing to connection: %d\n", errno);
     } else {
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Wrote response to connection: \n%s\n", data.c_str());

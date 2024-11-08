@@ -1,9 +1,11 @@
 .vscode/**
-**.out
-**.o
 **.log
-out/**
 openssl*
 sequence_store
 file_watcher*/**
 **.pem
+out/**
+**.out
+**.o
+*install*/**
+google_cloud_cpp*_build/**

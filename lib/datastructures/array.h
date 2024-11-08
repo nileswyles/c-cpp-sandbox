@@ -11,6 +11,8 @@
 #include <string>
 #include <initializer_list>
 #include <stdexcept>
+#include <istream>
+#include <memory>
 
 // make sure global logger level is initialized
 #ifndef GLOBAL_LOGGER_LEVEL
@@ -229,6 +231,24 @@ class Array {
             e_size = 0;
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
         }
+        Array(std::shared_ptr<std::basic_istream<T>>stream, size_t size) {
+            e_cap = size;
+            e_buf = newCArray<T>(e_cap);
+            e_size = e_cap;
+            e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
+
+            stream->read(e_buf, e_size);
+        }
+        Array(const std::string& s) {
+            e_cap = s.size();
+            e_buf = newCArray<T>(e_cap);
+            e_size = e_cap;
+            e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
+
+            for (size_t i = 0; i < e_size; i++) {
+                e_buf[i] = s[i];
+            }
+        }
         virtual ~Array() {
             deleteCArray<T>(e_buf, e_size);
         }
@@ -238,7 +258,7 @@ class Array {
                 try {
                     nlognSort(this->e_buf, this->e_size);
                 } catch (const std::exception& e) {
-                    loggerPrintf(LOGGER_ERROR, "%s\n", e.what());
+                    loggerPrintf(LOGGER_INFO, "%s\n", e.what());
                     // inserts, removes and bad allocs makes it so that we can't assume array is sorted.
                     e_sorted = ARRAY_SORT_UNSORTED;
                     throw e;
@@ -251,7 +271,7 @@ class Array {
             // pos out of bounds, return error...
             if (pos > this->size()) {
                 std::string msg = "Position out of range.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
         
@@ -265,7 +285,7 @@ class Array {
                 if (new_buf == nullptr) {
                     // if no bad_alloc thrown? lol whatever...
                     std::string msg = "Failed to allocate new array.";
-                    loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 } else {
                     recapped = true;
@@ -283,7 +303,7 @@ class Array {
             if (bucket == nullptr) {
                 // if no bad_alloc thrown? lol whatever...
                 std::string msg = "Failed to allocate new array.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
             size_t bucket_push = 0;
@@ -339,11 +359,10 @@ class Array {
             return this->insert(this->size(), els, num_els);
         }
         Array<T>& remove(const size_t pos, const size_t num_els) {
-            printf("Array remove(pos, els)\n");
             // pos out of bounds, return error...
             if (pos + num_els > this->size()) {
                 std::string msg = "Position out of range.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
         
@@ -357,7 +376,7 @@ class Array {
                 if (new_buf == nullptr) {
                     // if no bad_alloc thrown? lol whatever...
                     std::string msg = "Failed to allocate new array.";
-                    loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 } else {
                     recapped = true;
@@ -365,7 +384,6 @@ class Array {
                     // if recapped, copy elements up until pos.
                     //  the rest will be automatically intialized by remove operation... 
                     selected_buf = new_buf;
-                    printf("hmm....\n");
                     for (size_t i = 0; i < pos; i++) {
                         selected_buf[i] = (this->e_buf)[i];
                     }
@@ -374,7 +392,6 @@ class Array {
                 // else, just remove, don't recap array...
                 selected_buf = this->e_buf;
             }
-            printf("removing!\n");
             for (size_t i = pos; i < this->size(); i++) {
                 if (i < pos + num_els) {
                     // make sure to deallocate memory for elements being removed.
@@ -404,28 +421,25 @@ class Array {
             return *this;
         }
         Array<T>& remove(const size_t pos) {
-            printf("Array remove(pos)\n");
             return this->remove(pos, 1);
         }
         Array<T>& removeFront() {
             if (this->size() == 0) {
                 std::string msg = "No element to remove.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
-            remove(0);
-            return *this;
+            return remove(0);
         }
         Array<T>& removeBack() {
             if (this->size() == 0) {
                 std::string msg = "No element to remove.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
-            remove(this->size()-1);
-            return *this;
+            return remove(this->size()-1);
         }
-        T * start() {
+        T * begin() {
             return this->e_buf;
         }
         T * end() {
@@ -454,7 +468,7 @@ class Array {
         T& front() {
             if (this->size() == 0) {
                 std::string msg = "No element to return.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
             return (this->e_buf)[0];
@@ -462,7 +476,7 @@ class Array {
         T& back() {
             if (this->size() == 0) {
                 std::string msg = "No element to return.";
-                loggerPrintf(LOGGER_ERROR, "%s\n", msg.c_str());
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
             return (this->e_buf)[this->size()-1];
@@ -490,16 +504,30 @@ class Array {
         // lol, also const reference? I'm pretty sure I looked into but think about this again... too lazy right now..
         T& operator[] (const T& el) {
             size_t i = this->find(el);
-            if (i == -1) {
+            if (i == SIZE_MAX) {
                 this->append(el); 
                 i = this->size() - 1;
             }
             return (this->e_buf)[i];
         }
         // TODO: += doesn't work?
-        Array<T>& operator+ (const Array<T>& x) {
+        Array<T>& operator+ (Array<T>& x) {
             this->append(x);
             return *this;
+        }
+        bool operator== (Array<T>& x) {
+            if (this->size() != x.size()) {
+                return false;
+            }
+            for (size_t i = 0; i < this->size(); i++) {
+                if (this->at(i) != x.at(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        bool operator!= (Array<T>& x) {
+            return false == (*this == x);
         }
 };
 
@@ -514,6 +542,8 @@ class ArrayControl {
         //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         ArrayControl(std::initializer_list<T> list): ptr(new Array<T>(list)), instance_count(1) {}
         ArrayControl(const size_t initial_cap): ptr(new Array<T>(initial_cap)), instance_count(1) {}
+        ArrayControl(std::shared_ptr<std::basic_istream<T>> stream, size_t size): ptr(new Array<T>(stream, size)), instance_count(1) {}
+        ArrayControl(const std::string& s): ptr(new Array<T>(s)), instance_count(1) {}
         ~ArrayControl() {
             delete this->ptr;
         }
@@ -531,6 +561,9 @@ class SharedArray {
         SharedArray(): ctrl(new ArrayControl<T>()) {}
         SharedArray(std::initializer_list<T> list): ctrl(new ArrayControl<T>(list)) {}
         SharedArray(const size_t initial_cap): ctrl(new ArrayControl<T>(initial_cap)) {}
+        SharedArray(std::shared_ptr<std::basic_istream<T>> stream, size_t size): ctrl(new ArrayControl<T>(stream, size)) {}
+        SharedArray(const std::string& s): ctrl(new ArrayControl<T>(s)) {}
+
         virtual ~SharedArray() {
             if (this->ctrl != nullptr) {
                 (this->ctrl->instance_count)--;
@@ -562,7 +595,7 @@ class SharedArray {
         // TODO:
         //      this should be const, does const reference have some other semantic?
         virtual SharedArray<T>& append(SharedArray<T>& other) {
-            this->ctrl->ptr->append(other.start(), other.size());
+            this->ctrl->ptr->append(other.begin(), other.size());
             return *this;
         }
         virtual SharedArray<T>& append(const T * els, const size_t num_els) {
@@ -578,7 +611,6 @@ class SharedArray {
             return *this;
         }
         virtual SharedArray<T>& remove(const size_t pos) {
-            printf("SharedArray remove\n");
             this->ctrl->ptr->remove(pos);
             return *this;
         }
@@ -590,8 +622,8 @@ class SharedArray {
             this->ctrl->ptr->removeBack();
             return *this;
         }
-        T * start() {
-            return this->ctrl->ptr->start();
+        T * begin() {
+            return this->ctrl->ptr->begin();
         }
         T * end() {
             return this->ctrl->ptr->end();
@@ -637,9 +669,18 @@ class SharedArray {
             this->ctrl->instance_count++;
             return *this;
         }
-        SharedArray<T>& operator+ (const SharedArray<T>& x) {
+        SharedArray<T>& operator+ (SharedArray<T>& x) {
             this->append(x);
             return *this;
+        }
+        // ! IMPORTANT - This compares contents of the underlying array not whether it points to the same underlying array.
+
+        // TODO: reconcile with MatrixVector.
+        bool operator== (const SharedArray<T>& x) {
+            return *this->ctrl->ptr == *x.ctrl->ptr;
+        }
+        bool operator!= (const SharedArray<T>& x) {
+            return *this->ctrl->ptr != *x.ctrl->ptr;
         }
 };
 

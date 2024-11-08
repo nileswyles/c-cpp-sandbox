@@ -1,5 +1,5 @@
-#ifndef WYLESLIB_SERVER_SERVICES
-#define WYLESLIB_SERVER_SERVICES
+#ifndef WYLESLIB_SERVER_SERVICES_H
+#define WYLESLIB_SERVER_SERVICES_H
 
 #include "server_context.h"
 #include "parser/multipart/multipart_file.h"

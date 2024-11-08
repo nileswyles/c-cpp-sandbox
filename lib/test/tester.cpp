@@ -6,11 +6,11 @@
 using namespace WylesLibs::Test;
 
 extern void WylesLibs::Test::ASSERT_STRING(TestArg * t, std::string result, std::string expected) {
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", result.c_str());
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected.c_str());
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n'%s'\n", result.c_str());
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n'%s'\n", expected.c_str());
 
-    if (result == expected) {
-        t->fail = false;
+    if (result != expected) {
+        t->fail = true;
     }
 }
 
@@ -18,8 +18,8 @@ extern void WylesLibs::Test::ASSERT_BOOLEAN(TestArg * t, bool result, bool expec
     loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", result ? "true": "false");
     loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected ? "true" : "false");
 
-    if (result == expected) {
-        t->fail = false;
+    if (result != expected) {
+        t->fail = true;
     }
 }
 
@@ -46,7 +46,7 @@ bool Tester::run(const char * name) {
         } catch(std::exception &e) {
             test.arg.fail = true;
             ran_test = true;
-            loggerPrintf(LOGGER_ERROR, "Exception: %s\n", e.what());
+            loggerPrintf(LOGGER_INFO, "Exception: %s\n", e.what());
         }
         if (ran_test) {
             if (test.arg.fail) {

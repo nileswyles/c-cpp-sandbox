@@ -95,7 +95,7 @@ extern void serverListen(const char * address, const uint16_t port, connection_h
                 if (listen(fd, MAX_CONNECTIONS) == -1) {
                     loggerPrintf(LOGGER_DEBUG, "Error listening\n");
                 } else {
-                    loggerPrintf(LOGGER_DEBUG, "Listening on %s:%u\n", address, port);
+                    loggerPrintf(LOGGER_INFO, "Listening on %s:%u\n", address, port);
                     timerStart();
                     pthread_attr_t attr;
                     pthread_attr_init(&attr);
@@ -113,12 +113,15 @@ extern void serverListen(const char * address, const uint16_t port, connection_h
                         // TODO: performance profiling...
                         //  Can multiplex/thread only for websocket upgrades? This means using poll on these file descriptors to start parsing.
                         //  but again, this complicates the api handler/controller code...
+                        //  pthread_cancel(ability)? - I don't recall this being a thing but if it's available then might be worth considering to create a better timeout/timer abs.
+                        //      I think that's why I was looking at signals... you can raise a signal to kill the thread?
+                        //      definetly better than relying on next read... see signal(7) and pthread_kill(3)?
                         int ret = pthread_create(&thread, &attr, handler_wrapper_func, arg);
                         while (ret != 0) {
                             usleep(1000); // sleep for 1 ms
                             ret = pthread_create(&thread, &attr, handler_wrapper_func, arg);
                         }
-                        loggerPrintf(LOGGER_DEBUG, "Failed to create thread! Trying again.\n");
+                        loggerPrintf(LOGGER_INFO, "Failed to create thread! Trying again.\n");
                         conn = accept(fd, NULL, NULL);
                     }
                     timerStop();

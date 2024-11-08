@@ -25,16 +25,16 @@ namespace WylesLibs::Parser::Json {
 // T setVariableFromJsonValue(JsonValue * value);
 
 // lolllllll? 
-static std::string ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE = "Failed to set variable from json value. Invalid type.";
+static const std::string ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE("Failed to set variable from json value. Invalid type.");
 
 template<class T>
 T setVariableFromJsonValue(JsonValue * value) {
     JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == OBJECT) {
-        return T((JsonObject *)value);
+        return T(std::shared_ptr<JsonObject>(dynamic_cast<JsonObject *>(value)));
     } else {
-        loggerPrintf(LOGGER_ERROR, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
         throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
     }
 }

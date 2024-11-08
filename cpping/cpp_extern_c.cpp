@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include <cstdio>
-#include "iostream.h"
+#include "estream.h"
 
 int main() {
     int * blah[10];

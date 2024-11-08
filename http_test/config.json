@@ -7,5 +7,6 @@
     "path_to_trust_chain_cert": "",
     "path_to_cert": "../cert.pem",
     "path_to_private_key": "../key.pem",
-    "client_auth_enabled": false
+    "client_auth_enabled": false,
+    "resources_root": "./data/resources"
 }

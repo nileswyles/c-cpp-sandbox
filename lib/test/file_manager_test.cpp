@@ -1,6 +1,7 @@
 #include "tester.h"
 #ifdef FILE_MANAGER_GCS_TEST
 #include "file/file_gcs.h"
+#include "google/cloud/log.h"
 #else
 #include "file/file.h"
 #endif
@@ -8,8 +9,6 @@
 #include "paths.h"
 
 #include <iostream>
-
-#include "google/cloud/log.h"
 
 #include <memory>
 
@@ -86,7 +85,8 @@ void testFileManager(TestArg * t) {
     read_file_data = file_manager->read(test_file);
     if (false == assertFileData(overwritten_file_data, read_file_data)) {
         t->fail = true;
-        return;
+    } else {
+        t->fail = false;
     }
 }
 void testFileManagerWriteFileDoesntExist(TestArg * t) {
@@ -95,7 +95,8 @@ void testFileManagerWriteFileDoesntExist(TestArg * t) {
     SharedArray<uint8_t> read_file_data = file_manager->read(test_file_doesnt_exist);
     if (false == assertFileData(file_data, read_file_data)) {
         t->fail = true;
-        return;
+    } else {
+        t->fail = false;
     }
 }
 void testFileManagerReadFileDoesntExist(TestArg * t) {
@@ -117,12 +118,16 @@ void testFileManagerStat(TestArg * t) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "Initial Size: %lu\n", size);
     if (size != INITIAL_FILE_SIZE) {
         t->fail = true;
+    } else {
+        t->fail = false;
     }
 }
 void testFileManagerDirectoryListing(TestArg * t) {
     SharedArray<std::string> directory_list = file_manager->list(test_directory);
     if (false == assertDirectory(directory_list) || directory_list.size() != 1 || false == directory_list.contains(test_file)) {
         t->fail = true;
+    } else {
+        t->fail = false;
     }
 }
 void testFileManagerCopy(TestArg * t) {
@@ -131,6 +136,8 @@ void testFileManagerCopy(TestArg * t) {
     SharedArray<std::string> directory_list = file_manager->list(test_directory);
     if (false == assertDirectory(directory_list) || directory_list.size() != 2 || false == directory_list.contains(copy_file)) {
         t->fail = true;
+    } else {
+        t->fail = false;
     }
 }
 void testFileManagerMove(TestArg * t) {
@@ -139,6 +146,8 @@ void testFileManagerMove(TestArg * t) {
     SharedArray<std::string> directory_list = file_manager->list(test_directory);
     if (false == assertDirectory(directory_list) || directory_list.size() != 1 || false == directory_list.contains(move_file)) {
         t->fail = true;
+    } else {
+        t->fail = false;
     }
 }
 void testFileManagerRemove(TestArg * t) {
@@ -146,6 +155,8 @@ void testFileManagerRemove(TestArg * t) {
     SharedArray<std::string> directory_list = file_manager->list(test_directory);
     if (false == assertDirectory(directory_list) || directory_list.size() != 0) {
         t->fail = true;
+    } else {
+        t->fail = false;
     }
 }
 
@@ -167,13 +178,6 @@ void afterEach(TestArg * t) {
 }
 
 int main(int argc, char * argv[]) {
-    // initialize logging
-    google::cloud::LogSink::EnableStdClog(google::cloud::Severity::GCP_LS_TRACE);
-    std::cout << google::cloud::Severity::GCP_LS_LOWEST_ENABLED << "\n";
-
-    // google::cloud::LogSink logSink = google::cloud::LogSink::Instance(); 
-    // logSink.set_minimum_severity(google::cloud::Severity::GCP_LS_TRACE);
-
     Tester t("File Manager Tests", beforeSuite, beforeEach, afterSuite, afterEach);
 
     t.addTest(testFileManager);

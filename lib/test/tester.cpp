@@ -9,8 +9,8 @@ extern void WylesLibs::Test::ASSERT_STRING(TestArg * t, std::string result, std:
     loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n'%s'\n", result.c_str());
     loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n'%s'\n", expected.c_str());
 
-    if (result != expected) {
-        t->fail = true;
+    if (result == expected) {
+        t->fail = false;
     }
 }
 
@@ -18,8 +18,8 @@ extern void WylesLibs::Test::ASSERT_BOOLEAN(TestArg * t, bool result, bool expec
     loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%s\n", result ? "true": "false");
     loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%s\n", expected ? "true" : "false");
 
-    if (result != expected) {
-        t->fail = true;
+    if (result == expected) {
+        t->fail = false;
     }
 }
 

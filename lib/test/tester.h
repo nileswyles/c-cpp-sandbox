@@ -28,7 +28,7 @@ typedef struct Test {
 extern void ASSERT_STRING(TestArg * t, std::string result, std::string expected);
 extern void ASSERT_BOOLEAN(TestArg * t, bool result, bool expected);
 
-#define TESTER_DEFAULT_TEST_FAIL_VALUE false
+#define TESTER_DEFAULT_TEST_FAIL_VALUE true
 class Tester {
     private:
         std::string suite_name;

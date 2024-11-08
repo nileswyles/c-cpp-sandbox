@@ -3,12 +3,10 @@
 TEST_ARG=""
 DEFINES=""
 LOG_LEVEL=0
-GCS_INSTALLED_FROM_VCPKG_REPO=""
 while true; do
 	case "$1" in
 		-l|--log) LOG_LEVEL="$2"; shift 2 ;;
 		-D) DEFINES="$DEFINES-D $2 "; shift 2 ;;
-		--gcs_installed_from_vcpkg_repo) GCS_INSTALLED_FROM_VCPKG_REPO="--gcs_installed_from_vcpkg_repo"; shift 1 ;;
 		*) PROGRAM_ARG=$@; break;;
 	esac
 done
@@ -49,7 +47,7 @@ LD_FLAGS="
 -l crypto
 "
 
-GCS_ARGS=`$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/generate_gcs_arguments.sh $GCS_INSTALLED_FROM_VCPKG_REPO`
+GCS_ARGS=`$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/generate_gcs_arguments.sh`
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -r $WYLESLIBS_BUILD_ROOT_DIR/http_test --log $LOG_LEVEL $INCLUDE_DIRS $LD_FLAGS $GCS_ARGS $DEFINES$PROGRAM_ARG"
 # TODO: revisit quoted strings and whitespace (nl, tabs, etc) for bash shell... Also, wtf is dash shell? zsh and bash I think are mostly identical for most basic things?

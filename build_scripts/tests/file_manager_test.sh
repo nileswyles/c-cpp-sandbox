@@ -3,12 +3,10 @@
 TEST_ARG=""
 DEFINES=""
 LOG_LEVEL=0
-GCS_INSTALLED_FROM_VCPKG_REPO=""
 while true; do
 	case "$1" in
 		-l|--log) LOG_LEVEL="$2"; shift 2 ;;
 		-D) DEFINES="$DEFINES-D $2 "; shift 2 ;;
-		--gcs_installed_from_vcpkg_repo) GCS_INSTALLED_FROM_VCPKG_REPO="--gcs_installed_from_vcpkg_repo"; shift 1 ;;
 		*) TEST_ARG=$@; break;;
 	esac
 done
@@ -30,7 +28,7 @@ SRC_FILES="
 # ! IMPORTANT - 
 # 	to run the GCS file manager test, set FILE_MANAGER_GCS_TEST=1
 if [ -n "$FILE_MANAGER_GCS_TEST" ]; then
-	GCS_ARGS=`$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/generate_gcs_arguments.sh $GCS_INSTALLED_FROM_VCPKG_REPO`
+	GCS_ARGS=`$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/generate_gcs_arguments.sh`
 	DEFINES="$DEFINES -D FILE_MANAGER_GCS_TEST=1 "
 	SRC_FILES="$SRC_FILES -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_gcs.cpp
 		-s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory_gcs.cpp

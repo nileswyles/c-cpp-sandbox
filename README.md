@@ -21,6 +21,8 @@ The following example executes the iostream::testReadUntil test with log level 4
 
  ```./build_scripts/tests/iostream_test.sh -l 4 -D LOGGER_READER_TASK=0 testReadUntil```
 
+ To build programs that require the google cloud sdk, you must first run build_google.sh to build and install the sdk. The install directory will include a script called `env.sh` which is used to intialize the shell environment for subsequent builds.
+
 ## To run all tests: 
 ```./build_scripts/tests.pl```
 

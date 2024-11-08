@@ -57,6 +57,10 @@ else
 fi
 
 echo "\nCreated env.sh in the install directory. "
-echo "#!/bin/bash\nexport GOOGLE_CLOUD_VCPKG_INSTALL_DIR=$GOOGLE_CLOUD_VCPKG_INSTALL_DIR" > $GOOGLE_CLOUD_INSTALL_DIR/env.sh
+SCRIPT="#!/bin/bash
+export GOOGLE_CLOUD_VCPKG_INSTALL_DIR=$GOOGLE_CLOUD_VCPKG_INSTALL_DIR
+"
+echo "$SCRIPT" > $GOOGLE_CLOUD_INSTALL_DIR/env.sh 
+chmod 777 $GOOGLE_CLOUD_INSTALL_DIR/env.sh
 echo "\nRunning $GOOGLE_CLOUD_INSTALL_DIR/env.sh to initialize the shell environment."
 eval "$GOOGLE_CLOUD_INSTALL_DIR/env.sh"

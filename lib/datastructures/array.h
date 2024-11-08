@@ -482,9 +482,7 @@ class Array {
             return (this->e_buf)[this->size()-1];
         }
         std::string toString() {
-            T nul = {0};
-            this->append(nul);
-            return std::string((char *)(this->e_buf));
+            return std::string((char *)(this->e_buf), this->size());
         }
         T& operator[] (const size_t pos) {
             size_t i = pos;

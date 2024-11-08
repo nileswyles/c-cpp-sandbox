@@ -12,11 +12,8 @@ fi
 #		TBD for cmake
 
 # assuming using vcpkg install command. If built from source, the build script will appropriately initialize the environment.
-if [ -z $GOOGLE_CLOUD_INSTALL_DIR ]; then
-    GOOGLE_CLOUD_INSTALL_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google_cloud_cpp_install"
-fi
 if [ -z $GOOGLE_CLOUD_VCPKG_INSTALL_DIR ]; then
-    GOOGLE_CLOUD_VCPKG_INSTALL_DIR="$GOOGLE_CLOUD_INSTALL_DIR/x64-linux"
+    GOOGLE_CLOUD_VCPKG_INSTALL_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google_cloud_cpp_install/x64-linux"
 fi
 if [ -z $GOOGLE_CLOUD_VCPKG_LIB_DIR ]; then
     GOOGLE_CLOUD_VCPKG_LIB_DIR="$GOOGLE_CLOUD_VCPKG_INSTALL_DIR/lib"

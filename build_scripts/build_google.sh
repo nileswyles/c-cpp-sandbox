@@ -18,7 +18,7 @@ if [ -z $GOOGLE_CLOUD_VCPKG_INSTALL_DIR ]; then
     GOOGLE_CLOUD_VCPKG_INSTALL_DIR="$GOOGLE_CLOUD_INSTALL_DIR/x64-linux"
 fi
 if [ "$1" == "CLEAN" ]; then
-    rm -rf $GOOGLE_CLOUD_BUILD_DIR $GOOGLE_CLOUD_INSTALL_DIR
+    rm -rf $GOOGLE_CLOUD_INSTALL_DIR
 elif [ "$1" == "BUILD_FROM_SOURCE" ]; then
     GOOGLE_CLOUD_VCPKG_INSTALL_DIR="$GOOGLE_CLOUD_INSTALL_DIR/vcpkg_installed/x64-linux"
     # ! IMPORTANT
@@ -57,6 +57,6 @@ else
 fi
 
 echo "\nCreated env.sh in the install directory. "
-echo "#!/bin/bash\nexport GOOGLE_CLOUD_INSTALL_DIR=$GOOGLE_CLOUD_INSTALL_DIR\nGOOGLE_CLOUD_VCPKG_INSTALL_DIR=$GOOGLE_CLOUD_VCPKG_INSTALL_DIR" > $GOOGLE_CLOUD_BUILD_DIR/env.sh
+echo "#!/bin/bash\nexport GOOGLE_CLOUD_VCPKG_INSTALL_DIR=$GOOGLE_CLOUD_VCPKG_INSTALL_DIR" > $GOOGLE_CLOUD_INSTALL_DIR/env.sh
 echo "\nRunning $GOOGLE_CLOUD_INSTALL_DIR/env.sh to initialize the shell environment."
 eval "$GOOGLE_CLOUD_INSTALL_DIR/env.sh"

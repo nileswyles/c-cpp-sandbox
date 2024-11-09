@@ -78,8 +78,8 @@ class ReaderEStream {
         //      The default value for the inclusive field is TRUE.
         virtual SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask *operation = nullptr, bool inclusive = true);
 
-        virtual void readDecimal(double &value, size_t &digit_count);
-        virtual void readNatural(double &value, size_t &digit_count);
+        virtual void readDecimal(double &value, size_t &digit_count = 0);
+        virtual void readNatural(double &value, size_t &digit_count = 0);
 };
 
 class EStream: public ReaderEStream {

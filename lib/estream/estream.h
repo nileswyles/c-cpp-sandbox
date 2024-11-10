@@ -10,11 +10,14 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
+#include <ios>
+#include <istream>
 
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <poll.h>
 
 #ifdef WYLESLIBS_SSL_ENABLED
 #include <openssl/ssl.h>
@@ -27,8 +30,6 @@
 //       64k * 4048 == 249072KB or ~256MB
 #define READER_RECOMMENDED_BUF_SIZE_SSL 4048
 
-using namespace WylesLibs::File;
-
 namespace WylesLibs {
 class ReaderEStream {
     /*
@@ -37,15 +38,13 @@ class ReaderEStream {
     // TODO: does this incur any additional overhead in inherited even though private?
     private:
         std::shared_ptr<std::basic_istream<char>> reader;
-        std::shared_ptr<StreamFactory> factory;
+        std::shared_ptr<File::StreamFactory> factory;
         std::string path;
         size_t file_offset;
         size_t chunk_size;
-
     protected:
-        virtual void cursorCheck();
+        virtual bool readPastBuffer();
         virtual void fillBuffer();
-
     public:
         ReaderEStream() = default;
         // TODO: std::move? that's interesting
@@ -53,7 +52,7 @@ class ReaderEStream {
             factory = nullptr;
             reader = reader;
         }
-        ReaderEStream(std::shared_ptr<StreamFactory> factory, std::string path, size_t initial_offset = 0, size_t chunk_size = SIZE_MAX) {
+        ReaderEStream(std::shared_ptr<File::StreamFactory> factory, std::string path, size_t initial_offset = 0, size_t chunk_size = SIZE_MAX) {
             factory = factory;
             path = path;
             file_offset = initial_offset;
@@ -76,44 +75,49 @@ class ReaderEStream {
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
-        virtual SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask *operation = nullptr, bool inclusive = true);
+        virtual SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
 
-        virtual void readDecimal(double &value, size_t &digit_count = 0);
-        virtual void readNatural(double &value, size_t &digit_count = 0);
+        virtual void readDecimal(double &value, size_t &digit_count);
+        virtual void readNatural(double &value, size_t &digit_count);
 };
 
 class EStream: public ReaderEStream {
     /*
         Read and Write from file descriptor
     */
+    private:
+        struct pollfd poll_fd;
+        std::ios_base::iostate flags;
     protected:
         uint8_t *buf;
         size_t buf_size;
         size_t cursor;
         size_t bytes_in_buffer;
-
-        void cursorCheck() override final;
+        bool readPastBuffer() override final;
         void fillBuffer() override;
     public:
         int fd;
         EStream() = default;
-        EStream(uint8_t *p_buf, const size_t p_buf_size): ReaderEStream() {
-            // # testing.
+        EStream(uint8_t * p_buf, const size_t p_buf_size): ReaderEStream() {
+            flags = std::ios_base::goodbit;
             buf = p_buf;
             buf_size = p_buf_size;
             cursor = 0;
-            // ! IMPORTANT - an exception is thrown if read past buffer. (see fillBuffer implementation)
+            // ! IMPORTANT - an exception is thrown and flags are updated if read past buffer. (see fillBuffer implementation)
             fd = -1;
             bytes_in_buffer = p_buf_size;
         }
         EStream(const int fd): EStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
         EStream(const int p_fd, const size_t p_buf_size): ReaderEStream() {
+            flags = std::ios_base::goodbit;
             if (p_fd < 0) {
                 throw std::runtime_error("Invalid file descriptor provided.");
             }
             if (p_buf_size < 1) {
                 throw std::runtime_error("Invalid buffer size provided.");
             }
+            poll_fd.fd = p_fd;
+            poll_fd.events = POLLIN;
             buf_size = p_buf_size;
             cursor = 0;
             fd = p_fd;

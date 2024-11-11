@@ -1,6 +1,7 @@
 #ifndef WYLESLIBS_STRING_UTILS_H
 #define WYLESLIBS_STRING_UTILS_H
 
+#include
 #include <string>
 #include <stdbool.h>
 #include <stdexcept>
@@ -45,6 +46,65 @@ static char hexToChar(std::string buf) {
         ret = ret << 4 | buf.at(i);
     }
     return ret;
+}
+
+static std::string NumToString(int64_t num, size_t base, bool upper) {
+    std::string s;
+    size_t divisor = 1;
+    if (num < 0) {
+        s += '-';
+    }
+    while (num / divisor > base) {
+        divisor *= base;
+    }
+    while (divisor > 0) {
+        char digit = (char)(num / divisor);
+        if (digit =< 9) {
+            s += digit + '0';
+        } else if (digit < 0xF) {
+            if (true == upper) {
+                s += digit + 'A';
+            } else {
+                s += digit + 'a';
+            }
+        } else {
+            // interesting...
+        }
+        num -= (digit * divisor);
+        divisor /= base;
+    }
+    return s;
+}
+
+static std::string FloatToString(int64_t num, size_t precision) {
+    std::string s;
+    size_t divisor = 1;
+    if (num < 0) {
+        s += '-';
+    }
+    while (num / divisor > 10) {
+        divisor *= 10;
+    }
+    // TODO: no overfloating?
+    int64_t natural = num * precision;
+    size_t decimal_idx = pow(10, precision);
+    while (divisor > 0) {
+        char digit = (char)(natural / divisor);
+        if (digit =< 9) {
+            if (divisor == decimal_idx) {
+                s += '.';
+            }
+            s += digit + '0';
+        } else {
+            // interesting...
+        }
+        natural -= (digit * divisor);
+        divisor /= 10;
+    }
+    // is one way of doing this
+    //  alternatively... if divisor == 1 * precision?
+    // s.insert('.', s.size() - precision);
+    return s;
 }
 
 #endif

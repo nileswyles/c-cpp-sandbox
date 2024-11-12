@@ -18,8 +18,6 @@
 
 using namespace WylesLibs;
 
-// TODO: stream from shared array.
-
 static std::string parseFloatFormatSpecifierAndConvert(EStream& s, Arg& arg) {
     size_t precision = 6;
     char c = s.peek();
@@ -32,7 +30,6 @@ static std::string parseFloatFormatSpecifierAndConvert(EStream& s, Arg& arg) {
     char format_type = s.get();
     int16_t exponential = 1;
     if (format_type != 'E' && format_type != 'e' && format_type != 'f') {
-        // !(format_type == 'E' || format_type == 'e' || format_type == 'f')
         throw std::runtime_error("Invalid float format.");
     } else if (format_type == 'E' || format_type == 'e') {
         c = s.get();
@@ -51,7 +48,6 @@ static std::string parseFloatFormatSpecifierAndConvert(EStream& s, Arg& arg) {
         } else {
             throw std::runtime_error("Invalid float format.");
         }
-
     }
     return FloatToString(*(double *)arg.ptr, precision, exponential);
 }
@@ -70,10 +66,8 @@ static Arg parsePositionalFormatSpecifier(va_list args, EStream& s) {
         } else if (c == 't') {
             std::basic_istream<char> * ss = va_arg(args, std::basic_istream<char> *);
             type = 't';
-            // odd that basic_ostream doesn't implement << for basic_istream
             while (true == ss->good()) {
                 char c = ss->get();
-                // just alphanumeric and special or no EOF?
                 if (c != 0xFF) {
                     v += c;
                 }
@@ -117,10 +111,6 @@ static std::string parseIndicatorFormatSpecifier(EStream& s, Arg arg) {
     return v;
 }
 
-// TODO:
-// escape characters...
-//  {} and any required by printf? if any?
-//  if don't need to escape characters for printf then maybe choose different start/end characters?
 static void parsePositionalFormat(va_list args, EStream& s, std::stringstream& d, Array<Arg>& converted_args, bool& has_indicator_selection) {
     // i == {
     char c = s.get();
@@ -156,20 +146,19 @@ static void parseIndicatorFormat(Array<Arg>& args, EStream& s, std::stringstream
     char c = s.peek();
     // parse pointer/reference/indicator
     if (true == isDigit(c)) {
-        // parse number...
         double lol = 0;
         size_t dummy_count;
         s.readNatural(lol, dummy_count);
         selection = static_cast<size_t>(lol) - 1; // 0 - 1 == SIZE_MAX?
     } else {
         std::stringstream ss;
-        ss << "Invalid indicator format. An indicator format must start with a number and detected the following character: " << c;
+        ss << "Invalid indicator format. An indicator format must start with a number and the following character was detected: " << c;
         throw std::runtime_error(ss.str());
     }
     // is pointer good?
     if (selection == SIZE_MAX || selection >= args.size()) {
         std::stringstream ss;
-        ss << "Invalid Selection in indicator format: " << std::dec << selection;
+        ss << "Invalid selection in indicator format: " << std::dec << selection;
         throw std::runtime_error(ss.str());
     } else {
         // use pointer value or parse format override.
@@ -181,26 +170,24 @@ static void parseIndicatorFormat(Array<Arg>& args, EStream& s, std::stringstream
             v = parseIndicatorFormatSpecifier(s, arg);
         } else {
             std::stringstream ss;
-            ss << "Invalid indicator positional format. The following character is expected to be a comma: " << c;
+            ss << "Invalid indicator format. The following character is expected to be a comma: " << c;
             throw std::runtime_error(ss.str());
         }
         d.write(v.data(), v.size());
     }
-    // } // should never see empty format block here
     // i == }
 }
 
 static void deleteArgs(Array<Arg>& args) {
     for (auto arg: args) {
         char c = arg.type;
-        // but why?
         if (c == 'd' || c == 'x' || c == 'X' || c == 'o') {
             delete (int *)arg.ptr;
         } else if (c == 'f' || c == 'e' || c == 'E') {
             delete (double *)arg.ptr;
         } else {
             std::stringstream ss;
-            ss << "Something went terribly wrong while deleting the data structure containing arguments for the indicator functionality.";
+            ss << "Invalid type detected in indicator args structure - failed to delete.";
             throw std::runtime_error(ss.str());
         }
     }

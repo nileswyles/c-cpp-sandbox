@@ -75,7 +75,7 @@ static std::string NumToString(int64_t num, size_t base = 10, bool upper = true)
                 s += digit + 'a';
             }
         } else {
-            throw std::runtime_error("Invalid digit character detected... something went...");
+            throw std::runtime_error("Invalid digit character detected.");
         }
         num -= (digit * divisor);
         divisor /= base;
@@ -91,6 +91,7 @@ static std::string FloatToString(double num, uint8_t precision = 6, int16_t expo
     int16_t precision_count = -1;
     size_t divisor = 1;
     size_t decimal_idx;
+    // process exponential
     if (exponential == 0) {
         decimal_idx = pow(10, precision);
         num *= decimal_idx;
@@ -101,7 +102,6 @@ static std::string FloatToString(double num, uint8_t precision = 6, int16_t expo
             width_divisor *= 10;
             width++;
         }
-        // padded if width < exponential...
         if (static_cast<int64_t>(width) < exponential) {
             s += "0.";
             size_t pad_count = exponential - width;
@@ -109,7 +109,6 @@ static std::string FloatToString(double num, uint8_t precision = 6, int16_t expo
             if (precision > pad_count) {
                 precision_count = pad_count + 1;
             } else {
-                // might throw exception here? 
                 pad_count = precision;
                 zeroed_result = true;
             }
@@ -123,20 +122,20 @@ static std::string FloatToString(double num, uint8_t precision = 6, int16_t expo
         } else {
             decimal_idx = pow(10, precision + exponential);
         }
-        // let's be poignant about this... and only pad if needed...
         num *= pow(10, precision);
     } else {
         int16_t abs_exponential = -1 * exponential;
-        // let's be poignant about this... and only pad if needed...
         num *= pow(10, abs_exponential + precision);
         decimal_idx = pow(10, precision);
-    }
-    while (num / divisor > 10) {
-        divisor *= 10;
     }
     if (errno == ERANGE) {
         throw std::runtime_error("Math error detected.");
     }
+    // identify num width thus intializing digit parsing
+    while (num / divisor > 10) {
+        divisor *= 10;
+    }
+    // digit parsing, place decimal point and truncate at precision.
     while (divisor > 0) {
         if (precision_count >= 0) {
             precision_count++;
@@ -151,11 +150,12 @@ static std::string FloatToString(double num, uint8_t precision = 6, int16_t expo
                 precision_count = 0;
             }
         } else {
-            throw std::runtime_error("Invalid digit character detected... something went...");
+            throw std::runtime_error("Invalid digit character detected.");
         }
         num -= (digit * divisor);
         divisor /= 10;
     }
+    // append exponential string.
     if (exponential != 0) {
         s += 'E';
         if (exponential < 0) {

@@ -37,25 +37,41 @@ static void stringUtilsFloatToString(TestArg * t) {
     std::string num = FloatToString(1.123, 7, -3);
     std::string expected = "1123.0000000E-3";
     ASSERT_STRING(t, num, expected);
+    printf("-------\n");
     num = FloatToString(71.123, 7, -3);
     expected = "71123.0000000E-3";
     ASSERT_STRING(t, num, expected);
+    printf("-------\n");
     num = FloatToString(1.123, 2, -3);
     expected = "1123.00E-3";
     ASSERT_STRING(t, num, expected);
-
+    printf("-------\n");
+    num = FloatToString(1.123, 0, -3);
+    expected = "1123.0E-3";
+    ASSERT_STRING(t, num, expected);
+    printf("-------\n");
     num = FloatToString(1.123, 5, 3);
     expected = "0.00112E+3";
     ASSERT_STRING(t, num, expected);
+    printf("-------\n");
     num = FloatToString(1.123, 7, 3);
     expected = "0.0011230E+3";
     ASSERT_STRING(t, num, expected);
+    printf("-------\n");
+    num = FloatToString(1.123, 0, 3);
+    expected = "0.0E+3";
+    ASSERT_STRING(t, num, expected);
+    printf("-------\n");
     num = FloatToString(7141.123, 7, 3);
     expected = "7.1411230000E+3";
     ASSERT_STRING(t, num, expected);
-
+    printf("-------\n");
     num = FloatToString(7141.123, 1, 5);
     expected = "7.1411230000E+3";
+    ASSERT_STRING(t, num, expected);
+    printf("-------\n");
+    num = FloatToString(7141.123, 0, 3);
+    expected = "7.0E+3";
     ASSERT_STRING(t, num, expected);
 }
 
@@ -91,7 +107,7 @@ static void testFormatDec(TestArg * t) {
 }
 static void testFormatHex(TestArg * t) {
     std::string format = WylesLibs::format("Test Hex Format: '{X}'", 255);
-    std::string expected = "Test Hex Format: 'FF'";
+    std::string expected = "Test Hex Format: '0xFF'";
 
     ASSERT_STRING(t, format, expected);
 }
@@ -116,13 +132,13 @@ static void testFormatStream(TestArg * t) {
     ASSERT_STRING(t, format, expected);
 }
 static void testFormatReference(TestArg * t) {
-    std::string format = WylesLibs::format("Test '{}', '{1}'", "string1");
+    std::string format = WylesLibs::format("Test '{}', '{<1}'", "string1");
     std::string expected = "Test Reference 'string1', 'string1'";
 
     ASSERT_STRING(t, format, expected);
 }
 static void testFormatReferenceTemplateOverride(TestArg * t) {
-    std::string format = WylesLibs::format("Test Reference template override '{f}', '{1,03f}'", 1.13131313131313131313);
+    std::string format = WylesLibs::format("Test Reference template override '{f}', '{<1,03f}'", 1.13131313131313131313);
     std::string expected = "Test Reference template override '1.131313', '1.131'";
 
     ASSERT_STRING(t, format, expected);
@@ -142,7 +158,7 @@ static void testFormatInvalidTypeForFormat(TestArg * t) {
     ASSERT_STRING(t, format, expected);
 }
 static void testFormatInvalidTypeForFormatOverride(TestArg * t) {
-    std::string format = WylesLibs::format("Test Invalid Type For Format Override: '{c}', '{1,x}'", '$');
+    std::string format = WylesLibs::format("Test Invalid Type For Format Override: '{c}', '{<1,x}'", '$');
     std::string expected = "Test Char Format: '$'";
 
     // these should through exceptions?
@@ -151,7 +167,8 @@ static void testFormatInvalidTypeForFormatOverride(TestArg * t) {
 }
 static void testFormatInvalidIndicator(TestArg * t) {
     try {
-        WylesLibs::format("Test Invalid Indicator: '{c}', '{7}'", '$');
+        // out of range.
+        WylesLibs::format("Test Invalid Indicator: '{c}', '{<7}'", '$');
         t->fail = true;
         return;
     } catch (std::exception& e) {

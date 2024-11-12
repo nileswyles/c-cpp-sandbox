@@ -34,12 +34,13 @@ namespace WylesLibs {
 // too much overhead from stringstream? ddd. stream from readerestream... right? lol that's the whole point...
 
 // let's be crude about this...
+#define DEFAULT_ARG_TYPE_CHAR '|'
 class Arg {
     public:
         void * ptr;
         std::string expanded_value;
         char type;
-        Arg() = default;
+        Arg(): ptr(nullptr), type(DEFAULT_ARG_TYPE_CHAR), expanded_value("") {}
         Arg(void * ptr, char type, std::string expanded_value): ptr(ptr), type(type), expanded_value(expanded_value) {}
         virtual ~Arg() {}
 };

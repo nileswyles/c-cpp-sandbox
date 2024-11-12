@@ -48,7 +48,8 @@ static char hexToChar(std::string buf) {
     return ret;
 }
 
-static std::string NumToString(int64_t num, size_t base = 10, bool upper = true) {
+// TODO: octal
+static std::string NumToString(int64_t num, uint8_t base = 10, bool upper = true) {
     std::string s;
     size_t divisor = 1;
     if (base != 10 && base != 16) {
@@ -68,11 +69,11 @@ static std::string NumToString(int64_t num, size_t base = 10, bool upper = true)
         char digit = (char)(num / divisor);
         if (digit <= 9) {
             s += digit + '0';
-        } else if (digit < 0xF) {
+        } else if (digit <= 0xF) {
             if (true == upper) {
-                s += digit + 'A';
+                s += digit - 0xA + 'A';
             } else {
-                s += digit + 'a';
+                s += digit - 0xA + 'a';
             }
         } else {
             throw std::runtime_error("Invalid digit character detected.");
@@ -91,6 +92,10 @@ static std::string FloatToString(double num, uint8_t precision = 6, int16_t expo
     int16_t precision_count = -1;
     size_t divisor = 1;
     size_t decimal_idx;
+    if (precision == 0) {
+        printf("precision: %d\n", precision);
+        precision = 1;
+    }
     // process exponential
     if (exponential == 0) {
         decimal_idx = pow(10, precision);
@@ -140,6 +145,7 @@ static std::string FloatToString(double num, uint8_t precision = 6, int16_t expo
         if (precision_count >= 0) {
             precision_count++;
         } else if (precision_count > precision) {
+            printf("should break\n");
             break;
         }
         char digit = (char)(num / divisor);

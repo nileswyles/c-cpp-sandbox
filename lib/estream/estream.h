@@ -65,6 +65,7 @@ class ReaderEStream {
         // standard istream
         virtual uint8_t get();
         virtual uint8_t peek();
+        virtual void unget();
         virtual bool eof();
         virtual bool good();
         virtual bool fail();
@@ -88,6 +89,8 @@ class EStream: public ReaderEStream {
     private:
         struct pollfd poll_fd;
         std::ios_base::iostate flags;
+        size_t ungot_char;
+        bool ungot;
     protected:
         uint8_t *buf;
         size_t buf_size;
@@ -99,6 +102,8 @@ class EStream: public ReaderEStream {
         int fd;
         EStream() = default;
         EStream(uint8_t * p_buf, const size_t p_buf_size): ReaderEStream() {
+            ungot = false;
+            ungot_char = 0xFF;
             flags = std::ios_base::goodbit;
             buf = p_buf;
             buf_size = p_buf_size;
@@ -109,6 +114,8 @@ class EStream: public ReaderEStream {
         }
         EStream(const int fd): EStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
         EStream(const int p_fd, const size_t p_buf_size): ReaderEStream() {
+            ungot = false;
+            ungot_char = 0xFF;
             flags = std::ios_base::goodbit;
             if (p_fd < 0) {
                 throw std::runtime_error("Invalid file descriptor provided.");
@@ -128,6 +135,7 @@ class EStream: public ReaderEStream {
         // standard istream
         uint8_t get() override;
         uint8_t peek() override;
+        void unget() override;
         bool eof() override;
         bool good() override;
         bool fail() override;

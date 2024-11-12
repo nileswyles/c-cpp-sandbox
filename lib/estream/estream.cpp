@@ -122,13 +122,20 @@ void SSLEStream::fillBuffer() {
 }
 #endif
 
+// TODO: need to fill buffer if peek returns nothing...
 uint8_t ReaderEStream::get() {
     if (true == this->readPastBuffer()) {
         this->fillBuffer();
     }
     return this->reader->get();
 }
+void ReaderEStream::unget() {
+    this->reader->unget();
+}
 uint8_t ReaderEStream::peek() {
+    if (true == this->readPastBuffer()) {
+        this->fillBuffer();
+    }
     return this->reader->peek();
 }
 bool ReaderEStream::eof() {
@@ -146,19 +153,42 @@ void ReaderEStream::seekg(size_t offset) {
 
 uint8_t EStream::get() {
     char byte = this->peek();
+    if (this->cursor == 0 && true == this->ungot) {
+        this->ungot = false;
+    }
     this->cursor++;
     return byte;
 }
 uint8_t EStream::peek() {
     if (true == this->good()) {
         if (true == this->readPastBuffer()) {
+            this->ungot_char = this->buf[this->cursor];
+            this->ungot = false;
             this->fillBuffer();
         }
-        return this->buf[this->cursor];
-    } else {
-        // EOF
-        return 0xFF;
+    } else if (this->cursor == 0 && true == this->ungot) {
+        return this->ungot_char;
     }
+    return this->buf[this->cursor];
+}
+void EStream::unget() {
+    if (this->cursor == 0) { // fill buffer just called...
+        this->ungot = true;
+    } else {
+        this->cursor--; // is the normal case...
+    }
+    //  immediatly after a fillBuffer...
+    //  or if this->cursor == 0 which in this case is the same... fillBuffer sets cursor to 0... okay so we want to avoid that situation...
+    //  so, only fillBuffer if you're getting?
+
+    // get and at end of buffer...
+    //  we currently only fill buffer when needed...
+    //  ... so that means... if we call peek while in this state...
+    //  we'll fill buffer..
+    //  if we call unget in this state, then we are good? right?
+
+    // okay, so if we peek, then call unget... then thats.. the edge case I want to avoid... same as above... so, if fillBuffer but don't increment... same as above from different perspective.
+    // now if we peek, call unget, then readBytes... lol..
 }
 // Stub these out for now.
 bool EStream::eof() {
@@ -185,20 +215,25 @@ bool EStream::fail() {
 SharedArray<uint8_t> ReaderEStream::readBytes(const size_t n) {
     // yuck
     // TODO: casting is annoying...
+    //  also, didn't update to support paging stuff.. can implement using get and use for readBytes but current readBytes is faster...
     return SharedArray<uint8_t>(std::reinterpret_pointer_cast<std::basic_istream<uint8_t>>(this->reader), n);
 }
 
 SharedArray<uint8_t> EStream::readBytes(const size_t n) {
-    if (true == this->readPastBuffer()) {
-        this->fillBuffer();
-    }
-
-    if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
+    if (n == 0) {
+        throw std::runtime_error("It doesn't make sense to read zero bytes.");
+    } else if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
         throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
     }
-
     SharedArray<uint8_t> data;
     size_t bytes_read = 0;
+    if (true == this->readPastBuffer()) {
+        this->fillBuffer();
+    } else if (this->cursor == 0 && true == this->ungot) {
+        this->ungot = false;
+        data.append(this->ungot_char);
+        bytes_read++;
+    }
     while (bytes_read < n) {
         size_t bytes_left_to_read = n - bytes_read;
         size_t bytes_left_in_buffer = this->bytes_in_buffer - this->cursor;
@@ -207,7 +242,7 @@ SharedArray<uint8_t> EStream::readBytes(const size_t n) {
             data.append(this->buf + this->cursor, bytes_left_in_buffer);
             bytes_read += bytes_left_in_buffer;
 
-            fillBuffer();
+            this->fillBuffer();
         } else {
             // else enough data in buffer
             data.append(this->buf + this->cursor, bytes_left_to_read);

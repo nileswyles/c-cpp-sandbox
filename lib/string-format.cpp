@@ -15,6 +15,8 @@
 #define START_OF_FORMAT_CHAR '{'
 #define END_OF_FORMAT_CHAR '}'
 #define END_OF_FORMAT_STR "}"
+#define START_OF_INDICATOR_FORMAT_CHAR '<'
+#define INDICATOR_FORMAT_SEPARATOR ','
 
 using namespace WylesLibs;
 
@@ -44,27 +46,31 @@ static std::string parseFloatFormatSpecifierAndConvert(EStream& s, Arg& arg) {
                 s.readNatural(lol, dummy_count);
                 exponential *= static_cast<size_t>(lol);
             }
+            if (c != END_OF_FORMAT_CHAR) {
+                std::stringstream ss;
+                ss << "Invalid float format. Expected '" << END_OF_FORMAT_CHAR << "' after the exponential field specifier.";
+                throw std::runtime_error(ss.str());
+            }
         } else {
             throw std::runtime_error("Invalid float format.");
         }
     }
+    printf("%f, %d, %d\n", *(double *)arg.ptr, precision, exponential);
     return FloatToString(*(double *)arg.ptr, precision, exponential);
 }
 
 static Arg parsePositionalFormatSpecifier(va_list args, EStream& s) {
     std::string v;
     void * ptr = nullptr;
-    char type;
+    char type = DEFAULT_ARG_TYPE_CHAR;
 
     char c = s.get();
     char next = s.peek();
     if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's')) { // these must be size 1
         if (c == 'b') {
-            type = 'b';
             v = (true == (bool)va_arg(args, int)) ? "true" : "false";
         } else if (c == 't') {
             std::basic_istream<char> * ss = va_arg(args, std::basic_istream<char> *);
-            type = 't';
             while (true == ss->good()) {
                 char c = ss->get();
                 if (c != 0xFF) {
@@ -73,26 +79,29 @@ static Arg parsePositionalFormatSpecifier(va_list args, EStream& s) {
             }
         } else if (c == 's') {
             v = va_arg(args, const char *);
-            type = 's';
         } else if (c == 'c') {
             char i = (char)va_arg(args, int);
-            type = 'c';
             v += i;
         }
-    } else if (next == END_OF_FORMAT_CHAR && (c == 'd' || c == 'x' || c == 'X' || c == 'o')) {
+    // } else if (next == END_OF_FORMAT_CHAR && (c == 'd' || c == 'x' || c == 'X' || c == 'o')) {
+    // TODO: no octal support for now
+    } else if (next == END_OF_FORMAT_CHAR && (c == 'd' || c == 'x' || c == 'X')) {
         // TODO: if no type safety then why this?
         // read up on va_arg type parameter... 
         int i = va_arg(args, int);
         ptr = (void *)new int(i);
         type = 'd';
-        v = NumToString(*(int *)ptr, 10);
+        v = NumToString(*(int *)ptr, c == 'd' ? 10 : 16, c == 'X');
     } else {
+        s.unget(); // place c back in stream...
+
         int i = va_arg(args, int);
         ptr = (void *)new int(i);
         type = 'f';
-        Arg whatever(ptr, type, "");
-        v = parseFloatFormatSpecifierAndConvert(s, whatever);
+        Arg format_arg(ptr, type, "");
+        v = parseFloatFormatSpecifierAndConvert(s, format_arg);
     }
+    s.get(); // make sure to consume END_OF_FORMAT_CHAR
     return Arg(ptr, type, v);
 }
 
@@ -103,31 +112,30 @@ static std::string parseIndicatorFormatSpecifier(EStream& s, Arg arg) {
     if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's')) { // these must be size 1
         v = arg.expanded_value;
     } else if (next == END_OF_FORMAT_CHAR && (c == 'd' || c == 'x' || c == 'X' || c == 'o')) {
-        v = NumToString(*(int *)arg.ptr, 10);
+        v = arg.expanded_value;
     } else {
+        s.unget(); // place c back in stream...
         v = parseFloatFormatSpecifierAndConvert(s, arg);
     }
+    s.get(); // make sure to consume END_OF_FORMAT_CHAR
     return v;
 }
 
 static void parsePositionalFormat(va_list args, EStream& s, std::stringstream& d, Array<Arg>& converted_args, bool& has_indicator_selection) {
     // i == {
-    char c = s.get();
+    char c = s.peek();
     Arg arg;
-
     // passthrough pointer/reference/indicator for second pass
-    if (true == isDigit(c)) {
-        // it's an indicator type, reserve parsing for later.
+    if (c == START_OF_INDICATOR_FORMAT_CHAR) {
+        // it's an indicator type, reserve parsing for later - don't fail fast, I guess.
         d.put(START_OF_FORMAT_CHAR);
-        d.put(c);
-
         has_indicator_selection = true;
         return;
     } 
     // parse format if no indicator.
     if (c == END_OF_FORMAT_CHAR) {
+        s.get();
         arg.expanded_value = va_arg(args, const char *);
-        arg.type = 's';
     } else {
         arg = parsePositionalFormatSpecifier(args, s);
     }
@@ -139,16 +147,23 @@ static void parsePositionalFormat(va_list args, EStream& s, std::stringstream& d
 static void parseIndicatorFormat(Array<Arg>& args, EStream& s, std::stringstream& d) {
     // i == {
     size_t selection = SIZE_MAX;
-    char c = s.peek();
+    char c = s.get();
     // parse pointer/reference/indicator
-    if (true == isDigit(c)) {
-        double lol = 0;
-        size_t dummy_count;
-        s.readNatural(lol, dummy_count);
-        selection = static_cast<size_t>(lol) - 1; // 0 - 1 == SIZE_MAX?
+    if (c == START_OF_INDICATOR_FORMAT_CHAR) {
+        c = s.peek();
+        if (true == isDigit(c)) {
+           double lol = 0;
+           size_t dummy_count;
+           s.readNatural(lol, dummy_count);
+           selection = static_cast<size_t>(lol) - 1; // 0 - 1 == SIZE_MAX?
+        } else {
+           std::stringstream ss;
+           ss << "Invalid indicator format. An indicator format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and number and the following character was detected: " << c;
+           throw std::runtime_error(ss.str());
+       }
     } else {
         std::stringstream ss;
-        ss << "Invalid indicator format. An indicator format must start with a number and the following character was detected: " << c;
+        ss << "Invalid indicator format. An indicator format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and the following character was detected: " << c;
         throw std::runtime_error(ss.str());
     }
     // is pointer good?
@@ -162,7 +177,7 @@ static void parseIndicatorFormat(Array<Arg>& args, EStream& s, std::stringstream
         Arg arg = args[selection];
         if (c == END_OF_FORMAT_CHAR) {
             v = arg.expanded_value;
-        } else if (c == ',') {
+        } else if (c == INDICATOR_FORMAT_SEPARATOR) {
             v = parseIndicatorFormatSpecifier(s, arg);
         } else {
             std::stringstream ss;
@@ -177,13 +192,13 @@ static void parseIndicatorFormat(Array<Arg>& args, EStream& s, std::stringstream
 static void deleteArgs(Array<Arg>& args) {
     for (auto arg: args) {
         char c = arg.type;
-        if (c == 'd' || c == 'x' || c == 'X' || c == 'o') {
+        if (c == 'd') {
             delete (int *)arg.ptr;
-        } else if (c == 'f' || c == 'e' || c == 'E') {
+        } else if (c == 'f') {
             delete (double *)arg.ptr;
-        } else {
+        } else if (c != DEFAULT_ARG_TYPE_CHAR && arg.ptr != nullptr) {
             std::stringstream ss;
-            ss << "Invalid type detected in indicator args structure - failed to delete.";
+            ss << "Invalid type detected in indicator args structure - failed to delete. Type identifier: " << c;
             throw std::runtime_error(ss.str());
         }
     }

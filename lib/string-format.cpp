@@ -44,7 +44,6 @@ static std::string parseFloatFormatSpecifierAndConvert(EStream& s, Arg& arg) {
                 s.readNatural(lol, dummy_count);
                 exponential *= static_cast<size_t>(lol);
             }
-
         } else {
             throw std::runtime_error("Invalid float format.");
         }
@@ -120,11 +119,8 @@ static void parsePositionalFormat(va_list args, EStream& s, std::stringstream& d
     if (true == isDigit(c)) {
         // it's an indicator type, reserve parsing for later.
         d.put(START_OF_FORMAT_CHAR);
-        while(c != END_OF_FORMAT_CHAR) {
-            d.put(c);
-            c = s.get();
-        }
-        d.put(END_OF_FORMAT_CHAR);
+        d.put(c);
+
         has_indicator_selection = true;
         return;
     } 
@@ -196,7 +192,6 @@ static void deleteArgs(Array<Arg>& args) {
 extern std::string WylesLibs::format(std::string format, ...) {
     va_list args;
     va_start(args, format);
-
     // if reach end of format and still va_arg, then do what? can just ignore if just positional but might be an issue with indicator stuff..
     bool has_indicator_selection = false;
     std::stringstream d;

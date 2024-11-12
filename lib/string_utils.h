@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_STRING_UTILS_H
 #define WYLESLIBS_STRING_UTILS_H
 
-#include
+#include <math.h>
 #include <string>
 #include <stdbool.h>
 #include <stdexcept>
@@ -48,18 +48,25 @@ static char hexToChar(std::string buf) {
     return ret;
 }
 
-static std::string NumToString(int64_t num, size_t base, bool upper) {
+static std::string NumToString(int64_t num, size_t base = 10, bool upper = true) {
     std::string s;
     size_t divisor = 1;
+    if (base != 10 && base != 16) {
+        throw std::runtime_error("Base not supported.");
+    }
     if (num < 0) {
         s += '-';
+        num *= -1;
+    }
+    if (base == 16) {
+        s += "0x";
     }
     while (num / divisor > base) {
         divisor *= base;
     }
     while (divisor > 0) {
         char digit = (char)(num / divisor);
-        if (digit =< 9) {
+        if (digit <= 9) {
             s += digit + '0';
         } else if (digit < 0xF) {
             if (true == upper) {
@@ -68,7 +75,7 @@ static std::string NumToString(int64_t num, size_t base, bool upper) {
                 s += digit + 'a';
             }
         } else {
-            // interesting...
+            throw std::runtime_error("Invalid digit character detected... something went...");
         }
         num -= (digit * divisor);
         divisor /= base;
@@ -76,34 +83,89 @@ static std::string NumToString(int64_t num, size_t base, bool upper) {
     return s;
 }
 
-static std::string FloatToString(int64_t num, size_t precision) {
+static std::string FloatToString(double num, uint8_t precision = 6, int16_t exponential = 0) {
     std::string s;
-    size_t divisor = 1;
     if (num < 0) {
         s += '-';
+    }
+    int16_t precision_count = -1;
+    size_t divisor = 1;
+    size_t decimal_idx;
+    if (exponential == 0) {
+        decimal_idx = pow(10, precision);
+        num *= decimal_idx;
+    } else if (exponential > 0) {
+        size_t width_divisor = 1;
+        size_t width = 1;
+        while (num / width_divisor > 10) {
+            width_divisor *= 10;
+            width++;
+        }
+        // padded if width < exponential...
+        if (static_cast<int64_t>(width) < exponential) {
+            s += "0.";
+            size_t pad_count = exponential - width;
+            bool zeroed_result = false;
+            if (precision > pad_count) {
+                precision_count = pad_count + 1;
+            } else {
+                // might throw exception here? 
+                pad_count = precision;
+                zeroed_result = true;
+            }
+            while (pad_count > 0) {
+                s += "0";
+                pad_count--;
+            }
+            if (true == zeroed_result) {
+                return s;
+            }
+        } else {
+            decimal_idx = pow(10, precision + exponential);
+        }
+        // let's be poignant about this... and only pad if needed...
+        num *= pow(10, precision);
+    } else {
+        int16_t abs_exponential = -1 * exponential;
+        // let's be poignant about this... and only pad if needed...
+        num *= pow(10, abs_exponential + precision);
+        decimal_idx = pow(10, precision);
     }
     while (num / divisor > 10) {
         divisor *= 10;
     }
-    // TODO: no overfloating?
-    int64_t natural = num * precision;
-    size_t decimal_idx = pow(10, precision);
+    if (errno == ERANGE) {
+        throw std::runtime_error("Math error detected.");
+    }
     while (divisor > 0) {
-        char digit = (char)(natural / divisor);
-        if (digit =< 9) {
+        if (precision_count >= 0) {
+            precision_count++;
+        } else if (precision_count > precision) {
+            break;
+        }
+        char digit = (char)(num / divisor);
+        if (digit <= 9) {
+            s += digit + '0';
             if (divisor == decimal_idx) {
                 s += '.';
+                precision_count = 0;
             }
-            s += digit + '0';
         } else {
-            // interesting...
+            throw std::runtime_error("Invalid digit character detected... something went...");
         }
-        natural -= (digit * divisor);
+        num -= (digit * divisor);
         divisor /= 10;
     }
-    // is one way of doing this
-    //  alternatively... if divisor == 1 * precision?
-    // s.insert('.', s.size() - precision);
+    if (exponential != 0) {
+        s += 'E';
+        if (exponential < 0) {
+            s += '-';
+            exponential *= -1;
+        } else {
+            s += '+';
+        }
+        s += NumToString(exponential);
+    }
     return s;
 }
 

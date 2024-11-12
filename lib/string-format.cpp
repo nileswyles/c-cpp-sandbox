@@ -18,14 +18,52 @@
 
 using namespace WylesLibs;
 
-static Arg parsePositionalPercentFormat(va_list args, EStream& s) {
+// TODO: stream from shared array.
+
+static std::string parseFloatFormatSpecifierAndConvert(EStream& s, Arg& arg) {
+    size_t precision = 6;
+    char c = s.peek();
+    if (true == isDigit(c)) {
+        double lol = 0;
+        size_t dummy_count;
+        s.readNatural(lol, dummy_count);
+        precision = static_cast<size_t>(lol);
+    }
+    char format_type = s.get();
+    int16_t exponential = 1;
+    if (format_type != 'E' && format_type != 'e' && format_type != 'f') {
+        // !(format_type == 'E' || format_type == 'e' || format_type == 'f')
+        throw std::runtime_error("Invalid float format.");
+    } else if (format_type == 'E' || format_type == 'e') {
+        c = s.get();
+        if (c == '+' || c == '-') {
+            if (c == '-') {
+                exponential *= -1;
+            }
+            c = s.peek();
+            if (true == isDigit(c)) {
+                double lol = 0;
+                size_t dummy_count;
+                s.readNatural(lol, dummy_count);
+                exponential *= static_cast<size_t>(lol);
+            }
+
+        } else {
+            throw std::runtime_error("Invalid float format.");
+        }
+
+    }
+    return FloatToString(*(double *)arg.ptr, precision, exponential);
+}
+
+static Arg parsePositionalFormatSpecifier(va_list args, EStream& s) {
     std::string v;
     void * ptr = nullptr;
     char type;
 
     char c = s.get();
-    SharedArray<uint8_t> f = s.readUntil(END_OF_FORMAT_STR);
-    if (1 == f.size() && (c == 'b' || c == 'c' || c == 't' || c == 's')) { // these must be size 1
+    char next = s.peek();
+    if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's')) { // these must be size 1
         if (c == 'b') {
             type = 'b';
             v = (true == (bool)va_arg(args, int)) ? "true" : "false";
@@ -48,86 +86,33 @@ static Arg parsePositionalPercentFormat(va_list args, EStream& s) {
             type = 'c';
             v += i;
         }
+    } else if (next == END_OF_FORMAT_CHAR && (c == 'd' || c == 'x' || c == 'X' || c == 'o')) {
+        // TODO: if no type safety then why this?
+        // read up on va_arg type parameter... 
+        int i = va_arg(args, int);
+        ptr = (void *)new int(i);
+        type = 'd';
+        v = NumToString(*(int *)ptr, 10);
     } else {
-        char expanded_value[MAX_FORMAT_LENGTH];
-        std::string fmt("%");
-        fmt += c;
-        if (1 < f.size()) {
-            f.removeBack(); // remove END_OF_FORMAT_CHAR
-            c = f.back(); // last char
-            fmt += f.toString();
-            std::cout << "format: " << fmt << std::endl;
-        }
-        if (c == 'd' || c == 'x' || c == 'X' || c == 'o') {
-            // TODO: if no type safety then why this?
-            // read up on va_arg type parameter... 
-            int i = va_arg(args, int);
-            ptr = (void *)new int(i);
-            type = 'd';
-            sprintf(expanded_value, fmt.c_str(), i);
-            v = expanded_value;
-        } else if (c == 'f' || c == 'e' || c == 'E') {
-            double f = va_arg(args, double);
-            ptr = (void *)new double(f);
-            type = 'f';
-            sprintf(expanded_value, fmt.c_str(), f);
-            v = expanded_value;
-        } else {
-            std::stringstream ss;
-            ss << "Invalid positional percent format specifier. Format: " << fmt;
-            throw std::runtime_error(ss.str());
-        }
+        int i = va_arg(args, int);
+        ptr = (void *)new int(i);
+        type = 'f';
+        Arg whatever(ptr, type, "");
+        v = parseFloatFormatSpecifierAndConvert(s, whatever);
     }
     return Arg(ptr, type, v);
 }
 
-static std::string parseDecimalFormatAndConvert() {
-
-
-}
-
-static std::string parseIndicatorPercentFormat(EStream& s, Arg arg) {
+static std::string parseIndicatorFormatSpecifier(EStream& s, Arg arg) {
     std::string v;
-    char start_char = s.get();
-
     char c = s.get();
-    SharedArray<uint8_t> f = s.readUntil(END_OF_FORMAT_STR);
-    if (1 == f.size() && (c == 'b' || c == 'c' || c == 't' || c == 's')) { // these must be size 1
+    char next = s.peek();
+    if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's')) { // these must be size 1
         v = arg.expanded_value;
+    } else if (next == END_OF_FORMAT_CHAR && (c == 'd' || c == 'x' || c == 'X' || c == 'o')) {
+        v = NumToString(*(int *)arg.ptr, 10);
     } else {
-        char expanded_value[MAX_FORMAT_LENGTH];
-        std::string fmt("%");
-        fmt += c;
-        if (1 < f.size()) {
-            f.removeBack(); // remove END_OF_FORMAT_CHAR
-            c = f.back(); // last char
-            fmt += f.toString();
-            std::cout << "format: " << fmt << std::endl;
-        }
-        // TODO: implement my own formatting?
-        //      pros:
-        //          - potentially less stack memory usage from compile-time char buffer allocation.
-        //          - safety
-        //      cons:
-        //          - work... i'm lazy...
-
-        //      pros for keeping:
-        //          - less work. I am lazy.
-        //      cons for keeping:
-        //          - potential user error (unlikely however)
-
-        // maybe implement dec but not float? floats usually specifi
-        if (c == 'd' || c == 'x' || c == 'X' || c == 'o') {
-            sprintf(expanded_value, fmt.c_str(), *((int *)arg.ptr));
-            v = expanded_value;
-        } else if (c == 'f' || c == 'e' || c == 'E') {
-            sprintf(expanded_value, fmt.c_str(), *((double *)arg.ptr));
-            v = expanded_value;
-        } else {
-            std::stringstream ss;
-            ss << "Invalid indicator percent format specifier. Format: " << fmt;
-            throw std::runtime_error(ss.str());
-        }
+        v = parseFloatFormatSpecifierAndConvert(s, arg);
     }
     return v;
 }
@@ -142,7 +127,6 @@ static void parsePositionalFormat(va_list args, EStream& s, std::stringstream& d
     Arg arg;
 
     // passthrough pointer/reference/indicator for second pass
-    //  TODO: think about whether going back to main loop is a better implementation.
     if (true == isDigit(c)) {
         // it's an indicator type, reserve parsing for later.
         d.put(START_OF_FORMAT_CHAR);
@@ -158,12 +142,8 @@ static void parsePositionalFormat(va_list args, EStream& s, std::stringstream& d
     if (c == END_OF_FORMAT_CHAR) {
         arg.expanded_value = va_arg(args, const char *);
         arg.type = 's';
-    } else if (c == '%') {
-        arg = parsePositionalPercentFormat(args, s);
     } else {
-        std::stringstream ss;
-        ss << "Invalid positional format. Detected the following character: " << c;
-        throw std::runtime_error(ss.str());
+        arg = parsePositionalFormatSpecifier(args, s);
     }
     d.write(arg.expanded_value.data(), arg.expanded_value.size());
     converted_args.append(arg);
@@ -198,14 +178,7 @@ static void parseIndicatorFormat(Array<Arg>& args, EStream& s, std::stringstream
         if (c == END_OF_FORMAT_CHAR) {
             v = arg.expanded_value;
         } else if (c == ',') {
-            c = s.get();
-            if (c == '%') { // else must be type specifier?
-                v = parseIndicatorPercentFormat(s, arg);
-            } else {
-                std::stringstream ss;
-                ss << "Invalid indicator format. The following character is expected to be %: " << c;
-                throw std::runtime_error(ss.str());
-            }
+            v = parseIndicatorFormatSpecifier(s, arg);
         } else {
             std::stringstream ss;
             ss << "Invalid indicator positional format. The following character is expected to be a comma: " << c;

@@ -98,7 +98,7 @@ void EStream::fillBuffer() {
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
         loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
-        flags |= std::ios_base::badbit;
+        this->flags |= std::ios_base::badbit;
         throw std::runtime_error("Read error.");
     } else {
         this->bytes_in_buffer = ret;
@@ -113,7 +113,7 @@ void SSLEStream::fillBuffer() {
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
         loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
-        flags |= std::ios_base::badbit;
+        this->flags |= std::ios_base::badbit;
         throw std::runtime_error("Read error.");
     } else {
         this->bytes_in_buffer = ret;
@@ -192,24 +192,24 @@ void EStream::unget() {
 }
 // Stub these out for now.
 bool EStream::eof() {
-    return flags & std::ios_base::eofbit;
+    return this->flags & std::ios_base::eofbit;
 }
 bool EStream::good() {
-    if (flags == 0) {
+    if (this->flags == 0) {
         if (true == this->readPastBuffer()) {
             if (this->fd < 0) {
-                flags |= std::ios_base::badbit;
+                this->flags |= std::ios_base::badbit;
             } else {
                 if (1 != poll(&this->poll_fd, 1, 0)) {
-                    flags |= std::ios_base::badbit;
+                    this->flags |= std::ios_base::badbit;
                 }
             }
         }
     }
-    return flags == 0;
+    return this->flags == 0;
 }
 bool EStream::fail() {
-    return flags & std::ios_base::failbit;
+    return this->flags & std::ios_base::failbit;
 }
 // char_type EStream::read() override;
 SharedArray<uint8_t> ReaderEStream::readBytes(const size_t n) {
@@ -260,6 +260,7 @@ SharedArray<uint8_t> ReaderEStream::readUntil(std::string until, ReaderTask * op
     }
 
     SharedArray<uint8_t> data;
+    printf("????\n");
     uint8_t c = this->peek();
     while (until.find(c) == std::string::npos) {
         this->get(); // consume

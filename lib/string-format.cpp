@@ -20,29 +20,29 @@
 
 using namespace WylesLibs;
 
-static std::string parseFloatFormatSpecifierAndConvert(EStream& s, Arg& arg) {
+static std::string parseFloatFormatSpecifierAndConvert(EStream& s, double value) {
     size_t precision = 6;
     char c = s.peek();
     if (true == isDigit(c)) {
         double lol = 0;
-        size_t dummy_count;
+        size_t dummy_count = 0;
         s.readNatural(lol, dummy_count);
         precision = static_cast<size_t>(lol);
     }
     char format_type = s.get();
-    int16_t exponential = 1;
+    int16_t exponential = 0;
     if (format_type != 'E' && format_type != 'e' && format_type != 'f') {
         throw std::runtime_error("Invalid float format.");
     } else if (format_type == 'E' || format_type == 'e') {
         c = s.get();
         if (c == '+' || c == '-') {
             if (c == '-') {
-                exponential *= -1;
+                exponential = -1;
             }
             c = s.peek();
             if (true == isDigit(c)) {
                 double lol = 0;
-                size_t dummy_count;
+                size_t dummy_count = 0;
                 s.readNatural(lol, dummy_count);
                 exponential *= static_cast<size_t>(lol);
             }
@@ -55,14 +55,13 @@ static std::string parseFloatFormatSpecifierAndConvert(EStream& s, Arg& arg) {
             throw std::runtime_error("Invalid float format.");
         }
     }
-    printf("%f, %d, %d\n", *(double *)arg.ptr, precision, exponential);
-    return FloatToString(*(double *)arg.ptr, precision, exponential);
+    return FloatToString(value, precision, exponential);
 }
 
 static Arg parsePositionalFormatSpecifier(va_list args, EStream& s) {
     std::string v;
     void * ptr = nullptr;
-    char type = DEFAULT_ARG_TYPE_CHAR;
+    char type = WYLESLIBS_STRING_FORMAT_DEFAULT_ARG_TYPE_CHAR;
 
     char c = s.get();
     char next = s.peek();
@@ -95,17 +94,16 @@ static Arg parsePositionalFormatSpecifier(va_list args, EStream& s) {
     } else {
         s.unget(); // place c back in stream...
 
-        int i = va_arg(args, int);
-        ptr = (void *)new int(i);
+        double i = va_arg(args, double);
+        ptr = (void *)new double(i);
         type = 'f';
-        Arg format_arg(ptr, type, "");
-        v = parseFloatFormatSpecifierAndConvert(s, format_arg);
+        v = parseFloatFormatSpecifierAndConvert(s, *(double *)ptr);
     }
     s.get(); // make sure to consume END_OF_FORMAT_CHAR
     return Arg(ptr, type, v);
 }
 
-static std::string parseIndicatorFormatSpecifier(EStream& s, Arg arg) {
+static std::string parseReferenceFormatSpecifier(EStream& s, Arg& arg) {
     std::string v;
     char c = s.get();
     char next = s.peek();
@@ -115,24 +113,24 @@ static std::string parseIndicatorFormatSpecifier(EStream& s, Arg arg) {
         v = arg.expanded_value;
     } else {
         s.unget(); // place c back in stream...
-        v = parseFloatFormatSpecifierAndConvert(s, arg);
+        v = parseFloatFormatSpecifierAndConvert(s, *(double *)arg.ptr);
     }
     s.get(); // make sure to consume END_OF_FORMAT_CHAR
     return v;
 }
 
-static void parsePositionalFormat(va_list args, EStream& s, std::stringstream& d, Array<Arg>& converted_args, bool& has_indicator_selection) {
+static void parsePositionalFormat(va_list args, EStream& s, std::stringstream& d, Array<Arg>& converted_args, bool& has_reference_selection) {
     // i == {
     char c = s.peek();
     Arg arg;
-    // passthrough pointer/reference/indicator for second pass
+    // passthrough pointer/reference/reference for second pass
     if (c == START_OF_INDICATOR_FORMAT_CHAR) {
-        // it's an indicator type, reserve parsing for later - don't fail fast, I guess.
+        // it's an reference type, reserve parsing for later - don't fail fast, I guess.
         d.put(START_OF_FORMAT_CHAR);
-        has_indicator_selection = true;
+        has_reference_selection = true;
         return;
     } 
-    // parse format if no indicator.
+    // parse format if no reference.
     if (c == END_OF_FORMAT_CHAR) {
         s.get();
         arg.expanded_value = va_arg(args, const char *);
@@ -144,32 +142,32 @@ static void parsePositionalFormat(va_list args, EStream& s, std::stringstream& d
     // i == }
 }
 
-static void parseIndicatorFormat(Array<Arg>& args, EStream& s, std::stringstream& d) {
+static void parseReferenceFormat(Array<Arg>& args, EStream& s, std::stringstream& d) {
     // i == {
     size_t selection = SIZE_MAX;
     char c = s.get();
-    // parse pointer/reference/indicator
+    // parse pointer/reference/reference
     if (c == START_OF_INDICATOR_FORMAT_CHAR) {
         c = s.peek();
         if (true == isDigit(c)) {
            double lol = 0;
-           size_t dummy_count;
+           size_t dummy_count = 0;
            s.readNatural(lol, dummy_count);
            selection = static_cast<size_t>(lol) - 1; // 0 - 1 == SIZE_MAX?
         } else {
            std::stringstream ss;
-           ss << "Invalid indicator format. An indicator format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and number and the following character was detected: " << c;
+           ss << "Invalid reference format. An reference format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and number and the following character was detected: " << c;
            throw std::runtime_error(ss.str());
        }
     } else {
         std::stringstream ss;
-        ss << "Invalid indicator format. An indicator format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and the following character was detected: " << c;
+        ss << "Invalid reference format. An reference format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and the following character was detected: " << c;
         throw std::runtime_error(ss.str());
     }
     // is pointer good?
     if (selection == SIZE_MAX || selection >= args.size()) {
         std::stringstream ss;
-        ss << "Invalid selection in indicator format: " << std::dec << selection;
+        ss << "Invalid selection in reference format: " << std::dec << selection;
         throw std::runtime_error(ss.str());
     } else {
         // use pointer value or parse format override.
@@ -178,10 +176,10 @@ static void parseIndicatorFormat(Array<Arg>& args, EStream& s, std::stringstream
         if (c == END_OF_FORMAT_CHAR) {
             v = arg.expanded_value;
         } else if (c == INDICATOR_FORMAT_SEPARATOR) {
-            v = parseIndicatorFormatSpecifier(s, arg);
+            v = parseReferenceFormatSpecifier(s, arg);
         } else {
             std::stringstream ss;
-            ss << "Invalid indicator format. The following character is expected to be a comma: " << c;
+            ss << "Invalid reference format. The following character is expected to be a comma: " << c;
             throw std::runtime_error(ss.str());
         }
         d.write(v.data(), v.size());
@@ -196,9 +194,9 @@ static void deleteArgs(Array<Arg>& args) {
             delete (int *)arg.ptr;
         } else if (c == 'f') {
             delete (double *)arg.ptr;
-        } else if (c != DEFAULT_ARG_TYPE_CHAR && arg.ptr != nullptr) {
+        } else if (c != WYLESLIBS_STRING_FORMAT_DEFAULT_ARG_TYPE_CHAR && arg.ptr != nullptr) {
             std::stringstream ss;
-            ss << "Invalid type detected in indicator args structure - failed to delete. Type identifier: " << c;
+            ss << "Invalid type detected in reference args structure - failed to delete. Type identifier: " << c;
             throw std::runtime_error(ss.str());
         }
     }
@@ -207,12 +205,12 @@ static void deleteArgs(Array<Arg>& args) {
 extern std::string WylesLibs::format(std::string format, ...) {
     va_list args;
     va_start(args, format);
-    // if reach end of format and still va_arg, then do what? can just ignore if just positional but might be an issue with indicator stuff..
-    bool has_indicator_selection = false;
+    // if reach end of format and still va_arg, then do what? can just ignore if just positional but might be an issue with reference stuff..
+    bool has_reference_selection = false;
     std::stringstream d;
     Array<Arg> parsed_args;
     EStream s((uint8_t *)format.data(), format.size());
-    char c = s.get();
+    char c = s.peek();
     while (true == s.good()) {
         s.get();
         if (c == '\\') {
@@ -227,7 +225,7 @@ extern std::string WylesLibs::format(std::string format, ...) {
             }
         } 
         if (c == '{') {
-            parsePositionalFormat(args, s, d, parsed_args, has_indicator_selection);
+            parsePositionalFormat(args, s, d, parsed_args, has_reference_selection);
         } else {
             d.put(c);
         }
@@ -235,34 +233,34 @@ extern std::string WylesLibs::format(std::string format, ...) {
     }
     va_end(args);
 
-    if (false == has_indicator_selection) {
-        deleteArgs(parsed_args);
-        return d.str();
-    } else {
-        std::stringstream indicator_d;
-        EStream s_w_parsing((uint8_t *)d.str().data(), d.str().size());
-        while (true == s_w_parsing.good()) {
-            s_w_parsing.get();
-            if (c == '\\') {
-                // escaping...
-                char next = s.peek();
-                if (c == '{' || c == '}') {
-                    s.get();
-                    d.put(next);
-                    continue;
-                    // make sure to skip parsing but undo escaping sequence.
-                }
-            } 
-            if (c == '{') {
-                parseIndicatorFormat(parsed_args, s_w_parsing, indicator_d);
-            } else {
-                d.put(c);
+    // if (false == has_reference_selection) {
+    //     deleteArgs(parsed_args);
+    //     return d.str();
+    // } else {
+    std::stringstream reference_d;
+    EStream s_w_parsing((uint8_t *)d.str().data(), d.str().size());
+    c = s_w_parsing.peek();
+    while (true == s_w_parsing.good()) {
+        s_w_parsing.get();
+        if (c == '\\') {
+            // escaping...
+            char next = s_w_parsing.peek();
+            if (c == '{' || c == '}') {
+                s_w_parsing.get();
+                reference_d.put(next);
+                continue;
+                // make sure to skip parsing but undo escaping sequence.
             }
-            c = s_w_parsing.peek();
+        } 
+        if (c == '{') {
+            parseReferenceFormat(parsed_args, s_w_parsing, reference_d);
+        } else {
+            reference_d.put(c);
         }
-        deleteArgs(parsed_args);
-        return indicator_d.str();
+        c = s_w_parsing.peek();
     }
+    deleteArgs(parsed_args);
+    return reference_d.str();
 }
 
 // LMAO

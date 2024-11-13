@@ -100,8 +100,15 @@ static void testFormatBool(TestArg * t) {
     ASSERT_STRING(t, format, expected);
 }
 static void testFormatDec(TestArg * t) {
-    std::string format = WylesLibs::format("Test Bool Format: '{d}'", 77);
+    std::string format = WylesLibs::format("Test Dec Format: '{d}'", 77);
     std::string expected = "Test Dec Format: '77'";
+
+    ASSERT_STRING(t, format, expected);
+}
+// obviously depends on system but still. Curious what the limits are...
+static void testFormatDecVaArgIntMax(TestArg * t) {
+    std::string format = WylesLibs::format("Test Reference template override '{x}', '{<1,X}'", UINT64_MAX);
+    std::string expected = "Test Reference template override '0xFFFFFFFFFFFFFFFF', '0xFFFFFFFFFFFFFFFF'";
 
     ASSERT_STRING(t, format, expected);
 }
@@ -137,38 +144,111 @@ static void testFormatReference(TestArg * t) {
 
     ASSERT_STRING(t, format, expected);
 }
-static void testFormatReferenceTemplateOverride(TestArg * t) {
+static void testFormatReferenceTemplateOverrideString(TestArg * t) {
+    std::string format = WylesLibs::format("Test reference template override '{s}', '{<1,s}'", "string1");
+    std::string expected = "Test Reference template override 'string1', 'string1'";
+
+    ASSERT_STRING(t, format, expected);
+}
+static void testFormatReferenceTemplateOverrideChar(TestArg * t) {
+    std::string format = WylesLibs::format("Test Reference template override '{c}', '{<1,c}'", '$');
+    std::string expected = "Test Reference template override '$', '$'";
+
+    ASSERT_STRING(t, format, expected);
+}
+static void testFormatReferenceTemplateOverrideBool(TestArg * t) {
+    std::string format = WylesLibs::format("Test Reference template override '{b}', '{<1,b}'", true);
+    std::string expected = "Test Reference template override 'true', 'true'";
+
+    ASSERT_STRING(t, format, expected);
+}
+static void testFormatReferenceTemplateOverrideDec(TestArg * t) {
+    std::string format = WylesLibs::format("Test Reference template override '{d}', '{<1,d}'", 77);
+    std::string expected = "Test Reference template override '77', '77'";
+
+    ASSERT_STRING(t, format, expected);
+}
+static void testFormatReferenceTemplateOverrideHex(TestArg * t) {
+    std::string format = WylesLibs::format("Test Reference template override '{x}', '{<1,X}'", 0xFF);
+    std::string expected = "Test Reference template override '0xFF', '0xFF'";
+
+    ASSERT_STRING(t, format, expected);
+}
+static void testFormatReferenceTemplateOverrideDouble(TestArg * t) {
     std::string format = WylesLibs::format("Test Reference template override '{f}', '{<1,03f}'", 1.13131313131313131313);
     std::string expected = "Test Reference template override '1.131313', '1.131'";
 
     ASSERT_STRING(t, format, expected);
 }
+static void testFormatReferenceTemplateOverrideDoubleCustom(TestArg * t) {
+    std::string format = WylesLibs::format("Test Reference template override '{02f}', '{<1,03f}'", 1.13131313131313131313);
+    std::string expected = "Test Reference template override '1.13', '1.131'";
+
+    ASSERT_STRING(t, format, expected);
+}
 static void testFormatEscaping(TestArg * t) {
+    // std::cout << "\\{" << std::endl;
     std::cout << WylesLibs::format("\\{{}: {}\\}", "key", "value");
+    // \{key: value\} // after first iteration
+    // {key: value} // after second iteration.
     // std::cout << WylesLibs::format("\{
     //                                     {}: {}
     //                                 \}", "key", "value"); ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 }
+static void testFormatInvalidFormatStartsWithDigit(TestArg * t) {
+    try {
+        WylesLibs::format("Test Invalid Format: '{7kalnal}'", '$');
+        t->fail = true;
+        return;
+    } catch (std::exception& e) {
+        loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
+        t->fail = false;
+    }
+}
+static void testFormatInvalidFormatStartsWithLetter(TestArg * t) {
+    try {
+        WylesLibs::format("Test Invalid Format: '{ajknslnl}'", '$');
+        t->fail = true;
+        return;
+    } catch (std::exception& e) {
+        loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
+        t->fail = false;
+    }
+}
+static void testFormatInvalidFormatNotFollowedByEndCharacter(TestArg * t) {
+    try {
+        WylesLibs::format("Test Invalid Reference: '{cLMAO}'", '$');
+        t->fail = true;
+        return;
+    } catch (std::exception& e) {
+        loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
+        t->fail = false;
+    }
+}
 static void testFormatInvalidTypeForFormat(TestArg * t) {
-    std::string format = WylesLibs::format("Test Invalid Type For Format: '{c}'", 77.000);
-    std::string expected = "Test Invalid Type For Format: '$'";
-
-    // these should through exceptions?
-
-    ASSERT_STRING(t, format, expected);
+    try {
+        std::string format = WylesLibs::format("Test Type For Format: '{c}'", 77.000);
+        t->fail = true;
+        return;
+    } catch (std::exception& e) {
+        loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
+        t->fail = false;
+    }
 }
-static void testFormatInvalidTypeForFormatOverride(TestArg * t) {
-    std::string format = WylesLibs::format("Test Invalid Type For Format Override: '{c}', '{<1,x}'", '$');
-    std::string expected = "Test Char Format: '$'";
-
-    // these should through exceptions?
-
-    ASSERT_STRING(t, format, expected);
+static void testFormatInvalidTypeForReferenceFormatOverride(TestArg * t) {
+    try {
+        WylesLibs::format("Test invalid format, type mismatch: '{c}', '{<1,03f}'", '$');
+        t->fail = true;
+        return;
+    } catch (std::exception& e) {
+        loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
+        t->fail = false;
+    }
 }
-static void testFormatInvalidIndicator(TestArg * t) {
+static void testFormatInvalidReferenceOutOfRange(TestArg * t) {
     try {
         // out of range.
-        WylesLibs::format("Test Invalid Indicator: '{c}', '{<7}'", '$');
+        WylesLibs::format("Test Invalid Reference: '{c}', '{<7}'", '$');
         t->fail = true;
         return;
     } catch (std::exception& e) {
@@ -176,45 +256,67 @@ static void testFormatInvalidIndicator(TestArg * t) {
         t->fail = false;
     }
     try {
-        WylesLibs::format("Test Invalid Indicator: '{c}', '{ajknslnl}'", '$');
+        // out of range.
+        WylesLibs::format("Test Invalid Reference: '{f}', '{<7,03f}'", '$');
         t->fail = true;
         return;
     } catch (std::exception& e) {
         loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
         t->fail = false;
     }
+}
+static void testFormatInvalidReferenceFormatStartsWithDigit(TestArg * t) {
+    // starts with digit.
     try {
-        WylesLibs::format("Test Invalid Indicator: '{c}', '{7kalnal}'", '$');
+        WylesLibs::format("Test Invalid Reference: '{c}', '{<7kalnal}'", '$');
         t->fail = true;
         return;
     } catch (std::exception& e) {
         loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
         t->fail = false;
     }
+}
+static void testFormatInvalidReferenceFormatStartsWithLetter(TestArg * t) {
+    // starts with letter
     try {
-        WylesLibs::format("Test Invalid Indicator: '{c}', '{aakl7kalnal}'", '$');
+        WylesLibs::format("Test Invalid Reference: '{c}', '{<ajknslnl}'", '$');
         t->fail = true;
         return;
     } catch (std::exception& e) {
         loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
         t->fail = false;
     }
-    // ASSERT_STRING(t, format, expected);
 }
 static void testFormatUnimplementedFormat(TestArg * t) {
-
+    try {
+        WylesLibs::format("Test unimplemented command: '{#}'", '$');
+        t->fail = true;
+        return;
+    } catch (std::exception& e) {
+        loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
+        t->fail = false;
+    }
 }
-static void testFormatInvalidNotPercentStart(TestArg * t) {
-
+static void testFormatInvalidReferenceFormatNoSeparator(TestArg * t) {
+    try {
+        WylesLibs::format("Test invalid reference format (no separator): '{c}', '{<103f}'", '$');
+        t->fail = true;
+        return;
+    } catch (std::exception& e) {
+        loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
+        t->fail = false;
+    }
 }
-static void testFormatInvalidIndicatorFormat(TestArg * t) {
-
+static void testFormatInvalidReferenceFormatInvalidFloatFormat(TestArg * t) {
+    try {
+        WylesLibs::format("Test invalid reference format, invalid float format: '{c}', '{<1,af}'", '$');
+        t->fail = true;
+        return;
+    } catch (std::exception& e) {
+        loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
+        t->fail = false;
+    }
 }
-static void testFormatInvalidPositionalFormat(TestArg * t) {
-
-}
-
-// TODO: do I care to require percent in format? it's not required for ease of parsing...
 
 int main(int argc, char * argv[]) {
     Tester t("String Format Tests");
@@ -222,28 +324,36 @@ int main(int argc, char * argv[]) {
     t.addTest(stringUtilsNumToString);
     t.addTest(stringUtilsNumToStringHex);
     t.addTest(stringUtilsFloatToString);
-
     t.addTest(testFormat);
     t.addTest(testFormatString);
     t.addTest(testFormatChar);
     t.addTest(testFormatBool);
     t.addTest(testFormatDec);
+    t.addTest(testFormatDecVaArgIntMax);
     t.addTest(testFormatHex);
     t.addTest(testFormatDouble);
     t.addTest(testFormatDoubleCustom);
     t.addTest(testFormatStream);
     t.addTest(testFormatReference);
-    t.addTest(testFormatReferenceTemplateOverride);
+    t.addTest(testFormatReferenceTemplateOverrideString);
+    t.addTest(testFormatReferenceTemplateOverrideChar);
+    t.addTest(testFormatReferenceTemplateOverrideBool);
+    t.addTest(testFormatReferenceTemplateOverrideDec);
+    t.addTest(testFormatReferenceTemplateOverrideHex);
+    t.addTest(testFormatReferenceTemplateOverrideDouble);
+    t.addTest(testFormatReferenceTemplateOverrideDoubleCustom);
     t.addTest(testFormatEscaping);
-
+    t.addTest(testFormatInvalidFormatStartsWithDigit);
+    t.addTest(testFormatInvalidFormatStartsWithLetter);
+    t.addTest(testFormatInvalidFormatNotFollowedByEndCharacter);
     t.addTest(testFormatInvalidTypeForFormat);
-    t.addTest(testFormatInvalidTypeForFormatOverride);
-
-    t.addTest(testFormatInvalidIndicator);
+    t.addTest(testFormatInvalidTypeForReferenceFormatOverride);
+    t.addTest(testFormatInvalidReferenceOutOfRange);
+    t.addTest(testFormatInvalidReferenceFormatStartsWithDigit);
+    t.addTest(testFormatInvalidReferenceFormatStartsWithLetter);
     t.addTest(testFormatUnimplementedFormat);
-    t.addTest(testFormatInvalidNotPercentStart);
-    t.addTest(testFormatInvalidIndicatorFormat);
-    t.addTest(testFormatInvalidPositionalFormat);
+    t.addTest(testFormatInvalidReferenceFormatNoSeparator);
+    t.addTest(testFormatInvalidReferenceFormatInvalidFloatFormat);
 
     bool passed = false;
     if (argc > 1) {

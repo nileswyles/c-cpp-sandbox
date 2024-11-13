@@ -122,7 +122,6 @@ void SSLEStream::fillBuffer() {
 }
 #endif
 
-// TODO: need to fill buffer if peek returns nothing...
 uint8_t ReaderEStream::get() {
     if (true == this->readPastBuffer()) {
         this->fillBuffer();

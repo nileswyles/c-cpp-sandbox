@@ -22,7 +22,7 @@ namespace WylesLibs {
 //  TBD if that will need to change...
 
 // parse_format -> found_start_of_specifier (and peek ahead?)
-//   if isNumeric, then it's position indicator, so allows us to explicitly select the position.
+//   if isNumeric, then it's position reference, so allows us to explicitly select the position.
 //      should be followed by comma or stop_format_specifier increment cursor accordingly
 //      parse_numeric
 //   if isTypeSpecifier
@@ -34,13 +34,13 @@ namespace WylesLibs {
 // too much overhead from stringstream? ddd. stream from readerestream... right? lol that's the whole point...
 
 // let's be crude about this...
-#define DEFAULT_ARG_TYPE_CHAR '|'
+#define WYLESLIBS_STRING_FORMAT_DEFAULT_ARG_TYPE_CHAR '|'
 class Arg {
     public:
         void * ptr;
         std::string expanded_value;
         char type;
-        Arg(): ptr(nullptr), type(DEFAULT_ARG_TYPE_CHAR), expanded_value("") {}
+        Arg(): ptr(nullptr), type(WYLESLIBS_STRING_FORMAT_DEFAULT_ARG_TYPE_CHAR), expanded_value("") {}
         Arg(void * ptr, char type, std::string expanded_value): ptr(ptr), type(type), expanded_value(expanded_value) {}
         virtual ~Arg() {}
 };

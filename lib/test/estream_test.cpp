@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <poll.h>
 
 #include <filesystem>
 
@@ -44,6 +45,10 @@ extern ssize_t read(int fd, void * buf, size_t nbytes) {
     return ret; 
 }
 
+extern int poll(struct pollfd *__fds, nfds_t __nfds, int __timeout) {
+    return 1;
+}
+
 static void readUntilAssert(TestArg * t, std::string result, std::string expected) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", buffer);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
@@ -56,7 +61,9 @@ static void testReadUntil(TestArg * t) {
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
 
+    printf("lol, more bs?\n");
     std::string result = reader.readUntil(" ").toString();
+    printf("lol, more bs?\n");
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     readUntilAssert(t, result, expected);

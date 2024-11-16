@@ -1,6 +1,7 @@
 #ifndef WYLESLIBS_STRING_UTILS_H
 #define WYLESLIBS_STRING_UTILS_H
 
+#include <math.h>
 #include <string>
 #include <stdbool.h>
 #include <stdexcept>
@@ -45,6 +46,141 @@ static char hexToChar(std::string buf) {
         ret = ret << 4 | buf.at(i);
     }
     return ret;
+}
+
+static std::string NumToString(uint64_t num, uint8_t base = 10, bool upper = true, bool negative = false) {
+    std::string s;
+    size_t divisor = 1;
+    if (base != 10 && base != 16) {
+        throw std::runtime_error("Base not supported.");
+    }
+    if (true == negative) {
+        s += '-';
+    } 
+    if (base == 16) {
+        s += "0x";
+    }
+    while (num / divisor > base) {
+        divisor *= base;
+    }
+    while (divisor > 0) {
+        char digit = (char)(num / divisor);
+        if (digit <= 9) {
+            s += digit + '0';
+        } else if (digit <= 0xF) {
+            if (true == upper) {
+                s += digit - 0xA + 'A';
+            } else {
+                s += digit - 0xA + 'a';
+            }
+        } else {
+            throw std::runtime_error("Invalid digit character detected.");
+        }
+        num -= (digit * divisor);
+        divisor /= base;
+    }
+    return s;
+}
+
+// TODO: octal
+static std::string NumToStringSigned(int64_t num, uint8_t base = 10, bool upper = true) {
+    bool negative = false;
+    if (num < 0) {
+        num *= -1;
+        negative = true;
+    }
+    return NumToString(static_cast<uint64_t>(num), base, upper, negative);
+}
+
+static std::string FloatToString(double num, uint8_t precision = 6, int16_t exponential = 0) {
+    std::string s;
+    if (num < 0) {
+        s += '-';
+    }
+    int16_t precision_count = -1;
+    size_t divisor = 1;
+    size_t decimal_idx;
+    if (precision == 0) {
+        printf("precision: %d\n", precision);
+        precision = 1;
+    }
+    // process exponential
+    if (exponential == 0) {
+        decimal_idx = pow(10, precision);
+        num *= decimal_idx;
+    } else if (exponential > 0) {
+        size_t width_divisor = 1;
+        size_t width = 1;
+        while (num / width_divisor > 10) {
+            width_divisor *= 10;
+            width++;
+        }
+        if (static_cast<int64_t>(width) < exponential) {
+            s += "0.";
+            size_t pad_count = exponential - width;
+            bool zeroed_result = false;
+            if (precision > pad_count) {
+                precision_count = pad_count + 1;
+            } else {
+                pad_count = precision;
+                zeroed_result = true;
+            }
+            while (pad_count > 0) {
+                s += "0";
+                pad_count--;
+            }
+            if (true == zeroed_result) {
+                return s;
+            }
+        } else {
+            decimal_idx = pow(10, precision + exponential);
+        }
+        num *= pow(10, precision);
+    } else {
+        int16_t abs_exponential = -1 * exponential;
+        num *= pow(10, abs_exponential + precision);
+        decimal_idx = pow(10, precision);
+    }
+    if (errno == ERANGE) {
+        throw std::runtime_error("Math error detected.");
+    }
+    // identify num width thus intializing digit parsing
+    while (num / divisor > 10) {
+        divisor *= 10;
+    }
+    // digit parsing, place decimal point and truncate at precision.
+    while (divisor > 0) {
+        if (precision_count >= 0) {
+            precision_count++;
+        } else if (precision_count > precision) {
+            printf("should break\n");
+            break;
+        }
+        char digit = (char)(num / divisor);
+        if (digit <= 9) {
+            s += digit + '0';
+            if (divisor == decimal_idx) {
+                s += '.';
+                precision_count = 0;
+            }
+        } else {
+            throw std::runtime_error("Invalid digit character detected.");
+        }
+        num -= (digit * divisor);
+        divisor /= 10;
+    }
+    // append exponential string.
+    if (exponential != 0) {
+        s += 'E';
+        if (exponential < 0) {
+            s += '-';
+            exponential *= -1;
+        } else {
+            s += '+';
+        }
+        s += NumToStringSigned(exponential);
+    }
+    return s;
 }
 
 #endif

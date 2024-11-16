@@ -33,16 +33,53 @@
 
 using namespace WylesLibs;
 
-void ReaderEStream::cursorCheck() {
-    if (false == this->reader->good()) {
-        this->fillBuffer();
-    }
-}
+// iostate for estream...
 
-void EStream::cursorCheck() {
-    if (this->cursor >= this->bytes_in_buffer) {
-        this->fillBuffer();
-    }
+// readUntil and readBytes read until finish criteria else throws an exception
+// get and peek throw exception (when configured as such) if stream->good() == false, whether as a result of this operation or not.
+
+//  iostate is defined as having irrecoverable and recoverable error state
+// Ideas:
+//  each read operation needs to detect errors and update iostate as needed...
+//      okay, yeah so, that's decided. we'll update iostate state if an error detected in fillBuffer..
+
+//  additionally, the good function might want to check the fd again and update the state... if not bad (irrecoverable?)
+//      what's an irrecoverable error?
+//          eof?
+//          EBADF == fd not open for reading..
+//          EFAULT == buf unaddressable
+//          EISDIR-EINVAL == unreadable fd
+//          EIO == 
+//          
+//      what's a recoverable error?
+//          EAGAIN == 
+//          EINTR == interrupted before data read
+//          POLLIN == 0 but fd still good...
+//          if no FD, then good checks whether read until end of buffer...
+//  
+//      alright, so generally fill buffer will throw an exception and set it as an unrecoverable error...
+//      fair enough...
+
+//      recoverable error state is only set by calls to good...
+//      
+//      alright, sound like a plan...
+
+//  iostate for ReaderEStream currently just returns the state of the has-a stream...
+//      let's work through that again with fillBuffer and cursorCheck in mind... just to be sure...
+//      you can check underlying stream for iostate ahead of time... 
+//      if read call requires more data and has-a stream can't statisfy then get new reader from factory.
+//      seems reasonable...
+
+//  okay, so that's reasonable for EStream reading... but write buffer....
+//      fd can be valid for reading but not writing? right? or valid for writing but not reading?
+//      might not matter for now or in most scenarios, so let's keep them the same...
+
+// while we're at it, let's also implement the bool and ! operators on stream?
+bool ReaderEStream::readPastBuffer() {
+    return this->reader->good();
+}
+bool EStream::readPastBuffer() {
+    return this->cursor >= this->bytes_in_buffer;
 }
 
 void ReaderEStream::fillBuffer() {
@@ -54,7 +91,6 @@ void ReaderEStream::fillBuffer() {
         reader = this->factory->reader(path, this->file_offset, this->chunk_size);
     }
 }
-
 void EStream::fillBuffer() {
     this->cursor = 0;
     ssize_t ret = ::read(this->fd, this->buf, this->buf_size);
@@ -62,15 +98,13 @@ void EStream::fillBuffer() {
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
         loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
+        this->flags |= std::ios_base::badbit;
         throw std::runtime_error("Read error.");
     } else {
         this->bytes_in_buffer = ret;
-        loggerExec(LOGGER_DEBUG_VERBOSE,
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
-        );
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
     }
 }
-
 #ifdef WYLESLIBS_SSL_ENABLED
 void SSLEStream::fillBuffer() {
     this->cursor = 0;
@@ -79,26 +113,28 @@ void SSLEStream::fillBuffer() {
     if (ret <= 0 || (size_t)ret > this->buf_size) {
         this->bytes_in_buffer = 0;
         loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
+        this->flags |= std::ios_base::badbit;
         throw std::runtime_error("Read error.");
     } else {
         this->bytes_in_buffer = ret;
-        loggerExec(LOGGER_DEBUG_VERBOSE,
-            if (this->ssl == nullptr) {
-                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from transport layer.\n", ret);
-            } else {
-                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from tls layer.\n", ret);
-            }
-        );
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld bytes from tls layer.\n", ret);
     }
 }
 #endif
 
 uint8_t ReaderEStream::get() {
-    this->cursorCheck();
+    if (true == this->readPastBuffer()) {
+        this->fillBuffer();
+    }
     return this->reader->get();
 }
+void ReaderEStream::unget() {
+    this->reader->unget();
+}
 uint8_t ReaderEStream::peek() {
-    this->cursorCheck();
+    if (true == this->readPastBuffer()) {
+        this->fillBuffer();
+    }
     return this->reader->peek();
 }
 bool ReaderEStream::eof() {
@@ -116,39 +152,87 @@ void ReaderEStream::seekg(size_t offset) {
 
 uint8_t EStream::get() {
     char byte = this->peek();
+    if (this->cursor == 0 && true == this->ungot) {
+        this->ungot = false;
+    }
     this->cursor++;
     return byte;
 }
 uint8_t EStream::peek() {
-    this->cursorCheck();
+    if (true == this->good()) {
+        if (true == this->readPastBuffer()) {
+            this->ungot_char = this->buf[this->cursor];
+            this->ungot = false;
+            this->fillBuffer();
+        }
+    } else if (this->cursor == 0 && true == this->ungot) {
+        return this->ungot_char;
+    }
     return this->buf[this->cursor];
+}
+void EStream::unget() {
+    if (this->cursor == 0) { // fill buffer just called...
+        this->ungot = true;
+    } else {
+        this->cursor--; // is the normal case...
+    }
+    //  immediatly after a fillBuffer...
+    //  or if this->cursor == 0 which in this case is the same... fillBuffer sets cursor to 0... okay so we want to avoid that situation...
+    //  so, only fillBuffer if you're getting?
+
+    // get and at end of buffer...
+    //  we currently only fill buffer when needed...
+    //  ... so that means... if we call peek while in this state...
+    //  we'll fill buffer..
+    //  if we call unget in this state, then we are good? right?
+
+    // okay, so if we peek, then call unget... then thats.. the edge case I want to avoid... same as above... so, if fillBuffer but don't increment... same as above from different perspective.
+    // now if we peek, call unget, then readBytes... lol..
 }
 // Stub these out for now.
 bool EStream::eof() {
-    return false;
+    return this->flags & std::ios_base::eofbit;
 }
 bool EStream::good() {
-    return true;
+    if (this->flags == 0) {
+        if (true == this->readPastBuffer()) {
+            if (this->fd < 0) {
+                this->flags |= std::ios_base::badbit;
+            } else {
+                if (1 != poll(&this->poll_fd, 1, 0)) {
+                    this->flags |= std::ios_base::badbit;
+                }
+            }
+        }
+    }
+    return this->flags == 0;
 }
 bool EStream::fail() {
-    return false;
+    return this->flags & std::ios_base::failbit;
 }
 // char_type EStream::read() override;
 SharedArray<uint8_t> ReaderEStream::readBytes(const size_t n) {
     // yuck
     // TODO: casting is annoying...
+    //  also, didn't update to support paging stuff.. can implement using get and use for readBytes but current readBytes is faster...
     return SharedArray<uint8_t>(std::reinterpret_pointer_cast<std::basic_istream<uint8_t>>(this->reader), n);
 }
 
 SharedArray<uint8_t> EStream::readBytes(const size_t n) {
-    this->cursorCheck();
-
-    if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
+    if (n == 0) {
+        throw std::runtime_error("It doesn't make sense to read zero bytes.");
+    } else if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
         throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
     }
-
     SharedArray<uint8_t> data;
     size_t bytes_read = 0;
+    if (true == this->readPastBuffer()) {
+        this->fillBuffer();
+    } else if (this->cursor == 0 && true == this->ungot) {
+        this->ungot = false;
+        data.append(this->ungot_char);
+        bytes_read++;
+    }
     while (bytes_read < n) {
         size_t bytes_left_to_read = n - bytes_read;
         size_t bytes_left_in_buffer = this->bytes_in_buffer - this->cursor;
@@ -157,7 +241,7 @@ SharedArray<uint8_t> EStream::readBytes(const size_t n) {
             data.append(this->buf + this->cursor, bytes_left_in_buffer);
             bytes_read += bytes_left_in_buffer;
 
-            fillBuffer();
+            this->fillBuffer();
         } else {
             // else enough data in buffer
             data.append(this->buf + this->cursor, bytes_left_to_read);
@@ -175,6 +259,7 @@ SharedArray<uint8_t> ReaderEStream::readUntil(std::string until, ReaderTask * op
     }
 
     SharedArray<uint8_t> data;
+    printf("????\n");
     uint8_t c = this->peek();
     while (until.find(c) == std::string::npos) {
         this->get(); // consume
@@ -231,7 +316,7 @@ void ReaderEStream::readNatural(double& value, size_t& digit_count) {
     while (isDigit(c)) {
         this->get();
         value = (value * 10) + (c - 0x30); 
-        loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
+        loggerPrintf(LOGGER_DEBUG, "char: 0x%X, value: %f\n", c, value);
         c = this->peek();
         if (++digit_count > NUMBER_MAX_DIGITS) {
             std::string msg = "parseNatural: Exceeded natural digit limit.";

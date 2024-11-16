@@ -487,6 +487,7 @@ class Array {
         T& operator[] (const size_t pos) {
             size_t i = pos;
             if (i >= this->size()) {
+                // TODO: this means array requires default constructable think about whether that's actually fine.
                 T el;
                 this->append(el); 
                 i = this->size()-1;

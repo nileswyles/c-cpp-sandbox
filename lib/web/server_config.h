@@ -1,11 +1,13 @@
 #ifndef WYLESLIBS_SERVER_CONFIG_H
 #define WYLESLIBS_SERVER_CONFIG_H
 
+#include "string-format.h"
 #include "parser/json/json.h"
 #include "file/stream_factory.h"
 
 #include <memory>
 
+using namespace WylesLibs;
 using namespace WylesLibs::Parser::Json;
 using namespace WylesLibs::File;
 
@@ -31,8 +33,7 @@ class ServerConfig: public JsonBase {
                 }
             }
             if (true == resources_root_required) {
-                std::string msg = "The 'resources_root' field is missing... Check the configuration file at path: ";
-                // msg += filepath;
+                std::string msg = format("The 'resources_root' field is missing... Check the configuration file at path: {}", filepath);
                 loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }

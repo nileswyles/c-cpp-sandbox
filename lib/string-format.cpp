@@ -74,7 +74,8 @@ static Arg parsePositionalFormatSpecifier(va_list args, EStream& s) {
             std::basic_istream<char> * ss = va_arg(args, std::basic_istream<char> *);
             while (true == ss->good()) {
                 char c = ss->get();
-                if (c != 0xFF) {
+                // TODO: this doesn't sit right with me.
+                if (static_cast<uint64_t>(c) != UINT64_MAX) {
                     v += c;
                 }
             }
@@ -86,13 +87,20 @@ static Arg parsePositionalFormatSpecifier(va_list args, EStream& s) {
         }
     // } else if (next == END_OF_FORMAT_CHAR && (c == 'd' || c == 'x' || c == 'X' || c == 'o')) {
     // TODO: no octal support for now
-    } else if (next == END_OF_FORMAT_CHAR && (c == 'd' || c == 'x' || c == 'X')) {
+    } else if (next == END_OF_FORMAT_CHAR && (c == 'd')) {
         // TODO: if no type safety then why this?
-        // read up on va_arg type parameter... 
-        int i = va_arg(args, int);
-        ptr = (void *)new int(i);
+        // read up on va_arg type parameter...  in other words, what happens if it's not the type specified - casting? if so, does it cast always? if so, then let's expect the largest.
+        int64_t i = va_arg(args, int64_t);
+        ptr = (void *)new int64_t(i);
         type = 'd';
-        v = NumToString(*(int *)ptr, c == 'd' ? 10 : 16, c == 'X');
+        v = NumToStringSigned(*(int64_t *)ptr, 10);
+    } else if (next == END_OF_FORMAT_CHAR && (c == 'u' || c == 'x' || c == 'X')) {
+        // TODO: if no type safety then why this?
+        // read up on va_arg type parameter...  in other words, what happens if it's not the type specified - casting? if so, does it cast always? if so, then let's expect the largest.
+        uint64_t i = va_arg(args, uint64_t);
+        ptr = (void *)new uint64_t(i);
+        type = 'u';
+        v = NumToString(*(uint64_t *)ptr, c == 'u' ? 10 : 16, c == 'X');
     } else {
         s.unget(); // place c back in stream...
 
@@ -109,9 +117,7 @@ static std::string parseReferenceFormatSpecifier(EStream& s, Arg& arg) {
     std::string v;
     char c = s.get();
     char next = s.peek();
-    if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's')) { // these must be size 1
-        v = arg.expanded_value;
-    } else if (next == END_OF_FORMAT_CHAR && (c == 'd' || c == 'x' || c == 'X' || c == 'o')) {
+    if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's' || c == 'd' || c == 'x' || c == 'X' || c == 'u')) {
         v = arg.expanded_value;
     } else {
         s.unget(); // place c back in stream...
@@ -201,8 +207,10 @@ static void parseReferenceFormat(Array<Arg>& args, EStream& s, std::basic_string
 static void deleteArgs(Array<Arg>& args) {
     for (auto arg: args) {
         char c = arg.type;
-        if (c == 'd') {
-            delete (int *)arg.ptr;
+        if (c == 'u') {
+            delete (uint64_t *)arg.ptr;
+        } else if (c == 'd') {
+            delete (int64_t *)arg.ptr;
         } else if (c == 'f') {
             delete (double *)arg.ptr;
         } else if (c != WYLESLIBS_STRING_FORMAT_DEFAULT_ARG_TYPE_CHAR && arg.ptr != nullptr) {

@@ -48,17 +48,15 @@ static char hexToChar(std::string buf) {
     return ret;
 }
 
-// TODO: octal
-static std::string NumToString(int64_t num, uint8_t base = 10, bool upper = true) {
+static std::string NumToString(uint64_t num, uint8_t base = 10, bool upper = true, bool negative = false) {
     std::string s;
     size_t divisor = 1;
     if (base != 10 && base != 16) {
         throw std::runtime_error("Base not supported.");
     }
-    if (num < 0) {
+    if (true == negative) {
         s += '-';
-        num *= -1;
-    }
+    } 
     if (base == 16) {
         s += "0x";
     }
@@ -82,6 +80,16 @@ static std::string NumToString(int64_t num, uint8_t base = 10, bool upper = true
         divisor /= base;
     }
     return s;
+}
+
+// TODO: octal
+static std::string NumToStringSigned(int64_t num, uint8_t base = 10, bool upper = true) {
+    bool negative = false;
+    if (num < 0) {
+        num *= -1;
+        negative = true;
+    }
+    return NumToString(static_cast<uint64_t>(num), base, upper, negative);
 }
 
 static std::string FloatToString(double num, uint8_t precision = 6, int16_t exponential = 0) {
@@ -170,7 +178,7 @@ static std::string FloatToString(double num, uint8_t precision = 6, int16_t expo
         } else {
             s += '+';
         }
-        s += NumToString(exponential);
+        s += NumToStringSigned(exponential);
     }
     return s;
 }

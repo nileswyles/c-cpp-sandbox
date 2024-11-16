@@ -20,14 +20,14 @@ using namespace WylesLibs;
 using namespace WylesLibs::Test;
 
 static void stringUtilsNumToString(TestArg * t) {
-    std::string num = NumToString(-1234567, 10);
+    std::string num = NumToStringSigned(-1234567, 10);
     std::string expected = "-1234567";
 
     ASSERT_STRING(t, num, expected);
 }
 
 static void stringUtilsNumToStringHex(TestArg * t) {
-    std::string num = NumToString(-0x1234567, 16);
+    std::string num = NumToStringSigned(-0x1234567, 16);
     std::string expected = "-0x1234567";
 
     ASSERT_STRING(t, num, expected);
@@ -102,21 +102,38 @@ static void testFormatBool(TestArg * t) {
     ASSERT_STRING(t, format, expected);
 }
 static void testFormatDec(TestArg * t) {
+    std::string format = WylesLibs::format("Test Dec Format: '{u}'", 77);
+    std::string expected = "Test Dec Format: '77'";
+
+    ASSERT_STRING(t, format, expected);
+}
+static void testFormatDecMax(TestArg * t) {
+    std::string format = WylesLibs::format("Test Dec Format: '{u}'", UINT64_MAX);
+    std::string expected = "Test Dec Format: '18446744073709551615'"; // it's defined as (2**64) - 1 for some reason?
+
+    ASSERT_STRING(t, format, expected);
+}
+static void testFormatDecSigned(TestArg * t) {
     std::string format = WylesLibs::format("Test Dec Format: '{d}'", 77);
     std::string expected = "Test Dec Format: '77'";
 
     ASSERT_STRING(t, format, expected);
 }
-// obviously depends on system but still. Curious what the limits are...
-static void testFormatDecVaArgIntMax(TestArg * t) {
-    std::string format = WylesLibs::format("Test Reference template override '{x}', '{<1,X}'", UINT64_MAX);
-    std::string expected = "Test Reference template override '0xFFFFFFFFFFFFFFFF', '0xFFFFFFFFFFFFFFFF'";
+static void testFormatDecSignedMax(TestArg * t) {
+    std::string format = WylesLibs::format("Test Dec Format: '{d}'", UINT64_MAX);
+    std::string expected = "Test Dec Format: '-1'";
 
     ASSERT_STRING(t, format, expected);
 }
 static void testFormatHex(TestArg * t) {
     std::string format = WylesLibs::format("Test Hex Format: '{X}'", 255);
     std::string expected = "Test Hex Format: '0xFF'";
+
+    ASSERT_STRING(t, format, expected);
+}
+static void testFormatHexMax(TestArg * t) {
+    std::string format = WylesLibs::format("Test Hex Format: '{X}'", UINT64_MAX);
+    std::string expected = "Test Hex Format: '0xFFFFFFFFFFFFFFFF'";
 
     ASSERT_STRING(t, format, expected);
 }
@@ -135,7 +152,7 @@ static void testFormatDoubleCustom(TestArg * t) {
 static void testFormatStream(TestArg * t) {
     std::stringstream ss;
     ss << "StringStream1";
-    std::string format = WylesLibs::format("Test '{t}'", &ss);
+    std::string format = WylesLibs::format("Test Stream '{t}'", &ss);
     std::string expected = "Test Stream 'StringStream1'";
 
     ASSERT_STRING(t, format, expected);
@@ -333,8 +350,11 @@ int main(int argc, char * argv[]) {
     t.addTest(testFormatChar);
     t.addTest(testFormatBool);
     t.addTest(testFormatDec);
-    t.addTest(testFormatDecVaArgIntMax);
+    t.addTest(testFormatDecMax);
+    t.addTest(testFormatDecSigned);
+    t.addTest(testFormatDecSignedMax);
     t.addTest(testFormatHex);
+    t.addTest(testFormatHexMax);
     t.addTest(testFormatDouble);
     t.addTest(testFormatDoubleCustom);
     t.addTest(testFormatStream);

@@ -117,14 +117,21 @@ static std::string parseReferenceFormatSpecifier(EStream& s, Arg& arg) {
     std::string v;
     char c = s.get();
     char next = s.peek();
-    if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's' || c == 'd' || c == 'x' || c == 'X' || c == 'u')) {
+    if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's' || c == 'd')) {
         v = arg.expanded_value;
+    } else if (c == 'x' || c == 'X' || c == 'u') {
+        if (arg.ptr == nullptr || arg.type != 'u') {
+            std::basic_stringstream<char> ss;
+            ss << "Invalid arg reference. Expected non-null pointer and arg.type = 'u'. Is pointer null? " << (int)(arg.ptr == nullptr) << ". Arg type: '" << arg.type << "'.";
+            throw std::runtime_error(ss.str());
+        }
+        v = NumToString(*(uint64_t *)arg.ptr, c == 'u' ? 10 : 16, c == 'X');
     } else {
         s.unget(); // place c back in stream...
 
         if (arg.ptr == nullptr || arg.type != 'f') {
             std::basic_stringstream<char> ss;
-            ss << "Invalid arg selected. Expected non-null pointer and arg.type = 'f'. Is pointer null? " << (int)(arg.ptr == nullptr) << ". Arg type: '" << arg.type << "'.";
+            ss << "Invalid arg reference. Expected non-null pointer and arg.type = 'f'. Is pointer null? " << (int)(arg.ptr == nullptr) << ". Arg type: '" << arg.type << "'.";
             throw std::runtime_error(ss.str());
         }
         v = parseFloatFormatSpecifierAndConvert(s, arg.ptr);
@@ -159,25 +166,25 @@ static void parseReferenceFormat(Array<Arg>& args, EStream& s, std::basic_string
     // i == {
     size_t selection = SIZE_MAX;
     char c = s.get(); // < required
-    if (c == START_OF_INDICATOR_FORMAT_CHAR) {
+    if (c != START_OF_INDICATOR_FORMAT_CHAR) {
+        std::basic_stringstream<char> ss;
+        ss << "Invalid reference format. A reference format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and the following character was detected: '" << c << "'";
+        throw std::runtime_error(ss.str());
+    } else {
         // parse reference
         c = s.peek(); // first digit required
-        if (true == isDigit(c)) {
+        if (false == isDigit(c)) {
+           std::basic_stringstream<char> ss;
+           ss << "Invalid reference format. A reference format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and number - the following character was detected: '" << c << "'";
+           throw std::runtime_error(ss.str());
+        } else {
            double lol = 0;
            size_t dummy_count = 0;
            s.readNatural(lol, dummy_count);
            selection = static_cast<size_t>(lol) - 1; // 0 - 1 == SIZE_MAX?
            // consumed all digits, at non-digit
            //    std::cout << "Selected positional format: " << selection << std::endl;
-        } else {
-           std::basic_stringstream<char> ss;
-           ss << "Invalid reference format. A reference format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and number - the following character was detected: '" << c << "'";
-           throw std::runtime_error(ss.str());
        }
-    } else {
-        std::basic_stringstream<char> ss;
-        ss << "Invalid reference format. A reference format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and the following character was detected: '" << c << "'";
-        throw std::runtime_error(ss.str());
     }
     if (selection == SIZE_MAX || selection >= args.size()) {
         // is reference valid?
@@ -255,10 +262,11 @@ extern std::string WylesLibs::format(std::string format, ...) {
         if (c == '\\') {
             // escaping...
             char next = s.peek();
-            if (c == '{' || c == '}') {
+            if (next == '{' || next == '}') {
                 s.get();
                 format_out.put(c);
                 format_out.put(next);
+                escaped = true;
                 continue;
                 // make sure to skip parsing but keep escape sequence.
             }
@@ -271,34 +279,31 @@ extern std::string WylesLibs::format(std::string format, ...) {
     }
     va_end(args);
 
-    if (false == escaped && false == has_reference_selection) {
-        deleteArgs(parsed_args);
-        return format_out.str();
-    } else {
-        std::cout << "Format out: " << format_out.str() << std::endl;
-        std::basic_stringstream<char> format_out_2;
-        s = EStream((uint8_t *)format_out.str().data(), format_out.str().size());
+    if (true == escaped || true == has_reference_selection) {
+        format = format_out.str(); // this is only valid, because str() returns copy... otherwise, it is assumed both string variables point to the same underlying buffer? correct?
+        format_out = std::basic_stringstream<char>();
+        s = EStream((uint8_t *)format.data(), format.size());
         while (true == s.good()) {
             c = s.get();
             if (c == '\\') {
                 // escaping...
                 char next = s.peek();
-                if (c == '{' || c == '}') {
+                if (next == '{' || next == '}') {
                     s.get();
-                    format_out_2.put(next);
+                    format_out.put(next);
                     continue;
                     // make sure to skip parsing but undo escaping sequence.
                 }
             } 
             if (c == '{') {
-                parseReferenceFormat(parsed_args, s, format_out_2);
+                parseReferenceFormat(parsed_args, s, format_out);
             } else {
-                format_out_2.put(c);
+                format_out.put(c);
             }
         }
-        deleteArgs(parsed_args);
-        return format_out_2.str();
     }
+    deleteArgs(parsed_args);
+    return format_out.str();
 }
 
 #define MAX_FORMATTED_STRING_SIZE 1024

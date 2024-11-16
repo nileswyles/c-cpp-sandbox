@@ -316,7 +316,7 @@ void ReaderEStream::readNatural(double& value, size_t& digit_count) {
     while (isDigit(c)) {
         this->get();
         value = (value * 10) + (c - 0x30); 
-        loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
+        loggerPrintf(LOGGER_DEBUG, "char: 0x%X, value: %f\n", c, value);
         c = this->peek();
         if (++digit_count > NUMBER_MAX_DIGITS) {
             std::string msg = "parseNatural: Exceeded natural digit limit.";

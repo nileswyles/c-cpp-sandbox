@@ -6,6 +6,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <string.h>
+
 #ifndef LOGGER_STRING_FORMAT_TEST
 #define LOGGER_STRING_FORMAT_TEST 1
 #endif
@@ -242,7 +244,9 @@ static void testFormatInvalidTypeForReferenceFormatOverride(TestArg * t) {
         return;
     } catch (std::exception& e) {
         loggerPrintf(LOGGER_TEST, "Exception thrown: %s\n", e.what());
-        t->fail = false;
+        if (strcmp(e.what(), "Invalid arg selected. Expected non-null pointer and arg.type = 'f'. Is pointer null? 1. Arg type: '|'.") == 0) {
+            t->fail = false;
+        }
     }
 }
 static void testFormatInvalidReferenceOutOfRange(TestArg * t) {

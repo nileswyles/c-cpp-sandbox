@@ -92,8 +92,7 @@ class HttpServerConfig: public ServerConfig {
             }
 
             if (required_fields.size() > 0 || (true == tls_enabled && tls_required_fields.size() > 0)) {
-                std::string msg = "The configuration file is missing required fields... Check the configuration file at path: ";
-                // msg += filepath;
+                std::string msg = format("The configuration file is missing required fields... Check the configuration file at path: {}", filepath);
                 msg += ".\n The missing fields are listed below: ";
                 for (auto field: required_fields) {
                     msg += '\n';

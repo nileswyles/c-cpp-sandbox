@@ -52,7 +52,7 @@ static const char * LOG_LEVEL_STRINGS[5] = {
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
-        fprintf(file, "%s {%s:%d} [%s] (%s)> " fmt,\
+        fprintf(file, "%s {%s:%d} [%s] (%s) -> " fmt,\
             WylesLibs::Cal::getFormattedDateTime(0).c_str(),\
             __FILE__, __LINE__,\
             LOG_LEVEL_STRINGS[min],\
@@ -67,7 +67,7 @@ static const char * LOG_LEVEL_STRINGS[5] = {
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
-        fprintf(file, "%s {%s:%d} [%s] (%s)> ",\
+        fprintf(file, "%s {%s:%d} [%s] (%s) -> ",\
             WylesLibs::Cal::getFormattedDateTime(0).c_str(),\
             __FILE__, __LINE__,\
             LOG_LEVEL_STRINGS[min],\

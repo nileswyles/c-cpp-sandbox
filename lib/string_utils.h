@@ -5,6 +5,7 @@
 #include <string>
 #include <stdbool.h>
 #include <stdexcept>
+#include <stdint.h>
 
 static std::string STRING_UTILS_WHITESPACE = "\r\n\t ";
 

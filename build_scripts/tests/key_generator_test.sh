@@ -22,6 +22,7 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
 "
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n key_generator_test $SRC_FILES --log $LOG_LEVEL $DEFINES$TEST_ARG"

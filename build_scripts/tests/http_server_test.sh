@@ -18,6 +18,7 @@ fi
 SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/http_server_test.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
 "
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n http_server_test $SRC_FILES --log $LOG_LEVEL $DEFINES$TEST_ARG"

@@ -23,6 +23,7 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
 "
 
 # ! IMPORTANT - 

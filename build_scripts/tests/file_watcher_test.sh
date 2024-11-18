@@ -20,6 +20,8 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_watcher.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/estream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
 "
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n file_watcher_test $SRC_FILES --log $LOG_LEVEL $DEFINES$TEST_ARG"

@@ -1,14 +1,12 @@
 #!/bin/bash
 
 TEST_ARG=""
-DEFINES=""
+DEFINES="-DWYLESLIBS_LOGGER_OLD_ENABLED=1"
 LOG_LEVEL=0
-DEBUG=""
 while true; do
 	case "$1" in
 		-l|--log) LOG_LEVEL="$2"; shift 2 ;;
 		-D) DEFINES="$DEFINES-D $2 "; shift 2 ;;
-		-g) DEBUG="-g "; shift ;;
 		*) TEST_ARG=$@; break;;
 	esac
 done
@@ -18,14 +16,15 @@ if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
 fi
 
 SRC_FILES="
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/csv_test.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/ecal_test.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/stubs/etime.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/estream.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
 "
 
-CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n csv_test $SRC_FILES --log $LOG_LEVEL $DEBUG$DEFINES$TEST_ARG"
+CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n ecal_test $SRC_FILES --log $LOG_LEVEL $DEFINES$TEST_ARG"
 echo "\t"$CMD
 exec $CMD

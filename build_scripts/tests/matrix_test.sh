@@ -23,6 +23,7 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/estream.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
 "
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n matrix_test $SRC_FILES --log $LOG_LEVEL $DEBUG$DEFINES$TEST_ARG"

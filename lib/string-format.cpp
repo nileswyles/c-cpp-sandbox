@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #define MAX_FORMAT_LENGTH 64
 #define START_OF_FORMAT_CHAR '{'

@@ -38,6 +38,7 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_gcs.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory_gcs.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
 "
 
 INCLUDE_DIRS="-I $WYLESLIBS_BUILD_ROOT_DIR/http_test"

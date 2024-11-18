@@ -68,7 +68,7 @@ static std::string NumToString(uint64_t num, uint8_t base = 10, bool upper = tru
         char digit = (char)(num / divisor);
         if (digit <= 9) {
             s += digit + '0';
-        } else if (digit <= 0xF) {
+        } else if (base == 16 && digit <= 0xF) {
             if (true == upper) {
                 s += digit - 0xA + 'A';
             } else {

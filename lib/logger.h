@@ -34,8 +34,6 @@ static const char * LOG_LEVEL_STRINGS[5] = {
 
 // TODO: portability? what other interesting things can we do with macros?
 // NOTE: ## removes trailing comma when args is empty.
-
-// Been meaning to document this... Not sure how __LINE__ evaluates to the correct line number, but it's working for now?
 #ifdef WYLESLIBS_LOGGER_OLD_ENABLED
 #undef loggerPrintf
 #define loggerPrintf(min, fmt, ...) \
@@ -54,8 +52,7 @@ static const char * LOG_LEVEL_STRINGS[5] = {
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
-        fprintf(file, "%s:%d (%s) " fmt, __FILE__, __LINE__, __func__, ##__VA_ARGS__);\
-        fprintf(file, "%s - %s:%d [%s] (%s) " fmt,\
+        fprintf(file, "%s {%s:%d} [%s] (%s)> " fmt,\
             WylesLibs::Cal::getFormattedDateTime(0).c_str(),\
             __FILE__, __LINE__,\
             LOG_LEVEL_STRINGS[min],\
@@ -70,7 +67,7 @@ static const char * LOG_LEVEL_STRINGS[5] = {
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
-        fprintf(file, "%s - %s:%d [%s] (%s) ",\
+        fprintf(file, "%s {%s:%d} [%s] (%s)> ",\
             WylesLibs::Cal::getFormattedDateTime(0).c_str(),\
             __FILE__, __LINE__,\
             LOG_LEVEL_STRINGS[min],\

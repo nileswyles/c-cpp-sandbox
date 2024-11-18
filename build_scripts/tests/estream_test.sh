@@ -22,6 +22,8 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
 "
 
 LD_FLAGS="

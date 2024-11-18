@@ -18,12 +18,12 @@ static void testGetFormattedTime(TestArg * t) {
 
     ASSERT_STRING(t, time, expected);
 }
+static void testGetFormattedTime1970(TestArg * t) {
+    std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
+    std::string expected = "Jan 2 1970, 0:0:0";
 
-// alright, so this is somewhat implmentation specific? 
-//  in that it's only needed because of this specific way of implementing? because you might assume if you can calculate one day you can calculate any days.
-
-//  or maybe just test numLeapYears and runningSecondsUntilMonth directly? lol
-//  or both?
+    ASSERT_STRING(t, time, expected);
+}
 static void testGetFormattedTimeLeapYearBeforeLeapDay(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
     std::string expected = "Feb 27 2024, 0:0:0";
@@ -70,6 +70,7 @@ int main(int argc, char * argv[]) {
     fputs(asctime(loctime), stdout);
 
     t.addTest(testGetFormattedTime);
+    t.addTest(testGetFormattedTime1970);
     t.addTest(testGetFormattedTimeLeapYearBeforeLeapDay);
     t.addTest(testGetFormattedTimeLeapYearAfterLeapDay);
     t.addTest(testGetFormattedTimeLastDayBeforeLeapYear);

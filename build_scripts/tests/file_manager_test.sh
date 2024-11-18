@@ -24,6 +24,8 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
 "
 
 # ! IMPORTANT - 

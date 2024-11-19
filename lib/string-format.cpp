@@ -21,124 +21,305 @@
 
 using namespace WylesLibs;
 
-static std::string parseFloatFormatSpecifierAndConvert(EStream& s, void * value) {
-    size_t precision = 6;
-    char c = s.peek();
-    if (true == isDigit(c)) {
-        double lol = 0;
-        size_t dummy_count = 0;
-        s.readNatural(lol, dummy_count);
-        precision = static_cast<size_t>(lol);
-    }
+static std::string parseFloatFormatSpecifierAndConvert(EStream& s, void * value, StringFormatOpts& opts);
+static void parsePositionalNumberModifier(va_list args, EStream& s, StringFormatOpts& opts, Arg& arg);
+static void parseReferenceNumberModifier(EStream& s, StringFormatOpts& opts, Arg& arg);
+static void parsePositionalModifiableFormat(va_list args, EStream& s, StringFormatOpts& opts, Arg& arg);
+static void parseReferenceModifiableFormat(EStream& s, StringFormatOpts& opts, Arg& arg);
+static Arg parsePositionalFormatSpecifier(va_list args, EStream& s);
+static std::string parseReferenceFormatSpecifier(EStream& s, Arg& arg);
+static void parsePositionalFormat(va_list args, EStream& s, std::basic_stringstream<char>& d, Array<Arg>& converted_args, bool& has_reference_selection);
+static void parseReferenceFormat(Array<Arg>& args, EStream& s, std::basic_stringstream<char>& d);
+static void deleteArgs(Array<Arg>& args);
+
+static std::string parseFloatFormatSpecifierAndConvert(EStream& s, void * value, StringFormatOpts& opts) {
     char format_type = s.get();
-    int16_t exponential = 0;
-    if (format_type != 'E' && format_type != 'e' && (format_type != 'f' || (format_type == 'f' && s.peek() != END_OF_FORMAT_CHAR))) {
-        std::basic_stringstream<char> ss;
-        ss << "Invalid format at: '" << format_type << s.peek() << "'";
-        throw std::runtime_error(ss.str());
-    } else if (format_type == 'E' || format_type == 'e') {
-        c = s.get();
+    if (format_type == 'E' || format_type == 'e') {
+        char c = s.get();
         if (c == '+' || c == '-') {
             if (c == '-') {
-                exponential = -1;
+                opts.exponential = -1;
             }
             c = s.peek();
             if (true == isDigit(c)) {
                 double lol = 0;
                 size_t dummy_count = 0;
                 s.readNatural(lol, dummy_count);
-                exponential *= static_cast<size_t>(lol);
+                // if you need more than +-128 then you have problems... behavior is undefined.
+                opts.exponential *= static_cast<int8_t>(lol);
             }
             if (s.peek() != END_OF_FORMAT_CHAR) {
                 std::basic_stringstream<char> ss;
                 ss << "Invalid float format. Expected '" << END_OF_FORMAT_CHAR << "' after the exponential field specifier.";
+                loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
                 throw std::runtime_error(ss.str());
             }
         } else {
-            throw std::runtime_error("Invalid float format.");
+            std::string msg("Invalid float format.");
+            loggerPrintf(LOGGER_INFO, "Exception: %s\n", msg.c_str());
+            throw std::runtime_error(msg);
         }
     }
-    return FloatToString(*(double *)value, precision, exponential);
+    return floatToString(*(double *)value, opts);
 }
 
-static Arg parsePositionalFormatSpecifier(va_list args, EStream& s) {
-    std::string v;
-    void * ptr = nullptr;
-    char type = WYLESLIBS_STRING_FORMAT_DEFAULT_ARG_TYPE_CHAR;
+static void parsePositionalNumberModifier(va_list args, EStream& s, StringFormatOpts& opts, Arg& arg) {
+    double lol = 0;
+    size_t dummy_count = 0;
+    s.readNatural(lol, dummy_count);
 
+    char next = s.peek();
+    if (next == 'f' || next == 'e' || next == 'E') {
+        opts.precision = static_cast<uint8_t>(lol);
+        parsePositionalModifiableFormat(args, s, opts, arg);
+    } else {
+        opts.width = static_cast<uint8_t>(lol);
+        if (next == '.') {
+            // width
+            // consume, '.' and proceed to parsing precision
+            s.get();
+            parsePositionalNumberModifier(args, s, opts, arg);
+        } else {
+            parsePositionalModifiableFormat(args, s, opts, arg);
+        }
+    }
+}
+
+static void parseReferenceNumberModifier(EStream& s, StringFormatOpts& opts, Arg& arg) {
+    double lol = 0;
+    size_t dummy_count = 0;
+    s.readNatural(lol, dummy_count);
+
+    char next = s.peek();
+    if (next == 'f' || next == 'e' || next == 'E') {
+        opts.precision = static_cast<uint8_t>(lol);
+        parseReferenceModifiableFormat(s, opts, arg);
+    } else {
+        opts.width = static_cast<uint8_t>(lol);
+        if (next == '.') {
+            // width
+            // consume, '.' and proceed to parsing precision
+            s.get();
+            parseReferenceNumberModifier(s, opts, arg);
+        } else {
+            parseReferenceModifiableFormat(s, opts, arg);
+        }
+    }
+}
+
+static void parsePositionalModifiableFormat(va_list args, EStream& s, StringFormatOpts& opts, Arg& arg) {
     char c = s.get();
     char next = s.peek();
-    if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's')) { // these must be size 1
-        if (c == 'b') {
-            v = (true == (bool)va_arg(args, int)) ? "true" : "false";
-        } else if (c == 't') {
-            std::basic_istream<char> * ss = va_arg(args, std::basic_istream<char> *);
-            while (true == ss->good()) {
-                char c = ss->get();
-                // TODO: this doesn't sit right with me.
-                if (static_cast<uint64_t>(c) != UINT64_MAX) {
-                    v += c;
+    arg.type = c;
+    if (next == END_OF_FORMAT_CHAR && (c == 'd')) {
+        int64_t x = va_arg(args, int64_t);
+        arg.expanded_value = numToStringSigned(x, opts);
+        arg.ptr = (void *)new int64_t(x);
+    } else if (next == END_OF_FORMAT_CHAR && (c == 'u' || c == 'x' || c == 'X')) {
+        uint64_t x = va_arg(args, uint64_t);
+        opts.base = c == 'u' ? 10 : 16;
+        opts.upper = c == 'X';
+        arg.expanded_value = numToString(x, opts);
+        arg.ptr = (void *)new uint64_t(x);
+    } else if ((next == END_OF_FORMAT_CHAR && c == 'f') || c == 'E' || c == 'e') {
+        s.unget(); // place c back in stream...
+ 
+        double x = va_arg(args, double);
+        arg.ptr = (void *)new double(x);
+        arg.expanded_value = parseFloatFormatSpecifierAndConvert(s, arg.ptr, opts);
+        arg.type = 'f';
+    } else if (true == isDigit(c)) {
+        s.unget();
+
+        // TODO:
+        // d, u, x, X, f, e, E all support width parameter. not the prettiest code but whatever... let's get this working quickly... 
+        // might be worth definining functions for each of the branches, manage data somehow and basically explicitly spell out the ast... reluctant for obvious reasons.
+        parsePositionalNumberModifier(args, s, opts, arg);
+    } else {
+        std::basic_stringstream<char> ss;
+        ss << "Invalid format at: '" << c << next << "'";
+        loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
+        throw std::runtime_error(ss.str());
+    }
+}
+
+static void parseReferenceModifiableFormat(EStream& s, StringFormatOpts& opts, Arg& arg) {
+    char c = s.get();
+    char next = s.peek();
+    if (next == END_OF_FORMAT_CHAR && (c == 'x' || c == 'X' || c == 'u')) {
+        if (arg.ptr == nullptr || (arg.type != 'u' && arg.type != 'x' && arg.type != 'X')) {
+            std::basic_stringstream<char> ss;
+            ss << "Invalid arg reference. Expected non-null pointer and arg.type = 'u', 'x' or 'X'. Is pointer null? " << (int)(arg.ptr == nullptr) << ". Arg type: '" << arg.type << "'.";
+            loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
+            throw std::runtime_error(ss.str());
+        }
+        arg.expanded_value = numToString(*(uint64_t *)arg.ptr, opts);
+    } else if (next == END_OF_FORMAT_CHAR && c == 'd') {
+        if (arg.ptr == nullptr || arg.type != 'd') {
+            std::basic_stringstream<char> ss;
+            ss << "Invalid arg reference. Expected non-null pointer and arg.type = 'd'. Is pointer null? " << (int)(arg.ptr == nullptr) << ". Arg type: '" << arg.type << "'.";
+            loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
+            throw std::runtime_error(ss.str());
+        }
+        arg.expanded_value = numToStringSigned(*(int64_t *)arg.ptr, opts);
+    } else if ((next == END_OF_FORMAT_CHAR && c == 'f') || c == 'E' || c == 'e') {
+        if (arg.ptr == nullptr || arg.type != 'f') {
+            std::basic_stringstream<char> ss;
+            ss << "Invalid arg reference. Expected non-null pointer and arg.type = 'f'. Is pointer null? " << (int)(arg.ptr == nullptr) << ". Arg type: '" << arg.type << "'.";
+            loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
+            throw std::runtime_error(ss.str());
+        }
+        s.unget(); // place c back in stream...
+ 
+        arg.expanded_value = parseFloatFormatSpecifierAndConvert(s, arg.ptr, opts);
+    } else if (true == isDigit(c)) {
+        s.unget();
+
+        // TODO:
+        // d, u, x, X, f, e, E all support width parameter. not the prettiest code but whatever... let's get this working quickly... 
+        // might be worth definining functions for each of the branches, manage data somehow and basically explicitly spell out the ast... reluctant for obvious reasons.
+        parseReferenceNumberModifier(s, opts, arg);
+    } else {
+        std::basic_stringstream<char> ss;
+        ss << "Invalid format at: '" << c << next << "'";
+        loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
+        throw std::runtime_error(ss.str());
+    }
+}
+
+// TODO: might be cool to implement this as a readUntil task lol... whatever..
+static Arg parsePositionalFormatSpecifier(va_list args, EStream& s) {
+    Arg arg;
+    StringFormatOpts opts;
+
+    // I don't like games of telephone so this will have to do.
+    //  alternatively, this can be recursively implmented...
+    //      -- you'll still need to base case check of first iteration.
+    //      -- you'll need to provide opts...
+    //      -- you'll maybe want to break this out to individual functions...
+
+    //      so, after parsing precision or width (parseNumberModifier), we'll call parseModifiableFormat or something like that?
+    //      but we'll also call parseModifiableFormat from where parseNumberModifier is invoked...
+    //      yeah, so that implements branch == parseNumberModifier -> parseModifiableFormat -> parseD, etc.
+    //          branch == parseModifiableFormat -> parseD, etc.
+    //      as for sign, branch == parseSign -> parseModifiableFOrmat-> parseD, etc.
+    //          branch == parseSign -> parseNumberModifier -> parseModifiableFormat -> parseD, etc.
+    //      we'll follow the same logic and 
+    //      so, maybe there isn't as much recursion as I thought but defiently can potentially or maybe not, maybe no stack thrashing to worry about.
+    //      idk, which is a better solution? definetly this probably, but I don't want to rn... whatever break time...
+    char c = s.get();
+    char next = s.peek();
+    arg.type = c;
+    if (next == END_OF_FORMAT_CHAR && c == 'b') {
+        arg.expanded_value = (true == (bool)va_arg(args, int)) ? "true" : "false";
+    } else if (next == END_OF_FORMAT_CHAR && c == 't') {
+        std::basic_istream<char> * ss = va_arg(args, std::basic_istream<char> *);
+        while (true == ss->good()) {
+            char c = ss->get();
+            // TODO: this doesn't sit right with me.
+            if (static_cast<uint64_t>(c) != UINT64_MAX) {
+                arg.expanded_value += c;
+            }
+        }
+    } else if (next == END_OF_FORMAT_CHAR && c == 'c') {
+        char x = (char)va_arg(args, int);
+        arg.expanded_value += x;
+    // branch to function... for readability?
+    } else if (next == END_OF_FORMAT_CHAR && c == 's') {
+        std::string * value = new std::string(va_arg(args, const char *));
+        arg.expanded_value = *value;
+        arg.ptr = (void *)value;
+    } else if ((next == 'l' || next == 's') && c == 's') {
+        std::string * value = new std::string(va_arg(args, const char *));
+        arg.ptr = (void *)value;
+        s.get();
+        char nextnext = s.peek();
+        if (nextnext == END_OF_FORMAT_CHAR && next == 'l' && c == 's') {
+            for (auto c: *value) {
+                if ('A' <= c && c >= 'Z') {
+                    arg.expanded_value += c + 0x20;
                 }
             }
-        } else if (c == 's') {
-            v = va_arg(args, const char *);
-        } else if (c == 'c') {
-            char i = (char)va_arg(args, int);
-            v += i;
+        } else if (nextnext == END_OF_FORMAT_CHAR && next == 'u' && c == 's') {
+            for (auto c: *value) {
+                if ('a' <= c && c >= 'z') {
+                    arg.expanded_value += c - 0x20;
+                }
+            }
         }
-    // } else if (next == END_OF_FORMAT_CHAR && (c == 'd' || c == 'x' || c == 'X' || c == 'o')) {
-    // TODO: no octal support for now
-    } else if (next == END_OF_FORMAT_CHAR && (c == 'd')) {
-        // TODO: if no type safety then why this?
-        // read up on va_arg type parameter...  in other words, what happens if it's not the type specified - casting? if so, does it cast always? if so, then let's expect the largest.
-        int64_t i = va_arg(args, int64_t);
-        ptr = (void *)new int64_t(i);
-        type = 'd';
-        v = NumToStringSigned(*(int64_t *)ptr, 10);
-    } else if (next == END_OF_FORMAT_CHAR && (c == 'u' || c == 'x' || c == 'X')) {
-        // TODO: if no type safety then why this?
-        // read up on va_arg type parameter...  in other words, what happens if it's not the type specified - casting? if so, does it cast always? if so, then let's expect the largest.
-        uint64_t i = va_arg(args, uint64_t);
-        ptr = (void *)new uint64_t(i);
-        type = 'u';
-        v = NumToString(*(uint64_t *)ptr, c == 'u' ? 10 : 16, c == 'X');
-    } else {
-        s.unget(); // place c back in stream...
+    } else if (c == '+') {
+        opts.sign_mask = StringFormatOpts::SIGN_FOR_POSITIVES | StringFormatOpts::SIGN_FOR_NEGATIVES;
+        parsePositionalModifiableFormat(args, s, opts, arg);
+    } else if (c == '-') {
+        opts.sign_mask = StringFormatOpts::NO_SIGN;
+        parsePositionalModifiableFormat(args, s, opts, arg);
+    } else if (true == isDigit(c)) {
+        s.unget();
 
-        double i = va_arg(args, double);
-        ptr = (void *)new double(i);
-        type = 'f';
-        v = parseFloatFormatSpecifierAndConvert(s, ptr);
+        // TODO:
+        // d, u, x, X, f, e, E all support width parameter. not the prettiest code but whatever... let's get this working quickly... 
+        // might be worth definining functions for each of the branches, manage data somehow and basically explicitly spell out the ast... reluctant for obvious reasons.
+        parsePositionalNumberModifier(args, s, opts, arg);
+    } else {
+        parsePositionalModifiableFormat(args, s, opts, arg);
     }
-    s.get(); // make sure to consume END_OF_FORMAT_CHAR
-    return Arg(ptr, type, v);
+    s.get(); // consume END_OF_FORMAT_CHAR
+    return arg;
 }
 
 static std::string parseReferenceFormatSpecifier(EStream& s, Arg& arg) {
     std::string v;
+    StringFormatOpts opts;
+
     char c = s.get();
     char next = s.peek();
-    if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's' || c == 'd')) {
+    if (next == END_OF_FORMAT_CHAR && (c == 'b' || c == 'c' || c == 't' || c == 's')) {
         v = arg.expanded_value;
-    } else if (c == 'x' || c == 'X' || c == 'u') {
-        if (arg.ptr == nullptr || arg.type != 'u') {
-            std::basic_stringstream<char> ss;
-            ss << "Invalid arg reference. Expected non-null pointer and arg.type = 'u'. Is pointer null? " << (int)(arg.ptr == nullptr) << ". Arg type: '" << arg.type << "'.";
-            throw std::runtime_error(ss.str());
+    } else if ((next == 'l' || next == 's') && c == 's') {
+        s.get();
+        char nextnext = s.peek();
+        if (nextnext == END_OF_FORMAT_CHAR && next == 'l' && c == 's') {
+            if (arg.ptr == nullptr || arg.type != 's') {
+                std::basic_stringstream<char> ss;
+                ss << "Invalid arg reference. Expected non-null pointer and arg.type = 's'. Is pointer null? " << (int)(arg.ptr == nullptr) << ". Arg type: '" << arg.type << "'.";
+                loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
+                throw std::runtime_error(ss.str());
+            }
+            std::string value = *(std::string *)arg.ptr;
+            for (auto c: value) {
+                if ('A' <= c && c >= 'Z') {
+                    v += c + 0x20;
+                }
+            }
+        } else if (nextnext == END_OF_FORMAT_CHAR && next == 'u' && c == 's') {
+            if (arg.ptr == nullptr || arg.type != 's') {
+                std::basic_stringstream<char> ss;
+                ss << "Invalid arg reference. Expected non-null pointer and arg.type = 's'. Is pointer null? " << (int)(arg.ptr == nullptr) << ". Arg type: '" << arg.type << "'.";
+                loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
+                throw std::runtime_error(ss.str());
+            }
+            std::string value = *(std::string *)arg.ptr;
+            for (auto c: value) {
+                if ('a' <= c && c >= 'z') {
+                    v += c - 0x20;
+                }
+            }
         }
-        v = NumToString(*(uint64_t *)arg.ptr, c == 'u' ? 10 : 16, c == 'X');
-    } else {
-        s.unget(); // place c back in stream...
+    } else if (c == '+') {
+        opts.sign_mask = StringFormatOpts::SIGN_FOR_POSITIVES | StringFormatOpts::SIGN_FOR_NEGATIVES;
+        parseReferenceModifiableFormat(s, opts, arg);
+    } else if (c == '-') {
+        opts.sign_mask = StringFormatOpts::NO_SIGN;
+        parseReferenceModifiableFormat(s, opts, arg);
+    } else if (true == isDigit(c)) {
+        s.unget();
 
-        if (arg.ptr == nullptr || arg.type != 'f') {
-            std::basic_stringstream<char> ss;
-            ss << "Invalid arg reference. Expected non-null pointer and arg.type = 'f'. Is pointer null? " << (int)(arg.ptr == nullptr) << ". Arg type: '" << arg.type << "'.";
-            throw std::runtime_error(ss.str());
-        }
-        v = parseFloatFormatSpecifierAndConvert(s, arg.ptr);
+        parseReferenceNumberModifier(s, opts, arg);
+    } else {
+        parseReferenceModifiableFormat(s, opts, arg);
     }
-    s.get(); // make sure to consume END_OF_FORMAT_CHAR
-    return v;
+    s.get(); // consume END_OF_FORMAT_CHAR
+    return arg.expanded_value;
 }
 
 static void parsePositionalFormat(va_list args, EStream& s, std::basic_stringstream<char>& d, Array<Arg>& converted_args, bool& has_reference_selection) {
@@ -215,7 +396,7 @@ static void parseReferenceFormat(Array<Arg>& args, EStream& s, std::basic_string
 static void deleteArgs(Array<Arg>& args) {
     for (auto arg: args) {
         char c = arg.type;
-        if (c == 'u') {
+        if (c == 'u' || c == 'X' || c == 'x') {
             delete (uint64_t *)arg.ptr;
         } else if (c == 'd') {
             delete (int64_t *)arg.ptr;

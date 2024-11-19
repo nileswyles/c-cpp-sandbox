@@ -37,7 +37,7 @@ static const char * LOG_LEVEL_STRINGS[5] = {
 #ifdef WYLESLIBS_LOGGER_OLD_ENABLED
 #undef loggerPrintf
 #define loggerPrintf(min, fmt, ...) \
-    if (LOGGER_MODULE_ENABLED && LOGGER_LEVEL >= min) {\
+    if (LOGGER_LEVEL >= min && LOGGER_MODULE_ENABLED) {\
         FILE * file = stderr;\
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
@@ -47,7 +47,7 @@ static const char * LOG_LEVEL_STRINGS[5] = {
 #else
 #undef loggerPrintf
 #define loggerPrintf(min, fmt, ...) \
-    if (LOGGER_MODULE_ENABLED && LOGGER_LEVEL >= min) {\
+    if (LOGGER_LEVEL >= min && LOGGER_MODULE_ENABLED) {\
         FILE * file = stderr;\
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
@@ -62,7 +62,7 @@ static const char * LOG_LEVEL_STRINGS[5] = {
 
 #undef loggerPrintByteArray
 #define loggerPrintByteArray(min, arr, size) \
-    if (LOGGER_MODULE_ENABLED && LOGGER_LEVEL >= min) {\
+    if (LOGGER_LEVEL >= min && LOGGER_MODULE_ENABLED) {\
         FILE * file = stderr;\
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
@@ -85,6 +85,6 @@ static const char * LOG_LEVEL_STRINGS[5] = {
 
 #undef loggerExec
 #define loggerExec(min, code) \
-    if (LOGGER_MODULE_ENABLED && LOGGER_LEVEL >= min) {\
+    if (LOGGER_LEVEL >= min && LOGGER_MODULE_ENABLED) {\
         code\
     }

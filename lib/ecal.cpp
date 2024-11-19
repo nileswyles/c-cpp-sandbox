@@ -68,7 +68,9 @@ static bool isLeapYear(uint16_t year) {
     return year % 4 == 0 && (year % 100 != 0 || (year % 100 == 0 && year % 400 == 0));
 }
 
-extern std::string WylesLibs::Cal::getFormattedDateTime(int8_t offset) {
+extern std::string WylesLibs::Cal::getFormattedDateTime(int16_t offset, DATETIME_FORMAT format) {
+    // TODO:
+    //  is this a code smell? use tuple here? pass by reference should be avoided? tuple seems worse... it might make sense in another context
     uint64_t epoch_seconds = WylesLibs::Cal::getZonedEpochTime(offset);
     
     uint64_t seconds_since_year_start = epoch_seconds;
@@ -112,6 +114,13 @@ extern std::string WylesLibs::Cal::getFormattedDateTime(int8_t offset) {
     uint8_t min = static_cast<uint8_t>((seconds_since_day_start - hr * SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
     uint8_t sec = static_cast<uint8_t>(seconds_since_day_start - hr * SECONDS_PER_HOUR - min * SECONDS_PER_MINUTE);
 
-    // Month Day Year, 24H:60M:60S
+    // ! IMPORTANT - offset value is validated and updated by the function used to get the time.
+    // if (format == READABLE) {
+    //     return WylesLibs::format("{s} {u} {u}, {u}:{u}:{u} {+d}:{+02d}", MONTH_NAME[month], day + 1, year, hr, min, sec, offset/100, offset);
+    // } else if (format == ISO8601_READABLE) {
+    //     return WylesLibs::format("{04u}-{02u}-{02u}T{02u}:{02u}:{02u}{+d}:{+02d}", year, month, day + 1, hr, min, sec, offset/100, offset);
+    // } else {
+    //     return WylesLibs::format("{04u}{02u}{02u}T{02u}{02u}{02u}{+d}", year, month, day + 1, hr, min, sec, offset);
+    // }
     return WylesLibs::format("{s} {u} {u}, {u}:{u}:{u}", MONTH_NAME[month], day + 1, year, hr, min, sec);
 }

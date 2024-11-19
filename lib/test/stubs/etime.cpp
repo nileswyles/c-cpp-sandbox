@@ -14,8 +14,8 @@ static size_t invocations = 0;
 
 // TODO:
 //  Validate again using linux cli?
-extern uint64_t WylesLibs::Cal::getZonedEpochTime(int8_t offset) {
-    uint64_t epoch_seconds;
+extern uint64_t WylesLibs::Cal::getZonedEpochTime(int16_t offset) {
+    uint64_t epoch_seconds = 0;
     invocations++;
     if (invocations == 1) {
         // testGetFormattedTime

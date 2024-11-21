@@ -87,11 +87,9 @@ static std::string parseFloatFormat(EStream& s, void * value, StringFormatOpts& 
 #if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
         loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", s.stream_log.c_str())
 #endif
-        // TODO:
-        // think about better way of logging this...
         std::basic_stringstream<char> ss;
-        // ss << "Invalid float format at: '" << c << next << nextnext << "'";
-        // loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
+        ss << "Invalid float format with format type: '" << format_type << "'";
+        loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
         throw std::runtime_error(ss.str());
 
     }
@@ -103,30 +101,25 @@ static void parseStringCaseModifier(std::string value, EStream& s, Arg& arg) {
     char c = s.get();
     char next = s.get();
     char nextnext = s.peek();
-    // TODO: eventually readbytes readertasks? and parse like that?
     if (c == 's' && next == 'l' && nextnext == END_OF_FORMAT_CHAR) {
         for (auto c: value) {
             printf("%c %s\n", c, arg.expanded_value.c_str());
             if ('A' <= c && c >= 'Z') {
-                // arg.expanded_value += c + 0x20;
-                arg.expanded_value += (char)c + 0x20;
-                // printf("%c %s\n", c, arg.expanded_value.c_str());
+                arg.expanded_value.push_back(c + ' ');
             }
         }
     } else if (c == 's' && next == 'u' && nextnext == END_OF_FORMAT_CHAR) {
         for (auto c: value) {
             if ('a' <= c && c >= 'z') {
-                arg.expanded_value += (char)c - 0x20;
+                arg.expanded_value.push_back(c - ' ');
             }
         }
     } else {
 #if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
         loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", s.stream_log.c_str())
 #endif
-        // TODO:
-        // think about better way of logging this...
         std::basic_stringstream<char> ss;
-        ss << "Invalid format at: '" << c << next << nextnext << "'";
+        ss << "Invalid 'string with case modifier' format at: '" << c << next << nextnext << "'";
         loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
         throw std::runtime_error(ss.str());
     }
@@ -201,16 +194,13 @@ static void parsePositionalModifiableFormat(va_list args, EStream& s, StringForm
     } else if (true == isDigit(c)) {
         s.unget();
 
-        // TODO:
-        // d, u, x, X, f, e, E all support width parameter. not the prettiest code but whatever... let's get this working quickly... 
-        // might be worth definining functions for each of the branches, manage data somehow and basically explicitly spell out the ast... reluctant for obvious reasons.
         parsePositionalNumberModifier(args, s, opts, arg);
     } else {
 #if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
         loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", s.stream_log.c_str())
 #endif
         std::basic_stringstream<char> ss;
-        ss << "Invalid format at: '" << prev << c << next << "'";
+        ss << "Invalid positional format at: '" << prev << c << next << "'";
         loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
         throw std::runtime_error(ss.str());
     }
@@ -251,16 +241,13 @@ static void parseReferencedModifiableFormat(EStream& s, StringFormatOpts& opts, 
     } else if (true == isDigit(c)) {
         s.unget();
 
-        // TODO:
-        // d, u, x, X, f, e, E all support width parameter. not the prettiest code but whatever... let's get this working quickly... 
-        // might be worth definining functions for each of the branches, manage data somehow and basically explicitly spell out the ast... reluctant for obvious reasons.
         parseReferencedNumberModifier(s, opts, arg);
     } else {
 #if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
         loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", s.stream_log.c_str())
 #endif
         std::basic_stringstream<char> ss;
-        ss << "Invalid format at: '" << prev << c << next << "'";
+        ss << "Invalid referenced format at: '" << prev << c << next << "'";
         loggerPrintf(LOGGER_INFO, "Exception: %s\n", ss.str().c_str());
         throw std::runtime_error(ss.str());
     }
@@ -269,22 +256,6 @@ static void parseReferencedModifiableFormat(EStream& s, StringFormatOpts& opts, 
 // TODO: might be cool to implement this as a readUntil task lol... whatever..
 static void parsePositionalFormat(va_list args, EStream& s, Arg& arg) {
     StringFormatOpts opts;
-
-    // I don't like games of telephone so this will have to do.
-    //  alternatively, this can be recursively implmented...
-    //      -- you'll still need to base case check of first iteration.
-    //      -- you'll need to provide opts...
-    //      -- you'll maybe want to break this out to individual functions...
-
-    //      so, after parsing precision or width (parseNumberModifier), we'll call parseModifiableFormat or something like that?
-    //      but we'll also call parseModifiableFormat from where parseNumberModifier is invoked...
-    //      yeah, so that implements branch == parseNumberModifier -> parseModifiableFormat -> parseD, etc.
-    //          branch == parseModifiableFormat -> parseD, etc.
-    //      as for sign, branch == parseSign -> parseModifiableFOrmat-> parseD, etc.
-    //          branch == parseSign -> parseNumberModifier -> parseModifiableFormat -> parseD, etc.
-    //      we'll follow the same logic and 
-    //      so, maybe there isn't as much recursion as I thought but defiently can potentially or maybe not, maybe no stack thrashing to worry about.
-    //      idk, which is a better solution? definetly this probably, but I don't want to rn... whatever break time...
 
     char prev = s.peek();
     char c = s.get();
@@ -319,9 +290,6 @@ static void parsePositionalFormat(va_list args, EStream& s, Arg& arg) {
     } else if (true == isDigit(c)) {
         s.unget();
 
-        // TODO:
-        // d, u, x, X, f, e, E all support width parameter. not the prettiest code but whatever... let's get this working quickly... 
-        // might be worth definining functions for each of the branches, manage data somehow and basically explicitly spell out the ast... reluctant for obvious reasons.
         parsePositionalNumberModifier(args, s, opts, arg);
     } else {
         s.unget();
@@ -408,7 +376,6 @@ static void parseReferenceFormat(Array<Arg>& args, EStream& s, std::basic_string
            s.readNatural(lol, dummy_count);
            selection = static_cast<size_t>(lol) - 1; // 0 - 1 == SIZE_MAX?
            // consumed all digits, at non-digit
-           //    std::cout << "Selected positional format: " << selection << std::endl;
        }
     }
     if (selection == SIZE_MAX || selection >= args.size()) {
@@ -455,32 +422,12 @@ static void deleteArgs(Array<Arg>& args) {
 extern std::string WylesLibs::format(std::string format, ...) {
     va_list args;
     va_start(args, format);
-    // if reach end of format and still va_arg, then do what? can just ignore if just positional but might be an issue with reference stuff..
     bool escaped = false;
     bool has_reference_selection = false;
     std::basic_stringstream<char> format_out;
     Array<Arg> parsed_args;
     EStream s((uint8_t *)format.data(), format.size());
     char c;
-    // options:
-    //  reference previous positional and indicator?
-    //      requires 1 pass.
-    //      then no override. unless it takes from top-level? lol
-    //      yeah, definetly...
-    //  reference previous positional only.
-    //      requires 1 pass.
-    //      I think it's useful to not have to repeat the variable if of same data... lol... so override might be necessary...
-    //  reference any positional format. // this was the original goal.
-    //      requires 2 passes.
-    //      I think it's useful to not have to repeat the variable if of same data... lol... so override might be necessary...
-    //      might also be useful to reference any positional format. not as bad if just referencing positional formats.
-    //  reference any positional or indicator format.
-    //      requires 2 passes.
-    //      then no override. unless it takes from top-level? lol too confusing too much compression??
-    //      yeah, definetly...
-    //      might also be useful to reference any positional format but now even more complication... 
-
-    // alright, so I was right. Like always... LMAO jk
     while (true == s.good()) {
         c = s.get();
         if (c == '\\') {

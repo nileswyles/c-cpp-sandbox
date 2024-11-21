@@ -59,7 +59,7 @@ namespace WylesLibs {
             uint8_t base;
             uint8_t width;
             uint8_t precision;
-            int8_t exponential;
+            int16_t exponential;
             char exponential_designator;
             bool upper;
             uint8_t sign_mask;
@@ -151,6 +151,7 @@ namespace WylesLibs {
         int16_t precision_count = -1;
         size_t divisor = 1;
         size_t digit_count = 1;
+        size_t digit_count_before_decimal = 0;
         size_t start_index = 0;
         size_t decimal_idx;
         char digit;
@@ -161,35 +162,7 @@ namespace WylesLibs {
             decimal_idx = pow(10, opts.precision);
             num *= decimal_idx;
         } else if (opts.exponential > 0) {
-            size_t width_divisor = 1;
-            size_t detected_width = 1;
-            while (num / width_divisor > 10) {
-                width_divisor *= 10;
-                detected_width++;
-            }
-            if (static_cast<int64_t>(detected_width) < opts.exponential) {
-                s += "0";
-                size_t pad_count = opts.exponential - detected_width;
-                bool zeroed_result = false;
-                if (opts.precision == 0) {
-                    return s;
-                } else if (opts.precision > pad_count) {
-                    precision_count = pad_count;
-                } else {
-                    pad_count = opts.precision;
-                    zeroed_result = true;
-                }
-                s += '.';
-                while (pad_count > 0) {
-                    s += "0";
-                    pad_count--;
-                }
-                if (true == zeroed_result) {
-                    return s;
-                }
-            } else {
-                decimal_idx = pow(10, opts.precision + opts.exponential);
-            }
+            decimal_idx = pow(10, opts.precision + opts.exponential);
             num *= pow(10, opts.precision);
         } else {
             int16_t abs_exponential = -1 * opts.exponential;
@@ -203,35 +176,72 @@ namespace WylesLibs {
             // identify num width thus intializing digit parsing.
             //  the detected width (characterized by divisor and digit_count for natural width) is used for parsing, padding and truncating...
             divisor *= 10;
-            if (divisor > decimal_idx) {
-                digit_count++;
+            if (divisor >= decimal_idx) {
+                digit_count_before_decimal++;
             }
+            digit_count++;
         }
-        if (opts.width != UINT8_MAX && digit_count < opts.width) {
-            // pad to width
-            opts.width -= digit_count;
-            while (opts.width > 0) {
+        if (digit_count_before_decimal == 0) {
+            // handle specific case where the user requests an exponential but doesn't number doesn't have enough digits to satisfy, in this situation we need to pad after the decimal point in addition to before.
+            // natural pad
+            if (opts.width != UINT8_MAX) {
+                size_t natural_pad = opts.width;
+                while (natural_pad > 0) {
+                    s += '0';
+                    natural_pad--;
+                }
+            } else {
                 s += '0';
-                opts.width--;
             }
-        } else if (digit_count > opts.width) {
-            // otherwise truncate
-            start_index = digit_count - opts.width;
+            if (opts.precision == 0) {
+                return s;
+            }
+            size_t digit_count_to_decimal_idx = 0;
+            size_t pow_10 = 1;
+            while (pow_10 != decimal_idx) {
+                pow_10 *= 10;
+                digit_count_to_decimal_idx++;
+            }
+            // decimal pad
+            size_t decimal_pad = digit_count_to_decimal_idx - digit_count;
+            if (opts.precision <= decimal_pad) {
+                return s;
+            }
+            s += '.';
+            precision_count = 0;
+            while (decimal_pad > 0) {
+                s += '0';
+                decimal_pad--;
+                precision_count++;
+            }
+        } else {
+            if (opts.width != UINT8_MAX && digit_count_before_decimal < opts.width) {
+                // pad to width
+                opts.width -= digit_count_before_decimal;
+                while (opts.width > 0) {
+                    s += '0';
+                    opts.width--;
+                }
+            } else if (digit_count_before_decimal > opts.width) {
+                // otherwise truncate
+                start_index = digit_count_before_decimal - opts.width;
+            }
         }
-        // digit parsing, place decimal point and truncate at precision.
+        // digit parsing - place decimal point and trim left at width and right at precision.
         while (divisor > 0) {
             digit = (char)(num / divisor);
-            if (i >= start_index) { // truncate
-                if (precision_count >= opts.precision) {
+            if (i >= start_index) { // truncate natural
+
+                if (precision_count >= opts.precision) { // truncate decimal
                     break;
                 } else if (precision_count >= 0) {
                     precision_count++;
                 }
-                digit = (char)(num / divisor);
                 if (digit <= 9) {
                     s += digit + '0';
                     if (divisor == decimal_idx) {
                         if (opts.precision == 0) {
+                            // if precision is zero, obviously don't continue after decimal
                             break;
                         }
                         s += '.';

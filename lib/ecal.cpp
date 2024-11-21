@@ -6,8 +6,6 @@
 
 #include <stdint.h>
 
-// constexpr?
-
 #define SECONDS_PER_HOUR 3600 // 60 * 60
 #define SECONDS_PER_MINUTE 60
 #define SECONDS_PER_DAY 86400 // 60 * 60 * 24
@@ -16,7 +14,7 @@
 #define MONTHS_IN_YEAR 12
 #define SIZE_MONTHS_ARRAY MONTHS_IN_YEAR + 1
 
-static const uint32_t RUNNING_SECONDS_UP_UNTIL_MONTH_NON_LEAP_YEAR[SIZE_MONTHS_ARRAY] = {
+static constexpr uint32_t RUNNING_SECONDS_UP_UNTIL_MONTH_NON_LEAP_YEAR[SIZE_MONTHS_ARRAY] = {
     0,
     SECONDS_PER_DAY * (31),                                                        // jan (up until feb), index 2)
     SECONDS_PER_DAY * (31 + 28),                                                   // jan + feb (up until march), index 3)
@@ -32,7 +30,7 @@ static const uint32_t RUNNING_SECONDS_UP_UNTIL_MONTH_NON_LEAP_YEAR[SIZE_MONTHS_A
     SECONDS_PER_DAY * (31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30 + 31), // start of new year.
 };
 
-static const uint32_t RUNNING_SECONDS_UP_UNTIL_MONTH_LEAP_YEAR[SIZE_MONTHS_ARRAY] = {
+static constexpr uint32_t RUNNING_SECONDS_UP_UNTIL_MONTH_LEAP_YEAR[SIZE_MONTHS_ARRAY] = {
     0,
     SECONDS_PER_DAY * (31),                                                        // jan (up until feb), index 2)
     SECONDS_PER_DAY * (31 + 29),                                                   // jan + feb (up until march), index 3)
@@ -48,7 +46,7 @@ static const uint32_t RUNNING_SECONDS_UP_UNTIL_MONTH_LEAP_YEAR[SIZE_MONTHS_ARRAY
     SECONDS_PER_DAY * (31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30 + 31), // start of new year.
 };
 
-static const char * MONTH_NAME[SIZE_MONTHS_ARRAY] = {
+static constexpr const char * MONTH_NAME[SIZE_MONTHS_ARRAY] = {
     "",
     "Jan",
     "Feb",

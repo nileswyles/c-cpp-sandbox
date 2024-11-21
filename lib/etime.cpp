@@ -11,9 +11,7 @@ using namespace WylesLibs;
 
 #define SECONDS_PER_HOUR 3600 // 60 * 60
 
-static int8_t APPLICATION_TIME_OFFSET = 0; // UTC is default
-
-static Array<int16_t> OFFSETS{
+static constexpr Array<int16_t> OFFSETS{
     -1200,
     -1100,
     -1000,
@@ -50,6 +48,8 @@ static Array<int16_t> OFFSETS{
     1345,
     1400
 };
+
+static int8_t APPLICATION_TIME_OFFSET = 0; // UTC is default
 
 extern void WylesLibs::Cal::setApplicationTimeOffset(int16_t offset) {
     if (false == OFFSETS.contains(offset)) {

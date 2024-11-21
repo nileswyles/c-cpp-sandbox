@@ -212,11 +212,8 @@ static void testArrayRemoveCstrings(TestArg * t) {
         "STRING 6",
         "STRING 7"
     };
-    printf("?????\n");
     size_t initial_size = actual.size();
-    printf("?????\n");
     actual.remove(1);
-    printf("?????\n");
     t->fail = !assert<const char *>(actual, expected, expected_size, initial_size * 1.75);
 }
 

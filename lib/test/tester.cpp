@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 
 using namespace WylesLibs::Test;
 
@@ -22,6 +23,8 @@ extern void WylesLibs::Test::ASSERT_BOOLEAN(TestArg * t, bool result, bool expec
         t->fail = false;
     }
 }
+
+static char line_number_str[INT_MAX/10] = {};
 
 bool Tester::run(const char * name) {
     printf("\n-------------------- %s --------------------\n", this->suite_name.c_str());
@@ -50,8 +53,14 @@ bool Tester::run(const char * name) {
         }
         if (ran_test) {
             if (test.arg.fail) {
+                sprintf(line_number_str, "%d", test.line_number);
+
                 failed_names += '\t';
                 failed_names += test.name;
+                failed_names += " -> ";
+                failed_names += test.test_file_name;
+                failed_names += ":";
+                failed_names += std::string(line_number_str);
                 failed_names += '\n';
                 num_failed++;
             } else {
@@ -80,7 +89,7 @@ bool Tester::run(const char * name) {
 void Tester::runTest(Test * test) {
     loggerExec(LOGGER_TEST,
         printf("\n#######################################\n");
-        printf("\nTest Func: %s\n\n", test->name.c_str());
+        printf("\nTest Func: %s -> %s:%d\n\n", test->name.c_str(), test->test_file_name.c_str(), test->line_number);
     );
     if (this->before_each != nullptr) {
         this->before_each(&test->arg);

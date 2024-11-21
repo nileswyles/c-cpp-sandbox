@@ -52,22 +52,23 @@ namespace WylesLibs {
 
     class StringFormatOpts {
         public:
-            static const uint8_t NO_SIGN = 0x0;
-            static const uint8_t SIGN_FOR_NEGATIVES = 0x1;
-            static const uint8_t SIGN_FOR_POSITIVES = 0x2;
+            static constexpr uint8_t NO_SIGN = 0x0;
+            static constexpr uint8_t SIGN_FOR_NEGATIVES = 0x1;
+            static constexpr uint8_t SIGN_FOR_POSITIVES = 0x2;
 
             uint8_t base;
             uint8_t width;
             uint8_t precision;
             int8_t exponential;
+            char exponential_designator;
             bool upper;
             uint8_t sign_mask;
             bool is_negative;
 
-            StringFormatOpts(): base(10), width(UINT8_MAX), precision(6), exponential(0), upper(true), sign_mask(SIGN_FOR_NEGATIVES), is_negative(false) {}
+            StringFormatOpts(): base(10), width(UINT8_MAX), precision(6), exponential(0), exponential_designator('E'), upper(true), sign_mask(SIGN_FOR_NEGATIVES), is_negative(false) {}
     };
 
-    static std::string numToString(uint64_t num, StringFormatOpts opts) {
+    static std::string numToString(uint64_t num, StringFormatOpts opts = {}) {
         std::string s;
         size_t divisor = 1;
         char digit;
@@ -88,7 +89,7 @@ namespace WylesLibs {
         if (opts.base == 16) {
             s += "0x";
         }
-        size_t digit_count = 0;
+        size_t digit_count = 1;
         while (num / divisor > opts.base) {
             divisor *= opts.base;
             digit_count++;
@@ -99,6 +100,7 @@ namespace WylesLibs {
             opts.width -= digit_count;
             while (opts.width > 0) {
                 s += '0';
+                opts.width--;
             }
         } else if (digit_count > opts.width) {
             // truncate
@@ -127,7 +129,7 @@ namespace WylesLibs {
     }
 
     // TODO: octal
-    static std::string numToStringSigned(int64_t num, StringFormatOpts opts) {
+    static std::string numToStringSigned(int64_t num, StringFormatOpts opts = {}) {
         if (num < 0) {
             num *= -1;
             opts.is_negative = true;
@@ -135,7 +137,7 @@ namespace WylesLibs {
         return numToString(static_cast<uint64_t>(num), opts);
     }
 
-    static std::string floatToString(double num, StringFormatOpts opts) {
+    static std::string floatToString(double num, StringFormatOpts opts = {}) {
         std::string s;
         if (num < 0) {
             if ((opts.sign_mask & StringFormatOpts::SIGN_FOR_NEGATIVES) > 0) {
@@ -148,15 +150,12 @@ namespace WylesLibs {
         }
         int16_t precision_count = -1;
         size_t divisor = 1;
-        size_t digit_count = 0;
+        size_t digit_count = 1;
         size_t start_index = 0;
         size_t decimal_idx;
         char digit;
         size_t i = 0;
 
-        if (opts.precision == 0) {
-            opts.precision = 1;
-        }
         // process exponential
         if (opts.exponential == 0) {
             decimal_idx = pow(10, opts.precision);
@@ -169,15 +168,18 @@ namespace WylesLibs {
                 detected_width++;
             }
             if (static_cast<int64_t>(detected_width) < opts.exponential) {
-                s += "0.";
+                s += "0";
                 size_t pad_count = opts.exponential - detected_width;
                 bool zeroed_result = false;
-                if (opts.precision > pad_count) {
-                    precision_count = pad_count + 1;
+                if (opts.precision == 0) {
+                    return s;
+                } else if (opts.precision > pad_count) {
+                    precision_count = pad_count;
                 } else {
                     pad_count = opts.precision;
                     zeroed_result = true;
                 }
+                s += '.';
                 while (pad_count > 0) {
                     s += "0";
                     pad_count--;
@@ -201,15 +203,16 @@ namespace WylesLibs {
             // identify num width thus intializing digit parsing.
             //  the detected width (characterized by divisor and digit_count for natural width) is used for parsing, padding and truncating...
             divisor *= 10;
-            if (divisor >= decimal_idx) {
+            if (divisor > decimal_idx) {
                 digit_count++;
             }
         }
         if (opts.width != UINT8_MAX && digit_count < opts.width) {
-            // pad to specified width
+            // pad to width
             opts.width -= digit_count;
             while (opts.width > 0) {
                 s += '0';
+                opts.width--;
             }
         } else if (digit_count > opts.width) {
             // otherwise truncate
@@ -219,15 +222,18 @@ namespace WylesLibs {
         while (divisor > 0) {
             digit = (char)(num / divisor);
             if (i >= start_index) { // truncate
-                if (precision_count >= 0) {
-                    precision_count++;
-                } else if (precision_count > opts.precision) {
+                if (precision_count >= opts.precision) {
                     break;
+                } else if (precision_count >= 0) {
+                    precision_count++;
                 }
                 digit = (char)(num / divisor);
                 if (digit <= 9) {
                     s += digit + '0';
                     if (divisor == decimal_idx) {
+                        if (opts.precision == 0) {
+                            break;
+                        }
                         s += '.';
                         precision_count = 0;
                     }
@@ -241,15 +247,14 @@ namespace WylesLibs {
         }
         // append exponential string.
         if (opts.exponential != 0) {
-            s += 'E';
+            s += opts.exponential_designator;
             if (opts.exponential < 0) {
                 s += '-';
                 opts.exponential *= -1;
             } else {
                 s += '+';
             }
-            StringFormatOpts opts;
-            s += numToStringSigned(opts.exponential, opts);
+            s += numToStringSigned(opts.exponential);
         }
         return s;
     }

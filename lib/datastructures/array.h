@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <utility>
 #include <string>
 #include <initializer_list>
 #include <stdexcept>
@@ -665,6 +666,26 @@ class SharedArray {
         SharedArray<T>& operator= (const SharedArray<T>& x) {
             this->ctrl = x.ctrl;
             this->ctrl->instance_count++;
+            return *this;
+        }
+        // ! IMPORTANT - purposely explicitly swaping to be expressive of all valid ways of doing this?
+        //      All of the documentation I read (at least as of 11/2024) states it's necessary even if it's a terrible implementation given the other language functionality.
+        //      Logic might otherwise lead you to conclude it MUST "destroy old and assigns" or "swap then destroy new" automatically - regardless. 
+        //          If I am reading this correctly, I think this is meant for the reasoners - if for anyone at all.
+
+        //      Generally if the program calls new via a constructor, then explicitly define the move constructor and assignment. 
+        //          Either swap all variables explictly or use default functionality (which presumably does what I described above?). 
+        //          This ensures it doesn't copy - avoiding dangling shlongs...
+        SharedArray(SharedArray<T>&& x) {
+            ArrayControl<T> * tmp_ctrl = this->ctrl;
+            this->ctrl = x.ctrl;
+            x.ctrl = tmp_ctrl;
+        }
+        // Move assignment
+        SharedArray<T>& operator= (SharedArray<T>&& x) {
+            ArrayControl<T> * tmp_ctrl = this->ctrl;
+            this->ctrl = x.ctrl;
+            x.ctrl = tmp_ctrl;
             return *this;
         }
         SharedArray<T>& operator+ (SharedArray<T>& x) {

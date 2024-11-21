@@ -13,8 +13,7 @@ using namespace WylesLibs;
 
 static int8_t APPLICATION_TIME_OFFSET = 0; // UTC is default
 
-// hella lame lol, but I don't care to read some map
-static const Array<int16_t> OFFSETS{
+static Array<int16_t> OFFSETS{
     -1200,
     -1100,
     -1000,
@@ -53,12 +52,11 @@ static const Array<int16_t> OFFSETS{
 };
 
 extern void WylesLibs::Cal::setApplicationTimeOffset(int16_t offset) {
-    // if (false == OFFSETS.contains(offset)) {
-    //     std::string msg = WylesLibs::format("Invalid offset provided: {d}", offset);
-    //     throw std::runtime_error(msg);
-    // } else {
+    if (false == OFFSETS.contains(offset)) {
+        throw std::runtime_error(WylesLibs::format("Invalid offset provided: {d}", offset));
+    } else {
         APPLICATION_TIME_OFFSET = offset;
-    // }
+    }
 }
 
 extern uint64_t WylesLibs::Cal::getUTCEpochTime() {
@@ -71,9 +69,9 @@ extern uint64_t WylesLibs::Cal::getZonedEpochTime(int16_t& offset) {
     // time function appears to do the same thing? "seconds from the epoch"... if nothing else, this is more expressive so let's use this.
     //  time might use CLOCK_REALTIME_COARSE - whatever that is.
     clock_gettime(CLOCK_REALTIME, &ts);
-    // if (false == OFFSETS.contains(offset)) {
-    //     offset = APPLICATION_TIME_OFFSET;
-    // }
+    if (false == OFFSETS.contains(offset)) {
+        offset = APPLICATION_TIME_OFFSET;
+    }
     ts.tv_sec += (offset * SECONDS_PER_HOUR);
     return static_cast<uint64_t>(ts.tv_sec);
 }

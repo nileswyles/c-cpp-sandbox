@@ -20,100 +20,232 @@ using namespace WylesLibs;
 using namespace WylesLibs::Test;
 
 static void stringUtilsNumToString(TestArg * t) {
-    // std::string num = numToString(UINT64_MAX, {});
-    // std::string expected = "18446744073709551615";
+    loggerPrintf(LOGGER_TEST, "Value to Parse: UINT64_MAX, default options\n");
+    std::string num = numToString(UINT64_MAX);
+    std::string expected = "18446744073709551615";
 
-    // printf("????????????????????????????\n");
-    // ASSERT_STRING(t, num, expected);
+    ASSERT_STRING(t, num, expected);
+}
+
+static void stringUtilsNumToStringTruncating(TestArg * t) {
+    StringFormatOpts opts;
+    opts.base = 10;
+    opts.width = 4;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1234567, width: 4\n");
+    std::string num = numToString(1234567, opts);
+    std::string expected = "4567";
+
+    ASSERT_STRING(t, num, expected);
+}
+
+// static void stringUtilsNumToStringPadding(TestArg * t) {
+//     StringFormatOpts opts;
+//     opts.base = 10;
+//     opts.width = 10;
+//     std::string num = numToString(1234567, opts);
+//     std::string expected = "0001234567";
+
+//     ASSERT_STRING(t, num, expected);
+// }
+
+static void stringUtilsNumToStringPadding(TestArg * t) {
+    StringFormatOpts opts;
+    opts.base = 10;
+    opts.width = 2;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 0, width: 2\n");
+    std::string num = numToString(0, opts);
+    std::string expected = "00";
+
+    ASSERT_STRING(t, num, expected);
 }
 
 static void stringUtilsNumToStringSigned(TestArg * t) {
-    // StringFormatOpts opts;
+    StringFormatOpts opts;
+    opts.base = 10;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: -1234567\n");
+    std::string num = numToStringSigned(-1234567, opts);
+    std::string expected = "-1234567";
 
-    // opts.precision = 6;
-    // opts.exponential = -3;
-    // std::string num = floatToString(1.123, opts);
-    // std::string expected = "1123.0000000E-3";
-    // ASSERT_STRING(t, num, expected);
-    // std::string num = numToStringSigned(-1234567, 10);
-    // std::string expected = "-1234567";
+    ASSERT_STRING(t, num, expected);
+}
 
-    // ASSERT_STRING(t, num, expected);
+static void stringUtilsNumToStringSignedTruncating(TestArg * t) {
+    StringFormatOpts opts;
+    opts.base = 10;
+    opts.width = 4;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: -1234567, width: 4\n");
+    std::string num = numToStringSigned(-1234567, opts);
+    std::string expected = "-4567";
+
+    ASSERT_STRING(t, num, expected);
+}
+
+static void stringUtilsNumToStringSignedPadding(TestArg * t) {
+    StringFormatOpts opts;
+    opts.base = 10;
+    opts.width = 10;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: -1234567, width: 10\n");
+    std::string num = numToStringSigned(-1234567, opts);
+    std::string expected = "-0001234567";
+
+    ASSERT_STRING(t, num, expected);
 }
 
 static void stringUtilsNumToStringHex(TestArg * t) {
-    // std::string num = numToString(0x1234567, 16);
-    // std::string expected = "0x1234567";
+    StringFormatOpts opts;
+    opts.base = 16;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 0x1234567\n");
+    std::string num = numToString(0x1234567, opts);
+    std::string expected = "0x1234567";
 
-    // ASSERT_STRING(t, num, expected);
+    ASSERT_STRING(t, num, expected);
+}
+
+static void stringUtilsNumToStringHexTruncating(TestArg * t) {
+    StringFormatOpts opts;
+    opts.base = 16;
+    opts.width = 4;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 0x1234567, width: 4\n");
+    std::string num = numToString(0x1234567, opts);
+    std::string expected = "0x4567";
+
+    ASSERT_STRING(t, num, expected);
+}
+
+static void stringUtilsNumToStringHexPadding(TestArg * t) {
+    StringFormatOpts opts;
+    opts.base = 16;
+    opts.width = 10;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 0x1234567, width: 10\n");
+    std::string num = numToString(0x1234567, opts);
+    std::string expected = "0x0001234567";
+
+    ASSERT_STRING(t, num, expected);
 }
 
 static void stringUtilsFloatToString(TestArg * t) {
     // std::string num = floatToString(1.1234567, 5);
-    // lol... 
-    // StringFormatOpts opts;
+    StringFormatOpts opts;
 
-    // opts.precision = 6;
-    // opts.exponential = -3;
-    // std::string num = floatToString(1.123, opts);
-    // std::string expected = "1123.0000000E-3";
-    // ASSERT_STRING(t, num, expected);
+    opts.precision = 7;
+    opts.exponential = -3;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1.123, precision: 7, exponential: -3\n");
+    std::string num = floatToString(1.123, opts);
+    std::string expected = "1123.0000000E-3";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
 
-    // printf("-------\n");
+    printf("-------\n");
 
-    // opts.precision = 7;
-    // opts.exponential = -3;
-    // num = floatToString(71.123, opts);
-    // expected = "71123.0000000E-3";
-    // ASSERT_STRING(t, num, expected);
+    opts.precision = 7;
+    opts.exponential = -3;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 71.123, precision: 7, exponential: -3\n");
+    num = floatToString(71.123, opts);
+    expected = "71123.0000000E-3";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
 
-    // printf("-------\n");
+    printf("-------\n");
 
-    // opts.precision = 2;
-    // opts.exponential = -3;
-    // num = floatToString(1.123, opts);
-    // expected = "1123.00E-3";
-    // ASSERT_STRING(t, num, expected);
+    opts.precision = 2;
+    opts.exponential = -3;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1.123, precision: 2, exponential: -3\n");
+    num = floatToString(1.123, opts);
+    expected = "1123.00E-3";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
 
-    // printf("-------\n");
+    printf("-------\n");
 
-    // num = floatToString(1.123, 0, -3);
-    // expected = "1123.0E-3";
-    // ASSERT_STRING(t, num, expected);
-    // printf("-------\n");
-    // num = floatToString(1.123, 5, 3);
-    // expected = "0.00112E+3";
-    // ASSERT_STRING(t, num, expected);
-    // printf("-------\n");
-    // num = floatToString(1.123, 7, 3);
-    // expected = "0.0011230E+3";
-    // ASSERT_STRING(t, num, expected);
-    // printf("-------\n");
-    // num = floatToString(1.123, 0, 3);
-    // expected = "0.0E+3";
-    // ASSERT_STRING(t, num, expected);
-    // printf("-------\n");
-    // num = floatToString(7141.123, 7, 3);
-    // expected = "7.1411230000E+3";
-    // ASSERT_STRING(t, num, expected);
-    // printf("-------\n");
-    // num = floatToString(7141.123, 1, 5);
-    // expected = "7.1411230000E+3";
-    // ASSERT_STRING(t, num, expected);
-    // printf("-------\n");
-    // num = floatToString(7141.123, 0, 3);
-    // expected = "7.0E+3";
-    // ASSERT_STRING(t, num, expected);
-    // printf("-------\n");
-    // num = floatToString(17141.123, 3, 2, 2);
-    // // without width 171.411E+2
-    // expected = "71.411E+2";
-    // ASSERT_STRING(t, num, expected);
-    // printf("-------\n");
-    // num = floatToString(17141.123, 3, 2);
-    // // without width 171.411E+2
-    // expected = "171.411E+2";
-    // ASSERT_STRING(t, num, expected);
+    opts.precision = 0;
+    opts.exponential = -3;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1.123, precision: 0, exponential: -3\n");
+    num = floatToString(1.123, opts);
+    expected = "1123.0E-3";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
+
+    printf("-------\n");
+
+    opts.precision = 5;
+    opts.exponential = 3;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1.123, precision: 5, exponential: 3\n");
+    num = floatToString(1.123, opts);
+    expected = "0.00112E+3";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
+
+    printf("-------\n");
+    
+    opts.precision = 7;
+    opts.exponential = 3;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1.123, precision: 7, exponential: 3\n");
+    num = floatToString(1.123, opts);
+    expected = "0.0011230E+3";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
+
+    printf("-------\n");
+
+    opts.precision = 0;
+    opts.exponential = 3;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1.123, precision: 0, exponential: 3\n");
+    num = floatToString(1.123, opts);
+    expected = "0";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
+
+    printf("-------\n");
+
+    opts.precision = 7;
+    opts.exponential = 3;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 7141.123, precision: 7, exponential: 3\n");
+    num = floatToString(7141.123, opts);
+    expected = "7.1411230E+3";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
+
+    printf("-------\n");
+
+    opts.precision = 1;
+    opts.exponential = 5;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 7141.123, precision: 1, exponential: 5\n");
+    num = floatToString(7141.123, opts);
+    expected = "0.0";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
+    
+    printf("-------\n");
+
+    opts.precision = 0;
+    opts.exponential = 3;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 7141.123, precision: 0, exponential: 3\n");
+    num = floatToString(7141.123, opts);
+    expected = "7E+3";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
+
+    printf("-------\n");
+
+    opts.precision = 3;
+    opts.exponential = 2;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 17141.123, precision: 3, exponential: 2\n");
+    num = floatToString(17141.123, opts);
+    // without width 171.411E+2
+    expected = "171.411E+2";
+    ASSERT_STRING(t, num, expected);
+    if (true == t->fail) { return; }
+
+    printf("-------\n");
+
+    opts.precision = 3;
+    opts.exponential = 2;
+    opts.width = 2;
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 17141.123, precision: 3, exponential: 2, width: 2\n");
+    num = floatToString(17141.123, opts);
+    // without width 171.411E+2
+    expected = "71.411E+2";
+    ASSERT_STRING(t, num, expected);
 }
 
 static void testFormat(TestArg * t) {
@@ -367,7 +499,7 @@ static void testFormatInvalidTypeForReferenceFormatOverride(TestArg * t) {
         return;
     } catch (std::exception& e) {
         loggerPrintf(LOGGER_TEST, "Exception thrown:\n %s\n", e.what());
-        if (strcmp(e.what(), "Invalid arg reference. Expected non-null pointer and arg.type = 'f'. Is pointer null? 1. Arg type: '|'.") == 0) {
+        if (strcmp(e.what(), "Invalid arg reference. Expected non-null pointer and arg.type = 'f'. Is pointer null? 1. Arg type: 'c'.") == 0) {
             t->fail = false;
         }
     }
@@ -379,7 +511,7 @@ static void testFormatInvalidTypeForReferenceFormatOverrideUnsigned(TestArg * t)
         return;
     } catch (std::exception& e) {
         loggerPrintf(LOGGER_TEST, "Exception thrown:\n %s\n", e.what());
-        if (strcmp(e.what(), "Invalid arg reference. Expected non-null pointer and arg.type = 'u'. Is pointer null? 1. Arg type: '|'.") == 0) {
+        if (strcmp(e.what(), "Invalid arg reference. Expected non-null pointer and arg.type = 'u', 'x' or 'X'. Is pointer null? 1. Arg type: 'c'.") == 0) {
             t->fail = false;
         }
     }
@@ -458,55 +590,69 @@ static void testFormatInvalidReferenceFormatInvalidFloatFormat(TestArg * t) {
 }
 
 static void testFormatDecWidth(TestArg * t) {
-    // u
+    std::string format = WylesLibs::format("Test Dec Format: '{02u}'", 7777);
+    std::string expected = "Test Dec Format: '77'";
 
+    ASSERT_STRING(t, format, expected);
 }
 static void testFormatDecSignedWidth(TestArg * t) {
-    // d
+    loggerPrintf(LOGGER_TEST, "Test Dec Format: '{02d}', -7777\n");
+    // TODO: NT-61 - This seems unnecessary. 
+    std::string format = WylesLibs::format("Test Dec Format: '{02d}'", (int64_t)-7777);
+    std::string expected = "Test Dec Format: '-77'";
 
+    ASSERT_STRING(t, format, expected);
 }
 static void testFormatDecSignedWithSign(TestArg * t) {
-    // d+
+    std::string format = WylesLibs::format("Test Dec Format: '{+d}'", 7777);
+    std::string expected = "Test Dec Format: '+7777'";
 
+    ASSERT_STRING(t, format, expected);
 }
 static void testFormatDecSignedWidthWithSign(TestArg * t) {
-    // d02+
-    // d+
-    // f03+
-    // f03.02+
 
-    // vs
-    // this is okay and more "conventional"
+    std::string format = WylesLibs::format("Test Dec Format: '{+02d}'", 7777);
+    std::string expected = "Test Dec Format: '+77'";
 
-    // +u
-    // +02u
-    // 02u
-    // +d
-    // +02d
-    //  02+d // is the same thing and valid... hmm...
-    // 02d
-    // 02.03f
-
-    // so as far as branching criteria goes,
-    //  if plus, 
-    //  if digit, -> then to 
-    //  if s
+    ASSERT_STRING(t, format, expected);
 }
 static void testFormatStringToUpper(TestArg * t) {
-    // us
-    // su
+    std::string format = WylesLibs::format("Test String Format: '{su}'", "LmAo");
+    std::string expected = "Test String Format: 'LMAO'";
+
+    ASSERT_STRING(t, format, expected);
 }
 static void testFormatStringToLower(TestArg * t) {
-    // ls
-    // sl
+    std::string format = WylesLibs::format("Test String Format: '{sl}'", "lMaO");
+    std::string expected = "Test String Format: 'lmao'";
+
+    ASSERT_STRING(t, format, expected);
+}
+static void testFormatStringToUpperNegative(TestArg * t) {
+    std::string format = WylesLibs::format("Test String Format: '{sue}'", "LmAo");
+    std::string expected = "Test String Format: 'LMAO'";
+
+    ASSERT_STRING(t, format, expected);
+}
+static void testFormatStringToLowerNegative(TestArg * t) {
+    std::string format = WylesLibs::format("Test String Format: '{sle}'", "lMaO");
+    std::string expected = "Test String Format: 'lmao'";
+
+    ASSERT_STRING(t, format, expected);
 }
 
 int main(int argc, char * argv[]) {
     Tester t("String Format Tests");
 
     t.addTest(stringUtilsNumToString);
+    t.addTest(stringUtilsNumToStringTruncating);
+    t.addTest(stringUtilsNumToStringPadding);
     t.addTest(stringUtilsNumToStringSigned);
+    t.addTest(stringUtilsNumToStringSignedTruncating);
+    t.addTest(stringUtilsNumToStringSignedPadding);
     t.addTest(stringUtilsNumToStringHex);
+    t.addTest(stringUtilsNumToStringHexTruncating);
+    t.addTest(stringUtilsNumToStringHexPadding);
     t.addTest(stringUtilsFloatToString);
     t.addTest(testFormat);
     t.addTest(testFormatNoArg);
@@ -554,6 +700,12 @@ int main(int argc, char * argv[]) {
     t.addTest(testFormatUnimplementedFormat);
     t.addTest(testFormatInvalidReferenceFormatNoSeparator);
     t.addTest(testFormatInvalidReferenceFormatInvalidFloatFormat);
+    t.addTest(testFormatDecWidth);
+    t.addTest(testFormatDecSignedWidth);
+    t.addTest(testFormatDecSignedWithSign);
+    t.addTest(testFormatDecSignedWidthWithSign);
+    // t.addTest(testFormatStringToUpper);
+    // t.addTest(testFormatStringToLower);
 
     bool passed = false;
     if (argc > 1) {

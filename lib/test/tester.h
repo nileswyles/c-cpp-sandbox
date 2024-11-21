@@ -8,7 +8,7 @@
 #include "logger.h"
 
 #define addTest(func)\
-    addTestWithName(#func, func);
+    addTestWithName(#func, func, __FILE__, __LINE__);
 
 namespace WylesLibs::Test {
 
@@ -20,6 +20,8 @@ typedef void (SuiteFunction)();
 typedef void (TestFunction)(TestArg *);
 
 typedef struct Test {
+    std::string test_file_name;
+    int line_number;
     std::string name;
     TestFunction * func;
     TestArg arg;
@@ -45,9 +47,9 @@ class Tester {
             suite_name(suite_name), before(before), before_each(before_each), after(after), after_each(after_each), num_tests(0) {}
         Tester(std::string suite_name): Tester(suite_name, nullptr, nullptr, nullptr, nullptr) {}
 
-        void addTestWithName(const char * name, TestFunction * func) {
+        void addTestWithName(const char * name, TestFunction * func, const char * test_file_name, int line_number) {
             std::string s(name);
-            Test test = {.name = s, .func = func, .arg = { .fail = TESTER_DEFAULT_TEST_FAIL_VALUE }};
+            Test test = {.test_file_name = std::string(test_file_name), .line_number = line_number, .name = s, .func = func, .arg = { .fail = TESTER_DEFAULT_TEST_FAIL_VALUE }};
             this->tests.push_back(test);
             this->num_tests++;
         }

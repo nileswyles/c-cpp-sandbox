@@ -14,7 +14,7 @@ static size_t invocations = 0;
 
 // TODO:
 //  Validate again using linux cli?
-extern uint64_t WylesLibs::Cal::getZonedEpochTime(int16_t offset) {
+extern uint64_t WylesLibs::Cal::getZonedEpochTime(int16_t& offset) {
     uint64_t epoch_seconds = 0;
     invocations++;
     if (invocations == 1) {
@@ -49,6 +49,10 @@ extern uint64_t WylesLibs::Cal::getZonedEpochTime(int16_t offset) {
         // testGetFormattedTimeFirstDayAfterLeapYear
         // Date and time (GMT): Wednesday, January 1, 2025 12:00:00 AM
         epoch_seconds = 1735689600;
+    } else if (invocations == 9) {
+        // testGetFormattedTimeFirstDayAfterLeapYear
+        // Date and time (GMT): Wednesday, January 1, 2025 12:00:00 AM
+        epoch_seconds = 1677456000;
     }
     return epoch_seconds;
 }

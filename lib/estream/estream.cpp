@@ -31,6 +31,8 @@
 #define LOGGER_LEVEL LOGGER_LEVEL_ESTREAM
 #include "logger.h"
 
+#define MAX_STREAM_LOG_SIZE 255
+
 using namespace WylesLibs;
 
 // iostate for estream...
@@ -126,7 +128,14 @@ uint8_t ReaderEStream::get() {
     if (true == this->readPastBuffer()) {
         this->fillBuffer();
     }
-    return this->reader->get();
+    uint8_t c = this->reader->get();
+#if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
+    this->stream_log += c;
+    if (this->stream_log.size() > MAX_STREAM_LOG_SIZE) {
+        this->stream_log.clear();
+    }
+#endif
+    return c;
 }
 void ReaderEStream::unget() {
     this->reader->unget();
@@ -156,6 +165,12 @@ uint8_t EStream::get() {
         this->ungot = false;
     }
     this->cursor++;
+#if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
+    this->stream_log += byte;
+    if (this->stream_log.size() > MAX_STREAM_LOG_SIZE) {
+        this->stream_log.clear();
+    }
+#endif
     return byte;
 }
 uint8_t EStream::peek() {
@@ -259,7 +274,6 @@ SharedArray<uint8_t> ReaderEStream::readUntil(std::string until, ReaderTask * op
     }
 
     SharedArray<uint8_t> data;
-    printf("????\n");
     uint8_t c = this->peek();
     while (until.find(c) == std::string::npos) {
         this->get(); // consume

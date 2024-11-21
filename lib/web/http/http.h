@@ -220,7 +220,11 @@ class HttpConnection {
                     throw std::runtime_error(msg);
                 }
         }
-        ~HttpConnection() = default;
+        ~HttpConnection() {
+            if (this->context != nullptr) {
+                this->context = SSL_CTX_free(this->context);
+            }
+        }
 
         uint8_t onConnection(int conn_fd);
 

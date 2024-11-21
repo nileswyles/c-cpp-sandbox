@@ -1,6 +1,8 @@
 #ifndef WYLESLIBS_DATASTRUCTURES_H
 #define WYLESLIBS_DATASTRUCTURES_H
 
+#include "datastructures/array.h"
+
 #include <map>
 #include <string>
 #include <memory>
@@ -20,8 +22,6 @@
 #ifndef ALGO_UNSIGNED_INT
 #define ALGO_UNSIGNED_INT uint32_t
 #endif
-
-#include "datastructures/array.h"
 
 namespace WylesLibs {
 
@@ -334,6 +334,17 @@ namespace WylesLibs {
                 this->ctrl = other.ctrl;
                 this->view = other.view;
                 this->ctrl->instance_count++;
+                return *this;
+            }
+            // Move constructor
+            MatrixVector(MatrixVector<T>&& x) {
+                std::swap(this->ctrl, x.ctrl);
+                std::swap(this->view, x.view);
+            }
+            // Move assignment
+            MatrixVector<T>& operator= (MatrixVector<T>&& x) {
+                std::swap(this->ctrl, x.ctrl);
+                std::swap(this->view, x.view);
                 return *this;
             }
     };

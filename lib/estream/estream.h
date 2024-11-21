@@ -46,6 +46,9 @@ class ReaderEStream {
         virtual bool readPastBuffer();
         virtual void fillBuffer();
     public:
+#if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
+        std::string stream_log; 
+#endif
         ReaderEStream() = default;
         // TODO: std::move? that's interesting
         ReaderEStream(std::shared_ptr<std::basic_istream<char>> reader) {
@@ -80,6 +83,9 @@ class ReaderEStream {
 
         virtual void readDecimal(double &value, size_t &digit_count);
         virtual void readNatural(double &value, size_t &digit_count);
+
+        ReaderEStream(ReaderEStream && x) = default;
+        ReaderEStream& operator=(ReaderEStream && x) = default;
 };
 
 class EStream: public ReaderEStream {
@@ -92,7 +98,7 @@ class EStream: public ReaderEStream {
         size_t ungot_char;
         bool ungot;
     protected:
-        uint8_t *buf;
+        uint8_t * buf;
         size_t buf_size;
         size_t cursor;
         size_t bytes_in_buffer;
@@ -145,6 +151,20 @@ class EStream: public ReaderEStream {
         SharedArray<uint8_t> readBytes(const size_t n) override;
         // Write to FD
         virtual ssize_t write(void *p_buf, size_t size);
+
+        // ! IMPORTANT - purposely not explicitly swaping for all variables for the following reasons:
+        //      1. It gets complicated (and annoying) for heirarchical types and classes with many variables.
+        //      2. The consequences aren't terrible, you should profile your application's memory usage and pivot accordingly.
+
+        //      All of the documentation I read (at least as of 11/2024) states it's necessary even if it's a terrible implementation given the other language functionality.
+        //      Logic might otherwise lead you to conclude it MUST "destroy old and assigns" or "swap then destroy new" automatically - regardless. 
+        //          If I am reading this correctly, I think this is meant for the reasoners - if for anyone at all.
+
+        //      Generally if the program calls new via a constructor, then explicitly define the move constructor and assignment. 
+        //          Either swap all variables explictly or use default functionality (which presumably does what I described above?). 
+        //          This ensures it doesn't copy - avoiding dangling shlongs...
+        EStream(EStream && x) = default;
+        EStream& operator=(EStream && x) = default;
 };
 
 #ifdef WYLESLIBS_SSL_ENABLED
@@ -169,6 +189,9 @@ class SSLEStream: public EStream {
             }
         }
         ssize_t write(void *p_buf, size_t size) override final;
+
+        SSLEStream(SSLEStream && x) = default;
+        SSLEStream& operator=(SSLEStream && x) = default;
 };
 #endif
 };

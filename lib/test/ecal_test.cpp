@@ -14,43 +14,43 @@ using namespace WylesLibs::Test;
 
 static void testGetFormattedTime(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Feb 27 2023, 0:0:0Z";
+    std::string expected = "Feb 27 2023, 0:0:0 Z";
 
     ASSERT_STRING(t, time, expected);
 }
 static void testGetFormattedTime1970(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Jan 2 1970, 0:0:0Z";
+    std::string expected = "Jan 2 1970, 0:0:0 Z";
 
     ASSERT_STRING(t, time, expected);
 }
 static void testGetFormattedTimeLeapYearBeforeLeapDay(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Feb 27 2024, 0:0:0Z";
+    std::string expected = "Feb 27 2024, 0:0:0 Z";
 
     ASSERT_STRING(t, time, expected);
 }
 static void testGetFormattedTimeLeapYearAfterLeapDay(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Nov 17 2024, 14:57:24Z";
+    std::string expected = "Nov 17 2024, 14:57:24 Z";
 
     ASSERT_STRING(t, time, expected);
 }
 static void testGetFormattedTimeLastDayBeforeLeapYear(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Dec 31 2023, 23:59:59Z";
+    std::string expected = "Dec 31 2023, 23:59:59 Z";
 
     ASSERT_STRING(t, time, expected);
 }
 static void testGetFormattedTimeFirstDayOfLeapYear(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Jan 1 2024, 0:0:0Z";
+    std::string expected = "Jan 1 2024, 0:0:0 Z";
 
     ASSERT_STRING(t, time, expected);
 }
 static void testGetFormattedTimeLastDayOfLeapYear(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Dec 31 2024, 23:59:59Z";
+    std::string expected = "Dec 31 2024, 23:59:59 Z";
 
     ASSERT_STRING(t, time, expected);
 }

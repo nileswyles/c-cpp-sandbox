@@ -61,9 +61,7 @@ static void testReadUntil(TestArg * t) {
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     buffer = test_string;
 
-    printf("lol, more bs?\n");
     std::string result = reader.readUntil(" ").toString();
-    printf("lol, more bs?\n");
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     readUntilAssert(t, result, expected);

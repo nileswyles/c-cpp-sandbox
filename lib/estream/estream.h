@@ -87,14 +87,10 @@ class EStreamI {
 template<typename T, typename RT>
 class StreamProcessor {
     public:
-        LoopCriteria<T> * criteria; 
-        Collector<T, RT> * collector; 
+        std::shared_ptr<LoopCriteria<T>> criteria; 
+        std::shared_ptr<Collector<T, RT>> collector; 
         StreamProcessor() = default;
-        StreamProcessor(LoopCriteria<T> * criteria, Collector<T, RT> * collector): criteria(criteria), collector(collector) {};
-        ~StreamProcessor() {
-            delete criteria;
-            delete collector;
-        }
+        StreamProcessor(std::shared_ptr<LoopCriteria<T>> criteria, std::shared_ptr<Collector<T, RT>> collector): criteria(criteria), collector(collector) {};
 
         virtual RT streamCollect(EStreamI<T> * s, StreamTask<T, RT> * task) {
             if (this->criteria.get() == nullptr || this->collector.get() == nullptr) {

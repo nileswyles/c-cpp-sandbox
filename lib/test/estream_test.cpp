@@ -79,6 +79,11 @@ static void testReadUntilUpperCase(TestArg * t) {
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     setTestString(test_string);
 
+    // TODO: readertask builder functions...
+    //      list of reader_task pointers...
+    //      then they get linked... next_operation = blah...
+    //      any better?
+    //      then can shared_ptr?
     ReaderTaskUC uppercase;
     std::string result = reader.read(" ", (ReaderTask *)&uppercase).toString();
     std::string expected = "TESTSTRINGWITHSPACE ";

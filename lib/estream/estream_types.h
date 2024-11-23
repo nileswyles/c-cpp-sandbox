@@ -77,7 +77,9 @@ namespace WylesLibs {
     //  eventually you might want to initialize these with some information... so, this should accept another shared_ptr with that information.
     template<typename T, typename RT>
     std::shared_ptr<Collector<T, RT>> initReadCollector() {
-        return std::make_shared<Collector<T, RT>>();
+        std::string msg("A specialization of initReadCollector is required for this datatype.");
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
     }
 
     template<typename T, typename RT>

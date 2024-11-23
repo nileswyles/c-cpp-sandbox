@@ -76,41 +76,13 @@ namespace WylesLibs {
 
             ByteEStream() = default;
             // pass in as param? specializations?
-            // ByteEStream(uint8_t * p_buf, const size_t p_buf_size): EStream<uint8_t>(p_buf, p_buf_size) {
-            //     std::shared_ptr<LoopCriteria<uint8_t>> char_class_criteria = std::dynamic_pointer_cast<LoopCriteria<uint8_t>>(
-            //         std::make_shared<ByteIsCharClassCriteria>()
-            //     );
-            //     natural_processor = StreamProcessor<uint8_t, uint64_t>(
-            //         char_class_criteria,
-            //         std::dynamic_pointer_cast<Collector<uint8_t, uint64_t>>(std::make_shared<NaturalCollector>())
-            //     );
-            //     decimal_processor = StreamProcessor<uint8_t, double>(
-            //         char_class_criteria,
-            //         std::dynamic_pointer_cast<Collector<uint8_t, double>>(std::make_shared<DecimalCollector>())
-            //     );
-            // }
-            // ByteEStream(const int fd): ByteEStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
-            // ByteEStream(const int p_fd, const size_t p_buf_size): EStream<uint8_t>(p_fd, p_buf_size) {
-            //     std::shared_ptr<LoopCriteria<uint8_t>> char_class_criteria = std::dynamic_pointer_cast<LoopCriteria<uint8_t>>(
-            //         std::make_shared<ByteIsCharClassCriteria>()
-            //     );
-            //     natural_processor = StreamProcessor<uint8_t, uint64_t>(
-            //         char_class_criteria,
-            //         std::dynamic_pointer_cast<Collector<uint8_t, uint64_t>>(std::make_shared<NaturalCollector>())
-            //     );
-            //     decimal_processor = StreamProcessor<uint8_t, double>(
-            //         char_class_criteria,
-            //         std::dynamic_pointer_cast<Collector<uint8_t, double>>(std::make_shared<DecimalCollector>())
-            //     );
-            // }
-
             ByteEStream(uint8_t * p_buf, const size_t p_buf_size): EStream<uint8_t>(p_buf, p_buf_size) {
-                LoopCriteria<uint8_t> *> char_class_criteria = dynamic_cast<LoopCriteria<uint8_t> *>(
-                    new ByteIsCharClassCriteria()
+                std::shared_ptr<LoopCriteria<uint8_t>> char_class_criteria = std::dynamic_pointer_cast<LoopCriteria<uint8_t>>(
+                    std::make_shared<ByteIsCharClassCriteria>()
                 );
                 natural_processor = StreamProcessor<uint8_t, uint64_t>(
                     char_class_criteria,
-                    dynamic_cast<Collector<uint8_t, uint64_t> *>(new NaturalCollector>())
+                    std::dynamic_pointer_cast<Collector<uint8_t, uint64_t>>(std::make_shared<NaturalCollector>())
                 );
                 decimal_processor = StreamProcessor<uint8_t, double>(
                     char_class_criteria,

@@ -35,17 +35,17 @@ using namespace WylesLibs::Parser;
 #define LOGGER_LEVEL LOGGER_LEVEL_HTTP
 #include "logger.h"
 
-static Url parseUrl(EStream * io) {
+static Url parseUrl(ByteEStream * io) {
     Url url;
     // path = /aklmdla/aslmlamk(?)
-    SharedArray<uint8_t> path = io->readUntil("? ");
+    SharedArray<uint8_t> path = io->read("? ");
     if ((char)path.back() == '?') {
         // query = key=value&key2=value2
         url.query_map = KeyValue::parse(io, '&');
     }
 
     // TODO: because removeBack functionality of the array class isn't working...
-    //  EStream can probably use string for readuntil but let's roll with this for now.
+    //  ByteEStream can probably use string for readuntil but let's roll with this for now.
     //  Hesitant for obvious reasons...
     std::string pathString = path.toString();
     url.path = pathString.substr(0, pathString.size()-1);
@@ -53,22 +53,22 @@ static Url parseUrl(EStream * io) {
     return url;
 }
 
-void HttpConnection::parseRequest(HttpRequest * request, EStream * io) {
+void HttpConnection::parseRequest(HttpRequest * request, ByteEStream * io) {
     if (request == NULL || io == NULL) {
         throw std::runtime_error("lol....");
     }
-    request->method = io->readUntil(" ").removeBack().toString();
+    request->method = io->read(" ").removeBack().toString();
     request->method = request->method.substr(0, request->method.size()-1);
 
     request->url = parseUrl(io);
 
-    request->version = io->readUntil("\n").removeBack().toString();
+    request->version = io->read("\n").removeBack().toString();
     request->version = request->version.substr(0, request->version.size()-1);
 
     request->content_length = SIZE_MAX;
     int field_idx = 0; 
     while (field_idx < HTTP_FIELD_MAX) {
-        std::string field_name = io->readUntil(":\n", &this->whitespace_lc_chain).toString();
+        std::string field_name = io->read(":\n", &this->whitespace_lc_chain).toString();
         if (field_name[field_name.size()-1] == '\n') {
             printf("FOUND EMPTY NEW LINE AFTER PARSING FIELDS\n");
             break;
@@ -84,7 +84,7 @@ void HttpConnection::parseRequest(HttpRequest * request, EStream * io) {
         field_idx++;
         char delimeter = 0x00;
         while (delimeter != '\n') {
-            std::string field_value = io->readUntil(",\n", chain).toString();
+            std::string field_value = io->read(",\n", chain).toString();
             // if size == 0, throw an exception idc...
             delimeter = (char)field_value[field_value.size()-1];
             // only process field if it's an actual field, else check delimeter in while loop...
@@ -108,7 +108,7 @@ void HttpConnection::parseRequest(HttpRequest * request, EStream * io) {
         loggerPrintf(LOGGER_DEBUG, "Content-Type: %s, Content-Length: %ld\n", request->fields["content-type"].front().c_str(), request->content_length);
         if ("application/json" == request->fields["content-type"].front()) {
             size_t i = 0;
-            request->json_content = Json::parse(dynamic_cast<ReaderEStream *>(io), i);
+            request->json_content = Json::parse(io, i);
         } else if ("application/x-www-form-urlencoded" == request->fields["content-type"].front()) {
             request->form_content = KeyValue::parse(io, '&');
         } else if ("multipart/formdata" == request->fields["content-type"].front()) {
@@ -119,12 +119,12 @@ void HttpConnection::parseRequest(HttpRequest * request, EStream * io) {
             Multipart::FormData::parse(io, request->files, request->form_content, this->file_manager);
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
-            request->content = io->readBytes(request->content_length);
+            request->content = io->read(request->content_length);
         }
     }
 }
 
-void HttpConnection::processRequest(EStream * io, HttpRequest * request) {
+void HttpConnection::processRequest(ByteEStream * io, HttpRequest * request) {
         HttpResponse * response = this->handleStaticRequest(request); 
         if (response != nullptr) {
             this->writeResponse(response, io);
@@ -191,7 +191,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
     return response;
 }
 
-bool HttpConnection::handleWebsocketRequest(EStream * io, HttpRequest * request) {
+bool HttpConnection::handleWebsocketRequest(ByteEStream * io, HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING WEBSOCKET REQUEST\n");
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
@@ -243,7 +243,7 @@ bool HttpConnection::handleWebsocketRequest(EStream * io, HttpRequest * request)
 }
 
 #ifdef WYLESLIBS_HTTP_DEBUG
-HttpResponse * HttpConnection::handleTimeoutRequests(EStream * io, HttpRequest * request) {
+HttpResponse * HttpConnection::handleTimeoutRequests(ByteEStream * io, HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING TIMEOUT REQUEST\n");
     HttpResponse * response = nullptr;
     if (request->url.path == "/timeout" && request->method == "POST") {
@@ -335,12 +335,12 @@ uint8_t HttpConnection::onConnection(int fd) {
     // ! IMPORTANT -
     //  expanding on thoughts on mallocs/new vs stack
     //  so, if need access to more memory you can call new where needed at point of creation of each thread.
-    EStream eio;
+    ByteEStream eio;
 #ifdef WYLESLIBS_SSL_ENABLED
     SSLEStream sslio;
 #endif
     HttpRequest request;
-    EStream * io;
+    ByteEStream * io;
     bool acceptedTLS = false;
     try {
 #ifdef WYLESLIBS_SSL_ENABLED
@@ -349,11 +349,11 @@ uint8_t HttpConnection::onConnection(int fd) {
             acceptedTLS = true;
             io = dynamic_cast<EStream *>(&sslio);
         } else {
-            eio = EStream(fd);
+            eio = ByteEStream(fd);
             io = &eio;
         }
 #else
-            eio = EStream(fd);
+            eio = ByteEStream(fd);
             io = &eio;
 #endif
         this->parseRequest(&request, io);
@@ -376,7 +376,7 @@ uint8_t HttpConnection::onConnection(int fd) {
     return 1;
 }
 
-void HttpConnection::writeResponse(HttpResponse * response, EStream * io) {
+void HttpConnection::writeResponse(HttpResponse * response, ByteEStream * io) {
     std::string data = response->toString();
     // ! IMPORTANT - this response pointer will potentially come from an end-user (another developer)... YOU WILL ENCOUNTER PROBLEMS IF THE POINTER IS CREATED USING MALLOC AND NOT NEW
     delete response;

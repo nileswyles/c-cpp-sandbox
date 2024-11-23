@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "datastructures/array.h"
-#include "estream/estream.h"
+#include "estream/byteestream.h"
 #include "file/file.h"
 
 #include "global_consts.h"
@@ -147,7 +147,7 @@ class JsonString: public JsonValue {
 extern std::shared_ptr<JsonValue> parseFile(std::shared_ptr<StreamFactory> stream_factory, std::string file_path);
 extern std::shared_ptr<JsonValue> parse(std::string json);
 extern std::shared_ptr<JsonValue> parse(SharedArray<uint8_t> json);
-extern std::shared_ptr<JsonValue> parse(ReaderEStream * r, size_t& i);
+extern std::shared_ptr<JsonValue> parse(ByteEStream * r, size_t& i);
 
 extern std::string pretty(std::string json);
 

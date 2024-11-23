@@ -1,6 +1,6 @@
 #include "tester.h"
 
-#include "string-format.h"
+#include "string_format.h"
 #include "string_utils.h"
 
 #include <iostream>
@@ -342,8 +342,11 @@ static void testFormatDouble(TestArg * t) {
     ASSERT_STRING(t, format, expected);
 }
 static void testFormatDoubleCustom(TestArg * t) {
+    printf("??????\n");
     std::string format = WylesLibs::format("Test Double Format: '{03f}'", 1.1313131313131);
+    printf("alknslk?????\n");
     std::string expected = "Test Double Format: '1.131'";
+    printf("alksnlk\n");
 
     ASSERT_STRING(t, format, expected);
 }
@@ -458,6 +461,7 @@ static void testFormatReferenceTemplateOverrideHexLowerToUnsigned(TestArg * t) {
     ASSERT_STRING(t, format, expected);
 }
 static void testFormatReferenceTemplateOverrideDouble(TestArg * t) {
+    loggerPrintf(LOGGER_TEST, "Test Reference template override '{f}', '{<1,03f}', 1.13131313131313131313\n");
     std::string format = WylesLibs::format("Test Reference template override '{f}', '{<1,03f}'", 1.13131313131313131313);
     std::string expected = "Test Reference template override '1.131313', '1.131'";
 

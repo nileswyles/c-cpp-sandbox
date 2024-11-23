@@ -1,6 +1,7 @@
 #ifndef WYLESLIBS_READER_TASK_H
 #define WYLESLIBS_READER_TASK_H
 
+#include "estream/estream_types.h"
 #include "datastructures/array.h"
 #include "string_utils.h"
 
@@ -42,80 +43,51 @@ namespace WylesLibs {
 //          idk, seems useful?
 
 //      that means a parser within a parser, parsception LMAO
-class ReaderTask {
-    public:
-        std::string read_until;
 
-        virtual ~ReaderTask() = default;
-        // Good example of CPP OOP
-
-        // good example of "dynamic dispatch"?
-        // Virtual allows calling function defined in original type during object creation. Functions without virtual will call the function defined in the "current type".
-        //
-        //  Common example is to define and use a base class to cleanly select different functionality...
-        //      This means that you might cast a sub-class pointer to it's base class... Virtual is required to call the functionality in the sub-class after casting to base class.
-        //  Calls to ReaderTaskChain->flush (if not virtual) would call this function regardless of how it's defined in sub-classes.
-        //  By contrast, calls to perform (if virtual) call the function defined by the class-type at creation. *** Regardless of any casting/type-conversion along the way ***.
-
-        // good example of pure functions
-        //     There's {} (no-op) vs. =0, 
-        //      a class with a pure function (=0) is abstract and cannot be instantiated, but can be used as a pointer type.
-        //  This means the compiler throws an error if it doesn't find an implementation of the pure function in sub-classes. 
-
-        // override and final (called virt-specifier -- in CPP grammar specification)
-        // These appear to be optional and more a formality thing... Restrict behaviour as much as possible if not strictly necessary...
-
-        //  override says that function is virtual (supports dynamic dispatch) and overrides a virtual class.
-        //      - enables compiler check to ensure base class function is virtual...  
-        //  final says that function is virtual (supports dynamic dispatch) and cannot be overridden.
-        //      - compiler error is generated if user tries to override. 
-
-        virtual void flush(SharedArray<uint8_t>& buffer) = 0;
-        virtual void perform(SharedArray<uint8_t>& buffer, uint8_t c) = 0;
-};
+typedef StreamTask<uint8_t, SharedArray<uint8_t>> ReaderTask;
 
 class ReaderTaskChain: public ReaderTask {
     public:
-        ReaderTask * nextOperation;
+        StreamTask<uint8_t, SharedArray<uint8_t>> * next_operation;
 
-        ReaderTaskChain(): nextOperation(nullptr) {}
-        ReaderTaskChain(ReaderTaskChain * next): nextOperation(next) {}
+        ReaderTaskChain(): next_operation(nullptr) {}
+        ReaderTaskChain(ReaderTaskChain * next): next_operation(next) {}
         ~ReaderTaskChain() override = default;
 
-        void next(SharedArray<uint8_t>& buffer, uint8_t c) {
-            if (this->nextOperation == nullptr) {
-                buffer.append(c);
+        void next(uint8_t& c) {
+            if (this->next_operation == nullptr) {
+                this->collectorAccumulate(c);
             } else {
-                this->nextOperation->perform(buffer, c);
+                return this->next_operation->perform(c);
             }
         }
-        void flush(SharedArray<uint8_t>& buffer) override {
-            if (this->nextOperation != nullptr) {
-                this->nextOperation->flush(buffer);
+        void flush() override {
+            if (this->next_operation != nullptr) {
+                this->next_operation->flush();
             }
         }
-        virtual void perform(SharedArray<uint8_t>& buffer, uint8_t c) = 0;
+        virtual void perform(uint8_t& c) = 0;
 };
 
 class ReaderTaskLC: public ReaderTaskChain {
     public:
         ~ReaderTaskLC() override = default;
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
+        void perform(uint8_t& c) final override {
             if (c >= 0x41 && c <= 0x5A) { // lowercase flag set and is upper case
         		c += 0x20; // lower case the char
         	}
-            this->next(buffer, c);
+            this->next(c);
         }
 };
 
 class ReaderTaskUC: public ReaderTaskChain {
     public:
         ~ReaderTaskUC() override = default;
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
+        void perform(uint8_t& c) final override {
             if (c >= 0x61 && c <= 0x7A) {
         		c -= 0x20;
         	}
-            this->next(buffer, c);
+            this->next(c);
         }
 };
 
@@ -129,7 +101,7 @@ class ReaderTaskDisallow: public ReaderTaskChain {
         ReaderTaskDisallow(std::string to_disallow, bool strict): to_disallow(to_disallow), strict(strict) {}
         ~ReaderTaskDisallow() override = default;
 
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
+        void perform(uint8_t& c) final override {
             bool ignored = false;
             if (this->to_disallow.find(c) != std::string::npos) { 
                 if (strict) {
@@ -141,7 +113,7 @@ class ReaderTaskDisallow: public ReaderTaskChain {
                 }
             } 
             if (false == ignored) {
-                this->next(buffer, c);
+                this->next(c);
             }
         }
 };
@@ -157,9 +129,9 @@ class ReaderTaskAllow: public ReaderTaskChain {
         ReaderTaskAllow(std::string to_allow, bool strict): to_allow(to_allow), strict(strict) {}
         ~ReaderTaskAllow() override = default;
 
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
+        void perform(uint8_t& c) final override {
             if (this->to_allow.find(c) != std::string::npos) { 
-                this->next(buffer, c);
+                this->next(c);
             } else {
                 if (strict) {
                     std::string msg = "Banned character found:";
@@ -180,9 +152,9 @@ class ReaderTaskTrim: public ReaderTask {
         ReaderTaskTrim(): l_trimming(true), r_trimming(false) {}
         ~ReaderTaskTrim() override = default;
 
-        void flush(SharedArray<uint8_t>& buffer) final override {}
-        void rTrimFlush(SharedArray<uint8_t>& buffer);
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override;
+        void flush() final override {}
+        void rTrimFlush();
+        void perform(uint8_t& c) final override;
 };
 
 class ReaderTaskExtract: public ReaderTask {
@@ -204,9 +176,9 @@ class ReaderTaskExtract: public ReaderTask {
                                                                       r_trim_non_whitespace(0), r_trim_read_until(0) {}
         ~ReaderTaskExtract() override = default;
 
-        void flush(SharedArray<uint8_t>& buffer) final override;
-        void rTrimFlush(SharedArray<uint8_t>& buffer);
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override;
+        void flush() final override;
+        void rTrimFlush();
+        void perform(uint8_t& c) final override;
 };
 }
 

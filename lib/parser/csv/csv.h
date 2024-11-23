@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_CSV_H
 #define WYLESLIBS_CSV_H
 
-#include "estream/estream.h"
+#include "estream/byteestream.h"
 
 #include <string>
 #include <memory>
@@ -192,12 +192,9 @@ namespace WylesLibs {
                     }
                     // handle numbers delimeter
                     size_t dummy_digit_count = 0;
+                    // TODO: see ByteEStream TODO
                     if (isDigit(b)) {
-                        (*this->io).readNatural(current_double, dummy_digit_count);
-                        if ((*this->io).peek() == '.') {
-                            (*this->io).get();
-                            (*this->io).readDecimal(current_double, dummy_digit_count);
-                        }
+                        current_double = (*this->io).readDecimal();
                         continue;
                         // buffer should be at non-numeric
                     } else if (b == (uint8_t)EOF) {
@@ -225,7 +222,7 @@ namespace WylesLibs {
             }
             void read(bool has_header) {
                 // TODO: this doesn't make much sense, user can just create new instance?
-                //  actually, no, since it's coupled now, more performance to allow reset (and reconfiguring EStream (new))
+                //  actually, no, since it's coupled now, more performance to allow reset (and reconfiguring ByteEStream (new))
                 //  TBC
                 this->reset();
                 T dumb_function_selector;

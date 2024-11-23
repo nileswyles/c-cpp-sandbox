@@ -1,8 +1,8 @@
-#include "string-format.h"
+#include "string_format.h"
 
 #include "datastructures/array.h"
 #include "string_utils.h"
-#include "estream/estream.h"
+#include "estream/byteestream.h"
 
 #include <iostream>
 #include <sstream>
@@ -43,20 +43,21 @@
 
 using namespace WylesLibs;
 
-static std::string parseFloatFormat(EStream& s, void * value, StringFormatOpts& opts);
-static void parseStringCaseModifier(std::string value, EStream& s, Arg& arg);
-static void parsePositionalNumberModifier(va_list args, EStream& s, StringFormatOpts& opts, Arg& arg);
-static void parseReferencedNumberModifier(EStream& s, StringFormatOpts& opts, Arg& arg);
-static void parsePositionalModifiableFormat(va_list args, EStream& s, StringFormatOpts& opts, Arg& arg);
-static void parseReferencedModifiableFormat(EStream& s, StringFormatOpts& opts, Arg& arg);
-static void parsePositionalFormat(va_list args, EStream& s, Arg& arg);
-static void parseReferencedFormatOverride(EStream& s, Arg& arg);
-static void parseFormat(va_list args, EStream& s, std::basic_stringstream<char>& d, Array<Arg>& converted_args, bool& has_reference_selection);
-static void parseReferenceFormat(Array<Arg>& args, EStream& s, std::basic_stringstream<char>& d);
+static std::string parseFloatFormat(ByteEStream& s, void * value, StringFormatOpts& opts);
+static void parseStringCaseModifier(std::string value, ByteEStream& s, Arg& arg);
+static void parsePositionalNumberModifier(va_list args, ByteEStream& s, StringFormatOpts& opts, Arg& arg);
+static void parseReferencedNumberModifier(ByteEStream& s, StringFormatOpts& opts, Arg& arg);
+static void parsePositionalModifiableFormat(va_list args, ByteEStream& s, StringFormatOpts& opts, Arg& arg);
+static void parseReferencedModifiableFormat(ByteEStream& s, StringFormatOpts& opts, Arg& arg);
+static void parsePositionalFormat(va_list args, ByteEStream& s, Arg& arg);
+static void parseReferencedFormatOverride(ByteEStream& s, Arg& arg);
+static void parseFormat(va_list args, ByteEStream& s, std::basic_stringstream<char>& d, Array<Arg>& converted_args, bool& has_reference_selection);
+static void parseReferenceFormat(Array<Arg>& args, ByteEStream& s, std::basic_stringstream<char>& d);
 static void deleteArgs(Array<Arg>& args);
 
-static std::string parseFloatFormat(EStream& s, void * value, StringFormatOpts& opts) {
+static std::string parseFloatFormat(ByteEStream& s, void * value, StringFormatOpts& opts) {
     char format_type = s.get();
+
     if (format_type == 'E' || format_type == 'e') {
         opts.exponential_designator = format_type;
         char c = s.get();
@@ -66,11 +67,8 @@ static std::string parseFloatFormat(EStream& s, void * value, StringFormatOpts& 
             }
             c = s.peek();
             if (true == isDigit(c)) {
-                double lol = 0;
-                size_t dummy_count = 0;
-                s.readNatural(lol, dummy_count);
                 // if you need more than +-128 then you have problems... behavior is undefined.
-                opts.exponential *= static_cast<int8_t>(lol);
+                opts.exponential *= static_cast<int8_t>(s.readNatural());
             }
             if (s.peek() != END_OF_FORMAT_CHAR) {
                 std::basic_stringstream<char> ss;
@@ -84,7 +82,7 @@ static std::string parseFloatFormat(EStream& s, void * value, StringFormatOpts& 
             throw std::runtime_error(msg);
         }
     } else if (format_type != 'f') {
-#if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
+#if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
         loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", s.stream_log.c_str())
 #endif
         std::basic_stringstream<char> ss;
@@ -96,7 +94,7 @@ static std::string parseFloatFormat(EStream& s, void * value, StringFormatOpts& 
     return floatToString(*(double *)value, opts);
 }
 
-static void parseStringCaseModifier(std::string value, EStream& s, Arg& arg) {
+static void parseStringCaseModifier(std::string value, ByteEStream& s, Arg& arg) {
     s.unget();
     char c = s.get();
     char next = s.get();
@@ -115,7 +113,7 @@ static void parseStringCaseModifier(std::string value, EStream& s, Arg& arg) {
             }
         }
     } else {
-#if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
+#if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
         loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", s.stream_log.c_str())
 #endif
         std::basic_stringstream<char> ss;
@@ -125,17 +123,14 @@ static void parseStringCaseModifier(std::string value, EStream& s, Arg& arg) {
     }
 }
 
-static void parsePositionalNumberModifier(va_list args, EStream& s, StringFormatOpts& opts, Arg& arg) {
-    double lol = 0;
-    size_t dummy_count = 0;
-    s.readNatural(lol, dummy_count);
-
+static void parsePositionalNumberModifier(va_list args, ByteEStream& s, StringFormatOpts& opts, Arg& arg) {
+    double num = s.readNatural();
     char next = s.peek();
     if (next == 'f' || next == 'e' || next == 'E') {
-        opts.precision = static_cast<uint8_t>(lol);
+        opts.precision = static_cast<uint8_t>(num);
         parsePositionalModifiableFormat(args, s, opts, arg);
     } else {
-        opts.width = static_cast<uint8_t>(lol);
+        opts.width = static_cast<uint8_t>(num);
         if (next == '.') {
             // width
             // consume, '.' and proceed to parsing precision
@@ -147,17 +142,14 @@ static void parsePositionalNumberModifier(va_list args, EStream& s, StringFormat
     }
 }
 
-static void parseReferencedNumberModifier(EStream& s, StringFormatOpts& opts, Arg& arg) {
-    double lol = 0;
-    size_t dummy_count = 0;
-    s.readNatural(lol, dummy_count);
-
+static void parseReferencedNumberModifier(ByteEStream& s, StringFormatOpts& opts, Arg& arg) {
+    double num = s.readNatural();
     char next = s.peek();
     if (next == 'f' || next == 'e' || next == 'E') {
-        opts.precision = static_cast<uint8_t>(lol);
+        opts.precision = static_cast<uint8_t>(num);
         parseReferencedModifiableFormat(s, opts, arg);
     } else {
-        opts.width = static_cast<uint8_t>(lol);
+        opts.width = static_cast<uint8_t>(num);
         if (next == '.') {
             // width
             // consume, '.' and proceed to parsing precision
@@ -169,7 +161,7 @@ static void parseReferencedNumberModifier(EStream& s, StringFormatOpts& opts, Ar
     }
 }
 
-static void parsePositionalModifiableFormat(va_list args, EStream& s, StringFormatOpts& opts, Arg& arg) {
+static void parsePositionalModifiableFormat(va_list args, ByteEStream& s, StringFormatOpts& opts, Arg& arg) {
     char prev = s.peek();
     char c = s.get();
     char next = s.peek();
@@ -196,7 +188,7 @@ static void parsePositionalModifiableFormat(va_list args, EStream& s, StringForm
 
         parsePositionalNumberModifier(args, s, opts, arg);
     } else {
-#if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
+#if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
         loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", s.stream_log.c_str())
 #endif
         std::basic_stringstream<char> ss;
@@ -206,7 +198,7 @@ static void parsePositionalModifiableFormat(va_list args, EStream& s, StringForm
     }
 }
 
-static void parseReferencedModifiableFormat(EStream& s, StringFormatOpts& opts, Arg& arg) {
+static void parseReferencedModifiableFormat(ByteEStream& s, StringFormatOpts& opts, Arg& arg) {
     char prev = s.peek();
     char c = s.get();
     char next = s.peek();
@@ -243,7 +235,7 @@ static void parseReferencedModifiableFormat(EStream& s, StringFormatOpts& opts, 
 
         parseReferencedNumberModifier(s, opts, arg);
     } else {
-#if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
+#if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
         loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", s.stream_log.c_str())
 #endif
         std::basic_stringstream<char> ss;
@@ -254,7 +246,7 @@ static void parseReferencedModifiableFormat(EStream& s, StringFormatOpts& opts, 
 }
 
 // TODO: might be cool to implement this as a readUntil task lol... whatever..
-static void parsePositionalFormat(va_list args, EStream& s, Arg& arg) {
+static void parsePositionalFormat(va_list args, ByteEStream& s, Arg& arg) {
     StringFormatOpts opts;
 
     char prev = s.peek();
@@ -290,6 +282,7 @@ static void parsePositionalFormat(va_list args, EStream& s, Arg& arg) {
     } else if (true == isDigit(c)) {
         s.unget();
 
+        printf("LMAO\n");
         parsePositionalNumberModifier(args, s, opts, arg);
     } else {
         s.unget();
@@ -299,7 +292,7 @@ static void parsePositionalFormat(va_list args, EStream& s, Arg& arg) {
     s.get(); // consume END_OF_FORMAT_CHAR
 }
 
-static void parseReferencedFormatOverride(EStream& s, Arg& arg) {
+static void parseReferencedFormatOverride(ByteEStream& s, Arg& arg) {
     StringFormatOpts opts;
 
     char prev = s.peek();
@@ -333,7 +326,7 @@ static void parseReferencedFormatOverride(EStream& s, Arg& arg) {
     s.get(); // consume END_OF_FORMAT_CHAR
 }
 
-static void parseFormat(va_list args, EStream& s, std::basic_stringstream<char>& d, Array<Arg>& converted_args, bool& has_reference_selection) {
+static void parseFormat(va_list args, ByteEStream& s, std::basic_stringstream<char>& d, Array<Arg>& converted_args, bool& has_reference_selection) {
     // i == {
     char c = s.peek();
     Arg arg;
@@ -355,7 +348,7 @@ static void parseFormat(va_list args, EStream& s, std::basic_stringstream<char>&
     // i == }
 }
 
-static void parseReferenceFormat(Array<Arg>& args, EStream& s, std::basic_stringstream<char>& d) {
+static void parseReferenceFormat(Array<Arg>& args, ByteEStream& s, std::basic_stringstream<char>& d) {
     // i == {
     size_t selection = SIZE_MAX;
     char c = s.get(); // < required
@@ -371,10 +364,7 @@ static void parseReferenceFormat(Array<Arg>& args, EStream& s, std::basic_string
            ss << "Invalid reference format. A reference format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and number - the following character was detected: '" << c << "'";
            throw std::runtime_error(ss.str());
         } else {
-           double lol = 0;
-           size_t dummy_count = 0;
-           s.readNatural(lol, dummy_count);
-           selection = static_cast<size_t>(lol) - 1; // 0 - 1 == SIZE_MAX?
+           selection = static_cast<size_t>(s.readNatural()) - 1; // 0 - 1 == SIZE_MAX?
            // consumed all digits, at non-digit
        }
     }
@@ -426,7 +416,7 @@ extern std::string WylesLibs::format(std::string format, ...) {
     bool has_reference_selection = false;
     std::basic_stringstream<char> format_out;
     Array<Arg> parsed_args;
-    EStream s((uint8_t *)format.data(), format.size());
+    ByteEStream s((uint8_t *)format.data(), format.size());
     char c;
     while (true == s.good()) {
         c = s.get();
@@ -453,7 +443,7 @@ extern std::string WylesLibs::format(std::string format, ...) {
     if (true == escaped || true == has_reference_selection) {
         format = format_out.str(); // this is only valid, because str() returns copy... otherwise, it is assumed both string variables point to the same underlying buffer? correct?
         format_out = std::basic_stringstream<char>();
-        s = EStream((uint8_t *)format.data(), format.size());
+        s = ByteEStream((uint8_t *)format.data(), format.size());
         while (true == s.good()) {
             c = s.get();
             if (c == '\\') {

@@ -28,7 +28,8 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/http_test/main.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/http_test/controllers/example.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/http_test/services/example.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/estream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/server.c
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_watcher.cpp
@@ -38,7 +39,7 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_gcs.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory_gcs.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
 "
 
 INCLUDE_DIRS="-I $WYLESLIBS_BUILD_ROOT_DIR/http_test"

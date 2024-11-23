@@ -1,5 +1,5 @@
 #include "etime.h"
-#include "string-format.h"
+#include "string_format.h"
 #include "datastructures/array.h"
 
 #include <string>
@@ -11,7 +11,7 @@ using namespace WylesLibs;
 
 #define SECONDS_PER_HOUR 3600 // 60 * 60
 
-static constexpr Array<int16_t> OFFSETS{
+static Array<int16_t> OFFSETS{
     -1200,
     -1100,
     -1000,

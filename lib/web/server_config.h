@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_SERVER_CONFIG_H
 #define WYLESLIBS_SERVER_CONFIG_H
 
-#include "string-format.h"
+#include "string_format.h"
 #include "parser/json/json.h"
 #include "file/stream_factory.h"
 

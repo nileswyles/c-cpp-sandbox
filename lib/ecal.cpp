@@ -1,6 +1,7 @@
 #include "ecal.h"
-#include "string-format.h"
+#include "string_format.h"
 #include "etime.h"
+#include "estream/byteestream.h"
 
 #include <string>
 
@@ -66,7 +67,20 @@ static bool isLeapYear(uint16_t year) {
     return year % 4 == 0 && (year % 100 != 0 || (year % 100 == 0 && year % 400 == 0));
 }
 
-extern std::string WylesLibs::Cal::getFormattedDateTime(int16_t offset, DATETIME_FORMAT format) {
+// static uint64_t parseReadableDateTime(ByteEStream& s) {
+//     uint64_t epoch_seconds = 0;
+
+
+
+// }
+// static uint64_t parseISO8601ReadableDateTime(ByteEStream& s) {
+
+// }
+// static uint64_t parseISO8601DateTime(ByteEStream& s) {
+
+// }
+
+extern std::string WylesLibs::Cal::getFormattedDateTime(int16_t offset, WylesLibs::Cal::DATETIME_FORMAT format) {
     uint64_t epoch_seconds = WylesLibs::Cal::getZonedEpochTime(offset);
     
     uint64_t seconds_since_year_start = epoch_seconds;
@@ -112,12 +126,12 @@ extern std::string WylesLibs::Cal::getFormattedDateTime(int16_t offset, DATETIME
 
     std::string formatted_offset("Z");
     // ! IMPORTANT - offset value is validated and updated by the function used to get the time.
-    if (format == READABLE) {
+    if (format == WylesLibs::Cal::READABLE) {
         if (offset != 0) {
             formatted_offset = WylesLibs::format("{+d}:{-02d}", static_cast<int64_t>(offset/100), static_cast<int64_t>(offset));
         }
         return WylesLibs::format("{s} {u} {u}, {u}:{u}:{u} ", MONTH_NAME[month], static_cast<uint64_t>(day + 1), static_cast<uint64_t>(year), static_cast<uint64_t>(hr), static_cast<uint64_t>(min), static_cast<uint64_t>(sec)) + formatted_offset;
-    } else if (format == ISO8601_READABLE) {
+    } else if (format == WylesLibs::Cal::ISO8601_READABLE) {
         if (offset != 0) {
             formatted_offset = WylesLibs::format("{+d}:{-02d}", static_cast<int64_t>(offset/100), static_cast<int64_t>(offset));
         }
@@ -129,3 +143,14 @@ extern std::string WylesLibs::Cal::getFormattedDateTime(int16_t offset, DATETIME
         return WylesLibs::format("{04u}{02u}{02u}T{02u}{02u}{02u}", static_cast<uint64_t>(year), static_cast<uint64_t>(month), static_cast<uint64_t>(day + 1), static_cast<uint64_t>(hr), static_cast<uint64_t>(min), static_cast<uint64_t>(sec)) + formatted_offset;
     }
 }
+
+// extern uint64_t getEpochFromFormattedDateTime(std::string dt, DATETIME_FORMAT format = READABLE) {
+//     ByteEStream s((uint8_t *)dt.data(), dt.size());
+//     if (format == READABLE) {
+//         return parseReadableDateTime(s);
+//     } else if (format == ISO8601_READABLE) {
+//         return parseISO8601ReadableDateTime(s);
+//     } else {
+//         return parseISO8601DateTime(s);
+//     }
+// }

@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_FILEGCS_H
 #define WYLESLIBS_FILEGCS_H
 
-#include "estream/estream.h"
+#include "estream/byteestream.h"
 #include "file/file.h"
 #include "file/stream_factory_gcs.h"
 

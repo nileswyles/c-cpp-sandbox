@@ -18,11 +18,12 @@ fi
 SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/string_format_test.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/estream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
 "

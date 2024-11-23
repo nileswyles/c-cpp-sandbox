@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_FILES_H
 #define WYLESLIBS_FILES_H
 
-#include "estream/estream.h"
+#include "estream/istreamestream.h"
 #include "file/stream_factory.h"
 
 #include <ios>
@@ -57,7 +57,7 @@ static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8
     s->flush();
 }
 
-static SharedArray<uint8_t> read(std::shared_ptr<ReaderEStream> s, size_t offset = 0, size_t size = SIZE_MAX) {
+static SharedArray<uint8_t> read(std::shared_ptr<IStreamEStream> s, size_t offset = 0, size_t size = SIZE_MAX) {
     SharedArray<uint8_t> file_data;
     if (offset != 0) {
         s->seekg(offset); // read from absolute position defined by offset
@@ -75,7 +75,7 @@ static SharedArray<uint8_t> read(std::shared_ptr<ReaderEStream> s, size_t offset
         //     throw std::runtime_error("Error occured while reading istream until EOF.");
         // }
     } else {
-        file_data = s->readBytes(size);
+        file_data = s->read(size);
     }
     return file_data;
 }
@@ -104,7 +104,7 @@ class FileManager {
             this->streams()->removeWriter(path);
         }
         SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
-            std::shared_ptr<ReaderEStream> s = std::make_shared<ReaderEStream>(this->stream_factory, path, offset, size);
+            std::shared_ptr<IStreamEStream> s = std::make_shared<IStreamEStream>(this->stream_factory, path, offset, size);
             return File::read(s, offset, size);
         }
         std::shared_ptr<StreamFactory> streams() {

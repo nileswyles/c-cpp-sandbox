@@ -20,7 +20,7 @@
 // other
 #include <openssl/ssl.h>
 
-#include "estream/estream.h"
+#include "estream/byteestream.h"
 #include "web/server.h"
 #include "config.h"
 #include "connection.h"
@@ -129,20 +129,20 @@ class HttpConnection {
         std::shared_ptr<HttpFileWatcher> file_watcher;
         std::shared_ptr<FileManager> file_manager;
 
-        void parseRequest(HttpRequest * request, EStream * reader);
-        void processRequest(EStream * io, HttpRequest * request);
+        void parseRequest(HttpRequest * request, ByteEStream * reader);
+        void processRequest(ByteEStream * io, HttpRequest * request);
 
         HttpResponse * handleStaticRequest(HttpRequest * request);
-        bool handleWebsocketRequest(EStream * io, HttpRequest * request);
+        bool handleWebsocketRequest(ByteEStream * io, HttpRequest * request);
 #ifdef WYLESLIBS_HTTP_DEBUG
-        HttpResponse * handleTimeoutRequests(EStream * io, HttpRequest * request);
+        HttpResponse * handleTimeoutRequests(ByteEStream * io, HttpRequest * request);
 #endif
         HttpResponse * requestDispatcher(HttpRequest * request);
 
         ReaderTaskDisallow whitespace_chain;
         ReaderTaskDisallow whitespace_lc_chain;
         ReaderTaskLC lowercase_task;
-        void writeResponse(HttpResponse * response, EStream * io);
+        void writeResponse(HttpResponse * response, ByteEStream * io);
 
         void initializeStaticPaths(HttpServerConfig config, ThreadSafeMap<std::string, std::string> static_paths) {
             loggerPrintf(LOGGER_DEBUG, "Static Paths: %s\n", config.static_path.c_str());
@@ -196,7 +196,7 @@ class HttpConnection {
             this->lowercase_task = ReaderTaskLC();
             this->whitespace_chain.to_disallow = "\t ";
             this->whitespace_lc_chain.to_disallow = "\t ";
-            this->whitespace_lc_chain.nextOperation = &this->lowercase_task;
+            this->whitespace_lc_chain.next_operation = &this->lowercase_task;
         }
     public:
         HttpConnection() = default;

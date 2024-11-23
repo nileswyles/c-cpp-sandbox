@@ -25,9 +25,10 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_object.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_array.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/estream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
 "

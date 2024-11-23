@@ -12,13 +12,13 @@ using WylesLibs::Parser;
 
 namespace WylesLibs::Parser::Multipart::ByteRanges {
 // lol, still valid for client code...
-static void parse(EStream * r, MultipartFile& file) {
+static void parse(ByteEStream * r, MultipartFile& file) {
     while (1) {
-        SharedArray<uint8_t> potential_boundary = r->readUntil("\n"); // read and consume boundary string
+        SharedArray<uint8_t> potential_boundary = r->read("\n"); // read and consume boundary string
         if (potential_boundary.at(0) == '-' && potential_boundary.at(1) == '-') {
             if (potential_boundary.at(potential_boundary.size() - 3) == '-') break;
             // assume type then range for now...
-            r->readUntil("\n"); // read and consume content type because who cares.
+            r->read("\n"); // read and consume content type because who cares.
 
             // parse byte range...
 
@@ -32,8 +32,8 @@ static void parse(EStream * r, MultipartFile& file) {
             //   complete-length     = 1*DIGIT
 
             // Content-Range: bytes 0-50/1024
-            r->readUntil(" "); // read and consume Content-Range: |
-            r->readUntil(" "); // read and consume bytes |
+            r->read(" "); // read and consume Content-Range: |
+            r->read(" "); // read and consume bytes |
 
             double min = 0;
             uint32_t digits = 0;
@@ -63,7 +63,7 @@ static void parse(EStream * r, MultipartFile& file) {
             // inclusive...
             // [0,0] = 1, [1,0] = 0, [0,1] = 2
             //            [2,0] = -1
-            SharedArray<uint8_t> data = r->readBytes(max - min + 1);
+            SharedArray<uint8_t> data = r->read(max - min + 1);
             // WylesLibs::File::write(file.getResourcePath(), data);
         } else {
             throw std::runtime_error("Boundary string expected at start or after read.");

@@ -46,10 +46,8 @@ ESharedPtr<std::basic_istream<char>> GCSStreamFactory::reader(std::string path, 
         throw std::runtime_error(msg);
     }
     return ESharedPtr<std::basic_istream<char>>(
-        std::shared_ptr<std::basic_istream<char>>(
-            dynamic_cast<std::basic_istream<char> *>(
-                new gcs::ObjectReadStream(std::move(reader))
-            )
+        dynamic_cast<std::basic_istream<char> *>(
+            new gcs::ObjectReadStream(std::move(reader))
         )
     );
 }
@@ -69,10 +67,8 @@ ESharedPtr<std::basic_ostream<char>> GCSStreamFactory::writer(std::string path) 
     pthread_mutex_unlock(&this->writers_lock);
     // TODO: std::move?
     return ESharedPtr<std::basic_ostream<char>>(
-        std::shared_ptr<std::basic_ostream<char>>(
-            dynamic_cast<std::basic_ostream<char> *>(
-                new gcs::ObjectWriteStream(std::move(writer))
-            )
+        dynamic_cast<std::basic_ostream<char> *>(
+            new gcs::ObjectWriteStream(std::move(writer))
         )
     );
 }

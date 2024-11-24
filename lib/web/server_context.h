@@ -16,7 +16,7 @@ class ServerContext {
         UniqueKeyGenerator key_generator;
         ESharedPtr<FileManager> file_manager;
 
-        ServerContext(ServerConfig config): ServerContext(config, ESharedPtr<FileManager>(std::make_shared<FileManager>())) {}
+        ServerContext(ServerConfig config): ServerContext(config, ESharedPtr<FileManager>(new FileManager>())) {}
         ServerContext(ServerConfig config, ESharedPtr<FileManager> file_manager): config(config), file_manager(file_manager), 
             key_generator(UniqueKeyGenerator(config, UniqueKeyGeneratorStore(file_manager, Paths::join(config.resources_root, "sequence_store")))) {}
         ~ServerContext() = default;

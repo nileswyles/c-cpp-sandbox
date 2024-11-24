@@ -11,7 +11,7 @@
 #include <iostream>
 
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 #ifndef LOGGER_FILE_MANAGER_TEST
 #define LOGGER_FILE_MANAGER_TEST 1

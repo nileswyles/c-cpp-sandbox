@@ -2,7 +2,7 @@
 #define WYLESLIBS_JSON_PARSER_H
 
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -62,7 +62,6 @@ class JsonValue: public JsonBase {
         JsonType type;
         JsonValue(): type(NULL_TYPE) {}
         JsonValue(JsonType derived_type): type(derived_type) {}
-        // TODO: odd syntax but...
         ~JsonValue() override = default;
         std::string toJsonString() {
             return "";

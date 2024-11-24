@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 #ifndef LOGGER_FILE_WATCHER_TEST
 #define LOGGER_FILE_WATCHER_TEST 1
@@ -32,7 +32,7 @@ bool riskyDeleteBool = false;
 class TestFileWatcher: public FileWatcher {
     public:
         TestFileWatcher(SharedArray<std::string> paths): FileWatcher(paths, IN_CREATE | IN_MOVED_FROM | IN_MOVED_TO | IN_DELETE) {}
-        void handle(const struct inotify_event * event) {
+        void handle(const struct inotify_event * event) override {
             loggerPrintf(LOGGER_DEBUG, "MASK: %x, NAME: %s\n", event->mask, event->name);
             if (event->mask&IN_CREATE) {
                 loggerPrintf(LOGGER_DEBUG, "CREATE EVENT FOUND!\n");
@@ -112,8 +112,7 @@ static void beforeSuite() {
 
     SharedArray<std::string> paths{test_directory};
     file_watcher = ESharedPtr<TestFileWatcher>(new TestFileWatcher(paths));
-    file_watcher = nullptr;
-    ESHAREDPTR_GET_PTR(file_watcher)->initialize(dynamic_eshared_cast<TestFileWatcher, FileWatcher>(file_watcher));
+    ESHAREDPTR_GET_PTR(file_watcher)->initialize(file_watcher.cast<FileWatcher>());
 }
 
 static void removeStoreFile() {

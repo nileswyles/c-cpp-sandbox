@@ -2,7 +2,7 @@
 #define SEQUENCE_ID_GENERATOR_H
 
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 #include <math.h>
 #include <pthread.h>

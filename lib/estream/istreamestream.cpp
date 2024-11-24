@@ -6,17 +6,15 @@
 using namespace WylesLibs;
 
 bool IStreamEStream::readPastBuffer() {
-    return ESHAREDPTR_GET_PTR(this->reader)->good();
+    // TODO: this might not be correct for all cases.
+    //      review eof, good, fail flags again.
+    return false == this->good();
 }
 
 void IStreamEStream::fillBuffer() {
     // get new stream from underlying transport...
-    if (!this->factory) {
-        throw std::runtime_error("Read error.");
-    } else {
-        this->file_offset += this->chunk_size;
-        reader = ESHAREDPTR_GET_PTR(this->factory)->reader(path, this->file_offset, this->chunk_size);
-    }
+    this->file_offset += this->chunk_size;
+    reader = ESHAREDPTR_GET_PTR(this->factory)->reader(path, this->file_offset, this->chunk_size);
 }
 uint8_t IStreamEStream::get() {
     if (true == this->readPastBuffer()) {

@@ -6,7 +6,7 @@
 #include <map>
 #include <string>
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 #ifndef ALGO_SIGNED_LONG
 #define ALGO_SIGNED_LONG int64_t

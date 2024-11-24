@@ -128,7 +128,6 @@ namespace WylesLibs {
         return s;
     }
 
-    // TODO: octal
     static std::string numToStringSigned(int64_t num, StringFormatOpts opts = {}) {
         if (num < 0) {
             num *= -1;

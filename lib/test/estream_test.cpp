@@ -56,7 +56,7 @@ static void setTestString(const char * s) {
 }
 
 static void readUntilAssert(TestArg * t, std::string result, std::string expected) {
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", buffer_start);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n'%s'\n", buffer_start);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
     ASSERT_STRING(t, result, expected);
 }

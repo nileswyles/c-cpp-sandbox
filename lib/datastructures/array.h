@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <istream>
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 // make sure global logger level is initialized
 #ifndef GLOBAL_LOGGER_LEVEL
@@ -550,6 +550,8 @@ class ArrayControl {
 };
 
 // @
+
+// Do you shared_ptr string, map, etc? lol kind of annoying but I think preferable to pointer syntax?
 
 template<typename T> 
 class SharedArray {

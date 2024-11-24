@@ -7,7 +7,7 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 #include <ios>
 #include <istream>
 
@@ -44,9 +44,6 @@ class IStreamEStream: public ByteEStream {
         // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...
         virtual ~IStreamEStream() = default;
 
-        // TODO:
-        // review these again...
-
         // standard istream
         uint8_t get() override;
         uint8_t peek() override;
@@ -66,6 +63,7 @@ class IStreamEStream: public ByteEStream {
         bool operator!() {
             return this->good();
         }
+        // TODO:
         // bool operator bool() {
         //     return this->good();
         // }

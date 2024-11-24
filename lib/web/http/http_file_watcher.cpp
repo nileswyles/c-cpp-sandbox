@@ -4,7 +4,7 @@
 using namespace WylesLibs::Http;
 using namespace WylesLibs::Paths;
 
-void HttpFileWatcher::handle(const struct inotify_event *event) {
+void HttpFileWatcher::handle(const struct inotify_event * event) {
     loggerPrintf(LOGGER_DEBUG, "EVENT MASK: %d", event->mask);
     if (!(event->mask & IN_ISDIR)) { // files only
         pthread_mutex_lock(this->static_paths.getMutex());

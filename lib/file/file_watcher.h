@@ -9,7 +9,7 @@
 #include <string>
 
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 namespace WylesLibs {
     class FileWatcher {
@@ -18,7 +18,7 @@ namespace WylesLibs {
             uint32_t access_mask;
             FileWatcher(SharedArray<std::string> paths, uint32_t mask);
             virtual ~FileWatcher();
-            virtual void handle(const struct inotify_event *event) = 0;
+            virtual void handle(const struct inotify_event * event) = 0;
             void initialize(ESharedPtr<FileWatcher> ptr);
     };
     extern void fileWatcherThreadStart();

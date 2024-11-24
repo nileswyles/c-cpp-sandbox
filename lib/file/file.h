@@ -9,7 +9,7 @@
 #include <string>
 
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL
@@ -91,7 +91,7 @@ class FileManager {
     protected:
         ESharedPtr<StreamFactory> stream_factory;
     public:
-        FileManager(): stream_factory(ESharedPtr<StreamFactory>(std::make_shared<StreamFactory>())) {}
+        FileManager(): stream_factory(ESharedPtr<StreamFactory>(new StreamFactory)) {}
         FileManager(ESharedPtr<StreamFactory> stream_factory): stream_factory(stream_factory) {}
         virtual ~FileManager() = default;
 
@@ -113,7 +113,7 @@ class FileManager {
         SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
             return File::read(
                 ESharedPtr<IStreamEStream>(
-                    std::make_shared<IStreamEStream>(this->stream_factory, path, offset, size)
+                    new IStreamEStream(this->stream_factory, path, offset, size)
                 ), 
             offset, size);
         }

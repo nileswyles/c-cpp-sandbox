@@ -4,7 +4,7 @@
 #include "datastructures/array.h"
 
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 #include <sstream>
 
 #ifndef LOGGER_KEY_GENERATOR_TEST
@@ -19,7 +19,7 @@ using namespace WylesLibs;
 using namespace WylesLibs::Test;
 using namespace WylesLibs::File;
 
-static ESharedPtr<FileManager> file_manager = ESharedPtr<FileManager>(std::shared_ptr<FileManager>(new FileManager()));
+static ESharedPtr<FileManager> file_manager = ESharedPtr<FileManager>(new FileManager());
 static std::string file_name("sequence_store");
 
 static void removeStoreFile() {

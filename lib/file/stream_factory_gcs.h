@@ -3,7 +3,7 @@
 
 #include "file/stream_factory.h"
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 #include <string>
 
 // TODO: compiler flags to not have to rely on google?

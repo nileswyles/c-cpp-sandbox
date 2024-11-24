@@ -387,14 +387,14 @@ extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parse(ByteEStream * r, siz
     char c = r->peek();
     loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {
-        ESharedPtr<JsonValue> new_obj = ESharedPtr<JsonValue>(std::shared_ptr<JsonValue>(dynamic_cast<JsonValue *>(new JsonObject(0))));
-        parseObject(dynamic_cast<JsonObject *>(ESHAREDPTR_GET_PTR(new_obj)), r);
-        obj = new_obj;
+        JsonObject * new_obj = new JsonObject(0);
+        parseObject(new_obj, r);
+        obj = ESharedPtr<JsonValue>(dynamic_cast<JsonValue *>(new_obj));
     } else if (c == '[') {
-        ESharedPtr<JsonValue> new_obj = ESharedPtr<JsonValue>(std::shared_ptr<JsonValue>(dynamic_cast<JsonValue *>(new JsonArray(0))));
+        JsonArray * new_arr = new JsonArray(0);
         // [1, 2, 3, 4] is valid JSON lol...
-        parseArray(dynamic_cast<JsonArray *>(ESHAREDPTR_GET_PTR(new_obj)), r);
-        obj = new_obj;
+        parseArray(new_arr, r);
+        obj = ESharedPtr<JsonValue>(dynamic_cast<JsonValue *>(new_arr));
     } else {
         std::string msg = "Invalid JSON data.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());

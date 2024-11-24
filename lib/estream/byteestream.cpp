@@ -41,10 +41,8 @@ SharedArray<uint8_t> ByteCollector::collect() {
 template<>
 ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>> WylesLibs::initReadCollector<uint8_t, SharedArray<uint8_t>>() {
     return ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>>(
-        std::shared_ptr<Collector<uint8_t, SharedArray<uint8_t>>>(
-            dynamic_cast<Collector<uint8_t, SharedArray<uint8_t>> *>(
-                new ByteCollector
-            )
+        dynamic_cast<Collector<uint8_t, SharedArray<uint8_t>> *>(
+            new ByteCollector
         )
     );
 }
@@ -107,7 +105,6 @@ double ByteEStream::readDecimal() {
 
     double natural_value = static_cast<double>(this->natural_processor.streamCollect(this, nullptr));
 
-    this->unget();
     char c = this->get();
     if (c != '.') {
         std::string msg = "Invalid number.";
@@ -162,8 +159,7 @@ SSL * SSLEStream::acceptTLS(SSL_CTX * context, int fd, bool client_auth_enabled)
         SSL_clear_mode(ssl, 0);
         // SSL_MODE_AUTO_RETRY
 
-        // TODO: so apparently this is optional lol... SSL_read will perform handshake...
-        //  also, investigate renegotiation, auto retry...
+        // ! IMPORTANT - apparently this is optional. SSL_read will implicitly perform handshake but that doesn't seem like the correct approach.
         int accept_result = SSL_accept(ssl);
         loggerPrintf(LOGGER_DEBUG, "ACCEPT RESULT: %d\n", accept_result);
         loggerPrintf(LOGGER_DEBUG, "MODE: %lx, VERSION: %s, IS SERVER: %d\n", SSL_get_mode(ssl), SSL_get_version(ssl), SSL_is_server(ssl));

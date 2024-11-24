@@ -16,7 +16,7 @@
 #include <unordered_map>
 #include <map>
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 // other
 #include <openssl/ssl.h>
@@ -235,7 +235,7 @@ class HttpConnection {
             initializeStaticPaths(config, static_paths);
             initializeSSLContext();
             // Array<std::string> paths{config.static_path};
-            //     file_watcher = ESharedPtr<HttpFileWatcher>(std::make_shared<HttpFileWatcher>(config, &static_paths, paths, &static_paths_mutex));
+            //     file_watcher = ESharedPtr<HttpFileWatcher>(new HttpFileWatcher(config, &static_paths, paths, &static_paths_mutex));
             //     file_watcher->initialize(file_watcher);
         }
 };

@@ -22,7 +22,7 @@ static void testCSVParser(TestArg * t) {
     size_t num_rows = 2;
     size_t num_columns = 2;
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     CSV<std::string> csv(io);
     csv.read(true);
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
@@ -39,7 +39,7 @@ static void testCSVParser(TestArg * t) {
 
 static void testCSVParserPeriodSeparator(TestArg * t) {
     std::string csv_string("col_1,col_2\n");
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     try {
         CSV<std::string> csv(io, '.');
     } catch (std::runtime_error &e) {
@@ -59,7 +59,7 @@ static void testCSVParserDoubles(TestArg * t) {
     size_t num_rows = 2;
     size_t num_columns = 2;
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     CSV<double> csv(io);
     csv.read(true);
     if (csv.header[0] == "col_1" &&
@@ -82,7 +82,7 @@ static void testCSVParserDoublesNonNumber(TestArg * t) {
     size_t num_rows = 2;
     size_t num_columns = 2;
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     try {
         CSV<double> csv(io);
         csv.read(true);
@@ -100,7 +100,7 @@ static void testCSVParserDoublesRecordWithInvalidNumberOfFields(TestArg * t) {
     csv_string += "4,2\n";
     csv_string += (char)EOF; // 255?
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     try {
         CSV<double> csv(io);
         csv.read(false);
@@ -121,7 +121,7 @@ static void testCSVParserSkipHeader(TestArg * t) {
     size_t num_rows = 2;
     size_t num_columns = 2;
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     CSV<std::string> csv(io);
     csv.read(false);
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
@@ -144,7 +144,7 @@ static void testCSVParserDelimeter(TestArg * t) {
     size_t num_rows = 2;
     size_t num_columns = 2;
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     CSV<std::string> csv(io, '|');
     csv.read(true);
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
@@ -165,7 +165,7 @@ static void testCSVParserRecordWithNoFields(TestArg * t) {
     csv_string += "1:2,2:2\n";
     csv_string += (char)EOF; // 255?
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     try {
         CSV<std::string> csv(io);
         csv.read(false);
@@ -184,7 +184,7 @@ static void testCSVParserRecordWithInvalidNumberOfFields(TestArg * t) {
     csv_string += "1:2,2:2\n";
     csv_string += (char)EOF; // 255?
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     try {
         CSV<std::string> csv(io);
         csv.read(false);
@@ -206,7 +206,7 @@ static void testCSVParserRecordWithSpaces(TestArg * t) {
     size_t num_rows = 2;
     size_t num_columns = 2;
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     CSV<std::string> csv(io);
     csv.read(true);
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
@@ -230,7 +230,7 @@ static void testCSVParserRecordWithQuotes(TestArg * t) {
     size_t num_rows = 2;
     size_t num_columns = 2;
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     CSV<std::string> csv(io);
     csv.read(true);
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[\n%s]\n", csv.toString().c_str());
@@ -254,7 +254,7 @@ static void testCSVParserRecordWithNestedQuotes(TestArg * t) {
     size_t num_rows = 2;
     size_t num_columns = 2;
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     CSV<std::string> csv(io);
     csv.read(true);
     loggerPrintf(LOGGER_TEST_VERBOSE, "CSV String:\n[%s]\n", csv.toString().c_str());
@@ -274,7 +274,7 @@ static void testCSVParserRecordWithFollowedQuotes(TestArg * t) {
     csv_string += "\"1:1\"    ,2:1\n";
     csv_string += "1:2,\"2:2\"\n";
     csv_string += (char)EOF; // 255?
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     try {
         CSV<std::string> csv(io);
         csv.read(true);
@@ -293,7 +293,7 @@ static void testCSVParserRecordWithPrecededQuotes(TestArg * t) {
     csv_string += "1:2,\"2:2\"\n";
     csv_string += (char)EOF; // 255?
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     try {
         CSV<std::string> csv(io);
         csv.read(true);
@@ -321,7 +321,7 @@ static void testCSVParserFromRange(TestArg * t) {
     size_t num_rows = 9;
     size_t num_columns = 2;
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     CSV<std::string> csv(io);
     t->fail = false;
     size_t range = num_rows;
@@ -373,7 +373,7 @@ static void testCSVParserFromRangeOutOfRange(TestArg * t) {
     csv_string += "1:2,2:2\n";
     csv_string += (char)EOF; // 255?
 
-    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(std::make_shared<ByteEStream>((uint8_t *)csv_string.data(), csv_string.size()));
+    ESharedPtr<ByteEStream> io = ESharedPtr<ByteEStream>(new ByteEStream((uint8_t *)csv_string.data(), csv_string.size()));
     CSV<std::string> csv(io);
 
     size_t range = 27;

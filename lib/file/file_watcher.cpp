@@ -3,13 +3,13 @@
 
 #include <pthread.h>
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 using namespace WylesLibs;
 
 // TODO: log toggles.
 
-static std::map<int, std::weak_ptr<FileWatcher>> registeredWatchers{};
+static std::map<int, EWeakPtr<FileWatcher>> registeredWatchers{};
 static pthread_t watcher_thread;
 static bool thread_run;
 static int fd = -1;
@@ -46,7 +46,7 @@ void FileWatcher::initialize(ESharedPtr<FileWatcher> ptr) {
             throw std::runtime_error("Cannot watch path: " + path);
         }
         paths_wd_map[w.first] = wd;
-        registeredWatchers[wd] = ptr.getWeak();
+        registeredWatchers[wd] = ptr.weak<EWeakPtr<FileWatcher>>();
     }
     pthread_mutex_unlock(&mutex);
 }
@@ -82,8 +82,9 @@ static void * watcherRun(void * arg) {
                 /* Loop over all events in the buffer. */
                 for (char *ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
                     event = (const struct inotify_event *) ptr;
-                    if (auto watcher = registeredWatchers[event->wd].lock()) {
-                        watcher->handle(event);
+                    ESharedPtr<FileWatcher> watcher = registeredWatchers[event->wd].lock();
+                    if (watcher) {
+                        ESHAREDPTR_GET_PTR(watcher)->handle(event);
                     }
                 }
             } // else if read_in == 0, try again.
@@ -120,7 +121,10 @@ extern void WylesLibs::fileWatcherThreadStop() {
     pthread_mutex_lock(&mutex);
 
     for (auto w: registeredWatchers) {
-        w.second.lock()->paths_wd_map.clear();
+        ESharedPtr<FileWatcher> watcher = w.second.lock();
+        if (watcher) {
+            ESHAREDPTR_GET_PTR(watcher)->paths_wd_map.clear();
+        }
         inotify_rm_watch(fd, w.first);
     }
     registeredWatchers.clear(); // should call destructors right?

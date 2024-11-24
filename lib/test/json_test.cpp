@@ -1,7 +1,7 @@
 #include "parser/json/json.h"
 #include <iostream>
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 // #include "test/tester.h"
 #include "tester.h"
@@ -77,8 +77,9 @@ class User: public JsonBase {
         User(ESharedPtr<JsonObject> obj_shared): User() {
             JsonObject * obj = ESHAREDPTR_GET_PTR(obj_shared);
             loggerPrintf(LOGGER_TEST_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
+            std::string key;
             for (size_t i = 0; i < obj->keys.size(); i++) {
-                std::string key = obj->keys.at(i);
+                key = obj->keys.at(i);
                 loggerPrintf(LOGGER_TEST_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if (key == "name") {
@@ -97,6 +98,7 @@ class User: public JsonBase {
                     nested = setVariableFromJsonValue<Nested>(value);
                     // setVariableFromJsonValue<Nested>(value, nested);
                 }
+                key = "";
             }
         }
         ~User() = default;
@@ -199,30 +201,37 @@ static std::string createNestedArray(size_t length) {
 
 static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size_t expected_size) {
     try {
-        ESharedPtr<JsonObject> obj_shared = dynamic_eshared_cast<JsonValue, JsonObject>(parse(s));
-        JsonObject * obj = ESHAREDPTR_GET_PTR(obj_shared);
-        if (obj->type == OBJECT) {
+        ESharedPtr<JsonValue> value_shared = parse(s);
+        if (ESHAREDPTR_GET_PTR(value_shared)->type == OBJECT) {
+            // ! IMPORTANT - Interesting example of both implicit and explicit ESharedPtr type conversions.
+            //     ESharedPtr<JsonObject> obj_shared = value_shared.cast<JsonObject>();
+            //     ESharedPtr<JsonObject> obj_shared = (ESharedPtr<JsonObject>)value_shared;
+            //     templated copy constructor and assignments enable latter and next. sounds good!
+            ESharedPtr<JsonObject> obj_shared = value_shared;
             User user(obj_shared);
+
             loggerPrintf(LOGGER_TEST_VERBOSE, "JSON To Parse: \n");
             loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(s).c_str());
+
             loggerPrintf(LOGGER_TEST_VERBOSE, "Parsed JSON - User Class: \n");
             loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(user.toJsonString()).c_str());
+
             loggerPrintf(LOGGER_TEST_VERBOSE, "Expected JSON - User Class: \n");
             loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(expected.toJsonString()).c_str());
 
             if (user != expected) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "User object mismatch.\n");
             }
-            if (obj->keys.size() != expected_size) {
+            if (ESHAREDPTR_GET_PTR(obj_shared)->keys.size() != expected_size) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "Unexpected number of keys.\n");
             }
-            if (obj->values.size() != expected_size) {
+            if (ESHAREDPTR_GET_PTR(obj_shared)->values.size() != expected_size) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "Unexpected number of values.\n");
             }
 
             if (user == expected 
-                && obj->keys.size() == expected_size 
-                && obj->values.size() == expected_size) {
+                && ESHAREDPTR_GET_PTR(obj_shared)->keys.size() == expected_size 
+                && ESHAREDPTR_GET_PTR(obj_shared)->values.size() == expected_size) {
                 t->fail = false;
             }
         }
@@ -234,10 +243,9 @@ static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size
 static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
     try {
         size_t i = 0;
-        JsonValue * obj = ESHAREDPTR_GET_PTR(parse(s));
-
+        ESharedPtr<JsonValue> value_shared = parse(s);
         std::string actual;
-        if (obj->type == OBJECT) {
+        if (ESHAREDPTR_GET_PTR(value_shared)->type == OBJECT) {
             // if (obj->toJsonString() == s 
             //     && obj->keys.size() == 77 * 2; 
             //     && obj->values.size() == 77 * 2) {
@@ -247,9 +255,11 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
             // lol.... nah.
 
             // TODO: write tests for the pretty function... because this relies on it.
-            actual = pretty(dynamic_cast<JsonObject *>(obj)->toJsonString());
-        } else if (obj->type == ARRAY) {
-            actual = pretty(dynamic_cast<JsonArray *>(obj)->toJsonString());
+            ESharedPtr<JsonObject> obj_shared = value_shared.cast<JsonObject>();
+            actual = pretty(ESHAREDPTR_GET_PTR(obj_shared)->toJsonString());
+        } else if (ESHAREDPTR_GET_PTR(value_shared)->type == ARRAY) {
+            ESharedPtr<JsonArray> arr_shared = value_shared.cast<JsonArray>();
+            actual = pretty(ESHAREDPTR_GET_PTR(arr_shared)->toJsonString());
         }
 
         // printf("size: %u", obj->keys.size());
@@ -343,7 +353,9 @@ static void testJsonArray(TestArg * t) {
         size_t i = 0;
         JsonValue * obj = ESHAREDPTR_GET_PTR(parse(s));
         if (obj != nullptr) {
+            printf("wtf?\n");
             if (obj->type == ARRAY) {
+                printf("wtf?\n");
                 loggerPrintf(LOGGER_TEST_VERBOSE, "JSON to Parse: \n");
                 loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(s).c_str());
                 JsonArray * values = dynamic_cast<JsonArray *>(obj);

@@ -4,7 +4,7 @@
 #include "datastructures/array.h"
 
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -29,6 +29,7 @@ namespace WylesLibs {
             LoopCriteriaInfo(LoopCriteriaMode mode, bool included, bool inclusive, size_t until_size, SharedArray<T> until): 
                 mode(mode), included(included), inclusive(inclusive), until_size(until_size), until(until) {
             }
+            virtual ~LoopCriteriaInfo() = default;
     };
 
     template<typename T>
@@ -36,16 +37,20 @@ namespace WylesLibs {
         protected:
             bool is_good;
             virtual bool untilMatchGood(T& el, bool is_new_char) {
+                bool until_match = this->loop_criteria_info.until.contains(el);
                 if (true == is_new_char) {
-                    bool until_match = this->loop_criteria_info.until.contains(el);
+                    // Determine whether you should proceed to process the provided character...
                     if (true == this->loop_criteria_info.inclusive) {
                         if (true == this->loop_criteria_info.included) {
-                            return false; // we are done, regardless of whether match or not.
+                            until_match = true; // we are done, regardless of whether match or not.
                         } else if (true == until_match && false == this->loop_criteria_info.included) {
                             this->loop_criteria_info.included = true; // allow one more loop
-                            return true;
+                            until_match = false;
                         } 
                     }
+                    this->is_good = false == until_match;
+                } else {
+                    // Determining whether the element being processed is the until match...
                     this->is_good = false == until_match;
                 }
                 return this->is_good;
@@ -62,7 +67,7 @@ namespace WylesLibs {
             //        if (LOOP_CRITERIA_UNTIL_MATCH == LoopCriteriaInfo<uint8_t>::loop_criteria_info.mode) {
             LoopCriteriaInfo<T> loop_criteria_info;
             LoopCriteria(LoopCriteriaInfo<T> loop_criteria_info): loop_criteria_info(loop_criteria_info), is_good(false) {}
-            ~LoopCriteria() = default;
+            virtual ~LoopCriteria() = default;
         
             virtual bool good(T& el, bool is_new_char = false) {
                 if (LOOP_CRITERIA_UNTIL_MATCH == this->loop_criteria_info.mode) {
@@ -89,7 +94,7 @@ namespace WylesLibs {
     template<typename T, typename RT>
     class Collector {
         public:
-            ~Collector() = default;
+            virtual ~Collector() = default;
             virtual void accumulate(T& el) = 0;
             virtual void accumulate(SharedArray<T>& els) {
                 throw std::runtime_error("Accumulate function of multiple elements isn't implemented!");
@@ -99,7 +104,6 @@ namespace WylesLibs {
 
     template<typename T, typename RT>
     ESharedPtr<Collector<T, RT>> initReadCollector() {
-        printf("SEG INIT COLLECTOR\n");
         std::string msg("A specialization of initReadCollector is required for this datatype.");
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);

@@ -27,7 +27,7 @@ namespace WylesLibs {
             static constexpr uint8_t DIGIT_CLASS = 0x8;
             uint8_t char_class;
             ByteIsCharClassCriteria(uint8_t char_class): char_class(char_class), LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, false, true, 0, SharedArray<uint8_t>())) {}
-            ~ByteIsCharClassCriteria() = default;
+            ~ByteIsCharClassCriteria() override = default;
         
             bool good(uint8_t& c, bool is_new_char = false) override final;
     };
@@ -39,7 +39,7 @@ namespace WylesLibs {
             SharedArray<uint8_t> data;
         public:
             ByteCollector() = default;
-            ~ByteCollector() = default;
+            ~ByteCollector() override = default;
             void accumulate(uint8_t& c) override final;
             void accumulate(SharedArray<uint8_t>& cs) override final;
             SharedArray<uint8_t> collect() override final;
@@ -54,7 +54,7 @@ namespace WylesLibs {
             uint64_t value;
         public:
             NaturalCollector(): digit_count(0), value(0) {}
-            ~NaturalCollector() = default;
+            ~NaturalCollector() override = default;
             void accumulate(uint8_t& c) override final;
             uint64_t collect() override final;
     };
@@ -66,7 +66,7 @@ namespace WylesLibs {
             double value;
         public:
             DecimalCollector(): digit_count(0), value(0.0) {}
-            ~DecimalCollector() = default;
+            ~DecimalCollector() override = default;
             void accumulate(uint8_t& c) override final;
             double collect() override final;
     };
@@ -80,29 +80,23 @@ namespace WylesLibs {
             ByteEStream() = default;
             ByteEStream(uint8_t * p_buf, const size_t p_buf_size): EStream<uint8_t>(p_buf, p_buf_size) {
                 ESharedPtr<LoopCriteria<uint8_t>> char_class_criteria(
-                    std::shared_ptr<LoopCriteria<uint8_t>>(
-                        dynamic_cast<LoopCriteria<uint8_t>*>(
-                            new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS)
-                        )
+                    dynamic_cast<LoopCriteria<uint8_t>*>(
+                        new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS)
                     )
                 ); 
                 natural_processor = StreamProcessor<uint8_t, uint64_t>(
                     char_class_criteria,
                     ESharedPtr<Collector<uint8_t, uint64_t>>(
-                        std::shared_ptr<Collector<uint8_t, uint64_t>>(
-                            dynamic_cast<Collector<uint8_t, uint64_t>*>(
-                                new NaturalCollector
-                            )
+                        dynamic_cast<Collector<uint8_t, uint64_t>*>(
+                            new NaturalCollector
                         )
                     )
                 );
                 decimal_processor = StreamProcessor<uint8_t, double>(
                     char_class_criteria,
                     ESharedPtr<Collector<uint8_t, double>>(
-                        std::shared_ptr<Collector<uint8_t, double>>(
-                            dynamic_cast<Collector<uint8_t, double>*>(
-                                new DecimalCollector
-                            )
+                        dynamic_cast<Collector<uint8_t, double>*>(
+                            new DecimalCollector
                         )
                     )
                 );
@@ -110,37 +104,35 @@ namespace WylesLibs {
             ByteEStream(const int fd): ByteEStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
             ByteEStream(const int p_fd, const size_t p_buf_size): EStream<uint8_t>(p_fd, p_buf_size) {
                 ESharedPtr<LoopCriteria<uint8_t>> char_class_criteria(
-                    std::shared_ptr<LoopCriteria<uint8_t>>(
-                        dynamic_cast<LoopCriteria<uint8_t>*>(
-                            new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS)
-                        )
+                    dynamic_cast<LoopCriteria<uint8_t>*>(
+                        new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS)
                     )
                 ); 
                 natural_processor = StreamProcessor<uint8_t, uint64_t>(
                     char_class_criteria,
                     ESharedPtr<Collector<uint8_t, uint64_t>>(
-                        std::shared_ptr<Collector<uint8_t, uint64_t>>(
-                            dynamic_cast<Collector<uint8_t, uint64_t>*>(
-                                new NaturalCollector
-                            )
+                        dynamic_cast<Collector<uint8_t, uint64_t>*>(
+                            new NaturalCollector
                         )
                     )
                 );
                 decimal_processor = StreamProcessor<uint8_t, double>(
                     char_class_criteria,
                     ESharedPtr<Collector<uint8_t, double>>(
-                        std::shared_ptr<Collector<uint8_t, double>>(
-                            dynamic_cast<Collector<uint8_t, double>*>(
-                                new DecimalCollector
-                            )
+                        dynamic_cast<Collector<uint8_t, double>*>(
+                            new DecimalCollector
                         )
                     )
                 );
             }
+            ~ByteEStream() override = default;
 
             virtual SharedArray<uint8_t> read(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
             virtual uint64_t readNatural();
             virtual double readDecimal();
+
+            ByteEStream(ByteEStream && x) = default;
+            ByteEStream& operator=(ByteEStream && x) = default;
     };
 
     #ifdef WYLESLIBS_SSL_ENABLED

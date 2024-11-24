@@ -37,10 +37,8 @@ ESharedPtr<std::basic_istream<char>> StreamFactory::reader(std::string path, siz
     }
     ifstream->seekg(offset);
     return ESharedPtr<std::basic_istream<char>>(
-        std::shared_ptr<std::basic_istream<char>>(
-            dynamic_cast<std::basic_istream<char> *>(
-                ifstream
-            )
+        dynamic_cast<std::basic_istream<char> *>(
+            ifstream
         )
     );
 }
@@ -60,10 +58,8 @@ ESharedPtr<std::basic_ostream<char>> StreamFactory::writer(std::string path) {
     this->writers.insert(path); 
     pthread_mutex_unlock(&this->writers_lock);
     return ESharedPtr<std::basic_ostream<char>>(
-        std::shared_ptr<std::basic_ostream<char>>(
-            dynamic_cast<std::basic_ostream<char> *>(
-                ofstream
-            )
+        dynamic_cast<std::basic_ostream<char> *>(
+            ofstream
         )
     );
 }

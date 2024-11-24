@@ -10,7 +10,7 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
-#include "eshared_ptr.h"
+#include "memory/pointers.h"
 #include <ios>
 #include <istream>
 
@@ -139,7 +139,7 @@ class EStream: public EStreamI<T> {
         std::ios_base::iostate flags;
         T ungot_el;
         bool ungot;
-        SharedArray<T> backing_arr;
+        bool new_buffer;
     protected:
         T * buf;
         size_t buf_size;
@@ -178,6 +178,7 @@ class EStream: public EStreamI<T> {
             cursor = 0;
             // ! IMPORTANT - an exception is thrown and flags are updated if read past buffer. (see fillBuffer implementation)
             fd = -1;
+            new_buffer = false;
             els_in_buffer = p_buf_size;
             read_processor = StreamProcessor<T, SharedArray<T>>(
                 initReadCriteria<T>(), 
@@ -202,14 +203,16 @@ class EStream: public EStreamI<T> {
             fd = p_fd;
             els_in_buffer = 0;
             buf = newCArray<T>(buf_size);
+            new_buffer = true;
             read_processor = StreamProcessor<T, SharedArray<T>>(
                 initReadCriteria<T>(),
                 initReadCollector<T, SharedArray<T>>()
             );
         }
         virtual ~EStream() {
-            // deleteCArray<T>(this->buf, this->buf_size);
-            // lmao
+            if (true == new_buffer) {
+                deleteCArray<T>(this->buf, this->buf_size);
+            }
         }
 
         // standard istream methods

@@ -25,7 +25,7 @@ class ESharedPtr {
         T * getPtr(const char * file_name, int line) {
             T * ptr = this->shared_ptr.get();
             if (ptr == nullptr) {
-                std::string msg = WylesLibs::format("Attempted to retrieve ptr at: {s}:{d}", std::string(file_name), line);
+                std::string msg = WylesLibs::format("Attempted to retrieve ptr at: {s}:{d}", file_name, line);
                 loggerPrintf(LOGGER_INFO, "Exception: %s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
@@ -34,7 +34,7 @@ class ESharedPtr {
         T& getRef(const char * file_name, int line) {
             T * ptr = this->shared_ptr.get();
             if (ptr == nullptr) {
-                std::string msg = WylesLibs::format("Attempted to retrieve ptr at func: {s}:{d}", std::string(file_name), line);
+                std::string msg = WylesLibs::format("Attempted to retrieve ptr at func: {s}:{d}", file_name, line);
                 loggerPrintf(LOGGER_INFO, "Exception: %s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }

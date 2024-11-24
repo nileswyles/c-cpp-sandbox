@@ -110,7 +110,7 @@ class ESharedPtr {
             return *this;
         }
 
-        // casting
+        // implicit casting
         template<typename C>
         ESharedPtr(ESharedPtr<C>& x) {
             ctrl_container = new EPointerControl<T>*(
@@ -128,6 +128,7 @@ class ESharedPtr {
             (*(*this->ctrl_container)->e_instance_count)++;
             return *this;
         }
+        // explicit casting
         template<typename C>
         ESharedPtr<C> cast() {
             // new control with casted ptr and same instance count container.
@@ -140,9 +141,7 @@ class ESharedPtr {
                 )
             );
         }
-        //  TODO: 
-        // ahh, and yeah for this the copy overload needs to be in EWeakPtr?
-        // for weak ptr of same type.
+        // explicit shared to weak conversion.
         template<typename W>
         W weak() {
             return W(this->ctrl_container);
@@ -165,6 +164,14 @@ class EWeakPtr {
             } else {
                 return ESharedPtr<T>(this->ctrl_container);
             }
+        }
+        // implicit shared to weak conversion.
+        EWeakPtr(ESharedPtr<T>& x) {
+            ctrl_container = x.ctrl_container;
+        }
+        EWeakPtr<T>& operator= (ESharedPtr<T>& x) {
+            ctrl_container = x.ctrl_container;
+            return *this;
         }
 };
 };

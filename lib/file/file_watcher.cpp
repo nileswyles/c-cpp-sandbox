@@ -46,7 +46,11 @@ void FileWatcher::initialize(ESharedPtr<FileWatcher> ptr) {
             throw std::runtime_error("Cannot watch path: " + path);
         }
         paths_wd_map[w.first] = wd;
-        registeredWatchers[wd] = ptr.weak<EWeakPtr<FileWatcher>>();
+        // explicit weak pointer retrieval
+        // registeredWatchers[wd] = ptr.weak<EWeakPtr<FileWatcher>>();
+
+        // implicit weak pointer retrieval
+        registeredWatchers[wd] = ptr;
     }
     pthread_mutex_unlock(&mutex);
 }

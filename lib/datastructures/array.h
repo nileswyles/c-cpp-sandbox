@@ -1,6 +1,8 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
+#include "memory/pointers.h"
+
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -14,7 +16,6 @@
 #include <stdexcept>
 #include <istream>
 #include <memory>
-#include "memory/pointers.h"
 
 // make sure global logger level is initialized
 #ifndef GLOBAL_LOGGER_LEVEL

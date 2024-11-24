@@ -1,0 +1,5 @@
+{
+    "search.exclude": {
+        "google-cloud-cpp, cpping, c_http_test, cing, lib/c": true
+    }
+}

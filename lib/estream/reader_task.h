@@ -58,6 +58,9 @@ class ReaderTaskChain: public ReaderTask {
             if (this->next_operation == nullptr) {
                 this->collectorAccumulate(c);
             } else {
+                // make sure to propogate collector and criteria objects... see estream.h::streamCollect
+                this->next_operation->collector = this->collector;
+                this->next_operation->criteria = this->criteria;
                 return this->next_operation->perform(c);
             }
         }
@@ -142,7 +145,36 @@ class ReaderTaskAllow: public ReaderTaskChain {
         }
 };
 
+class ReaderTaskExact: public ReaderTaskChain {
+    public:
+        std::string match;
+        size_t i;
+
+        ReaderTaskExact(): match(""), i(0) {}
+        ReaderTaskExact(std::string match): match(match), i(0) {}
+
+        void perform(uint8_t& c) final override {
+            if (this->match.at(i++) != c) {
+                std::string msg = "Invalid character found in exact match:";
+                loggerPrintf(LOGGER_INFO, "%s '%c', '%s'\n", msg.c_str(), c, match.c_str());
+                throw std::runtime_error(msg);
+            } else {
+                this->next(c);
+            }
+        }
+        void flush() override {
+            i = 0;
+        }
+};
+
 class ReaderTaskTrim: public ReaderTask {
+    private:
+        void initialize() {
+            data.remove(0, data.size());
+            r_trim.remove(0, data.size());
+            l_trimming = true;
+            r_trimming = true;
+        }
     public:
         SharedArray<uint8_t> data;
         SharedArray<uint8_t> r_trim;
@@ -152,12 +184,23 @@ class ReaderTaskTrim: public ReaderTask {
         ReaderTaskTrim(): l_trimming(true), r_trimming(false) {}
         ~ReaderTaskTrim() override = default;
 
-        void flush() final override {}
+        void flush() final override {
+            this->initialize();
+        }
         void rTrimFlush();
         void perform(uint8_t& c) final override;
 };
 
 class ReaderTaskExtract: public ReaderTask {
+    private:
+        void initialize() {
+            data.remove(0, data.size());
+            r_trim.remove(0, data.size());
+            l_trimming = true;
+            r_trimming = false;
+            r_trim_non_whitespace = 0;
+            r_trim_read_until = 0;
+        }
     public:
         SharedArray<uint8_t> data;
         SharedArray<uint8_t> r_trim;

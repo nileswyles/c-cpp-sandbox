@@ -7,6 +7,7 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
+#include "eshared_ptr.h"
 #include <ios>
 #include <istream>
 
@@ -17,8 +18,8 @@ class IStreamEStream: public ByteEStream {
     */
     // TODO: does this incur any additional overhead in inherited even though private?
     private:
-        std::shared_ptr<std::basic_istream<char>> reader;
-        std::shared_ptr<File::StreamFactory> factory;
+        ESharedPtr<std::basic_istream<char>> reader;
+        ESharedPtr<File::StreamFactory> factory;
         std::string path;
         size_t file_offset;
         size_t chunk_size;
@@ -28,16 +29,16 @@ class IStreamEStream: public ByteEStream {
     public:
         IStreamEStream() = default;
         // TODO: std::move? that's interesting
-        IStreamEStream(std::shared_ptr<std::basic_istream<char>> reader) {
+        IStreamEStream(ESharedPtr<std::basic_istream<char>> reader) {
             factory = nullptr;
             reader = reader;
         }
-        IStreamEStream(std::shared_ptr<File::StreamFactory> factory, std::string path, size_t initial_offset = 0, size_t chunk_size = SIZE_MAX) {
+        IStreamEStream(ESharedPtr<File::StreamFactory> factory, std::string path, size_t initial_offset = 0, size_t chunk_size = SIZE_MAX) {
             factory = factory;
             path = path;
             file_offset = initial_offset;
             chunk_size = chunk_size;
-            reader = factory->reader(path, initial_offset, chunk_size);
+            reader = factory.getPtr(__func__)->reader(path, initial_offset, chunk_size);
         }
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...
         // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...

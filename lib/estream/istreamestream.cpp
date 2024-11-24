@@ -6,23 +6,23 @@
 using namespace WylesLibs;
 
 bool IStreamEStream::readPastBuffer() {
-    return this->reader->good();
+    return this->reader.getPtr(__func__)->good();
 }
 
 void IStreamEStream::fillBuffer() {
     // get new stream from underlying transport...
-    if (this->factory == nullptr) {
+    if (!this->factory) {
         throw std::runtime_error("Read error.");
     } else {
         this->file_offset += this->chunk_size;
-        reader = this->factory->reader(path, this->file_offset, this->chunk_size);
+        reader = this->factory.getPtr(__func__)->reader(path, this->file_offset, this->chunk_size);
     }
 }
 uint8_t IStreamEStream::get() {
     if (true == this->readPastBuffer()) {
         this->fillBuffer();
     }
-    uint8_t c = this->reader->get();
+    uint8_t c = this->reader.getPtr(__func__)->get();
 #if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
     this->stream_log += c;
     if (this->stream_log.size() > MAX_STREAM_LOG_SIZE) {
@@ -33,31 +33,31 @@ uint8_t IStreamEStream::get() {
 }
 
 void IStreamEStream::unget() {
-    this->reader->unget();
+    this->reader.getPtr(__func__)->unget();
 }
 
 uint8_t IStreamEStream::peek() {
     if (true == this->readPastBuffer()) {
         this->fillBuffer();
     }
-    return this->reader->peek();
+    return this->reader.getPtr(__func__)->peek();
 }
 
 bool IStreamEStream::eof() {
-    return this->reader->eof();
+    return this->reader.getPtr(__func__)->eof();
 }
 
 bool IStreamEStream::good() {
-    return this->reader->good();
+    return this->reader.getPtr(__func__)->good();
 }
 
 bool IStreamEStream::fail() {
-    return this->reader->fail();
+    return this->reader.getPtr(__func__)->fail();
 }
 
 // TODO: this isn't very useful in the current state.
 void IStreamEStream::seekg(size_t offset) {
-    this->reader->seekg(offset);
+    this->reader.getPtr(__func__)->seekg(offset);
 }
 
 SharedArray<uint8_t> IStreamEStream::read(const size_t n, StreamTask<uint8_t, SharedArray<uint8_t>> * operation) {

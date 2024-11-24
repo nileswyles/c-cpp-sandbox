@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <memory>
+#include "eshared_ptr.h"
 
 #ifndef LOGGER_FILE_WATCHER_TEST
 #define LOGGER_FILE_WATCHER_TEST 1
@@ -51,7 +52,7 @@ class TestFileWatcher: public FileWatcher {
 
 static std::string test_directory = "./file_watcher_test_dir";
 static std::string test_directory_other = "./file_watcher_other_dir";
-static std::shared_ptr<TestFileWatcher> file_watcher;
+static TestFileWatcher * file_watcher;
 
 static void testFileWatcherFileCreated(TestArg * t) {
     riskyCreateBool = false;
@@ -110,13 +111,13 @@ static void beforeSuite() {
     fileWatcherThreadStart();
 
     SharedArray<std::string> paths{test_directory};
-    file_watcher = std::make_shared<TestFileWatcher>(paths);
+    file_watcher = new TestFileWatcher(paths);
     file_watcher->initialize(file_watcher);
 }
 
 static void removeStoreFile() {
     fileWatcherThreadStop();
-    file_watcher.reset();
+    // file_watcher = nullptr;
 
     system(("rm -r " + test_directory).c_str());
     system(("rm -r " + test_directory_other).c_str());

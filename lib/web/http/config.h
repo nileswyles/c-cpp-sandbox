@@ -6,6 +6,7 @@
 #include "file/stream_factory.h"
 
 #include <memory>
+#include "eshared_ptr.h"
 #include <set>
 #include <string>
 
@@ -35,8 +36,11 @@ class HttpServerConfig: public ServerConfig {
         bool client_auth_enabled;
 
         HttpServerConfig(): static_path("./"), root_html_file("index.html"), address("127.0.0.1"), port(8080) {}
-        HttpServerConfig(std::string filepath): HttpServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>(), filepath))) {}
-        HttpServerConfig(std::shared_ptr<JsonObject> obj): ServerConfig(obj) {
+        HttpServerConfig(std::string filepath): HttpServerConfig(
+            parseFile(ESharedPtr<StreamFactory>(std::make_shared<StreamFactory>()), filepath)
+        ) {}
+        HttpServerConfig(ESharedPtr<JsonValue> obj_shared): ServerConfig(obj_shared) {
+            JsonObject * obj = dynamic_cast<JsonObject *>(obj_shared.getPtr(__func__));
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             // Defaults for optional fields...
             // string defaults are already "" but let's be explicit....

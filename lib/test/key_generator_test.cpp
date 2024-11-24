@@ -4,6 +4,7 @@
 #include "datastructures/array.h"
 
 #include <memory>
+#include "eshared_ptr.h"
 #include <sstream>
 
 #ifndef LOGGER_KEY_GENERATOR_TEST
@@ -18,7 +19,7 @@ using namespace WylesLibs;
 using namespace WylesLibs::Test;
 using namespace WylesLibs::File;
 
-static std::shared_ptr<FileManager> file_manager = std::make_shared<FileManager>();
+static ESharedPtr<FileManager> file_manager = ESharedPtr<FileManager>(std::shared_ptr<FileManager>(new FileManager()));
 static std::string file_name("sequence_store");
 
 static void removeStoreFile() {
@@ -29,7 +30,7 @@ void testUniqueKeyGenerator(TestArg * t) {
     ServerConfig config;
     UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore(file_manager, "sequence_store"));
 
-    file_manager->write(file_name, SharedArray<uint8_t>("0000000000000000"), false); // clear file store
+    file_manager.getPtr(__func__)->write(file_name, SharedArray<uint8_t>("0000000000000000"), false); // clear file store
 
     bool failed = false;
     for (size_t i = 0; i < 7; i++) {

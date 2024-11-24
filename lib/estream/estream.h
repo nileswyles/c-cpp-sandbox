@@ -10,6 +10,7 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
+#include "eshared_ptr.h"
 #include <ios>
 #include <istream>
 
@@ -75,55 +76,59 @@ class EStreamI {
         virtual bool eof() = 0;
         virtual bool good() = 0;
         virtual bool fail() = 0;
-        virtual SharedArray<T> read(const size_t n, StreamTask<T, SharedArray<T>> * operation) = 0;
+        virtual SharedArray<T> read(const size_t n, StreamTask<T, SharedArray<T>> * operation = nullptr) = 0;
         // ! IMPORTANT - inclusive means we read and consume the until character.
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
-        virtual SharedArray<T> read(SharedArray<T> until, StreamTask<T, SharedArray<T>> * operation, bool inclusive) = 0;
+        virtual SharedArray<T> read(SharedArray<T> until = SharedArray<T>(), StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) = 0;
         virtual ssize_t write(T * p_buf, size_t size) = 0;
 };
 
 template<typename T, typename RT>
 class StreamProcessor {
     public:
-        std::shared_ptr<LoopCriteria<T>> criteria; 
-        std::shared_ptr<Collector<T, RT>> collector; 
+        ESharedPtr<LoopCriteria<T>> criteria;
+        ESharedPtr<Collector<T, RT>> collector; 
         StreamProcessor() = default;
-        StreamProcessor(std::shared_ptr<LoopCriteria<T>> criteria, std::shared_ptr<Collector<T, RT>> collector): criteria(criteria), collector(collector) {};
+        StreamProcessor(ESharedPtr<LoopCriteria<T>> criteria, ESharedPtr<Collector<T, RT>> collector): criteria(criteria), collector(collector) {};
 
-        virtual RT streamCollect(EStreamI<T> * s, StreamTask<T, RT> * task) {
-            if (this->criteria.get() == nullptr || this->collector.get() == nullptr) {
-                std::string msg = WylesLibs::format("Detected a nullptr. is criteria null? {}, is collector null? {}", 
-                    this->criteria.get() == nullptr, 
-                    this->collector.get() == nullptr
-                );
-                loggerPrintf(LOGGER_DEBUG, "Exception: %s\n", msg.c_str());
-                throw std::runtime_error(msg);
-            }
- 
+        static RT streamCollect(EStreamI<T> * s, ESharedPtr<LoopCriteria<T>> criteria_shared, StreamTask<T, RT> * task, ESharedPtr<Collector<T, RT>> collector_shared) {
+            // ! IMPORTANT - not thread safe
+            LoopCriteria<T> * criteria = criteria_shared.getPtr(__func__);
+            Collector<T, RT> * collector = collector_shared.getPtr(__func__);
+
             if (task != nullptr) {
-                task->collector = this->collector;
-                task->criteria = this->criteria;
+                task->collector = collector;
+                task->criteria = criteria;
             }
  
             T el = s->peek();
-            while (true == this->criteria->good(el)) {
+            while (true == criteria->good(el, true)) {
                 s->get();
                 if (task == nullptr) {
-                    this->collector->accumulate(el);
+                    collector->accumulate(el);
                 } else {
                     task->perform(el);
                 }
                 el = s->peek();
             }
+
             if (task != nullptr) {
                 task->flush();
+                // ! IMPORTANT - make sure to reset collector and criteria references in the task, so that you can store tasks as instance variables without keeping collectors live.
+                //                  especially needed for direct the streamCollect function
+                task->collector = nullptr;
+                task->criteria = nullptr;
             }
- 
-            return this->collector->collect();
+            return collector->collect();
+        };
+
+        virtual RT streamCollect(EStreamI<T> * s, StreamTask<T, RT> * task) {
+            return StreamProcessor<T, RT>::streamCollect(s, this->criteria, task, this->collector);
         }
 };
+
 template<typename T>
 class EStream: public EStreamI<T> {
     /*
@@ -134,6 +139,7 @@ class EStream: public EStreamI<T> {
         std::ios_base::iostate flags;
         T ungot_el;
         bool ungot;
+        SharedArray<T> backing_arr;
     protected:
         T * buf;
         size_t buf_size;
@@ -162,15 +168,7 @@ class EStream: public EStreamI<T> {
         std::string stream_log; 
 #endif
         int fd;
-        // TODO: if default constructable and calls new or makes shared etc... then you need to check before calling pointer..
-        //      Is there a better pattern to follow?
-        //      Only an issue if Default constructed:
-        //      EStream s;
-        //      s = EStream();
-        //      so, don't do that ever? LMAO
-        //      Idk think about this in this context and elsewhere.
         EStream() = default;
-        // pass in as param? specializations?
         EStream(T * p_buf, const size_t p_buf_size) {
             ungot = false;
             ungot_el = 0xFF;
@@ -268,7 +266,7 @@ class EStream: public EStreamI<T> {
         bool fail() override {
             return this->flags & std::ios_base::failbit;
         }
-        SharedArray<T> read(const size_t n, StreamTask<T, SharedArray<T>> * operation) override {
+        SharedArray<T> read(const size_t n, StreamTask<T, SharedArray<T>> * operation = nullptr) override {
             if (n == 0) {
                 throw std::runtime_error("It doesn't make sense to read zero els.");
             } else if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
@@ -302,8 +300,10 @@ class EStream: public EStreamI<T> {
                 } 
                 return data;
             } else {
-                this->read_processor.criteria->mode = LOOP_CRITERIA_UNTIL_NUM_ELEMENTS;
-                this->read_processor.criteria->until_size = n;
+                bool included = false;
+                bool inclusive = true;
+                SharedArray<T> until;
+                *(this->read_processor.criteria.getPtr(__func__)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, included, inclusive, n, until);
                 return this->read_processor.streamCollect(dynamic_cast<EStreamI<T> *>(this), operation);
             }
         }
@@ -311,16 +311,19 @@ class EStream: public EStreamI<T> {
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
-        SharedArray<T> read(SharedArray<T> until, StreamTask<T, SharedArray<T>> * operation, bool inclusive) override {
-            this->read_processor.criteria->mode = LOOP_CRITERIA_UNTIL_MATCH;
-            this->read_processor.criteria->until = until;
-            this->read_processor.criteria->inclusive = inclusive;
+        SharedArray<T> read(SharedArray<T> until, StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) override {
+            bool included = false;
+            size_t until_size = 0;
+            *(this->read_processor.criteria.getPtr(__func__)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, included, inclusive, until_size, until);
             return this->read_processor.streamCollect(dynamic_cast<EStreamI<T> *>(this), operation);
         }
         ssize_t write(T * p_buf, size_t size) override {
             return ::write(this->fd, (void *)p_buf, size * sizeof(T));
         }
-
+        template<typename RT>
+        RT streamCollect(ESharedPtr<LoopCriteria<T>> criteria, StreamTask<T, RT> * task, ESharedPtr<Collector<T, RT>> collector) {
+            return StreamProcessor<T, RT>::streamCollect(this, criteria, task, collector);
+        }
 
         // ! IMPORTANT - purposely not explicitly swaping for all variables for the following reasons:
         //      1. It gets complicated (and annoying) for heirarchical types and classes with many variables.

@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <memory>
+#include "eshared_ptr.h"
 
 using namespace WylesLibs;
 
@@ -36,7 +37,7 @@ FileWatcher::~FileWatcher() {
     pthread_mutex_unlock(&mutex);
 }
 
-void FileWatcher::initialize(std::shared_ptr<FileWatcher> ptr) {
+void FileWatcher::initialize(ESharedPtr<FileWatcher> ptr) {
     pthread_mutex_lock(&mutex);
     for (auto w: this->paths_wd_map) {
         std::string path = w.first;
@@ -45,7 +46,7 @@ void FileWatcher::initialize(std::shared_ptr<FileWatcher> ptr) {
             throw std::runtime_error("Cannot watch path: " + path);
         }
         paths_wd_map[w.first] = wd;
-        registeredWatchers[wd] = ptr;
+        registeredWatchers[wd] = ptr.getWeak();
     }
     pthread_mutex_unlock(&mutex);
 }

@@ -9,6 +9,7 @@
 #include <string>
 
 #include <memory>
+#include "eshared_ptr.h"
 
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL
@@ -38,7 +39,9 @@ namespace WylesLibs::File {
 
 static const std::string stream_error_msg("The stream provided has an error.");
 
-static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8_t> buffer, bool append = false) {
+static void write(ESharedPtr<std::basic_ostream<char>> s_shared, SharedArray<uint8_t> buffer, bool append = false) {
+    std::basic_ostream<char> * s = s_shared.getPtr(__func__);
+
     if (true == append) {
         s->seekp(0, std::basic_ostream<char>::end);
     } else {
@@ -50,14 +53,18 @@ static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8
     s->flush();
 }
 
-static void write(std::shared_ptr<std::basic_ostream<char>> s, SharedArray<uint8_t> buffer, size_t offset = 0) {
+static void write(ESharedPtr<std::basic_ostream<char>> s_shared, SharedArray<uint8_t> buffer, size_t offset = 0) {
+    std::basic_ostream<char> * s = s_shared.getPtr(__func__);
+
     s->seekp(offset);
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "Writing to file stream:\n%s\n", buffer.toString().c_str());
     s->write((const char *)buffer.begin(), buffer.size()); // binary output
     s->flush();
 }
 
-static SharedArray<uint8_t> read(std::shared_ptr<IStreamEStream> s, size_t offset = 0, size_t size = SIZE_MAX) {
+static SharedArray<uint8_t> read(ESharedPtr<IStreamEStream> s_shared, size_t offset = 0, size_t size = SIZE_MAX) {
+    IStreamEStream * s = s_shared.getPtr(__func__);
+
     SharedArray<uint8_t> file_data;
     if (offset != 0) {
         s->seekg(offset); // read from absolute position defined by offset
@@ -82,32 +89,35 @@ static SharedArray<uint8_t> read(std::shared_ptr<IStreamEStream> s, size_t offse
 
 class FileManager {
     protected:
-        std::shared_ptr<StreamFactory> stream_factory;
+        ESharedPtr<StreamFactory> stream_factory;
     public:
-        FileManager(): stream_factory(std::make_shared<StreamFactory>()) {}
-        FileManager(std::shared_ptr<StreamFactory> stream_factory): stream_factory(stream_factory) {}
+        FileManager(): stream_factory(ESharedPtr<StreamFactory>(std::make_shared<StreamFactory>())) {}
+        FileManager(ESharedPtr<StreamFactory> stream_factory): stream_factory(stream_factory) {}
         virtual ~FileManager() = default;
 
         void write(std::string path, SharedArray<uint8_t> buffer, bool append = false) {
-            File::write(this->stream_factory->writer(path), buffer, append);
+            File::write(this->stream_factory.getPtr(__func__)->writer(path), buffer, append);
 
             // TODO: hopefully it's more like ifstream than istream, doubt it?
             //  That's rather annoying?
             // s->close();
-            this->streams()->removeWriter(path);
+            this->streams().getPtr(__func__)->removeWriter(path);
         }
         void write(std::string path, SharedArray<uint8_t> buffer, size_t offset = 0) {
-            File::write(this->stream_factory->writer(path), buffer, offset);
+            File::write(this->stream_factory.getPtr(__func__)->writer(path), buffer, offset);
             // TODO: hopefully it's more like ifstream than istream, doubt it?
             //  That's rather annoying?
             // s->close();
-            this->streams()->removeWriter(path);
+            this->streams().getPtr(__func__)->removeWriter(path);
         }
         SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
-            std::shared_ptr<IStreamEStream> s = std::make_shared<IStreamEStream>(this->stream_factory, path, offset, size);
-            return File::read(s, offset, size);
+            return File::read(
+                ESharedPtr<IStreamEStream>(
+                    std::make_shared<IStreamEStream>(this->stream_factory, path, offset, size)
+                ), 
+            offset, size);
         }
-        std::shared_ptr<StreamFactory> streams() {
+        ESharedPtr<StreamFactory> streams() {
             return this->stream_factory;
         }
 

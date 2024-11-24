@@ -83,6 +83,7 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
         throw std::runtime_error(msg);
     }
 
+    std::string comp(" ,}\r\n\t");
     c = r->peek();
     if (c == 'e' || c == 'E') {
         c = r->peek();
@@ -94,7 +95,7 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
             r->get();
         }
 
-        double exp = readNatural();
+        double exp = r->readNatural();
         if (exp > FLT_MAX_EXP_ABS) {
             std::string msg = "parseNumber: exponential to large.";
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
@@ -162,7 +163,9 @@ static void parseString(JsonArray * obj, ByteEStream * r) {
                 for (uint8_t x = 0; x < 4; x = x + 2) {
                     // so, this takes a hex string and converts to it's binary value.
                     //  i.e. "0F" -> 0x0F;
-                    s += hexToChar(r->read(2).toString());
+
+                    // TODO: very lame that I have to cast to access public, overloaded functions from base class.
+                    s += hexToChar(dynamic_cast<EStream<uint8_t> *>(r)->read(2).toString());
                 }
             } else {
                 // actual characters can just be appended.
@@ -190,11 +193,13 @@ static void parseString(JsonArray * obj, ByteEStream * r) {
 static void parseImmediate(JsonArray * obj, ByteEStream * r, std::string comp, JsonValue * value) {
     loggerPrintf(LOGGER_DEBUG, "Parsing %s\n", comp.c_str());
 
-    std::string actual = r->read(comp.size()).toString();
-    if (actual == comp) {
+    try {
+        ReaderTaskExact task(comp);
+        // TODO: very lame that I have to cast to access public, overloaded functions from base class.
+        std::string actual = dynamic_cast<EStream<uint8_t> *>(r)->read(comp.size(), &task).toString();
         loggerPrintf(LOGGER_DEBUG, "Parsed %s, @ %c\n", comp.c_str(), r->peek());
         obj->addValue(value);
-    } else {
+    } catch (std::exception& e) {
         std::string msg = "Invalid immediate value - throw away the whole object. Don't rest on your laurels!";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
@@ -339,14 +344,13 @@ static void parseObject(JsonObject * obj, ByteEStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");
 }
 
-extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parseFile(std::shared_ptr<StreamFactory> stream_factory, std::string file_path) {
+extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parseFile(ESharedPtr<StreamFactory> stream_factory, std::string file_path) {
     size_t i = 0;
-    ByteEStream r(stream_factory, file_path);
-    std::shared_ptr<JsonValue> json = parse(&r, i);
-    return json;
+    IStreamEStream r(stream_factory, file_path);
+    return parse(dynamic_cast<ByteEStream *>(&r), i);
 }
 
-extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(std::string json) {
+extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parse(std::string json) {
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", json.c_str());
     if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
@@ -356,10 +360,10 @@ extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(std::string jso
     }
     size_t i = 0;
     ByteEStream r((uint8_t *)json.data(), json.size());
-    return parse(dynamic_cast<EStream *>(&r), i);
+    return parse(&r, i);
 }
 
-extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
+extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parse(SharedArray<uint8_t> json) {
     if (json.size() > MAX_LENGTH_OF_JSON_STRING) {
         std::string msg = "Json data to loooonnnng!";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
@@ -367,7 +371,7 @@ extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(SharedArray<uin
     }
     size_t i = 0;
     ByteEStream r(json.begin(), json.size());
-    return parse(dynamic_cast<EStream *>(&r), i);
+    return parse(&r, i);
 }
 
 // Let's define that parse function's start index is first index of token and end index is last index of token (one before delimeter).
@@ -376,18 +380,18 @@ extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(SharedArray<uin
 //      and .at() bounds checks (exceptions), [] doesn't
     // string construction? iterates over string to get length? that might be reason enough to change back to pointers lol... or maybe copy constructor is optimized? yeah
     //  but still that initial creation... 
-extern std::shared_ptr<JsonValue> WylesLibs::Parser::Json::parse(ByteEStream * r, size_t& i) {
+extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parse(ByteEStream * r, size_t& i) {
     readWhiteSpaceUntil(r, "{[");
 
-    std::shared_ptr<JsonValue> obj = nullptr;
+    ESharedPtr<JsonValue> obj = nullptr;
     char c = r->peek();
     loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {
-        std::shared_ptr<JsonObject> new_obj = std::make_shared<JsonObject>(0);
+        ESharedPtr<JsonObject> new_obj = ESharedPtr<JsonObject>(std::make_shared<JsonObject>(0));
         parseObject(new_obj.get(), r);
         obj = std::dynamic_pointer_cast<JsonValue>(new_obj);
     } else if (c == '[') {
-        std::shared_ptr<JsonArray> new_obj = std::make_shared<JsonArray>(0);
+        ESharedPtr<JsonArray> new_obj = ESharedPtr<JsonArray>(std::make_shared<JsonArray>(0));
         // [1, 2, 3, 4] is valid JSON lol...
         parseArray(new_obj.get(), r);
         obj = std::dynamic_pointer_cast<JsonValue>(new_obj);

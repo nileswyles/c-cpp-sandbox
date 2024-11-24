@@ -6,6 +6,8 @@
 #include "estream/reader_task.h"
 #include "datastructures/array.h"
 
+#include <memory>
+
 #include <stdint.h>
 
 namespace WylesLibs {
@@ -15,7 +17,7 @@ namespace WylesLibs {
     // ! IMPORTANT - decided to group these functions like this to limit verbosity and minimize developer churn.
     class ByteIsCharClassCriteria: public LoopCriteria<uint8_t> {
         private:
-            bool untilMatchGood(uint8_t& c) override final;
+            bool untilMatchGood(uint8_t& c, bool is_new_char) override final;
         public:
             static constexpr uint8_t NO_CLASS = 0x0;
             static constexpr uint8_t UPPER_HEX_CLASS = 0x1;
@@ -24,10 +26,10 @@ namespace WylesLibs {
             static constexpr uint8_t ALPHANUMERIC_CLASS = 0x4;
             static constexpr uint8_t DIGIT_CLASS = 0x8;
             uint8_t char_class;
-            ByteIsCharClassCriteria(): char_class(NO_CLASS), LoopCriteria<uint8_t>() {}
+            ByteIsCharClassCriteria(uint8_t char_class): char_class(char_class), LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, false, true, 0, SharedArray<uint8_t>())) {}
             ~ByteIsCharClassCriteria() = default;
         
-            bool good(uint8_t& c) override final;
+            bool good(uint8_t& c, bool is_new_char = false) override final;
     };
 
     // @ collectors
@@ -44,7 +46,7 @@ namespace WylesLibs {
     };
 
     template<>
-    std::shared_ptr<Collector<uint8_t, SharedArray<uint8_t>>> initReadCollector<uint8_t, SharedArray<uint8_t>>();
+    ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>> initReadCollector<uint8_t, SharedArray<uint8_t>>();
 
     class NaturalCollector: public Collector<uint8_t, uint64_t> {
         private:
@@ -56,6 +58,7 @@ namespace WylesLibs {
             void accumulate(uint8_t& c) override final;
             uint64_t collect() override final;
     };
+
     class DecimalCollector: public Collector<uint8_t, double> {
         private:
             double decimal_divisor = 10;
@@ -75,32 +78,63 @@ namespace WylesLibs {
             StreamProcessor<uint8_t, double> decimal_processor;
 
             ByteEStream() = default;
-            // pass in as param? specializations?
             ByteEStream(uint8_t * p_buf, const size_t p_buf_size): EStream<uint8_t>(p_buf, p_buf_size) {
-                std::shared_ptr<LoopCriteria<uint8_t>> char_class_criteria = std::dynamic_pointer_cast<LoopCriteria<uint8_t>>(
-                    std::make_shared<ByteIsCharClassCriteria>()
-                );
+                ESharedPtr<LoopCriteria<uint8_t>> char_class_criteria(
+                    std::shared_ptr<LoopCriteria<uint8_t>>(
+                        dynamic_cast<LoopCriteria<uint8_t>*>(
+                            new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS)
+                        )
+                    )
+                ); 
                 natural_processor = StreamProcessor<uint8_t, uint64_t>(
                     char_class_criteria,
-                    std::dynamic_pointer_cast<Collector<uint8_t, uint64_t>>(std::make_shared<NaturalCollector>())
+                    ESharedPtr<Collector<uint8_t, uint64_t>>(
+                        std::shared_ptr<Collector<uint8_t, uint64_t>>(
+                            dynamic_cast<Collector<uint8_t, uint64_t>*>(
+                                new NaturalCollector
+                            )
+                        )
+                    )
                 );
                 decimal_processor = StreamProcessor<uint8_t, double>(
                     char_class_criteria,
-                    std::dynamic_pointer_cast<Collector<uint8_t, double>>(std::make_shared<DecimalCollector>())
+                    ESharedPtr<Collector<uint8_t, double>>(
+                        std::shared_ptr<Collector<uint8_t, double>>(
+                            dynamic_cast<Collector<uint8_t, double>*>(
+                                new DecimalCollector
+                            )
+                        )
+                    )
                 );
             }
             ByteEStream(const int fd): ByteEStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
             ByteEStream(const int p_fd, const size_t p_buf_size): EStream<uint8_t>(p_fd, p_buf_size) {
-                std::shared_ptr<LoopCriteria<uint8_t>> char_class_criteria = std::dynamic_pointer_cast<LoopCriteria<uint8_t>>(
-                    std::make_shared<ByteIsCharClassCriteria>()
-                );
+                ESharedPtr<LoopCriteria<uint8_t>> char_class_criteria(
+                    std::shared_ptr<LoopCriteria<uint8_t>>(
+                        dynamic_cast<LoopCriteria<uint8_t>*>(
+                            new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS)
+                        )
+                    )
+                ); 
                 natural_processor = StreamProcessor<uint8_t, uint64_t>(
                     char_class_criteria,
-                    std::dynamic_pointer_cast<Collector<uint8_t, uint64_t>>(std::make_shared<NaturalCollector>())
+                    ESharedPtr<Collector<uint8_t, uint64_t>>(
+                        std::shared_ptr<Collector<uint8_t, uint64_t>>(
+                            dynamic_cast<Collector<uint8_t, uint64_t>*>(
+                                new NaturalCollector
+                            )
+                        )
+                    )
                 );
                 decimal_processor = StreamProcessor<uint8_t, double>(
                     char_class_criteria,
-                    std::dynamic_pointer_cast<Collector<uint8_t, double>>(std::make_shared<DecimalCollector>())
+                    ESharedPtr<Collector<uint8_t, double>>(
+                        std::shared_ptr<Collector<uint8_t, double>>(
+                            dynamic_cast<Collector<uint8_t, double>*>(
+                                new DecimalCollector
+                            )
+                        )
+                    )
                 );
             }
 

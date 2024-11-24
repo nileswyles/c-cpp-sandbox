@@ -16,7 +16,7 @@ namespace WylesLibs::Parser::Multipart::FormData {
 
 static constexpr size_t MAX_NUM_FILES_PER_REQUEST = 64;
 
-static void parse(ByteEStream * io, SharedArray<MultipartFile> files, std::unordered_map<std::string, std::string> form_content, std::shared_ptr<FileManager> file_manager) {
+static void parse(ByteEStream * io, SharedArray<MultipartFile> files, std::unordered_map<std::string, std::string> form_content, ESharedPtr<FileManager> file_manager) {
     // files are uploaded in one request (less overhead - no limit...) hence, timeout in http.cpp.
     bool new_file = true;
     while (1) {

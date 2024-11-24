@@ -5,26 +5,25 @@
 
 using namespace WylesLibs;
 
-bool ByteIsCharClassCriteria::untilMatchGood(uint8_t& c) {
-    bool good = false;
-    if (this->char_class & DIGIT_CLASS) {
-        good = isDigit(c);
-        printf("isDigit(): %u, char: %c\n", good, c);
-    } else if (this->char_class & UPPER_HEX_CLASS) {
-        good = isUpperHex(c);
-    } else if (this->char_class & LOWER_HEX_CLASS) {
-        good = isLowerHex(c);
-    } else if (this->char_class & HEX_CLASS) {
-        good = isHexDigit(c);
-    } else if (this->char_class & ALPHANUMERIC_CLASS) {
-        good = isAlpha(c);
+bool ByteIsCharClassCriteria::untilMatchGood(uint8_t& c, bool is_new_char) {
+    if (true == is_new_char) {
+        if (this->char_class & DIGIT_CLASS) {
+            is_good = isDigit(c);
+        } else if (this->char_class & UPPER_HEX_CLASS) {
+            is_good = isUpperHex(c);
+        } else if (this->char_class & LOWER_HEX_CLASS) {
+            is_good = isLowerHex(c);
+        } else if (this->char_class & HEX_CLASS) {
+            is_good = isHexDigit(c);
+        } else if (this->char_class & ALPHANUMERIC_CLASS) {
+            is_good = isAlpha(c);
+        }
     }
-    // } else if (char_class == SPECIAL) {
-    return good;
+    return this->is_good;
 }
-bool ByteIsCharClassCriteria::good(uint8_t& c) {
-    if (LOOP_CRITERIA_UNTIL_MATCH == mode) {
-        return this->untilMatchGood(c);
+bool ByteIsCharClassCriteria::good(uint8_t& c, bool is_new_char) {
+    if (LOOP_CRITERIA_UNTIL_MATCH == this->loop_criteria_info.mode) {
+        return this->untilMatchGood(c, is_new_char);
     } else {
         throw std::runtime_error("The match until size good function is not supported for this criteria class.");
     }
@@ -40,8 +39,14 @@ SharedArray<uint8_t> ByteCollector::collect() {
     return this->data;
 }
 template<>
-std::shared_ptr<Collector<uint8_t, SharedArray<uint8_t>>> WylesLibs::initReadCollector<uint8_t, SharedArray<uint8_t>>() {
-    return std::dynamic_pointer_cast<Collector<uint8_t, SharedArray<uint8_t>>>(std::make_shared<ByteCollector>());
+ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>> WylesLibs::initReadCollector<uint8_t, SharedArray<uint8_t>>() {
+    return ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>>(
+        std::shared_ptr<Collector<uint8_t, SharedArray<uint8_t>>>(
+            dynamic_cast<Collector<uint8_t, SharedArray<uint8_t>> *>(
+                new ByteCollector
+            )
+        )
+    );
 }
 
 void NaturalCollector::accumulate(uint8_t& c) {
@@ -78,24 +83,27 @@ double DecimalCollector::collect() {
 }
 
 SharedArray<uint8_t> ByteEStream::read(std::string until, ReaderTask * operation, bool inclusive) {
-    // TODO: no overloading but yes to explict disambiguising? lmao
-    SharedArray<uint8_t> until_arr(until);
-    printf("until: '%s', until_arr: '%s'\n", until.c_str(), until_arr.toString().c_str());
-    return EStream<uint8_t>::read(until_arr, operation, inclusive);
+    // TODO:
+    // So, this works, but this doesn't?
+    //  I think this is BS...
+    //  I think the correct behaviour is that the derived classes inherit base interface
+    //      with the access level defined by the access specifier before the name in the class definition.
+
+    return EStream<uint8_t>::read(SharedArray<uint8_t>(until), operation, inclusive);
+    // This doesn't work...
+    //  if (LOOP_CRITERIA_UNTIL_MATCH == LoopCriteriaInfo<uint8_t>::info.mode) {
 }
 
 uint64_t ByteEStream::readNatural() {
-    ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(this->natural_processor.criteria.get());
-    criteria->mode = LOOP_CRITERIA_UNTIL_MATCH;
-    criteria->char_class = ByteIsCharClassCriteria::DIGIT_CLASS;
+    ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(this->natural_processor.criteria.getPtr(__func__));
+    *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
     return this->natural_processor.streamCollect(this, nullptr);
 }
 
 double ByteEStream::readDecimal() {
-    ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(this->natural_processor.criteria.get());
-    criteria->mode = LOOP_CRITERIA_UNTIL_MATCH;
-    criteria->char_class = ByteIsCharClassCriteria::DIGIT_CLASS;
+    ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(this->natural_processor.criteria.getPtr(__func__));
+    *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
     double natural_value = static_cast<double>(this->natural_processor.streamCollect(this, nullptr));
 
@@ -107,9 +115,8 @@ double ByteEStream::readDecimal() {
         throw std::runtime_error(msg);
     }
 
-    criteria = dynamic_cast<ByteIsCharClassCriteria *>(this->decimal_processor.criteria.get());
-    criteria->mode = LOOP_CRITERIA_UNTIL_MATCH;
-    criteria->char_class = ByteIsCharClassCriteria::DIGIT_CLASS;
+    criteria = dynamic_cast<ByteIsCharClassCriteria *>(this->decimal_processor.criteria.getPtr(__func__));
+    *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
     return this->decimal_processor.streamCollect(this, nullptr) + natural_value;
 }
 

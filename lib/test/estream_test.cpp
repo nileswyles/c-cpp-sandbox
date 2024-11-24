@@ -79,11 +79,6 @@ static void testReadUntilUpperCase(TestArg * t) {
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     setTestString(test_string);
 
-    // TODO: readertask builder functions...
-    //      list of reader_task pointers...
-    //      then they get linked... next_operation = blah...
-    //      any better?
-    //      then can shared_ptr?
     ReaderTaskUC uppercase;
     std::string result = reader.read(" ", (ReaderTask *)&uppercase).toString();
     std::string expected = "TESTSTRINGWITHSPACE ";
@@ -313,7 +308,7 @@ static void testReadUntilLowerCaseExtract(TestArg * t) {
     ReaderTaskExtract extract('"','"');
     lowercase.next_operation = &extract;
     std::string result = reader.read(" ", (ReaderTask *)&lowercase).toString();
-    std::string expected = "teststringwithspace";
+    std::string expected = "teststringwithspace ";
 
     readUntilAssert(t, result, expected);
 }
@@ -328,7 +323,7 @@ static void testReadUntilUpperCaseExtract(TestArg * t) {
     ReaderTaskExtract extract('"','"');
     uppercase.next_operation = &extract;
     std::string result = reader.read(" ", (ReaderTask *)&uppercase).toString();
-    std::string expected = "TESTSTRINGWITHSPACE";
+    std::string expected = "TESTSTRINGWITHSPACE ";
 
     readUntilAssert(t, result, expected);
 }
@@ -373,6 +368,7 @@ static void testReadUntilFillBufferTwice(TestArg * t) {
     std::string result = reader.read(" ").toString();
     readUntilAssert(t, result, "$$$$$$$$$$$$$$$$$$ ");
 }
+
 
 int main(int argc, char * argv[]) {
     Tester t("EStream Tests");

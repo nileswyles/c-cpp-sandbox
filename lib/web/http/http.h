@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <map>
 #include <memory>
+#include "eshared_ptr.h"
 
 // other
 #include <openssl/ssl.h>
@@ -66,7 +67,7 @@ class HttpRequest {
         std::map<std::string, SharedArray<std::string>> cookies;
 
         size_t content_length;
-        std::shared_ptr<JsonValue> json_content;
+        ESharedPtr<JsonValue> json_content;
         SharedArray<MultipartFile> files;
         std::unordered_map<std::string, std::string> form_content;
         SharedArray<uint8_t> content;
@@ -126,8 +127,8 @@ class HttpConnection {
 
         SSL_CTX * context;
 
-        std::shared_ptr<HttpFileWatcher> file_watcher;
-        std::shared_ptr<FileManager> file_manager;
+        ESharedPtr<HttpFileWatcher> file_watcher;
+        ESharedPtr<FileManager> file_manager;
 
         void parseRequest(HttpRequest * request, ByteEStream * reader);
         void processRequest(ByteEStream * io, HttpRequest * request);
@@ -203,7 +204,7 @@ class HttpConnection {
         // haha, funny how that worked out...
         HttpConnection(HttpServerConfig pConfig, map<std::string, map<std::string, RequestProcessor *>> pRequest_map, 
                         SharedArray<RequestFilter> pRequest_filters, SharedArray<ResponseFilter> pResponse_filters, 
-                        SharedArray<ConnectionUpgrader *> pUpgraders, std::shared_ptr<FileManager> file_manager) {
+                        SharedArray<ConnectionUpgrader *> pUpgraders, ESharedPtr<FileManager> file_manager) {
             config = pConfig;
             request_map = pRequest_map;
             request_filters = pRequest_filters;
@@ -212,7 +213,7 @@ class HttpConnection {
             processor = nullptr;
             file_manager = file_manager;
         }
-        HttpConnection(HttpServerConfig config, RequestProcessor * processor, SharedArray<ConnectionUpgrader *> upgraders, std::shared_ptr<FileManager> file_manager): 
+        HttpConnection(HttpServerConfig config, RequestProcessor * processor, SharedArray<ConnectionUpgrader *> upgraders, ESharedPtr<FileManager> file_manager): 
             config(config), processor(processor), upgraders(upgraders), file_manager(file_manager) {
                 if (processor == nullptr) {
                     std::string msg = "Processor can not be a nullptr when invoking this constructor.";
@@ -234,8 +235,8 @@ class HttpConnection {
             initializeStaticPaths(config, static_paths);
             initializeSSLContext();
             // Array<std::string> paths{config.static_path};
-        //     file_watcher = std::make_shared<HttpFileWatcher>(config, &static_paths, paths, &static_paths_mutex);
-        //     file_watcher->initialize(file_watcher);
+            //     file_watcher = ESharedPtr<HttpFileWatcher>(std::make_shared<HttpFileWatcher>(config, &static_paths, paths, &static_paths_mutex));
+            //     file_watcher->initialize(file_watcher);
         }
 };
 
@@ -257,8 +258,8 @@ static_assert(sizeof(HttpConnection) ==
     sizeof(HttpServerConfig) +
     sizeof(ThreadSafeMap<std::string, std::string>) +
     8 + // sizeof(SSL_CTX) +
-    sizeof(std::shared_ptr<HttpFileWatcher>) +
-    sizeof(std::shared_ptr<FileManager>) +
+    sizeof(ESharedPtr<HttpFileWatcher>) +
+    sizeof(ESharedPtr<FileManager>) +
     sizeof(ReaderTaskDisallow) +
     sizeof(ReaderTaskDisallow) +
     sizeof(ReaderTaskLC)

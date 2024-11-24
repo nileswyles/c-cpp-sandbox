@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <istream>
 #include <memory>
+#include "eshared_ptr.h"
 
 // make sure global logger level is initialized
 #ifndef GLOBAL_LOGGER_LEVEL
@@ -232,13 +233,13 @@ class Array {
             e_size = 0;
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
         }
-        Array(std::shared_ptr<std::basic_istream<T>>stream, size_t size) {
+        Array(ESharedPtr<std::basic_istream<T>> stream, size_t size) {
             e_cap = size;
             e_buf = newCArray<T>(e_cap);
             e_size = e_cap;
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
 
-            stream->read(e_buf, e_size);
+            stream.getPtr(__func__)->read(e_buf, e_size);
         }
         Array(const std::string& s) {
             e_cap = s.size();
@@ -541,7 +542,7 @@ class ArrayControl {
         //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         ArrayControl(std::initializer_list<T> list): ptr(new Array<T>(list)), instance_count(1) {}
         ArrayControl(const size_t initial_cap): ptr(new Array<T>(initial_cap)), instance_count(1) {}
-        ArrayControl(std::shared_ptr<std::basic_istream<T>> stream, size_t size): ptr(new Array<T>(stream, size)), instance_count(1) {}
+        ArrayControl(ESharedPtr<std::basic_istream<T>> stream, size_t size): ptr(new Array<T>(stream, size)), instance_count(1) {}
         ArrayControl(const std::string& s): ptr(new Array<T>(s)), instance_count(1) {}
         ~ArrayControl() {
             delete this->ptr;
@@ -560,7 +561,7 @@ class SharedArray {
         SharedArray(): ctrl(new ArrayControl<T>()) {}
         SharedArray(std::initializer_list<T> list): ctrl(new ArrayControl<T>(list)) {}
         SharedArray(const size_t initial_cap): ctrl(new ArrayControl<T>(initial_cap)) {}
-        SharedArray(std::shared_ptr<std::basic_istream<T>> stream, size_t size): ctrl(new ArrayControl<T>(stream, size)) {}
+        SharedArray(ESharedPtr<std::basic_istream<T>> stream, size_t size): ctrl(new ArrayControl<T>(stream, size)) {}
         SharedArray(const std::string& s): ctrl(new ArrayControl<T>(s)) {}
 
         virtual ~SharedArray() {
@@ -677,15 +678,11 @@ class SharedArray {
         //          Either swap all variables explictly or use default functionality (which presumably does what I described above?). 
         //          This ensures it doesn't copy - avoiding dangling shlongs...
         SharedArray(SharedArray<T>&& x) {
-            ArrayControl<T> * tmp_ctrl = this->ctrl;
-            this->ctrl = x.ctrl;
-            x.ctrl = tmp_ctrl;
+            std::swap(this->ctrl, x.ctrl);
         }
         // Move assignment
         SharedArray<T>& operator= (SharedArray<T>&& x) {
-            ArrayControl<T> * tmp_ctrl = this->ctrl;
-            this->ctrl = x.ctrl;
-            x.ctrl = tmp_ctrl;
+            std::swap(this->ctrl, x.ctrl);
             return *this;
         }
         SharedArray<T>& operator+ (SharedArray<T>& x) {

@@ -4,60 +4,80 @@
 #include "datastructures/array.h"
 
 #include <memory>
+#include "eshared_ptr.h"
 
 #include <stdint.h>
 #include <stdbool.h>
 
 namespace WylesLibs {
+
     // @ criteria
+
     typedef enum LoopCriteriaMode {
         LOOP_CRITERIA_UNTIL_MATCH,
         LOOP_CRITERIA_UNTIL_NUM_ELEMENTS
     } LoopCriteriaMode;
 
     template<typename T>
-    class LoopCriteria {
-        protected:
-            bool included;
-            virtual bool untilMatchGood(T& el) {
-                bool until_match = this->until.contains(el);
-                printf("el: %c, until: '%s', until_match: %d\n", el, this->until.toString().c_str(), until_match);
-                if (true == this->inclusive) {
-                    if (true == until_match && false == this->included) {
-                        this->included = true;
-                        return true;
-                    } else if (true == this->included) {
-                        return false; // we are done, regardless of whether match or not.
-                    } 
-                }
-                return false == until_match;
-            }
-            bool untilSizeGood() {
-                return this->until_size-- > 0;
-            }
+    class LoopCriteriaInfo {
         public:
+            LoopCriteriaMode mode;
+            bool included;
             bool inclusive;
             size_t until_size;
             SharedArray<T> until;
-            LoopCriteriaMode mode;
+            LoopCriteriaInfo(LoopCriteriaMode mode, bool included, bool inclusive, size_t until_size, SharedArray<T> until): 
+                mode(mode), included(included), inclusive(inclusive), until_size(until_size), until(until) {
+            }
+    };
 
-            LoopCriteria(): mode(LOOP_CRITERIA_UNTIL_MATCH) {}
+    template<typename T>
+    class LoopCriteria {
+        protected:
+            bool is_good;
+            virtual bool untilMatchGood(T& el, bool is_new_char) {
+                if (true == is_new_char) {
+                    bool until_match = this->loop_criteria_info.until.contains(el);
+                    if (true == this->loop_criteria_info.inclusive) {
+                        if (true == this->loop_criteria_info.included) {
+                            return false; // we are done, regardless of whether match or not.
+                        } else if (true == until_match && false == this->loop_criteria_info.included) {
+                            this->loop_criteria_info.included = true; // allow one more loop
+                            return true;
+                        } 
+                    }
+                    this->is_good = false == until_match;
+                }
+                return this->is_good;
+            }
+            virtual bool untilSizeGood(bool is_new_char) {
+                if (true == is_new_char) {
+                    this->is_good = this->loop_criteria_info.until_size-- > 0;
+                }
+                return this->is_good;
+            }
+        public:
+            // TODO: because no compiler error if variable with same name is defined in derived class?
+            //       This doesn't work...
+            //        if (LOOP_CRITERIA_UNTIL_MATCH == LoopCriteriaInfo<uint8_t>::loop_criteria_info.mode) {
+            LoopCriteriaInfo<T> loop_criteria_info;
+            LoopCriteria(LoopCriteriaInfo<T> loop_criteria_info): loop_criteria_info(loop_criteria_info), is_good(false) {}
             ~LoopCriteria() = default;
         
-            virtual bool good(T& el) {
-                if (LOOP_CRITERIA_UNTIL_MATCH == mode) {
-                    return this->untilMatchGood(el);
+            virtual bool good(T& el, bool is_new_char = false) {
+                if (LOOP_CRITERIA_UNTIL_MATCH == this->loop_criteria_info.mode) {
+                    return this->untilMatchGood(el, is_new_char);
                 } else {
-                    return this->untilSizeGood();
+                    return this->untilSizeGood(is_new_char);
                 }
             }
     };
 
     // TODO: 
-    //  eventually you might want to initialize these with some information... so, this should accept another shared_ptr with that information.
+    //  eventually you might want to initialize these with some loop_criteria_information... so, this should accept another shared_ptr with that loop_criteria_information.
     template<typename T>
-    std::shared_ptr<LoopCriteria<T>> initReadCriteria() {
-        return std::make_shared<LoopCriteria<T>>();
+    ESharedPtr<LoopCriteria<T>> initReadCriteria() {
+        return ESharedPtr<LoopCriteria<T>>(std::make_shared<LoopCriteria<T>>(LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, false, true, 0, SharedArray<T>())));
     }
 
     // @ collector
@@ -73,10 +93,8 @@ namespace WylesLibs {
             virtual RT collect() = 0;
     };
 
-    // TODO: 
-    //  eventually you might want to initialize these with some information... so, this should accept another shared_ptr with that information.
     template<typename T, typename RT>
-    std::shared_ptr<Collector<T, RT>> initReadCollector() {
+    ESharedPtr<Collector<T, RT>> initReadCollector() {
         std::string msg("A specialization of initReadCollector is required for this datatype.");
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
@@ -85,8 +103,8 @@ namespace WylesLibs {
     template<typename T, typename RT>
     class StreamTask {
         public:
-            std::shared_ptr<Collector<T, RT>> collector;
-            std::shared_ptr<LoopCriteria<T>> criteria;
+            Collector<T, RT> * collector;
+            LoopCriteria<T> * criteria;
             virtual ~StreamTask() = default;
             // Good example of CPP OOP
      
@@ -113,10 +131,18 @@ namespace WylesLibs {
      
             virtual void flush() = 0;
             virtual void perform(T& el) = 0;
+            virtual bool criteriaGood(T& el) {
+                if (this->criteria == nullptr) {
+                    std::string msg("Failed to get loop criteria. The criteria object was not initialized for this StreamTask.");
+                    loggerPrintf(LOGGER_DEBUG, "Exception: %s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                } else {
+                    return this->criteria->good(el);
+                }
+            }
             virtual void collectorAccumulate(T& el) {
-                // TODO: regarding this... are unit tests enough to not need this? concern being if refactor and don't consider this? just a thought... might end up null checking most of the time.
-                if (this->collector.get() == nullptr) {
-                    std::string msg("Failed to accumulate element. The collector object was not initialized for this Reader Task.");
+                if (this->collector == nullptr) {
+                    std::string msg("Failed to accumulate element. The collector object was not initialized for this StreamTask.");
                     loggerPrintf(LOGGER_DEBUG, "Exception: %s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 } else {
@@ -124,8 +150,8 @@ namespace WylesLibs {
                 }
             }
             virtual void collectorAccumulate(SharedArray<T>& els) {
-                if (this->collector.get() == nullptr) {
-                    std::string msg("Failed to accumulate array. The collector object was not initialized for this Reader Task.");
+                if (this->collector == nullptr) {
+                    std::string msg("Failed to accumulate array. The collector object was not initialized for this StreamTask.");
                     loggerPrintf(LOGGER_DEBUG, "Exception: %s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 } else {

@@ -2,6 +2,7 @@
 #define SEQUENCE_ID_GENERATOR_H
 
 #include <memory>
+#include "eshared_ptr.h"
 
 #include <math.h>
 #include <pthread.h>
@@ -42,11 +43,11 @@ namespace WylesLibs {
 
 class UniqueKeyGeneratorStore {
     private:
-        std::shared_ptr<FileManager> file_manager;
+        ESharedPtr<FileManager> file_manager;
         std::string file_path;
     public:
         UniqueKeyGeneratorStore() = default;
-        UniqueKeyGeneratorStore(std::shared_ptr<FileManager> file_manager, std::string file_path): file_manager(file_manager), file_path(file_path) {}
+        UniqueKeyGeneratorStore(ESharedPtr<FileManager> file_manager, std::string file_path): file_manager(file_manager), file_path(file_path) {}
         ~UniqueKeyGeneratorStore() = default;
         void refresh(uint64_t& current) {
             // read value from existing file...
@@ -72,7 +73,7 @@ class UniqueKeyGeneratorStore {
         void flush(SharedArray<uint8_t> data) {
             if (this->file_path.size() > 0) {
                 loggerPrintf(LOGGER_DEBUG, "Flushing sequence to data store at %s\n", this->file_path.c_str());
-                this->file_manager->write(this->file_path, data, false);
+                this->file_manager.getPtr(__func__)->write(this->file_path, data, false);
             }
         }
 };

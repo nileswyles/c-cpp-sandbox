@@ -116,7 +116,7 @@ void HttpConnection::parseRequest(HttpRequest * request, ByteEStream * io) {
             //  if set min transfer rate at 128Kb/s, 
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
             serverSetConnectionTimeout(io->fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
-            Multipart::FormData::parse(io, request->files, request->form_content, this->file_manager);
+            Multipart::FormData::parse(io, request->files, request->form_content, this->file_manager.getPtr(__func__));
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
             request->content = io->read(request->content_length);
@@ -175,7 +175,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
 	if (content_type != "") {
         response = new HttpResponse;
 		if (request->method == "HEAD" || request->method == "GET") {
-            SharedArray<uint8_t> file_data = this->file_manager->read(path);
+            SharedArray<uint8_t> file_data = this->file_manager.getPtr(__func__)->read(path);
             char content_length[17];
 			sprintf(content_length, "%ld", file_data.size());
             response->fields["Content-Length"] = std::string(content_length);
@@ -247,7 +247,7 @@ HttpResponse * HttpConnection::handleTimeoutRequests(ByteEStream * io, HttpReque
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING TIMEOUT REQUEST\n");
     HttpResponse * response = nullptr;
     if (request->url.path == "/timeout" && request->method == "POST") {
-        JsonObject * obj = (JsonObject *)request->json_content;
+        JsonObject * obj = (JsonObject *)request.getPtr(__func__)->json_content;
         if (obj != nullptr) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             for (size_t i = 0; i < obj->keys.size(); i++) {

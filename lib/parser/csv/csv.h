@@ -5,6 +5,7 @@
 
 #include <string>
 #include <memory>
+#include "eshared_ptr.h"
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -40,7 +41,7 @@ namespace WylesLibs {
     template<typename T>
     class CSV: public Matrix<T> {
         private:
-            std::shared_ptr<EStream> io;
+            ESharedPtr<ByteEStream> io;
             size_t record_size;
             char separator;
             int fd;
@@ -141,9 +142,9 @@ namespace WylesLibs {
                     }
                 } else if (quoted && '"' == b){
                     // peak
-                    uint8_t peeked = (*this->io).peek();
+                    uint8_t peeked = this->io.get(__func__).peek();
                     if (peeked == '"') {
-                        (*this->io).get();
+                        this->io.get(__func__).get();
                     } else if (true == (peeked == this->separator || '\n' == peeked)){
                         // end of quoted string....
                         quoted = false;
@@ -162,7 +163,7 @@ namespace WylesLibs {
                 size_t f_i = 0;
                 std::string current_str;
                 while (r_i < r_count) {
-                    b = (*this->io).get();
+                    b = this->io.get(__func__).get();
                     // TODO: this requires '\n' at end of last record... which might be okay... but good to think about...
                     if (b == (uint8_t)EOF) {
                         break;
@@ -184,21 +185,21 @@ namespace WylesLibs {
                 size_t f_i = 0;
                 double current_double = 0;
                 while (r_i < r_count) {
-                    b = (*this->io).peek();
+                    b = this->io.get(__func__).peek();
                     // handle field delimeter
                     if (true == handleFieldDelimeter(current_double, b, r_i, f_i)) {
-                        (*this->io).get();
+                        this->io.get(__func__).get();
                         continue;
                     }
                     // handle numbers delimeter
                     size_t dummy_digit_count = 0;
                     // TODO: see ByteEStream TODO
                     if (isDigit(b)) {
-                        current_double = (*this->io).readDecimal();
+                        current_double = this->io.get(__func__).readDecimal();
                         continue;
                         // buffer should be at non-numeric
                     } else if (b == (uint8_t)EOF) {
-                        (*this->io).get();
+                       this->io.get(__func__).get();
                         break;
                     } else {
                         throw std::runtime_error("Non-digit character found in CSV data.");
@@ -208,9 +209,9 @@ namespace WylesLibs {
         public:
             MatrixVector<std::string> header;
 
-            CSV(std::shared_ptr<EStream> io): CSV(io, ',') {}
-            CSV(std::shared_ptr<EStream> io, char separator): CSV(io, separator, -1) {}
-            CSV(std::shared_ptr<EStream> io, char separator, int fd): io(io), separator(separator), record_size(0), fd(fd) {
+            CSV(ESharedPtr<ByteEStream> io): CSV(io, ',') {}
+            CSV(ESharedPtr<ByteEStream> io, char separator): CSV(io, separator, -1) {}
+            CSV(ESharedPtr<ByteEStream> io, char separator, int fd): io(io), separator(separator), record_size(0), fd(fd) {
                 if (separator == '.') {
                     throw std::runtime_error("Periods aren't allowed as CSV separator.");
                 }

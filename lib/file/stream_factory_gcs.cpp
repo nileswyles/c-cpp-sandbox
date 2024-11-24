@@ -36,8 +36,7 @@ namespace gcs = ::google::cloud::storage;
 
 //               Additionally, this extra "factory" abstraction is only required because of this ranging functionality.
 //               TODO: think about whether it should be it's own function called ranges_reader or something?
-std::shared_ptr<std::basic_istream<char>> GCSStreamFactory::reader(std::string path, size_t offset, size_t size) {
-    std::shared_ptr<std::basic_istream<char>> stream;
+ESharedPtr<std::basic_istream<char>> GCSStreamFactory::reader(std::string path, size_t offset, size_t size) {
     // TODO: can I read from offset to end of file? I think so. ReadFromOffset option implies otherwise?
     // TODO: inclusive?
     gcs::ObjectReadStream reader = this->client.ReadObject(this->bucket_name, path, gcs::ReadRange(static_cast<std::int64_t>(offset), static_cast<std::int64_t>(offset + size)));
@@ -46,14 +45,16 @@ std::shared_ptr<std::basic_istream<char>> GCSStreamFactory::reader(std::string p
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
-    // TODO: cast then shared or shared then cast?
-    stream = std::dynamic_pointer_cast<std::basic_istream<char>>(
-                std::make_shared<gcs::ObjectReadStream>(std::move(reader))
-             );
-    return stream;
+    return ESharedPtr<std::basic_istream<char>>(
+        std::shared_ptr<std::basic_istream<char>>(
+            dynamic_cast<std::basic_istream<char> *>(
+                new gcs::ObjectReadStream(std::move(reader))
+            )
+        )
+    );
 }
 
-std::shared_ptr<std::basic_ostream<char>> GCSStreamFactory::writer(std::string path) {
+ESharedPtr<std::basic_ostream<char>> GCSStreamFactory::writer(std::string path) {
     pthread_mutex_lock(&this->writers_lock);
     if (false == this->writers.contains(path)) {
         return nullptr;
@@ -64,10 +65,14 @@ std::shared_ptr<std::basic_ostream<char>> GCSStreamFactory::writer(std::string p
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
-    std::shared_ptr<std::basic_ostream<char>> w = std::dynamic_pointer_cast<std::basic_ostream<char>>(
-                                                      std::make_shared<google::cloud::storage::ObjectWriteStream>(std::move(writer))
-                                                  );
     this->writers.insert(path); 
     pthread_mutex_unlock(&this->writers_lock);
-    return w;
+    // TODO: std::move?
+    return ESharedPtr<std::basic_ostream<char>>(
+        std::shared_ptr<std::basic_ostream<char>>(
+            dynamic_cast<std::basic_ostream<char> *>(
+                new gcs::ObjectWriteStream(std::move(writer))
+            )
+        )
+    );
 }

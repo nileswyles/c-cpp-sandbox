@@ -48,6 +48,7 @@ void ReaderTaskExtract::flush() {
     } else if (this->r_trim_read_until != 0) {
         this->collectorAccumulate(this->r_trim_read_until);
     }
+    this->initialize();
 }
 void ReaderTaskExtract::rTrimFlush() {
     if (this->r_trim.size() > 0) {
@@ -76,10 +77,10 @@ void ReaderTaskExtract::perform(uint8_t& c) {
                 this->r_trim_non_whitespace = 0;
             } else {
                 this->r_trim.append(c);
-                if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos && true == this->criteria->good(c)) {
+                if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos && true == this->criteriaGood(c)) {
                     // TODO: maybe make this an option...
                     this->r_trim_non_whitespace = c;
-                } else if (false == this->criteria->good(c)) {
+                } else if (false == this->criteriaGood(c)) {
                     this->r_trim_read_until = c;
                 }
             }
@@ -89,7 +90,7 @@ void ReaderTaskExtract::perform(uint8_t& c) {
     } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
         if (c == left_most_char) {
             this->l_trimming = false;
-        } else if (false == this->criteria->good(c)) {
+        } else if (false == this->criteriaGood(c)) {
             // include until string if that's all... because decided that why peek if can just read and return until match.
             //  more clunky non-sense?
             this->collectorAccumulate(c);

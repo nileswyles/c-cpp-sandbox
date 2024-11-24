@@ -6,6 +6,7 @@
 #include "file/stream_factory.h"
 
 #include <memory>
+#include "eshared_ptr.h"
 
 using namespace WylesLibs;
 using namespace WylesLibs::Parser::Json;
@@ -19,8 +20,11 @@ class ServerConfig: public JsonBase {
         std::string resources_root;
 
         ServerConfig(): resources_root("./") {}
-        ServerConfig(std::string filepath): ServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>(), filepath))) {}
-        ServerConfig(std::shared_ptr<JsonObject> obj) {
+        ServerConfig(std::string filepath): ServerConfig(
+            parseFile(ESharedPtr<StreamFactory>(std::make_shared<StreamFactory>()), filepath)
+        ) {}
+        ServerConfig(ESharedPtr<JsonValue> obj_shared) {
+            JsonObject * obj = dynamic_cast<JsonObject *>(obj_shared.getPtr(__func__));
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             bool resources_root_required = true;
             for (size_t i = 0; i < obj->keys.size(); i++) {

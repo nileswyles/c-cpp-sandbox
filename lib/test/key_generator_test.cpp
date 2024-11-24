@@ -30,7 +30,7 @@ void testUniqueKeyGenerator(TestArg * t) {
     ServerConfig config;
     UniqueKeyGenerator generator(config, UniqueKeyGeneratorStore(file_manager, "sequence_store"));
 
-    file_manager.getPtr(__func__)->write(file_name, SharedArray<uint8_t>("0000000000000000"), false); // clear file store
+    ESHAREDPTR_GET_PTR(file_manager)->write(file_name, SharedArray<uint8_t>("0000000000000000"), false); // clear file store
 
     bool failed = false;
     for (size_t i = 0; i < 7; i++) {

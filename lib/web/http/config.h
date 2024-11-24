@@ -40,7 +40,7 @@ class HttpServerConfig: public ServerConfig {
             parseFile(ESharedPtr<StreamFactory>(std::make_shared<StreamFactory>()), filepath)
         ) {}
         HttpServerConfig(ESharedPtr<JsonValue> obj_shared): ServerConfig(obj_shared) {
-            JsonObject * obj = dynamic_cast<JsonObject *>(obj_shared.getPtr(__func__));
+            JsonObject * obj = dynamic_cast<JsonObject *>(ESHAREDPTR_GET_PTR(obj_shared));
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             // Defaults for optional fields...
             // string defaults are already "" but let's be explicit....

@@ -95,14 +95,14 @@ SharedArray<uint8_t> ByteEStream::read(std::string until, ReaderTask * operation
 }
 
 uint64_t ByteEStream::readNatural() {
-    ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(this->natural_processor.criteria.getPtr(__func__));
+    ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->natural_processor.criteria));
     *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
     return this->natural_processor.streamCollect(this, nullptr);
 }
 
 double ByteEStream::readDecimal() {
-    ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(this->natural_processor.criteria.getPtr(__func__));
+    ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->natural_processor.criteria));
     *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
     double natural_value = static_cast<double>(this->natural_processor.streamCollect(this, nullptr));
@@ -115,7 +115,7 @@ double ByteEStream::readDecimal() {
         throw std::runtime_error(msg);
     }
 
-    criteria = dynamic_cast<ByteIsCharClassCriteria *>(this->decimal_processor.criteria.getPtr(__func__));
+    criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->decimal_processor.criteria));
     *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
     return this->decimal_processor.streamCollect(this, nullptr) + natural_value;
 }

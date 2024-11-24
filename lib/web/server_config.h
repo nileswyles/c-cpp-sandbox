@@ -24,7 +24,7 @@ class ServerConfig: public JsonBase {
             parseFile(ESharedPtr<StreamFactory>(std::make_shared<StreamFactory>()), filepath)
         ) {}
         ServerConfig(ESharedPtr<JsonValue> obj_shared) {
-            JsonObject * obj = dynamic_cast<JsonObject *>(obj_shared.getPtr(__func__));
+            JsonObject * obj = dynamic_cast<JsonObject *>(ESHAREDPTR_GET_PTR(obj_shared));
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             bool resources_root_required = true;
             for (size_t i = 0; i < obj->keys.size(); i++) {

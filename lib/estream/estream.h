@@ -95,8 +95,8 @@ class StreamProcessor {
 
         static RT streamCollect(EStreamI<T> * s, ESharedPtr<LoopCriteria<T>> criteria_shared, StreamTask<T, RT> * task, ESharedPtr<Collector<T, RT>> collector_shared) {
             // ! IMPORTANT - not thread safe
-            LoopCriteria<T> * criteria = criteria_shared.getPtr(__func__);
-            Collector<T, RT> * collector = collector_shared.getPtr(__func__);
+            LoopCriteria<T> * criteria = ESHAREDPTR_GET_PTR(criteria_shared);
+            Collector<T, RT> * collector = ESHAREDPTR_GET_PTR(collector_shared);
 
             if (task != nullptr) {
                 task->collector = collector;
@@ -303,7 +303,7 @@ class EStream: public EStreamI<T> {
                 bool included = false;
                 bool inclusive = true;
                 SharedArray<T> until;
-                *(this->read_processor.criteria.getPtr(__func__)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, included, inclusive, n, until);
+                *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, included, inclusive, n, until);
                 return this->read_processor.streamCollect(dynamic_cast<EStreamI<T> *>(this), operation);
             }
         }
@@ -314,7 +314,7 @@ class EStream: public EStreamI<T> {
         SharedArray<T> read(SharedArray<T> until, StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) override {
             bool included = false;
             size_t until_size = 0;
-            *(this->read_processor.criteria.getPtr(__func__)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, included, inclusive, until_size, until);
+            *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, included, inclusive, until_size, until);
             return this->read_processor.streamCollect(dynamic_cast<EStreamI<T> *>(this), operation);
         }
         ssize_t write(T * p_buf, size_t size) override {

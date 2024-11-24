@@ -52,7 +52,7 @@ class TestFileWatcher: public FileWatcher {
 
 static std::string test_directory = "./file_watcher_test_dir";
 static std::string test_directory_other = "./file_watcher_other_dir";
-static TestFileWatcher * file_watcher;
+static ESharedPtr<TestFileWatcher> file_watcher;
 
 static void testFileWatcherFileCreated(TestArg * t) {
     riskyCreateBool = false;
@@ -111,13 +111,14 @@ static void beforeSuite() {
     fileWatcherThreadStart();
 
     SharedArray<std::string> paths{test_directory};
-    file_watcher = new TestFileWatcher(paths);
-    file_watcher->initialize(file_watcher);
+    file_watcher = ESharedPtr<TestFileWatcher>(new TestFileWatcher(paths));
+    file_watcher = nullptr;
+    ESHAREDPTR_GET_PTR(file_watcher)->initialize(dynamic_eshared_cast<TestFileWatcher, FileWatcher>(file_watcher));
 }
 
 static void removeStoreFile() {
     fileWatcherThreadStop();
-    // file_watcher = nullptr;
+    file_watcher = nullptr;
 
     system(("rm -r " + test_directory).c_str());
     system(("rm -r " + test_directory_other).c_str());

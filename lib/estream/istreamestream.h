@@ -38,7 +38,7 @@ class IStreamEStream: public ByteEStream {
             path = path;
             file_offset = initial_offset;
             chunk_size = chunk_size;
-            reader = factory.getPtr(__func__)->reader(path, initial_offset, chunk_size);
+            reader = ESHAREDPTR_GET_PTR(factory)->reader(path, initial_offset, chunk_size);
         }
         // peek until doesn't make much sense with static sized buffer... so let's omit for now...
         // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...

@@ -77,7 +77,11 @@ namespace WylesLibs {
     //  eventually you might want to initialize these with some loop_criteria_information... so, this should accept another shared_ptr with that loop_criteria_information.
     template<typename T>
     ESharedPtr<LoopCriteria<T>> initReadCriteria() {
-        return ESharedPtr<LoopCriteria<T>>(std::make_shared<LoopCriteria<T>>(LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, false, true, 0, SharedArray<T>())));
+        return ESharedPtr<LoopCriteria<T>>(
+            new LoopCriteria<T>(
+                LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, false, true, 0, SharedArray<T>())
+            )
+        );
     }
 
     // @ collector
@@ -95,6 +99,7 @@ namespace WylesLibs {
 
     template<typename T, typename RT>
     ESharedPtr<Collector<T, RT>> initReadCollector() {
+        printf("SEG INIT COLLECTOR\n");
         std::string msg("A specialization of initReadCollector is required for this datatype.");
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);

@@ -239,7 +239,7 @@ class Array {
             e_size = e_cap;
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
 
-            stream.getPtr(__func__)->read(e_buf, e_size);
+            ESHAREDPTR_GET_PTR(stream)->read(e_buf, e_size);
         }
         Array(const std::string& s) {
             e_cap = s.size();

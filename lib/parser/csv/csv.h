@@ -142,9 +142,9 @@ namespace WylesLibs {
                     }
                 } else if (quoted && '"' == b){
                     // peak
-                    uint8_t peeked = this->io.get(__func__).peek();
+                    uint8_t peeked = ESHAREDPTR_GET_PTR(this->io)->peek();
                     if (peeked == '"') {
-                        this->io.get(__func__).get();
+                        ESHAREDPTR_GET_PTR(this->io)->get();
                     } else if (true == (peeked == this->separator || '\n' == peeked)){
                         // end of quoted string....
                         quoted = false;
@@ -163,7 +163,7 @@ namespace WylesLibs {
                 size_t f_i = 0;
                 std::string current_str;
                 while (r_i < r_count) {
-                    b = this->io.get(__func__).get();
+                    b = ESHAREDPTR_GET_PTR(this->io)->get();
                     // TODO: this requires '\n' at end of last record... which might be okay... but good to think about...
                     if (b == (uint8_t)EOF) {
                         break;
@@ -185,21 +185,21 @@ namespace WylesLibs {
                 size_t f_i = 0;
                 double current_double = 0;
                 while (r_i < r_count) {
-                    b = this->io.get(__func__).peek();
+                    b = ESHAREDPTR_GET_PTR(this->io)->peek();
                     // handle field delimeter
                     if (true == handleFieldDelimeter(current_double, b, r_i, f_i)) {
-                        this->io.get(__func__).get();
+                        ESHAREDPTR_GET_PTR(this->io)->get();
                         continue;
                     }
                     // handle numbers delimeter
                     size_t dummy_digit_count = 0;
                     // TODO: see ByteEStream TODO
                     if (isDigit(b)) {
-                        current_double = this->io.get(__func__).readDecimal();
+                        current_double = ESHAREDPTR_GET_PTR(this->io)->readDecimal();
                         continue;
                         // buffer should be at non-numeric
                     } else if (b == (uint8_t)EOF) {
-                       this->io.get(__func__).get();
+                        ESHAREDPTR_GET_PTR(this->io)->get();
                         break;
                     } else {
                         throw std::runtime_error("Non-digit character found in CSV data.");

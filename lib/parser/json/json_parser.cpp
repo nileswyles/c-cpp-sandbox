@@ -383,18 +383,18 @@ extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parse(SharedArray<uint8_t>
 extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parse(ByteEStream * r, size_t& i) {
     readWhiteSpaceUntil(r, "{[");
 
-    ESharedPtr<JsonValue> obj = nullptr;
+    ESharedPtr<JsonValue> obj;
     char c = r->peek();
     loggerPrintf(LOGGER_DEBUG, "First JSON character: %c\n", c);
     if (c == '{') {
-        ESharedPtr<JsonObject> new_obj = ESharedPtr<JsonObject>(std::make_shared<JsonObject>(0));
-        parseObject(new_obj.get(), r);
-        obj = std::dynamic_pointer_cast<JsonValue>(new_obj);
+        ESharedPtr<JsonValue> new_obj = ESharedPtr<JsonValue>(std::shared_ptr<JsonValue>(dynamic_cast<JsonValue *>(new JsonObject(0))));
+        parseObject(dynamic_cast<JsonObject *>(ESHAREDPTR_GET_PTR(new_obj)), r);
+        obj = new_obj;
     } else if (c == '[') {
-        ESharedPtr<JsonArray> new_obj = ESharedPtr<JsonArray>(std::make_shared<JsonArray>(0));
+        ESharedPtr<JsonValue> new_obj = ESharedPtr<JsonValue>(std::shared_ptr<JsonValue>(dynamic_cast<JsonValue *>(new JsonArray(0))));
         // [1, 2, 3, 4] is valid JSON lol...
-        parseArray(new_obj.get(), r);
-        obj = std::dynamic_pointer_cast<JsonValue>(new_obj);
+        parseArray(dynamic_cast<JsonArray *>(ESHAREDPTR_GET_PTR(new_obj)), r);
+        obj = new_obj;
     } else {
         std::string msg = "Invalid JSON data.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());

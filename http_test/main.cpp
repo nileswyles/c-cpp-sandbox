@@ -7,7 +7,9 @@
 #include "controllers/example.h"
 
 #include "file/file_watcher.h"
+#ifdef WYLESLIBS_GCS_BUILD
 #include "file/file_gcs.h"
+#endif
 
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1

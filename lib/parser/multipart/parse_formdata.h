@@ -61,7 +61,7 @@ static void parse(ByteEStream * io, SharedArray<MultipartFile> files, std::unord
             io->read("\n"); // consume new line...
         } else if (field_name != "") {
             if (is_file) {
-                file_manager->write(file.getResourcePath(), line, !new_file);
+                ESHAREDPTR_GET_PTR(file_manager)->write(file.getResourcePath(), line, !new_file);
                 new_file = false;
             } else {
                 form_content[field_name] += line.toString();

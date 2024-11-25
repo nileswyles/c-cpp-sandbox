@@ -89,8 +89,8 @@ namespace WylesLibs {
         if (opts.base == 16) {
             s += "0x";
         }
-        size_t digit_count = 1;
-        while (num / divisor > opts.base) {
+        size_t digit_count = 0;
+        while (num / divisor >= 1) {
             divisor *= opts.base;
             digit_count++;
         }
@@ -118,11 +118,53 @@ namespace WylesLibs {
                         s += digit - 0xA + 'a';
                     }
                 } else {
-                    throw std::runtime_error("Invalid digit character detected.");
+                    std::string msg("Invalid digit character detected: '");
+                    msg += digit;
+                    msg += "', num: ";
+                    msg += std::to_string(num);
+                    msg += ", divisor: ";
+                    // TODO: did something change? why was the divisor off by one multiple of base? fail test agian?
+                    msg += std::to_string(divisor);
+                    msg += "\n";
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
                 }
             }
-            num -= (digit * divisor);
-            divisor /= opts.base;
+            // if zeros in number, also then need to considers hex boundaries?
+            //  decimal...
+            //  103 / 100 = 1 -> 103 - 100 = 3 which is less than 10... so, we add one zero...
+            //  10 < 100, 100 < 100 X
+            /// we want 
+            //  hex.
+            //  16^3 == 16 * 16 * 16 = 4096
+            //  0xFF0A / 4096 = 65290 / 4096 = 15.93 == F -> 65290 - 61440 = 3850, which isn't less than divisor/16... obv
+            //  so, then 3850 == 0xF0A
+            //      3850 / 256 (16^2) = 15.03 == F -> 3850 - 3840 = 10, which is less then divisor/16 (16)... so then we'll enter if and 
+            //      new_divisor = 1, then 
+            //      16 < 256, 256 < 256 X ..  so, then 
+            //          we add a zero... in addition to the F...
+            //      
+            //      so following iteration...
+            //      diff/new_divisor, 10/1 = 10, which is A.. a valid hex and done...
+            //  in other words, if diff < divisor/10; in other words, if the next divisor is not valid. loop until valid divisor and append zeros.
+            num = num - (digit * divisor);
+            if (diff < divisor/opts.base) {
+                size_t new_divisor = 1;
+                size_t next_num = num; // next_num == diff
+                while (next_num > opts.base) {
+                    new_divisor *= opts.base;
+                    next_num /= opts.base;
+                    s += '0';
+                }
+                // size_t zero_count = new_divisor * opts.base;
+                // while (zero_count < divisor) {
+                    // s += '0';
+                //     zero_count *= opts.base;
+                // }
+                divisor = new_divisor;
+            } else {
+                divisor /= opts.base;
+            }
             i++;
         }
         return s;
@@ -149,7 +191,7 @@ namespace WylesLibs {
         }
         int16_t precision_count = -1;
         size_t divisor = 1;
-        size_t digit_count = 1;
+        size_t digit_count = 0;
         size_t digit_count_before_decimal = 0;
         size_t start_index = 0;
         size_t decimal_idx;
@@ -171,13 +213,13 @@ namespace WylesLibs {
         if (errno == ERANGE) {
             throw std::runtime_error("Math error detected.");
         }
-        while (num / divisor > 10) {
+        while (num / divisor >= 1) {
             // identify num width thus intializing digit parsing.
             //  the detected width (characterized by divisor and digit_count for natural width) is used for parsing, padding and truncating...
-            divisor *= 10;
             if (divisor >= decimal_idx) {
                 digit_count_before_decimal++;
             }
+            divisor *= 10;
             digit_count++;
         }
         if (digit_count_before_decimal == 0) {
@@ -236,8 +278,12 @@ namespace WylesLibs {
                 } else if (precision_count >= 0) {
                     precision_count++;
                 }
-                if (digit <= 9) {
-                    s += digit + '0';
+                if (digit <= 0x0A) {
+                    if (digit == 0x0A) {
+                        s += "10";
+                    } else {
+                        s += digit + '0';
+                    }
                     if (divisor == decimal_idx) {
                         if (opts.precision == 0) {
                             // if precision is zero, obviously don't continue after decimal
@@ -247,11 +293,37 @@ namespace WylesLibs {
                         precision_count = 0;
                     }
                 } else {
-                    throw std::runtime_error("Invalid digit character detected.");
+                    std::string msg("Invalid digit character detected: '");
+                    msg += digit;
+                    msg += "', num: ";
+                    msg += std::to_string(num);
+                    msg += ", divisor: ";
+                    msg += std::to_string(divisor);
+                    msg += "\n";
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
                 }
             }
-            num -= (digit * divisor);
-            divisor /= 10;
+            // if zeros in number
+            //  in other words, if diff < divisor/10; in other words, if the next divisor is not valid. loop until valid divisor and append zeros.
+            num = num - (digit * divisor);
+            if (diff < divisor/10) {
+                size_t new_divisor = 1;
+                size_t next_num = num; // next_num == diff
+                while (next_num > 10) {
+                    new_divisor *= 10;
+                    next_num /= 10;
+                    s += '0';
+                }
+                // size_t zero_count = new_divisor * 10;
+                // while (zero_count < divisor) {
+                //     s += '0';
+                //     zero_count *= 10;
+                // }
+                divisor = new_divisor;
+            } else {
+                divisor /= 10;
+            }
             i++;
         }
         // append exponential string.

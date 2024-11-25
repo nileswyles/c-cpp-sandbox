@@ -37,7 +37,7 @@ class HttpServerConfig: public ServerConfig {
 
         HttpServerConfig(): static_path("./"), root_html_file("index.html"), address("127.0.0.1"), port(8080) {}
         HttpServerConfig(std::string filepath): HttpServerConfig(
-            parseFile(ESharedPtr<StreamFactory>(new StreamFactory>()), filepath)
+            parseFile(ESharedPtr<StreamFactory>(new StreamFactory), filepath)
         ) {}
         HttpServerConfig(ESharedPtr<JsonValue> obj_shared): ServerConfig(obj_shared) {
             JsonObject * obj = dynamic_cast<JsonObject *>(ESHAREDPTR_GET_PTR(obj_shared));

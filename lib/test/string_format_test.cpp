@@ -22,7 +22,29 @@ using namespace WylesLibs::Test;
 static void stringUtilsNumToString(TestArg * t) {
     loggerPrintf(LOGGER_TEST, "Value to Parse: UINT64_MAX, default options\n");
     std::string num = numToString(UINT64_MAX);
+    // TODO: why didn't this fail?
     std::string expected = "18446744073709551615";
+
+    ASSERT_STRING(t, num, expected);
+}
+
+// with zeros or in other words num/base is multiple of base.
+static void stringUtilsNumToStringWithZeros(TestArg * t) {
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1003, default options\n");
+    std::string num = numToString(1003);
+    std::string expected = "1003";
+
+    ASSERT_STRING(t, num, expected);
+
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 103, default options\n");
+    num = numToString(103);
+    expected = "103";
+
+    ASSERT_STRING(t, num, expected);
+
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 170003, default options\n");
+    num = numToString(170003);
+    expected = "170003";
 
     ASSERT_STRING(t, num, expected);
 }
@@ -69,6 +91,27 @@ static void stringUtilsNumToStringSigned(TestArg * t) {
     ASSERT_STRING(t, num, expected);
 }
 
+// with zeros or in other words num/base is multiple of base.
+static void stringUtilsNumToStringSignedWithZeros(TestArg * t) {
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1003, default options\n");
+    std::string num = numToStringSigned(1003);
+    std::string expected = "1003";
+
+    ASSERT_STRING(t, num, expected);
+
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 103, default options\n");
+    num = numToStringSigned(103);
+    expected = "103";
+
+    ASSERT_STRING(t, num, expected);
+
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 170003, default options\n");
+    num = numToStringSigned(170003);
+    expected = "170003";
+
+    ASSERT_STRING(t, num, expected);
+}
+
 static void stringUtilsNumToStringSignedTruncating(TestArg * t) {
     StringFormatOpts opts;
     opts.base = 10;
@@ -97,6 +140,21 @@ static void stringUtilsNumToStringHex(TestArg * t) {
     loggerPrintf(LOGGER_TEST, "Value to Parse: 0x1234567\n");
     std::string num = numToString(0x1234567, opts);
     std::string expected = "0x1234567";
+
+    ASSERT_STRING(t, num, expected);
+}
+
+// with zeros or in other words num/base is multiple of base.
+static void stringUtilsNumToStringHexWithZeros(TestArg * t) {
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1003, default options\n");
+    std::string num = numToStringSigned(1003);
+    std::string expected = "1003";
+
+    ASSERT_STRING(t, num, expected);
+
+    loggerPrintf(LOGGER_TEST, "Value to Parse: 1003, default options\n");
+    num = numToStringSigned(1003);
+    expected = "1003";
 
     ASSERT_STRING(t, num, expected);
 }
@@ -669,6 +727,7 @@ int main(int argc, char * argv[]) {
     Tester t("String Format Tests");
 
     t.addTest(stringUtilsNumToString);
+    // t.addTest(stringUtilsNumToString0A);
     t.addTest(stringUtilsNumToStringTruncating);
     t.addTest(stringUtilsNumToStringPadding);
     t.addTest(stringUtilsNumToStringPaddingZero);

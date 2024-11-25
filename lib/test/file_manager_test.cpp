@@ -1,5 +1,5 @@
 #include "tester.h"
-#ifdef FILE_MANAGER_GCS_TEST
+#ifdef WYLESLIBS_GCS_BUILD
 #include "file/file_gcs.h"
 #include "google/cloud/log.h"
 #else
@@ -25,7 +25,7 @@ using namespace WylesLibs;
 using namespace WylesLibs::Test;
 using namespace WylesLibs::File;
 
-#ifdef FILE_MANAGER_GCS_TEST
+#ifdef WYLESLIBS_GCS_BUILD
 static FileManager * file_manager = dynamic_cast<FileManager *>(new GCSFileManager("test-bucket-free-tier"));
 #else
 static FileManager * file_manager = new FileManager();

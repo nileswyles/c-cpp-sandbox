@@ -30,10 +30,10 @@ SRC_FILES="
 "
 
 # ! IMPORTANT - 
-# 	to run the GCS file manager test, set FILE_MANAGER_GCS_TEST=1
-if [ -n "$FILE_MANAGER_GCS_TEST" ]; then
+# 	to run the GCS file manager test, set WYLESLIBS_GCS_BUILD=1
+if [ -n "$WYLESLIBS_GCS_BUILD" ]; then
 	GCS_ARGS=`$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/generate_gcs_arguments.sh`
-	DEFINES="$DEFINES -D FILE_MANAGER_GCS_TEST=1 "
+	DEFINES="$DEFINES -D WYLESLIBS_GCS_BUILD=1 "
 	SRC_FILES="$SRC_FILES -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_gcs.cpp
 		-s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory_gcs.cpp
 	"

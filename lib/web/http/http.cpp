@@ -119,7 +119,7 @@ void HttpConnection::parseRequest(HttpRequest * request, ByteEStream * io) {
             Multipart::FormData::parse(io, request->files, request->form_content, this->file_manager);
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
-            request->content = io->read(request->content_length);
+            request->content = ((EStream<uint8_t> *)io)->read((size_t)request->content_length);
         }
     }
 }
@@ -347,7 +347,7 @@ uint8_t HttpConnection::onConnection(int fd) {
         if (this->config.tls_enabled) {
             sslio = SSLEStream(this->context, fd, this->config.client_auth_enabled); // initializes ssl object for connection
             acceptedTLS = true;
-            io = dynamic_cast<EStream *>(&sslio);
+            io = dynamic_cast<ByteEStream *>(&sslio);
         } else {
             eio = ByteEStream(fd);
             io = &eio;
@@ -381,7 +381,7 @@ void HttpConnection::writeResponse(HttpResponse * response, ByteEStream * io) {
     // ! IMPORTANT - this response pointer will potentially come from an end-user (another developer)... YOU WILL ENCOUNTER PROBLEMS IF THE POINTER IS CREATED USING MALLOC AND NOT NEW
     delete response;
 
-    if (io->write((void *)data.c_str(), data.size()) == -1) {
+    if (io->write((uint8_t *)data.c_str(), data.size()) == -1) {
         loggerPrintf(LOGGER_DEBUG, "Error writing to connection: %d\n", errno);
     } else {
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Wrote response to connection: \n%s\n", data.c_str());

@@ -136,7 +136,6 @@ class EStream: public EStreamI<T> {
     */
     private:
         struct pollfd poll_fd;
-        std::ios_base::iostate flags;
         T ungot_el;
         bool ungot;
         bool new_buffer;
@@ -146,6 +145,7 @@ class EStream: public EStreamI<T> {
         size_t cursor;
         size_t els_in_buffer;
         StreamProcessor<T, SharedArray<T>> read_processor;
+        std::ios_base::iostate flags;
         virtual bool readPastBuffer() {
             return this->cursor >= this->els_in_buffer;
         }
@@ -168,7 +168,24 @@ class EStream: public EStreamI<T> {
         std::string stream_log; 
 #endif
         int fd;
-        EStream() = default;
+        // TODO: this is hella lame... lol think about default constructor stuff some more...
+        //      could alternatively initialize with nullptr and size 0 args from istreamestream. but that doesn't seem valid?
+        EStream() {
+            ungot = false;
+            ungot_el = 0xFF;
+            flags = std::ios_base::goodbit;
+            buf = nullptr;
+            buf_size = 0;
+            cursor = 0;
+            // ! IMPORTANT - an exception is thrown and flags are updated if read past buffer. (see fillBuffer implementation)
+            fd = -1;
+            new_buffer = false;
+            els_in_buffer = 0;
+            read_processor = StreamProcessor<T, SharedArray<T>>(
+                initReadCriteria<T>(), 
+                initReadCollector<T, SharedArray<T>>()
+            );
+        }
         EStream(T * p_buf, const size_t p_buf_size) {
             ungot = false;
             ungot_el = 0xFF;

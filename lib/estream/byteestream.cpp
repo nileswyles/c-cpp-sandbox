@@ -172,4 +172,5 @@ SSL * SSLEStream::acceptTLS(SSL_CTX * context, int fd, bool client_auth_enabled)
 
         return ssl;
     }
-    #endif
+}
+#endif

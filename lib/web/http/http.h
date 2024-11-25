@@ -16,11 +16,12 @@
 #include <unordered_map>
 #include <map>
 #include <memory>
-#include "memory/pointers.h"
 
 // other
 #include <openssl/ssl.h>
 
+#include "memory/pointers.h"
+#include "estream/estream.h"
 #include "estream/byteestream.h"
 #include "web/server.h"
 #include "config.h"
@@ -74,7 +75,7 @@ class HttpRequest {
 
         Authorization auth;
 
-        HttpRequest(): json_content(nullptr) {}
+        HttpRequest() = default;
         ~HttpRequest() = default;
 };
 
@@ -223,7 +224,7 @@ class HttpConnection {
         }
         ~HttpConnection() {
             if (this->context != nullptr) {
-                this->context = SSL_CTX_free(this->context);
+                SSL_CTX_free(this->context);
             }
         }
 

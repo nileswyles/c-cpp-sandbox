@@ -73,9 +73,13 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
         sign = -1;
     }
 
+    printf("hmmm...\n");
     c = r->peek();
+    printf("hmmm...\n");
     if (isDigit(c)) {
+        printf("lmao...\n");
         value = r->readDecimal();
+        printf("wtf...\n");
     } else {
         // throw exception...
         std::string msg = "Invalid number.";

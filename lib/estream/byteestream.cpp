@@ -8,15 +8,15 @@ using namespace WylesLibs;
 bool ByteIsCharClassCriteria::untilMatchGood(uint8_t& c, bool is_new_char) {
     if (true == is_new_char) {
         if (this->char_class & DIGIT_CLASS) {
-            is_good = isDigit(c);
+            this->is_good = isDigit(c);
         } else if (this->char_class & UPPER_HEX_CLASS) {
-            is_good = isUpperHex(c);
+            this->is_good = isUpperHex(c);
         } else if (this->char_class & LOWER_HEX_CLASS) {
-            is_good = isLowerHex(c);
+            this->is_good = isLowerHex(c);
         } else if (this->char_class & HEX_CLASS) {
-            is_good = isHexDigit(c);
+            this->is_good = isHexDigit(c);
         } else if (this->char_class & ALPHANUMERIC_CLASS) {
-            is_good = isAlpha(c);
+            this->is_good = isAlpha(c);
         }
     }
     return this->is_good;
@@ -29,15 +29,22 @@ bool ByteIsCharClassCriteria::good(uint8_t& c, bool is_new_char) {
     }
 }
 
+void ByteCollector::initialize() {
+    this->data = SharedArray<uint8_t>();
+}
+
 void ByteCollector::accumulate(uint8_t& c) {
     this->data.append(c);
 }
+
 void ByteCollector::accumulate(SharedArray<uint8_t>& cs) {
     this->data.append(cs);
 }
+
 SharedArray<uint8_t> ByteCollector::collect() {
     return this->data;
 }
+
 template<>
 ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>> WylesLibs::initReadCollector<uint8_t, SharedArray<uint8_t>>() {
     return ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>>(
@@ -47,37 +54,44 @@ ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>> WylesLibs::initReadCollecto
     );
 }
 
+void NaturalCollector::initialize() {
+    this->digit_count = 0;
+    this->value = 0;
+}
+
 void NaturalCollector::accumulate(uint8_t& c) {
-    // 0 * 10 + (0) = 0
-    // (0 * 10) + (3)
-    value = (value * 10) + (c - 0x30); 
-    loggerPrintf(LOGGER_DEBUG, "char: 0x%X, value: %lu\n", c, value);
+    this->value = (this->value * 10) + (c - 0x30); 
+    loggerPrintf(LOGGER_DEBUG, "char: 0x%X, value: %lu\n", c, this->value);
     if (++digit_count > NUMBER_MAX_DIGITS) {
         std::string msg = "parseNatural: Exceeded natural digit limit.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
 }
-uint64_t NaturalCollector::collect() {
-    uint64_t v = this->value;
+std::tuple<uint64_t, size_t> NaturalCollector::collect() {
+    // TODO: implement tuple? also is that template args I see of different types? or is it vaargs?
+    //  lol, that would be lame and might be worth reimplementing format? 
+    return std::make_tuple(this->value, this->digit_count);
+}
+
+void DecimalCollector::initialize() {
+    this->decimal_divisor = 10.0;
+    this->digit_count = 0;
     this->value = 0;
-    return v;
 }
 
 void DecimalCollector::accumulate(uint8_t& c) {
-    value += (c - 0x30) / decimal_divisor;
-    loggerPrintf(LOGGER_DEBUG, "value: %f\n", value);
-    decimal_divisor *= 10;
+    this->value += (c - 0x30) / this->decimal_divisor;
+    loggerPrintf(LOGGER_DEBUG, "char: 0x%X, value: %f\n", c, this->value);
+    this->decimal_divisor *= 10;
     if (++digit_count > NUMBER_MAX_DIGITS) {
         std::string msg = "parseDecimal: Exceeded decimal digit limit.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
 }
-double DecimalCollector::collect() {
-    double v = this->value;
-    this->value = 0.0;
-    return v;
+std::tuple<double, size_t> DecimalCollector::collect() {
+    return std::make_tuple(this->value, this->digit_count);
 }
 
 SharedArray<uint8_t> ByteEStream::read(std::string until, ReaderTask * operation, bool inclusive) {
@@ -86,44 +100,47 @@ SharedArray<uint8_t> ByteEStream::read(std::string until, ReaderTask * operation
     //  I think this is BS...
     //  I think the correct behaviour is that the derived classes inherit base interface
     //      with the access level defined by the access specifier before the name in the class definition.
-
     return EStream<uint8_t>::read(SharedArray<uint8_t>(until), operation, inclusive);
     // This doesn't work...
     //  if (LOOP_CRITERIA_UNTIL_MATCH == LoopCriteriaInfo<uint8_t>::info.mode) {
 }
 
-uint64_t ByteEStream::readNatural() {
+std::tuple<uint64_t, size_t> ByteEStream::readNatural() {
     ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->natural_processor.criteria));
     *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
-    return this->natural_processor.streamCollect(this, nullptr);
+    std::tuple<uint64_t, size_t> t = this->natural_processor.streamCollect(this, nullptr);
+
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c'\n", this->peek());
+
+    return t;
 }
 
-double ByteEStream::readDecimal() {
-    ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->natural_processor.criteria));
-    *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
+std::tuple<double, size_t, size_t> ByteEStream::readDecimal() {
+    std::tuple<uint64_t, size_t> natural_value = this->readNatural();
 
-    double natural_value = static_cast<double>(this->natural_processor.streamCollect(this, nullptr));
-
-    char c = this->get();
+    char c = this->peek();
     if (c != '.') {
-        std::string msg = "Invalid number.";
-        loggerPrintf(LOGGER_INFO, "%s, found '%c'\n", msg.c_str(), c);
-        throw std::runtime_error(msg);
+        this->get();
+        return std::make_tuple(static_cast<double>(std::get<0>(natural_value)), std::get<1>(natural_value), 0);
     }
 
-    criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->decimal_processor.criteria));
+    ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->decimal_processor.criteria));
     *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
-    return this->decimal_processor.streamCollect(this, nullptr) + natural_value;
+    std::tuple<double, size_t> decimal_value = this->decimal_processor.streamCollect(this, nullptr);
+
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c'\n", this->peek());
+
+    return std::make_tuple(static_cast<double>(std::get<0>(natural_value)) + std::get<0>(decimal_value), std::get<1>(natural_value), std::get<1>(decimal_value));
 }
 
 
 #ifdef WYLESLIBS_SSL_ENABLED
 void SSLEStream::fillBuffer() {
     this->cursor = 0;
-    ssize_t ret = SSL_read(this->ssl, this->buf, this->buf_size * sizeof(uint8_t)); // TODO: sizeof(uint8_t) == 1;
+    ssize_t ret = SSL_read(this->ssl, this->buffer, this->buffer_size * sizeof(uint8_t)); // TODO: sizeof(uint8_t) == 1;
     // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
-    if (ret <= 0 || (size_t)ret > this->buf_size) {
+    if (ret <= 0 || (size_t)ret > this->buffer_size) {
         this->els_in_buffer = 0;
         loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
         this->flags |= std::ios_base::badbit;
@@ -134,8 +151,8 @@ void SSLEStream::fillBuffer() {
     }
 }
 
-ssize_t SSLEStream::write(uint8_t * p_buf, size_t size) {
-    return SSL_write(this->ssl, (void *)p_buf, size);
+ssize_t SSLEStream::write(uint8_t * b, size_t size) {
+    return SSL_write(this->ssl, (void *)b, size);
 }
 
 SSL * SSLEStream::acceptTLS(SSL_CTX * context, int fd, bool client_auth_enabled) {

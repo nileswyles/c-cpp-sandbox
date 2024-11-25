@@ -353,8 +353,8 @@ uint8_t HttpConnection::onConnection(int fd) {
             io = &eio;
         }
 #else
-            eio = ByteEStream(fd);
-            io = &eio;
+        eio = ByteEStream(fd);
+        io = &eio;
 #endif
         this->parseRequest(&request, io);
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());

@@ -42,10 +42,10 @@ namespace WylesLibs {
         return isDigit(c) || isLowerHex(c) || isUpperHex(c);
     }
     
-    static char hexToChar(std::string buf) {
+    static char hexToChar(std::string buffer) {
         char ret = 0x00;
         for (size_t i = 0; i < 2; i++) {
-            ret = ret << 4 | buf.at(i);
+            ret = ret << 4 | buffer.at(i);
         }
         return ret;
     }

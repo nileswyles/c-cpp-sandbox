@@ -52,12 +52,12 @@ static inline T * newCArray(size_t size) {
 }
 
 template<typename T>
-void addElement(T * buf, const size_t pos, T el) {
+void addElement(T * buffer, const size_t pos, T el) {
     // copy assignment
-    buf[pos] = el;
+    buffer[pos] = el;
 }
 template<>
-void addElement<const char *>(const char ** buf, const size_t pos, const char * el);
+void addElement<const char *>(const char ** buffer, const size_t pos, const char * el);
 
 template<typename T>
 void deleteCArray(T * e_buf, size_t size) {
@@ -71,7 +71,7 @@ template<>
 void deleteCArray<const char *>(const char ** e_buf, size_t size);
 
 template<typename T>
-void deleteCArrayElement(T * buf, size_t pos) {
+void deleteCArrayElement(T * buffer, size_t pos) {
     // ! IMPORTANT - these types are presumably non-pointer types... if not, then the developer needs to create specialization and write tests (see cstrings).
     //  Not as easy to detect the need for this with functional testing, 
     //      so developer should add a specialization of this if a specialization of addElement is implemented...
@@ -79,7 +79,7 @@ void deleteCArrayElement(T * buf, size_t pos) {
     //  TODO: Compiler or lint check for this?
 }
 template<>
-void deleteCArrayElement<const char *>(const char ** buf, size_t pos);
+void deleteCArrayElement<const char *>(const char ** buffer, size_t pos);
 
 // TODO: again, member function "specialization" didn't work, so... I think the non-specialization stuff was working lol...
 //  revisit in future.
@@ -196,7 +196,7 @@ class Array {
                     while (i < size) {
                         left_buf = e_buf + i;
                         if (i + span < size) {
-                            // if right buf is within bounds... 
+                            // if right buffer is within bounds... 
                             //  else it's the odd element out (last element, so adhocly bring in the last odd element in later iterations.) 
                             right_buf = e_buf + i + span;
                             size_t right_size = span;
@@ -294,7 +294,7 @@ class Array {
                     recapped = true;
                     this->e_cap = new_cap;
                     // if recapped, copy elements up until pos.
-                    //  the rest will be automagically initialized by the insert operation... (see use of new_buf vs this->buf variables below)
+                    //  the rest will be automagically initialized by the insert operation... (see use of new_buf vs this->buffer variables below)
                     size_t total_size_up_to_pos = pos * sizeof(T);
                     for (size_t i = 0; i < pos; i++) {
                         new_buf[i] = (this->e_buf)[i];

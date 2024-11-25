@@ -61,11 +61,11 @@ namespace WylesLibs {
                 }
                 return this->is_good;
             }
-        public:
             // TODO: because no compiler error if variable with same name is defined in derived class?
             //       This doesn't work...
             //        if (LOOP_CRITERIA_UNTIL_MATCH == LoopCriteriaInfo<uint8_t>::loop_criteria_info.mode) {
             LoopCriteriaInfo<T> loop_criteria_info;
+        public:
             LoopCriteria(LoopCriteriaInfo<T> loop_criteria_info): loop_criteria_info(loop_criteria_info), is_good(false) {}
             virtual ~LoopCriteria() = default;
         
@@ -93,8 +93,10 @@ namespace WylesLibs {
 
     template<typename T, typename RT>
     class Collector {
+        private:
         public:
             virtual ~Collector() = default;
+            virtual void initialize() = 0;
             virtual void accumulate(T& el) = 0;
             virtual void accumulate(SharedArray<T>& els) {
                 throw std::runtime_error("Accumulate function of multiple elements isn't implemented!");

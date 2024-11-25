@@ -37,11 +37,11 @@ static const char * buffer_start;
 static const char * buffer;
 
 // ! IMPORTANT - overriding stdlib's implementation of read (which is apparently weakly linked...)... ByteEStream's calls to read use this function. 
-extern ssize_t read(int fd, void * buf, size_t nbytes) {
+extern ssize_t read(int fd, void * buffer, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
-    memcpy(buf, buffer, ret);
+    memcpy(buffer, buffer, ret);
     loggerPrintf(LOGGER_DEBUG, "READ RETURNED (%ld): \n", ret);
-    loggerPrintByteArray(LOGGER_DEBUG, (uint8_t*)buf, ret);
+    loggerPrintByteArray(LOGGER_DEBUG, (uint8_t*)buffer, ret);
     buffer += ret; // duh
     return ret; 
 }
@@ -329,8 +329,8 @@ static void testReadUntilUpperCaseExtract(TestArg * t) {
 }
 
 static void testReadUntilCursorAtUntil(TestArg * t) {
-    size_t buf_size = READER_RECOMMENDED_BUF_SIZE;
-    ByteEStream reader(1, buf_size);
+    size_t buffer_size = READER_RECOMMENDED_BUF_SIZE;
+    ByteEStream reader(1, buffer_size);
     buffer = " BLAH";
 
     std::string result = reader.read(" ").toString();
@@ -338,10 +338,10 @@ static void testReadUntilCursorAtUntil(TestArg * t) {
 }
 
 static void testReadUntilFillBufferOnce(TestArg * t) {
-    size_t buf_size = 7;
-    ByteEStream reader(1, buf_size);
+    size_t buffer_size = 7;
+    ByteEStream reader(1, buffer_size);
 
-    size_t expected_size = buf_size + 7;
+    size_t expected_size = buffer_size + 7;
     std::string expected;
     for (size_t i = 0; i < expected_size; i++) {
         expected += '$';
@@ -354,10 +354,10 @@ static void testReadUntilFillBufferOnce(TestArg * t) {
 }
 
 static void testReadUntilFillBufferTwice(TestArg * t) {
-    size_t buf_size = 7;
-    ByteEStream reader(1, buf_size);
+    size_t buffer_size = 7;
+    ByteEStream reader(1, buffer_size);
 
-    size_t expected_size = (buf_size * 2) + 7;
+    size_t expected_size = (buffer_size * 2) + 7;
     std::string expected;
     for (size_t i = 0; i < expected_size; i++) {
         expected += '$';
@@ -407,6 +407,7 @@ int main(int argc, char * argv[]) {
 
     // TODO:
     // istreamestream readuntil readbytes, collector stuff...
+    //  consecutive streamcollects..., etc.
 
     bool passed = false;
     if (argc > 1) {

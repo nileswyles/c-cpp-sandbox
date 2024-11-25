@@ -29,11 +29,11 @@ class IStreamEStream: public ByteEStream {
     public:
         IStreamEStream() = default;
         // TODO: std::move? that's interesting
-        IStreamEStream(ESharedPtr<std::basic_istream<char>> reader) {
+        IStreamEStream(ESharedPtr<std::basic_istream<char>> reader): ByteEStream() {
             factory = nullptr;
             reader = reader;
         }
-        IStreamEStream(ESharedPtr<File::StreamFactory> factory, std::string path, size_t initial_offset = 0, size_t chunk_size = SIZE_MAX) {
+        IStreamEStream(ESharedPtr<File::StreamFactory> factory, std::string path, size_t initial_offset = 0, size_t chunk_size = SIZE_MAX): ByteEStream() {
             factory = factory;
             path = path;
             file_offset = initial_offset;
@@ -55,7 +55,7 @@ class IStreamEStream: public ByteEStream {
 
         SharedArray<uint8_t> read(const size_t n, StreamTask<uint8_t, SharedArray<uint8_t>> * operation = nullptr) override;
 
-        ssize_t write(uint8_t * p_buf, size_t size) override;
+        ssize_t write(uint8_t * b, size_t size) override;
 
         IStreamEStream(IStreamEStream && x) = default;
         IStreamEStream& operator=(IStreamEStream && x) = default;

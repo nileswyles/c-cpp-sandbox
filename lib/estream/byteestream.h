@@ -7,6 +7,7 @@
 #include "datastructures/array.h"
 
 #include <memory>
+#include <tuple>
 
 #include <stdint.h>
 
@@ -40,6 +41,7 @@ namespace WylesLibs {
         public:
             ByteCollector() = default;
             ~ByteCollector() override = default;
+            void initialize() override final;
             void accumulate(uint8_t& c) override final;
             void accumulate(SharedArray<uint8_t>& cs) override final;
             SharedArray<uint8_t> collect() override final;
@@ -48,88 +50,77 @@ namespace WylesLibs {
     template<>
     ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>> initReadCollector<uint8_t, SharedArray<uint8_t>>();
 
-    class NaturalCollector: public Collector<uint8_t, uint64_t> {
+    class NaturalCollector: public Collector<uint8_t, std::tuple<uint64_t, size_t>> {
         private:
             size_t digit_count;
             uint64_t value;
         public:
             NaturalCollector(): digit_count(0), value(0) {}
             ~NaturalCollector() override = default;
+            void initialize() override final;
             void accumulate(uint8_t& c) override final;
-            uint64_t collect() override final;
+            std::tuple<uint64_t, size_t> collect() override final;
     };
 
-    class DecimalCollector: public Collector<uint8_t, double> {
+    class DecimalCollector: public Collector<uint8_t, std::tuple<double, size_t>> {
         private:
-            double decimal_divisor = 10;
+            double decimal_divisor;
             size_t digit_count;
             double value;
         public:
-            DecimalCollector(): digit_count(0), value(0.0) {}
+            DecimalCollector(): digit_count(0), value(0.0), decimal_divisor(10.0) {}
             ~DecimalCollector() override = default;
+            void initialize() override final;
             void accumulate(uint8_t& c) override final;
-            double collect() override final;
+            std::tuple<double, size_t> collect() override final;
     };
 
     class ByteEStream: public EStream<uint8_t> {
-        public:
-            // this might be a bad example of this, because other implementation is arguably simpler but you'll see? lol
-            StreamProcessor<uint8_t, uint64_t> natural_processor;
-            StreamProcessor<uint8_t, double> decimal_processor;
-
-            ByteEStream() = default;
-            ByteEStream(uint8_t * p_buf, const size_t p_buf_size): EStream<uint8_t>(p_buf, p_buf_size) {
+        private:
+            static void initProcessors(StreamProcessor<uint8_t, std::tuple<uint64_t, size_t>>& natural_processor, 
+                                        StreamProcessor<uint8_t, std::tuple<double, size_t>>& decimal_processor) {
                 ESharedPtr<LoopCriteria<uint8_t>> char_class_criteria(
                     dynamic_cast<LoopCriteria<uint8_t>*>(
                         new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS)
                     )
                 ); 
-                natural_processor = StreamProcessor<uint8_t, uint64_t>(
+                natural_processor = StreamProcessor<uint8_t, std::tuple<uint64_t, size_t>>(
                     char_class_criteria,
-                    ESharedPtr<Collector<uint8_t, uint64_t>>(
-                        dynamic_cast<Collector<uint8_t, uint64_t>*>(
+                    ESharedPtr<Collector<uint8_t, std::tuple<uint64_t, size_t>>>(
+                        dynamic_cast<Collector<uint8_t, std::tuple<uint64_t, size_t>>*>(
                             new NaturalCollector
                         )
                     )
                 );
-                decimal_processor = StreamProcessor<uint8_t, double>(
+                decimal_processor = StreamProcessor<uint8_t, std::tuple<double, size_t>>(
                     char_class_criteria,
-                    ESharedPtr<Collector<uint8_t, double>>(
-                        dynamic_cast<Collector<uint8_t, double>*>(
+                    ESharedPtr<Collector<uint8_t, std::tuple<double, size_t>>>(
+                        dynamic_cast<Collector<uint8_t, std::tuple<double, size_t>>*>(
                             new DecimalCollector
                         )
                     )
                 );
             }
+        public:
+            // this might be a bad example of this, because other implementation is arguably simpler but you'll see? lol
+            StreamProcessor<uint8_t, std::tuple<uint64_t, size_t>> natural_processor;
+            StreamProcessor<uint8_t, std::tuple<double, size_t>> decimal_processor;
+
+            ByteEStream() {
+                ByteEStream::initProcessors(natural_processor, decimal_processor);
+            }
+            ByteEStream(uint8_t * b, const size_t bs): EStream<uint8_t>(b, bs) {
+                ByteEStream::initProcessors(natural_processor, decimal_processor);
+            }
             ByteEStream(const int fd): ByteEStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
-            ByteEStream(const int p_fd, const size_t p_buf_size): EStream<uint8_t>(p_fd, p_buf_size) {
-                ESharedPtr<LoopCriteria<uint8_t>> char_class_criteria(
-                    dynamic_cast<LoopCriteria<uint8_t>*>(
-                        new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS)
-                    )
-                ); 
-                natural_processor = StreamProcessor<uint8_t, uint64_t>(
-                    char_class_criteria,
-                    ESharedPtr<Collector<uint8_t, uint64_t>>(
-                        dynamic_cast<Collector<uint8_t, uint64_t>*>(
-                            new NaturalCollector
-                        )
-                    )
-                );
-                decimal_processor = StreamProcessor<uint8_t, double>(
-                    char_class_criteria,
-                    ESharedPtr<Collector<uint8_t, double>>(
-                        dynamic_cast<Collector<uint8_t, double>*>(
-                            new DecimalCollector
-                        )
-                    )
-                );
+            ByteEStream(const int p_fd, const size_t bs): EStream<uint8_t>(p_fd, bs) {
+                ByteEStream::initProcessors(natural_processor, decimal_processor);
             }
             ~ByteEStream() override = default;
 
             virtual SharedArray<uint8_t> read(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
-            virtual uint64_t readNatural();
-            virtual double readDecimal();
+            virtual std::tuple<uint64_t, size_t> readNatural();
+            virtual std::tuple<double, size_t, size_t> readDecimal();
 
             ByteEStream(ByteEStream && x) = default;
             ByteEStream& operator=(ByteEStream && x) = default;
@@ -156,7 +147,7 @@ namespace WylesLibs {
                     SSL_free(this->ssl);
                 }
             }
-            ssize_t write(uint8_t * p_buf, size_t size) override final;
+            ssize_t write(uint8_t * b, size_t size) override final;
 
             SSLEStream(SSLEStream && x) = default;
             SSLEStream& operator=(SSLEStream && x) = default;

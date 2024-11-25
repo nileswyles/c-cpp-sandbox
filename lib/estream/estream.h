@@ -82,7 +82,7 @@ class EStreamI {
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
         virtual SharedArray<T> read(SharedArray<T> until = SharedArray<T>(), StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) = 0;
-        virtual ssize_t write(T * p_buf, size_t size) = 0;
+        virtual ssize_t write(T * b, size_t size) = 0;
 };
 
 template<typename T, typename RT>
@@ -102,6 +102,8 @@ class StreamProcessor {
                 task->collector = collector;
                 task->criteria = criteria;
             }
+
+            collector->initialize();
  
             T el = s->peek();
             while (true == criteria->good(el, true)) {
@@ -140,8 +142,8 @@ class EStream: public EStreamI<T> {
         bool ungot;
         bool new_buffer;
     protected:
-        T * buf;
-        size_t buf_size;
+        T * buffer;
+        size_t buffer_size;
         size_t cursor;
         size_t els_in_buffer;
         StreamProcessor<T, SharedArray<T>> read_processor;
@@ -151,9 +153,9 @@ class EStream: public EStreamI<T> {
         }
         virtual void fillBuffer() {
             this->cursor = 0;
-            ssize_t ret = ::read(this->fd, this->buf, this->buf_size * sizeof(T));
+            ssize_t ret = ::read(this->fd, this->buffer, this->buffer_size * sizeof(T));
             // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
-            if (ret <= 0 || (size_t)ret > this->buf_size) {
+            if (ret <= 0 || (size_t)ret > this->buffer_size) {
                 this->els_in_buffer = 0;
                 loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
                 this->flags |= std::ios_base::badbit;
@@ -174,8 +176,8 @@ class EStream: public EStreamI<T> {
             ungot = false;
             ungot_el = 0xFF;
             flags = std::ios_base::goodbit;
-            buf = nullptr;
-            buf_size = 0;
+            buffer = nullptr;
+            buffer_size = 0;
             cursor = 0;
             // ! IMPORTANT - an exception is thrown and flags are updated if read past buffer. (see fillBuffer implementation)
             fd = -1;
@@ -186,78 +188,78 @@ class EStream: public EStreamI<T> {
                 initReadCollector<T, SharedArray<T>>()
             );
         }
-        EStream(T * p_buf, const size_t p_buf_size) {
+        EStream(T * b, const size_t bs) {
             ungot = false;
             ungot_el = 0xFF;
             flags = std::ios_base::goodbit;
-            buf = p_buf;
-            buf_size = p_buf_size;
+            buffer = b;
+            buffer_size = bs;
             cursor = 0;
             // ! IMPORTANT - an exception is thrown and flags are updated if read past buffer. (see fillBuffer implementation)
             fd = -1;
             new_buffer = false;
-            els_in_buffer = p_buf_size;
+            els_in_buffer = bs;
             read_processor = StreamProcessor<T, SharedArray<T>>(
                 initReadCriteria<T>(), 
                 initReadCollector<T, SharedArray<T>>()
             );
         }
         EStream(const int fd): EStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
-        EStream(const int p_fd, const size_t p_buf_size) {
-            ungot = false;
-            ungot_el = 0xFF;
-            flags = std::ios_base::goodbit;
+        EStream(const int p_fd, const size_t bs) {
             if (p_fd < 0) {
                 throw std::runtime_error("Invalid file descriptor provided.");
             }
-            if (p_buf_size < 1) {
+            if (bs < 1) {
                 throw std::runtime_error("Invalid buffer size provided.");
             }
-            poll_fd.fd = p_fd;
-            poll_fd.events = POLLIN;
-            buf_size = p_buf_size;
+            ungot = false;
+            ungot_el = 0xFF;
+            flags = std::ios_base::goodbit;
+            buffer = newCArray<T>(buffer_size);
+            buffer_size = bs;
             cursor = 0;
             fd = p_fd;
-            els_in_buffer = 0;
-            buf = newCArray<T>(buf_size);
             new_buffer = true;
+            els_in_buffer = 0;
             read_processor = StreamProcessor<T, SharedArray<T>>(
                 initReadCriteria<T>(),
                 initReadCollector<T, SharedArray<T>>()
             );
+            poll_fd.fd = p_fd;
+            poll_fd.events = POLLIN;
         }
         virtual ~EStream() {
             if (true == new_buffer) {
-                deleteCArray<T>(this->buf, this->buf_size);
+                deleteCArray<T>(this->buffer, this->buffer_size);
             }
         }
 
         // standard istream methods
         T get() override {
-            T byte = this->peek();
+            T el = this->peek();
             if (this->cursor == 0 && true == this->ungot) {
                 this->ungot = false;
             }
             this->cursor++;
         #if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
-            this->stream_log += byte;
+            this->stream_log += el;
             if (this->stream_log.size() > MAX_STREAM_LOG_SIZE) {
                 this->stream_log.clear();
             }
         #endif
-            return byte;
+            return el;
         }
         T peek() override {
             if (true == this->good()) {
                 if (true == this->readPastBuffer()) {
-                    this->ungot_el = this->buf[this->cursor];
+                    this->ungot_el = this->buffer[this->cursor];
                     this->ungot = false;
                     this->fillBuffer();
                 }
             } else if (this->cursor == 0 && true == this->ungot) {
                 return this->ungot_el;
             }
-            return this->buf[this->cursor];
+            return this->buffer[this->cursor];
         }
         void unget() override {
             if (this->cursor == 0) { // fill buffer just called...
@@ -307,13 +309,13 @@ class EStream: public EStreamI<T> {
                     size_t els_left_in_buffer = this->els_in_buffer - this->cursor;
                     if (els_left_to_read > els_left_in_buffer) {
                         // copy data left in buffer and read more
-                        data.append(this->buf + this->cursor, els_left_in_buffer);
+                        data.append(this->buffer + this->cursor, els_left_in_buffer);
                         els_read += els_left_in_buffer;
 
                         this->fillBuffer();
                     } else {
                         // else enough data in buffer
-                        data.append(this->buf + this->cursor, els_left_to_read);
+                        data.append(this->buffer + this->cursor, els_left_to_read);
                         this->cursor += els_left_to_read;
                         els_read += els_left_to_read;
                     }
@@ -337,8 +339,8 @@ class EStream: public EStreamI<T> {
             *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, included, inclusive, until_size, until);
             return this->read_processor.streamCollect(dynamic_cast<EStreamI<T> *>(this), operation);
         }
-        ssize_t write(T * p_buf, size_t size) override {
-            return ::write(this->fd, (void *)p_buf, size * sizeof(T));
+        ssize_t write(T * b, size_t size) override {
+            return ::write(this->fd, (void *)b, size * sizeof(T));
         }
         template<typename RT>
         RT streamCollect(ESharedPtr<LoopCriteria<T>> criteria, StreamTask<T, RT> * task, ESharedPtr<Collector<T, RT>> collector) {

@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+#include <tuple>
+
 #ifndef LOGGER_JSON_PARSER
 #define LOGGER_JSON_PARSER 1
 #endif
@@ -73,13 +75,12 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
         sign = -1;
     }
 
-    printf("hmmm...\n");
     c = r->peek();
-    printf("hmmm...\n");
     if (isDigit(c)) {
-        printf("lmao...\n");
-        value = r->readDecimal();
-        printf("wtf...\n");
+        std::tuple<double, size_t, size_t> t = r->readDecimal();
+        value = std::get<0>(t);
+        natural_digits = std::get<1>(t);
+        decimal_digits = std::get<2>(t);
     } else {
         // throw exception...
         std::string msg = "Invalid number.";
@@ -99,13 +100,13 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
             r->get();
         }
 
-        double exp = r->readNatural();
+        uint64_t exp = std::get<0>(r->readNatural());
         if (exp > FLT_MAX_EXP_ABS) {
             std::string msg = "parseNumber: exponential to large.";
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }
-        for (size_t x = 0; x < (size_t)exp; x++) {
+        for (uint64_t x = 0; x < exp; x++) {
             exponential_multiplier *= 10;
         }
         loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
@@ -127,7 +128,7 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
 
     obj->addValue((JsonValue *) new JsonNumber(value * sign, natural_digits, decimal_digits));
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Number\n");
+    loggerPrintf(LOGGER_DEBUG, "Parsed Number, stream is at '%c'\n", r->peek());
 }
 
 static void parseString(JsonArray * obj, ByteEStream * r) {
@@ -191,7 +192,7 @@ static void parseString(JsonArray * obj, ByteEStream * r) {
 
     obj->addValue((JsonValue *) new JsonString(s));
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed String: %s\n", s.c_str());
+    loggerPrintf(LOGGER_DEBUG, "Parsed String: %s, stream is at '%c'\n", s.c_str(), r->peek());
 }
 
 static void parseImmediate(JsonArray * obj, ByteEStream * r, std::string comp, JsonValue * value) {
@@ -199,6 +200,7 @@ static void parseImmediate(JsonArray * obj, ByteEStream * r, std::string comp, J
 
     try {
         ReaderTaskExact task(comp);
+        printf("lmao\n");
         // TODO: very lame that I have to cast to access public, overloaded functions from base class.
         std::string actual = dynamic_cast<EStream<uint8_t> *>(r)->read(comp.size(), &task).toString();
         loggerPrintf(LOGGER_DEBUG, "Parsed %s, @ %c\n", comp.c_str(), r->peek());
@@ -234,7 +236,7 @@ static void parseArray(JsonArray * arr, ByteEStream * r) {
         c = r->get();
     }
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Array\n");
+    loggerPrintf(LOGGER_DEBUG, "Parsed Array, stream is at '%c'\n", r->peek());
 }
 
 static void parseValue(JsonArray * obj, ByteEStream * r) {
@@ -291,6 +293,7 @@ static void parseValue(JsonArray * obj, ByteEStream * r) {
         }
         c = r->peek();
     }
+    loggerPrintf(LOGGER_DEBUG, "Parsed Value, stream is at '%c'\n", r->peek());
 }
 
 static bool parseKey(JsonObject * obj, ByteEStream * r) {
@@ -324,7 +327,7 @@ static bool parseKey(JsonObject * obj, ByteEStream * r) {
         throw std::runtime_error(msg);
     }
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Key String: '%s'\n", key_string.c_str());
+    loggerPrintf(LOGGER_DEBUG, "Parsed Key String: '%s', stream is at '%c'\n", key_string.c_str(), r->peek());
 
     obj->addKey(key_string);
 

@@ -21,7 +21,7 @@ using namespace WylesLibs::Test;
 
 static void stringUtilsNumToStringMax(TestArg * t) {
     loggerPrintf(LOGGER_TEST, "Value to Parse: UINT64_MAX, default options\n");
-    std::string num = numToString(UINT64_MAX);
+    std::string num = numToString(static_cast<uint64_t>(18446744073709551615));
     std::string expected = "18446744073709551615";
     ASSERT_STRING(t, num, expected);
 }
@@ -121,21 +121,21 @@ static void stringUtilsNumToStringSigned(TestArg * t) {
 // with zeros or in other words num/base is multiple of base.
 static void stringUtilsNumToStringSignedMax(TestArg * t) {
     loggerPrintf(LOGGER_TEST, "Value to Parse: INT64_MAX, default options\n");
-    std::string num = numToString(INT64_MAX);
-    std::string expected = "9223372036854775808";
+    std::string num = numToStringSigned(9223372036854775807);
+    std::string expected = "9223372036854775807";
     ASSERT_STRING(t, num, expected);
 }
 
 static void stringUtilsNumToStringSignedMin(TestArg * t) {
     loggerPrintf(LOGGER_TEST, "Value to Parse: INT64_MIN, default options\n");
-    std::string num = numToString(INT64_MIN);
-    std::string expected = "-9223372036854775808";
+    std::string num = numToStringSigned(-9223372036854775807);
+    std::string expected = "-9223372036854775807";
     ASSERT_STRING(t, num, expected);
 }
 
 static void stringUtilsNumToStringSignedZero(TestArg * t) {
     loggerPrintf(LOGGER_TEST, "Value to Parse: 0, default options\n");
-    std::string num = numToString(0);
+    std::string num = numToStringSigned(0);
     std::string expected = "0";
     ASSERT_STRING(t, num, expected);
 }
@@ -173,16 +173,20 @@ static void stringUtilsNumToStringHex(TestArg * t) {
 }
 
 static void stringUtilsNumToStringHex0xFF0A(TestArg * t) {
+    StringFormatOpts opts;
+    opts.base = 16;
     loggerPrintf(LOGGER_TEST, "Value to Parse: 0xFF0A, default options\n");
-    std::string num = numToStringSigned(0xFF0A);
+    std::string num = numToStringSigned(0xFF0A, opts);
     std::string expected = "0xFF0A";
 
     ASSERT_STRING(t, num, expected);
 }
 
 static void stringUtilsNumToStringHexWith0x1BCF0FFA7(TestArg * t) {
+    StringFormatOpts opts;
+    opts.base = 16;
     loggerPrintf(LOGGER_TEST, "Value to Parse: 0x1BCF0FFA7, default options\n");
-    std::string num = numToStringSigned(0x1BCF0FFA7);
+    std::string num = numToStringSigned(0x1BCF0FFA7, opts);
     std::string expected = "0x1BCF0FFA7";
 
     ASSERT_STRING(t, num, expected);
@@ -238,7 +242,7 @@ static void stringUtilsFloatToStringZeroPrecisionZero(TestArg * t) {
     opts.precision = 0;
     opts.exponential = 0;
     loggerPrintf(LOGGER_TEST, "Value to Parse: 0, precision: 0, exponential: 0\n");
-    std::string num = floatToString(1, opts);
+    std::string num = floatToString(0, opts);
     std::string expected = "0";
     ASSERT_STRING(t, num, expected);
 }

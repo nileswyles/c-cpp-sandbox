@@ -224,10 +224,10 @@ namespace WylesLibs {
         while (num / divisor >= 10) {
             // identify num width thus intializing digit parsing.
             //  the detected width (characterized by divisor and digit_count for natural width) is used for parsing, padding and truncating...
+            divisor *= 10;
             if (divisor >= decimal_idx) {
                 digit_count_before_decimal++;
             }
-            divisor *= 10;
             digit_count++;
         }
         if (digit_count_before_decimal == 0) {

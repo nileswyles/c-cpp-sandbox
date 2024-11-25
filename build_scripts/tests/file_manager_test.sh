@@ -40,5 +40,5 @@ if [ -n "$WYLESLIBS_GCS_BUILD" ]; then
 fi
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n file_manager_test $SRC_FILES $GCS_ARGS --log $LOG_LEVEL $DEFINES$TEST_ARG"
-echo "\t"$CMD
+echo "    "$CMD
 exec $CMD

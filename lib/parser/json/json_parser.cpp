@@ -128,7 +128,7 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
 
     obj->addValue((JsonValue *) new JsonNumber(value * sign, natural_digits, decimal_digits));
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Number, stream is at '%c'\n", r->peek());
+    loggerPrintf(LOGGER_DEBUG, "Parsed Number, stream is at '%c' [0x%02X]\n", r->peek(), r->peek());
 }
 
 static void parseString(JsonArray * obj, ByteEStream * r) {
@@ -192,7 +192,7 @@ static void parseString(JsonArray * obj, ByteEStream * r) {
 
     obj->addValue((JsonValue *) new JsonString(s));
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed String: %s, stream is at '%c'\n", s.c_str(), r->peek());
+    loggerPrintf(LOGGER_DEBUG, "Parsed String: %s, stream is at '%c' [0x%02X]\n", s.c_str(), r->peek(), r->peek());
 }
 
 static void parseImmediate(JsonArray * obj, ByteEStream * r, std::string comp, JsonValue * value) {
@@ -236,7 +236,7 @@ static void parseArray(JsonArray * arr, ByteEStream * r) {
         c = r->get();
     }
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Array, stream is at '%c'\n", r->peek());
+    loggerPrintf(LOGGER_DEBUG, "Parsed Array, stream is at '%c', [%X]\n", r->peek(), r->peek());
 }
 
 static void parseValue(JsonArray * obj, ByteEStream * r) {
@@ -293,7 +293,7 @@ static void parseValue(JsonArray * obj, ByteEStream * r) {
         }
         c = r->peek();
     }
-    loggerPrintf(LOGGER_DEBUG, "Parsed Value, stream is at '%c'\n", r->peek());
+    loggerPrintf(LOGGER_DEBUG, "Parsed Value, stream is at '%c', [0x%02X]\n", r->peek(), r->peek());
 }
 
 static bool parseKey(JsonObject * obj, ByteEStream * r) {
@@ -327,7 +327,7 @@ static bool parseKey(JsonObject * obj, ByteEStream * r) {
         throw std::runtime_error(msg);
     }
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Key String: '%s', stream is at '%c'\n", key_string.c_str(), r->peek());
+    loggerPrintf(LOGGER_DEBUG, "Parsed Key String: '%s', stream is at '%c' [0x%02X]\n", key_string.c_str(), r->peek(), r->peek());
 
     obj->addKey(key_string);
 

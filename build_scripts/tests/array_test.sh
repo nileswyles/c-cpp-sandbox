@@ -27,5 +27,5 @@ SRC_FILES="
 "
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n array_test $SRC_FILES --log $LOG_LEVEL -L$WYLESLIBS_BUILD_ROOT_DIR/build_systems $DEFINES$TEST_ARG"
-echo "\t"$CMD
+echo "    "$CMD
 exec $CMD

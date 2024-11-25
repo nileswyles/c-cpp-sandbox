@@ -111,7 +111,7 @@ std::tuple<uint64_t, size_t> ByteEStream::readNatural() {
 
     std::tuple<uint64_t, size_t> t = this->natural_processor.streamCollect(this, nullptr);
 
-    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c'\n", this->peek());
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
 
     return t;
 }
@@ -129,7 +129,7 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal() {
     *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
     std::tuple<double, size_t> decimal_value = this->decimal_processor.streamCollect(this, nullptr);
 
-    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c'\n", this->peek());
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c' [0x%02X]\n", this->peek(), this->peek());
 
     return std::make_tuple(static_cast<double>(std::get<0>(natural_value)) + std::get<0>(decimal_value), std::get<1>(natural_value), std::get<1>(decimal_value));
 }

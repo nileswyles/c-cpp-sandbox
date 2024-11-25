@@ -30,5 +30,5 @@ SRC_FILES="
 "
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n csv_test $SRC_FILES --log $LOG_LEVEL $DEBUG$DEFINES$TEST_ARG"
-echo "\t"$CMD
+echo "    "$CMD
 exec $CMD

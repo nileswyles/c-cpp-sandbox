@@ -33,5 +33,5 @@ LD_FLAGS="
 "
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n estream_test $SRC_FILES --log $LOG_LEVEL $LD_FLAGS $DEFINES$TEST_ARG"
-echo "\t"$CMD
+echo "    "$CMD
 exec $CMD

@@ -20,8 +20,10 @@ TEST_SUITES_TO_SKIP="http_server_test.sh enew_test.sh"
 # SUMMARY
 echo "\t\t\tTEST SUMMARY\n\n"
 
-echo "\nTEST SUITES DETECTED:\n\n\t$TEST_SUITES"
-echo "\nTEST SUITES TO SKIP:\n\n\t$TEST_SUITES_TO_SKIP\n"
+echo "
+TEST SUITES DETECTED:\n\n\t$TEST_SUITES"
+echo "
+TEST SUITES TO SKIP:\n\n\t$TEST_SUITES_TO_SKIP\n"
 
 DELIMETER="-------------------------------------------------------------------"
 

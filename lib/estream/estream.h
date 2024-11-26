@@ -227,7 +227,7 @@ class EStream: public EStreamI<T> {
             poll_fd.events = POLLIN;
         }
         virtual ~EStream() {
-            if (true == new_buffer) {
+            if (true == this->new_buffer) {
                 deleteCArray<T>(this->buffer, this->buffer_size);
             }
         }

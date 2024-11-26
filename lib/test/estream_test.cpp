@@ -37,11 +37,11 @@ static const char * buffer_start;
 static const char * buffer;
 
 // ! IMPORTANT - overriding stdlib's implementation of read (which is apparently weakly linked...)... ByteEStream's calls to read use this function. 
-extern ssize_t read(int fd, void * buffer, size_t nbytes) {
+extern ssize_t read(int fd, void * b, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
-    memcpy(buffer, buffer, ret);
+    memcpy(b, buffer, ret);
     loggerPrintf(LOGGER_DEBUG, "READ RETURNED (%ld): \n", ret);
-    loggerPrintByteArray(LOGGER_DEBUG, (uint8_t*)buffer, ret);
+    loggerPrintByteArray(LOGGER_DEBUG, (uint8_t*)b, ret);
     buffer += ret; // duh
     return ret; 
 }

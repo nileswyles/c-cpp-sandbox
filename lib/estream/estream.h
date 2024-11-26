@@ -92,6 +92,7 @@ class StreamProcessor {
         ESharedPtr<Collector<T, RT>> collector; 
         StreamProcessor() = default;
         StreamProcessor(ESharedPtr<LoopCriteria<T>> criteria, ESharedPtr<Collector<T, RT>> collector): criteria(criteria), collector(collector) {};
+        virtual ~StreamProcessor() = default;
 
         static RT streamCollect(EStreamI<T> * s, ESharedPtr<LoopCriteria<T>> criteria_shared, StreamTask<T, RT> * task, ESharedPtr<Collector<T, RT>> collector_shared) {
             // ! IMPORTANT - not thread safe
@@ -106,7 +107,7 @@ class StreamProcessor {
             collector->initialize();
  
             T el = s->peek();
-            while (true == criteria->good(el, true)) {
+            while (criteria->nextState(el) & LOOP_CRITERIA_STATE_GOOD) {
                 s->get();
                 if (task == nullptr) {
                     collector->accumulate(el);
@@ -322,10 +323,9 @@ class EStream: public EStreamI<T> {
                 } 
                 return data;
             } else {
-                bool included = false;
                 bool inclusive = true;
                 SharedArray<T> until;
-                *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, included, inclusive, n, until);
+                *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until);
                 return this->read_processor.streamCollect(dynamic_cast<EStreamI<T> *>(this), operation);
             }
         }
@@ -334,9 +334,8 @@ class EStream: public EStreamI<T> {
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
         SharedArray<T> read(SharedArray<T> until, StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) override {
-            bool included = false;
             size_t until_size = 0;
-            *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, included, inclusive, until_size, until);
+            *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until);
             return this->read_processor.streamCollect(dynamic_cast<EStreamI<T> *>(this), operation);
         }
         ssize_t write(T * b, size_t size) override {

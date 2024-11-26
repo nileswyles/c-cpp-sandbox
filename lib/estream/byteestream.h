@@ -18,7 +18,7 @@ namespace WylesLibs {
     // ! IMPORTANT - decided to group these functions like this to limit verbosity and minimize developer churn.
     class ByteIsCharClassCriteria: public LoopCriteria<uint8_t> {
         private:
-            bool untilMatchGood(uint8_t& c, bool is_new_char) override final;
+            LoopCriteriaState untilMatchNext(uint8_t& c) override final;
         public:
             static constexpr uint8_t NO_CLASS = 0x0;
             static constexpr uint8_t UPPER_HEX_CLASS = 0x1;
@@ -27,10 +27,12 @@ namespace WylesLibs {
             static constexpr uint8_t ALPHANUMERIC_CLASS = 0x4;
             static constexpr uint8_t DIGIT_CLASS = 0x8;
             uint8_t char_class;
-            ByteIsCharClassCriteria(uint8_t char_class): char_class(char_class), LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, false, true, 0, SharedArray<uint8_t>())) {}
+            ByteIsCharClassCriteria(uint8_t char_class): char_class(char_class), LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, true, 0, SharedArray<uint8_t>())) {}
             ~ByteIsCharClassCriteria() override = default;
         
-            bool good(uint8_t& c, bool is_new_char = false) override final;
+            // TODO: 
+            // hmm.. extending LoopCriteriaState might be a pain? think about that some more? adding more statess? is that even a concern though?
+            LoopCriteriaState nextState(uint8_t& c) override final;
     };
 
     // @ collectors

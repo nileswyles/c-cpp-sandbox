@@ -77,11 +77,14 @@ void ReaderTaskExtract::perform(uint8_t& c) {
                 this->r_trim_non_whitespace = 0;
             } else {
                 this->r_trim.append(c);
-                if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos && true == this->criteriaGood(c)) {
+
+                if (this->criteriaState() & LOOP_CRITERIA_STATE_AT_LAST) {
+                    this->r_trim_read_until = c;
+                } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+                    // if not last character in stream and not whitespace
+
                     // TODO: maybe make this an option...
                     this->r_trim_non_whitespace = c;
-                } else if (false == this->criteriaGood(c)) {
-                    this->r_trim_read_until = c;
                 }
             }
         } else {
@@ -90,7 +93,7 @@ void ReaderTaskExtract::perform(uint8_t& c) {
     } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
         if (c == left_most_char) {
             this->l_trimming = false;
-        } else if (false == this->criteriaGood(c)) {
+        } else if (this->criteriaState() & LOOP_CRITERIA_STATE_AT_LAST) {
             // include until string if that's all... because decided that why peek if can just read and return until match.
             //  more clunky non-sense?
             this->collectorAccumulate(c);

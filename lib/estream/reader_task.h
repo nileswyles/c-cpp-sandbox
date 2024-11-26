@@ -43,6 +43,21 @@ namespace WylesLibs {
 //          idk, seems useful?
 
 //      that means a parser within a parser, parsception LMAO
+//  result == tuple/array(whole_string_match, match groups...); ? i.e. entire string match is a group, group 1. 
+//      then you can differentiate further through typical group matching.
+//  
+//  functionality to support:
+//      - character classes
+//      - variable wildcard matching
+//      - escape sequences?
+//      - groups
+//      - positive/negative lookahead/behind
+
+//  
+//      - read_until shortest vs largest match vs until character vs byte count?
+//      should be doable and reasonably performant with clever buffering (memoization)? I don't think you need multiple passes? 
+//
+//      should be fun...
 
 typedef StreamTask<uint8_t, SharedArray<uint8_t>> ReaderTask;
 

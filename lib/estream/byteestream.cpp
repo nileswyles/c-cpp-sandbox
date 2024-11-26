@@ -5,25 +5,24 @@
 
 using namespace WylesLibs;
 
-bool ByteIsCharClassCriteria::untilMatchGood(uint8_t& c, bool is_new_char) {
-    if (true == is_new_char) {
-        if (this->char_class & DIGIT_CLASS) {
-            this->is_good = isDigit(c);
-        } else if (this->char_class & UPPER_HEX_CLASS) {
-            this->is_good = isUpperHex(c);
-        } else if (this->char_class & LOWER_HEX_CLASS) {
-            this->is_good = isLowerHex(c);
-        } else if (this->char_class & HEX_CLASS) {
-            this->is_good = isHexDigit(c);
-        } else if (this->char_class & ALPHANUMERIC_CLASS) {
-            this->is_good = isAlpha(c);
-        }
+LoopCriteriaState ByteIsCharClassCriteria::untilMatchNext(uint8_t& c) {
+    // # decartes
+    if (this->char_class & DIGIT_CLASS) {
+        this->loop_criteria_info.state = isDigit(c) ? LOOP_CRITERIA_STATE_GOOD : LOOP_CRITERIA_STATE_NOT_GOOD;
+    } else if (this->char_class & UPPER_HEX_CLASS) {
+        this->loop_criteria_info.state = isUpperHex(c) ? LOOP_CRITERIA_STATE_GOOD : LOOP_CRITERIA_STATE_NOT_GOOD;
+    } else if (this->char_class & LOWER_HEX_CLASS) {
+        this->loop_criteria_info.state = isLowerHex(c) ? LOOP_CRITERIA_STATE_GOOD : LOOP_CRITERIA_STATE_NOT_GOOD;
+    } else if (this->char_class & HEX_CLASS) {
+        this->loop_criteria_info.state = isHexDigit(c) ? LOOP_CRITERIA_STATE_GOOD : LOOP_CRITERIA_STATE_NOT_GOOD;
+    } else if (this->char_class & ALPHANUMERIC_CLASS) {
+        this->loop_criteria_info.state = isAlpha(c) ? LOOP_CRITERIA_STATE_GOOD : LOOP_CRITERIA_STATE_NOT_GOOD;
     }
-    return this->is_good;
+    return this->loop_criteria_info.state;
 }
-bool ByteIsCharClassCriteria::good(uint8_t& c, bool is_new_char) {
+LoopCriteriaState ByteIsCharClassCriteria::nextState(uint8_t& c) {
     if (LOOP_CRITERIA_UNTIL_MATCH == this->loop_criteria_info.mode) {
-        return this->untilMatchGood(c, is_new_char);
+        return this->untilMatchNext(c);
     } else {
         throw std::runtime_error("The match until size good function is not supported for this criteria class.");
     }

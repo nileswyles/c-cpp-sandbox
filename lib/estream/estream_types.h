@@ -18,16 +18,24 @@ namespace WylesLibs {
         LOOP_CRITERIA_UNTIL_NUM_ELEMENTS
     } LoopCriteriaMode;
 
+    typedef enum LoopCriteriaState {
+        LOOP_CRITERIA_STATE_NOT_GOOD = 0x00, // if no bit is set then not good
+
+        LOOP_CRITERIA_STATE_GOOD = 0x01,
+        LOOP_CRITERIA_STATE_AT_LAST = 0x02,
+        LOOP_CRITERIA_STATE_GOOD_AT_LAST = 0x03, // if last bit is set, then it's good... if last two bits are set, then it's good and last iteration
+    } LoopCriteriaState;
+
     template<typename T>
     class LoopCriteriaInfo {
         public:
+            LoopCriteriaState state;
             LoopCriteriaMode mode;
-            bool included;
             bool inclusive;
             size_t until_size;
             SharedArray<T> until;
-            LoopCriteriaInfo(LoopCriteriaMode mode, bool included, bool inclusive, size_t until_size, SharedArray<T> until): 
-                mode(mode), included(included), inclusive(inclusive), until_size(until_size), until(until) {
+            LoopCriteriaInfo(LoopCriteriaMode mode, bool inclusive, size_t until_size, SharedArray<T> until): 
+                mode(mode), inclusive(inclusive), until_size(until_size), until(until), state(LOOP_CRITERIA_STATE_NOT_GOOD) {
             }
             virtual ~LoopCriteriaInfo() = default;
     };
@@ -35,46 +43,45 @@ namespace WylesLibs {
     template<typename T>
     class LoopCriteria {
         protected:
-            bool is_good;
-            virtual bool untilMatchGood(T& el, bool is_new_char) {
-                bool until_match = this->loop_criteria_info.until.contains(el);
-                if (true == is_new_char) {
-                    // Determine whether you should proceed to process the provided character...
-                    if (true == this->loop_criteria_info.inclusive) {
-                        if (true == this->loop_criteria_info.included) {
-                            until_match = true; // we are done, regardless of whether match or not.
-                        } else if (true == until_match && false == this->loop_criteria_info.included) {
-                            this->loop_criteria_info.included = true; // allow one more loop
-                            until_match = false;
-                        } 
-                    }
-                    this->is_good = false == until_match;
-                } else {
-                    // Determining whether the element being processed is the until match...
-                    this->is_good = false == until_match;
-                }
-                return this->is_good;
-            }
-            virtual bool untilSizeGood(bool is_new_char) {
-                if (true == is_new_char) {
-                    this->is_good = this->loop_criteria_info.until_size-- > 0;
-                }
-                return this->is_good;
-            }
             // TODO: because no compiler error if variable with same name is defined in derived class?
             //       This doesn't work...
             //        if (LOOP_CRITERIA_UNTIL_MATCH == LoopCriteriaInfo<uint8_t>::loop_criteria_info.mode) {
             LoopCriteriaInfo<T> loop_criteria_info;
+            virtual LoopCriteriaState untilMatchNext(T& el) {
+                bool until_match = this->loop_criteria_info.until.contains(el);
+                if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_NOT_GOOD && until_match == false) {
+                    this->loop_criteria_info.state = LOOP_CRITERIA_STATE_GOOD;
+                } else if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_GOOD && true == this->loop_criteria_info.inclusive && until_match == true) {
+                    this->loop_criteria_info.state = LOOP_CRITERIA_STATE_GOOD_AT_LAST;
+                } else if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_GOOD && false == this->loop_criteria_info.inclusive && until_match == true) {
+                    this->loop_criteria_info.state = LOOP_CRITERIA_STATE_NOT_GOOD;
+                } else if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_GOOD_AT_LAST) {
+                    this->loop_criteria_info.state = LOOP_CRITERIA_STATE_NOT_GOOD;
+                }
+                return this->loop_criteria_info.state;
+            }
+            virtual LoopCriteriaState untilSizeNext() {
+                this->loop_criteria_info.until_size--;
+                if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_NOT_GOOD && this->loop_criteria_info.until_size > 0) {
+                    this->loop_criteria_info.state = LOOP_CRITERIA_STATE_GOOD;
+                } else if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_GOOD && this->loop_criteria_info.until_size <= 0) {
+                    this->loop_criteria_info.state = LOOP_CRITERIA_STATE_NOT_GOOD;
+                }
+                return this->loop_criteria_info.state;
+            }
         public:
-            LoopCriteria(LoopCriteriaInfo<T> loop_criteria_info): loop_criteria_info(loop_criteria_info), is_good(false) {}
+            LoopCriteria(LoopCriteriaInfo<T> loop_criteria_info): loop_criteria_info(loop_criteria_info) {}
             virtual ~LoopCriteria() = default;
         
-            virtual bool good(T& el, bool is_new_char = false) {
+            virtual LoopCriteriaState nextState(T& el) {
                 if (LOOP_CRITERIA_UNTIL_MATCH == this->loop_criteria_info.mode) {
-                    return this->untilMatchGood(el, is_new_char);
+                    return this->untilMatchNext(el);
                 } else {
-                    return this->untilSizeGood(is_new_char);
+                    return this->untilSizeNext();
                 }
+            }
+            virtual LoopCriteriaState state() {
+                return this->loop_criteria_info.state;
             }
     };
 
@@ -84,7 +91,7 @@ namespace WylesLibs {
     ESharedPtr<LoopCriteria<T>> initReadCriteria() {
         return ESharedPtr<LoopCriteria<T>>(
             new LoopCriteria<T>(
-                LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, false, true, 0, SharedArray<T>())
+                LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, true, 0, SharedArray<T>())
             )
         );
     }
@@ -142,13 +149,13 @@ namespace WylesLibs {
      
             virtual void flush() = 0;
             virtual void perform(T& el) = 0;
-            virtual bool criteriaGood(T& el) {
+            virtual LoopCriteriaState criteriaState() {
                 if (this->criteria == nullptr) {
                     std::string msg("Failed to get loop criteria. The criteria object was not initialized for this StreamTask.");
                     loggerPrintf(LOGGER_DEBUG, "Exception: %s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 } else {
-                    return this->criteria->good(el);
+                    return this->criteria->state();
                 }
             }
             virtual void collectorAccumulate(T& el) {

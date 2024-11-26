@@ -200,7 +200,6 @@ static void parseImmediate(JsonArray * obj, ByteEStream * r, std::string comp, J
 
     try {
         ReaderTaskExact task(comp);
-        printf("lmao\n");
         // TODO: very lame that I have to cast to access public, overloaded functions from base class.
         std::string actual = dynamic_cast<EStream<uint8_t> *>(r)->read(comp.size(), &task).toString();
         loggerPrintf(LOGGER_DEBUG, "Parsed %s, @ %c\n", comp.c_str(), r->peek());

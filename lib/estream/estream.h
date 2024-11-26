@@ -94,11 +94,8 @@ class StreamProcessor {
         StreamProcessor(ESharedPtr<LoopCriteria<T>> criteria, ESharedPtr<Collector<T, RT>> collector): criteria(criteria), collector(collector) {};
         virtual ~StreamProcessor() = default;
 
-        static RT streamCollect(EStreamI<T> * s, ESharedPtr<LoopCriteria<T>> criteria_shared, StreamTask<T, RT> * task, ESharedPtr<Collector<T, RT>> collector_shared) {
+        static RT streamCollect(EStreamI<T> * s, LoopCriteria<T> * criteria, StreamTask<T, RT> * task, Collector<T, RT> * collector) {
             // ! IMPORTANT - not thread safe
-            LoopCriteria<T> * criteria = ESHAREDPTR_GET_PTR(criteria_shared);
-            Collector<T, RT> * collector = ESHAREDPTR_GET_PTR(collector_shared);
-
             if (task != nullptr) {
                 task->collector = collector;
                 task->criteria = criteria;
@@ -128,7 +125,7 @@ class StreamProcessor {
         };
 
         virtual RT streamCollect(EStreamI<T> * s, StreamTask<T, RT> * task) {
-            return StreamProcessor<T, RT>::streamCollect(s, this->criteria, task, this->collector);
+            return StreamProcessor<T, RT>::streamCollect(s, ESHAREDPTR_GET_PTR(this->criteria), task, ESHAREDPTR_GET_PTR(this->collector));
         }
 };
 
@@ -342,7 +339,7 @@ class EStream: public EStreamI<T> {
             return ::write(this->fd, (void *)b, size * sizeof(T));
         }
         template<typename RT>
-        RT streamCollect(ESharedPtr<LoopCriteria<T>> criteria, StreamTask<T, RT> * task, ESharedPtr<Collector<T, RT>> collector) {
+        RT streamCollect(LoopCriteria<T> * criteria, StreamTask<T, RT> * task, Collector<T, RT> * collector) {
             return StreamProcessor<T, RT>::streamCollect(this, criteria, task, collector);
         }
 

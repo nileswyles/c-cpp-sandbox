@@ -15,7 +15,7 @@ namespace WylesLibs {
 
     // @ criteria
 
-    // ! IMPORTANT - decided to group these functions like this to limit verbosity and minimize developer churn.
+    // ! IMPORTANT - decided to group the functionality like this to limit verbosity and minimize developer churn.
     class ByteIsCharClassCriteria: public LoopCriteria<uint8_t> {
         private:
             LoopCriteriaState untilMatchNext(uint8_t& c) override final;

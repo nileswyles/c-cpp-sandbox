@@ -332,9 +332,6 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
 
 
 uint8_t HttpConnection::onConnection(int fd) {
-    // ! IMPORTANT -
-    //  expanding on thoughts on mallocs/new vs stack
-    //  so, if need access to more memory you can call new where needed at point of creation of each thread.
     ByteEStream eio;
 #ifdef WYLESLIBS_SSL_ENABLED
     SSLEStream sslio;

@@ -10,9 +10,14 @@
 #define ESHAREDPTR_GET_REF(eshared_ptr) eshared_ptr.getRef(__FILE__, __LINE__)
 
 namespace WylesLibs {
-// TODO: ! IMPORTANT - but how does one think to arrive at this design? in this situation it's not obvious. so, think about that process? is it just one thing leads to another?
-// so, more generally, you can use function templates to get around the circular dependency thing lmao... see estream.h should I update that? 
-//      hmmm.. think about this some more but only if absolutely necessary? I have file stream_factory estream stuff in mind...  
+/*
+    ! IMPORTANT - how does one think to arrive at this shared-weak design? In this situation, it's not obvious that the compiler infers left-operand type as template type when a generic type is used as a return type. 
+                    That's certainly not in anything I read but is how the stdlib shared-weak works so it implied functionality - I guess? 
+                    Let's expand on this process... is it just one thing leads to another? So, just build, iterate, pivot judiciously and converge (or don't).
+
+                    As an aside, you can, more generally, use function templates to get around the circular dependency thing lmao... see estream.h should I update that? Probably not? in that situation a common interface was the better approach?
+                        but yeah, a useful tool indeed.
+*/
 template<typename T>
 class EPointerControl {
     public:
@@ -30,8 +35,10 @@ template<typename T>
 class ESharedPtr {
     public:
         EPointerControl<T> ** ctrl_container;
-        // ! IMPORTANT - don't provide a path where ctrl_container and *ctrl_container will ever be nullptr.
-        //      This allows for minimal checking.
+        /*
+            ! IMPORTANT - don't provide a path where ctrl_container and *ctrl_container will ever be nullptr.
+                             This allows for minimal checking.
+        */
         ESharedPtr() {
             ctrl_container = new EPointerControl<T>*(new EPointerControl<T>);
         }
@@ -132,7 +139,6 @@ class ESharedPtr {
         // explicit casting
         template<typename C>
         ESharedPtr<C> cast() {
-            // new control with casted ptr and same instance count container.
             return ESharedPtr<C>(
                 new EPointerControl<C>*(
                     new EPointerControl<C>(

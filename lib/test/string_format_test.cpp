@@ -828,6 +828,11 @@ static void testFormatStringToLowerNegative(TestArg * t) {
 int main(int argc, char * argv[]) {
     Tester t("String Format Tests");
 
+    time_t curtime = time(NULL);
+    struct tm * loctime = localtime(&curtime);
+    printf("\nToday is ");
+    fputs(asctime(loctime), stdout);
+
     t.addTest(stringUtilsNumToStringMax);
     t.addTest(stringUtilsNumToStringMin);
     t.addTest(stringUtilsNumToStringAllDigits);

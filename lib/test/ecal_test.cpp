@@ -63,7 +63,25 @@ static void testGetFormattedTimeFirstDayAfterLeapYear(TestArg * t) {
 static void testGetFormattedTimeMinus5(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(-500); // EST
     std::string expected = "Feb 27 2023, 0:0:0 -5:00";
+
     ASSERT_STRING(t, time, expected);
+}
+
+static void testGetEpochFromFormattedDateTime(TestArg * t) {
+    uint64_t time = getEpochFromFormattedDateTime("Jan 1 1970, 0:0:0 Z");
+    uint64_t expected = 0;
+
+    ASSERT_UINT64(t, time, expected);
+
+    time = getEpochFromFormattedDateTime("Jan 2 1970, 0:0:0 Z");
+    expected = 86400;
+
+    ASSERT_UINT64(t, time, expected);
+
+    epoch_time = getEpochFromFormattedDateTime("May 17 1997, 18:28:5 Z");
+    expected = 863893685;
+
+    ASSERT_UINT64(t, time, expected);
 }
 
 int main(int argc, char * argv[]) {
@@ -83,6 +101,7 @@ int main(int argc, char * argv[]) {
     t.addTest(testGetFormattedTimeLastDayOfLeapYear);
     t.addTest(testGetFormattedTimeFirstDayAfterLeapYear);
     t.addTest(testGetFormattedTimeMinus5);
+    t.addTest(testGetEpochFromFormattedDateTime);
 
     bool passed = false;
     if (argc > 1) {

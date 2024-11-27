@@ -24,6 +24,15 @@ extern void WylesLibs::Test::ASSERT_BOOLEAN(TestArg * t, bool result, bool expec
     }
 }
 
+extern void WylesLibs::Test::ASSERT_UINT64(TestArg * t, uint64_t result, uint64_t expected) {
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%lu\n", result);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%lu\n", expected);
+
+    if (result == expected) {
+        t->fail = false;
+    }
+}
+
 bool Tester::run(const char * name) {
     printf("\n-------------------- %s --------------------\n", this->suite_name.c_str());
     if (this->before != nullptr) {

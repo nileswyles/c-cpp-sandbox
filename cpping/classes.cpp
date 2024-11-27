@@ -80,6 +80,8 @@ int main() {
     // foo = bar;               // copy assignment
     // baz = MyClass();         // move assignment 
 
+    // TODO: what is the stack and stack-unwinding?
+
     // and also, uniform move assignment? 
     //  baz = {}; // like c struct static zero intialization?
     //  baz = {0}; // also valid?

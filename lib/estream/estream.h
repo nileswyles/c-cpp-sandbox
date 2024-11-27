@@ -198,7 +198,7 @@ class EStream: public EStreamI<T> {
             new_buffer = false;
             els_in_buffer = bs;
             read_processor = StreamProcessor<T, SharedArray<T>>(
-                initReadCriteria<T>(), 
+                initReadCriteria<T>(),
                 initReadCollector<T, SharedArray<T>>()
             );
         }

@@ -91,7 +91,7 @@ class EStream: public EStreamI<T> {
         Read and Write from file descriptor
     */
     private:
-        static void initStreamProcessing(LoopCriteria<T> *& until_size_criteria, Collector<T, SharedArray<T>> *& array_collector) {
+        static void initStreamProcessing(LoopCriteria<T> *& until_size_criteria, ArrayCollector<T> *& array_collector) {
             until_size_criteria = new LoopCriteria<T>(
                 LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, true, 0, SharedArray<T>())
             );
@@ -107,7 +107,7 @@ class EStream: public EStreamI<T> {
         size_t cursor;
         size_t els_in_buffer;
         LoopCriteria<T> * until_size_criteria;
-        Collector<T, SharedArray<T>> * array_collector;
+        ArrayCollector<T> * array_collector;
         std::ios_base::iostate flags;
         virtual bool readPastBuffer() {
             return this->cursor >= this->els_in_buffer;
@@ -184,8 +184,8 @@ class EStream: public EStreamI<T> {
             if (true == this->new_buffer) {
                 deleteCArray<T>(this->buffer, this->buffer_size);
             }
-            delete until_size_criteria;
-            delete array_collector;
+            delete this->until_size_criteria;
+            delete this->array_collector;
         }
 
         // standard istream methods
@@ -279,7 +279,7 @@ class EStream: public EStreamI<T> {
                 bool inclusive = true;
                 SharedArray<T> until;
                 *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
-                return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, this->array_collector);
+                return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
             }
         }
         // ! IMPORTANT - inclusive means we read and consume the until character.
@@ -289,7 +289,7 @@ class EStream: public EStreamI<T> {
         SharedArray<T> read(SharedArray<T> until, StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) override {
             size_t until_size = 0;
             *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
-            return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, this->array_collector);
+            return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
         }
         ssize_t write(T * b, size_t size) override {
             return ::write(this->fd, (void *)b, size * sizeof(T));

@@ -4,6 +4,7 @@
 #include "estream/byteestream.h"
 
 #include <string>
+#include <map>
 
 #include <stdint.h>
 
@@ -65,19 +66,19 @@ static constexpr const char * MONTH_NAME[SIZE_MONTHS_ARRAY] = {
     "Dec"
 };
 
-static const std::map<std::string, uint8_t> MONTH_NUM{
-    {"Jan", 1},
-    {"Feb", 2},
-    {"Mar", 3},
-    {"Apr", 4},
-    {"May", 5},
-    {"June" 6},
-    {"July" 7},
-    {"Aug", 8},
-    {"Sep", 9},
-    {"Oct", 10},
-    {"Nov", 11},
-    {"Dec", 12}
+static std::map<std::string, uint8_t> MONTH_NUM{
+    {"Jan ", 1},
+    {"Feb ", 2},
+    {"Mar ", 3},
+    {"Apr ", 4},
+    {"May ", 5},
+    {"June ", 6},
+    {"July ", 7},
+    {"Aug ", 8},
+    {"Sep ", 9},
+    {"Oct ", 10},
+    {"Nov ", 11},
+    {"Dec ", 12}
 };
 
 static bool isLeapYear(uint16_t year) {
@@ -91,7 +92,22 @@ static uint32_t secondsUpUntilMonth(uint8_t month, uint16_t year) {
     } else {
         running_seconds_up_until_month = &(RUNNING_SECONDS_UP_UNTIL_MONTH_NON_LEAP_YEAR[0]);
     }
-    return running_seconds_up_until_month[month] - 1;
+    return running_seconds_up_until_month[month - 1];
+}
+
+static uint16_t getNumLeapYears(uint16_t year) {
+    uint16_t num_leap_years = 0;
+    uint16_t year_cursor = 1972;
+    while (year_cursor < year) {
+        loggerPrintf(LOGGER_DEBUG, "year_cursor: %u, year: %u\n", year_cursor, year);
+        // if (isLeapYear(year_cursor)) { 
+        // these will always be leap year because 1972 is the first leap year after 1970... if year == 1970 or year == 1971, num_leap_years are appropriately 0.
+        num_leap_years++;
+        // }
+        year_cursor += 4;
+    }
+    loggerPrintf(LOGGER_DEBUG, "num leap years: %u\n", num_leap_years);
+    return num_leap_years;
 }
 
 extern std::string WylesLibs::Cal::getFormattedDateTime(int16_t offset, WylesLibs::Cal::DATETIME_FORMAT format) {
@@ -158,36 +174,43 @@ extern std::string WylesLibs::Cal::getFormattedDateTime(int16_t offset, WylesLib
     }
 }
 
-static void isValidMonth(uint8_t month) {
-    if (month > 12) {
+static void isValidYear(uint16_t year, uint8_t digit_count) {
+    if (year < 1970 || year > 9999 || digit_count > 4) {
+        std::string msg = WylesLibs::format("Error parsing Readable Date Time, invalid year. {u}", year);
+        loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
+    }
+}
+static void isValidMonth(uint8_t month, uint8_t digit_count) {
+    if (month < 1 || month > 12 || (digit_count != UINT8_MAX && digit_count > 2)) {
         std::string msg = WylesLibs::format("Error parsing Readable Date Time, invalid month. {u}", month);
         loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
 }
-static void isValidDay(uint8_t day) {
-    if (day > 31) {
+static void isValidDay(uint8_t day, uint8_t digit_count) {
+    if (day < 1 || day > 31 || digit_count > 2) {
         std::string msg = WylesLibs::format("Error parsing Readable Date Time, invalid day. {u}", day);
         loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
 }
-static void isValidHr(uint8_t hr) {
-    if (hr > 23) {
+static void isValidHr(uint8_t hr, uint8_t digit_count) {
+    if (hr > 23 || digit_count > 2) {
         std::string msg = WylesLibs::format("Error parsing Readable Date Time, invalid hour. {u}", hr);
         loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
 }
-static void isValidMin(uint8_t min) {
-    if (min > 59) {
+static void isValidMin(uint8_t min, uint8_t digit_count) {
+    if (min > 59 || digit_count > 2) {
         std::string msg = WylesLibs::format("Error parsing Readable Date Time, invalid hour. {u}", min);
         loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
 }
-static void isValidSec(uint8_t sec) {
-    if (sec > 59) {
+static void isValidSec(uint8_t sec, uint8_t digit_count) {
+    if (sec > 59 || digit_count > 2) {
         std::string msg = WylesLibs::format("Error parsing Readable Date Time, invalid sec. {u}", sec);
         loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
@@ -197,26 +220,39 @@ static void isValidSec(uint8_t sec) {
 static int16_t parseReadableOffset(ByteEStream &s) {
     int16_t offset = 0;
     // offset woop woop woop
-    if (s.get() != "Z") {
-        uint8_t sign = s.get();
-        int8_t sign_mul = 0;
-        if (sign == '+') {
+    char c = s.get();
+    int8_t sign_mul = 0;
+    if (c != 'Z') {
+        if (c == '+') {
             sign_mul = 1;
-        } else if (sign == '-') {
+        } else if (c == '-') {
             sign_mul = -1;
         } else {
             std::string msg = "Error parsing Readable Date Time, invalid sign.";
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }
-        int8_t hour_offset = static_cast<uint8_t>(s.readNatural());
-        if (s.get() != ":") {
+
+        std::tuple<uint64_t, uint8_t> res = s.readNatural();
+        int8_t hour_offset = static_cast<uint8_t>(std::get<0>(res));
+        if (std::get<1>(res) > 1) {
+            std::string msg = "Error parsing offset hour.";
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
+        }
+        if (s.get() != ':') {
             std::string msg = "Error parsing Readable Date Time, expected ':'.";
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }// read space
-        int8_t min_offset = static_cast<uint8_t>(s.readNatural());
-        offset = sign_mul * (hour_offset * SECONDS_PER_HOUR + min_offset * SECONDS_PER_MIN);
+        res = s.readNatural();
+        int8_t min_offset = static_cast<uint8_t>(std::get<0>(res));
+        if (std::get<1>(res) > 2) {
+            std::string msg = "Error parsing offset min.";
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
+        }
+        offset = sign_mul * (hour_offset * SECONDS_PER_HOUR + min_offset * SECONDS_PER_MINUTE);
     }
     return offset;
 }
@@ -224,56 +260,63 @@ static int16_t parseReadableOffset(ByteEStream &s) {
 static uint64_t parseReadableDateTime(ByteEStream& s) {
     // {s} {u} {u}, {u}:{u}:{u}
     uint64_t epoch_seconds = 0;
-    uint8_t month = MONTH_NUM[s.readString(" ")];
-    isValidMonth(month);
-    uint8_t day = static_cast<uint8_t>(s.readNatural());
-    isValidDay(day);
-    if (s.get() != " ") {
+    std::string month_str = s.readString(" ");
+    loggerPrintf(LOGGER_DEBUG, "month: %s\n", month_str.c_str());
+    uint8_t month = MONTH_NUM[month_str];
+    isValidMonth(month, UINT8_MAX);
+
+    std::tuple<uint64_t, uint8_t> res = s.readNatural();
+    uint8_t day = static_cast<uint8_t>(std::get<0>(res));
+    isValidDay(day, std::get<1>(res));
+    if (s.get() != ' ') {
         std::string msg = "Error parsing Readable Date Time, expected space.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     } // read space
 
-    uint16_t year = static_cast<uint16_t>(s.readNatural());
-    isValidYear(year);
-    if (s.get() != ",") {
-        std::string msg = "Error parsing Readable Date Time, expected space.";
+    res = s.readNatural();
+    uint16_t year = static_cast<uint16_t>(std::get<0>(res));
+    isValidYear(year, std::get<1>(res));
+    if (s.get() != ',') {
+        std::string msg = "Error parsing Readable Date Time - year, expected comma.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }// read comma
-    if (s.get() != " ") {
-        std::string msg = "Error parsing Readable Date Time, expected space.";
+    if (s.get() != ' ') {
+        std::string msg = "Error parsing Readable Date Time - year, expected space.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }// read space
-    // adjust for year
-    epoch_seconds += year * SECONDS_PER_NON_LEAP_YEAR;
-    // adjust for month (accounting for leap year)
+    epoch_seconds += (year - 1970) * SECONDS_PER_NON_LEAP_YEAR;
+    epoch_seconds += getNumLeapYears(year) * SECONDS_PER_DAY;
     epoch_seconds += secondsUpUntilMonth(month, year);
-    epoch_seconds += day * SECONDS_PER_DAY;
+    epoch_seconds += (day - 1) * SECONDS_PER_DAY;
 
-    uint8_t hr = static_cast<uint16_t>(s.readNatural());
-    isValidHr(hr);
-    if (s.get() != " ") {
-        std::string msg = "Error parsing Readable Date Time, expected space.";
+    res = s.readNatural();
+    uint8_t hr = static_cast<uint8_t>(std::get<0>(res));
+    isValidHr(hr, std::get<1>(res));
+    if (s.get() != ':') {
+        std::string msg = "Error parsing Readable Date Time - hr, expected colon.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }// read space
     epoch_seconds += hr * SECONDS_PER_HOUR;
 
-    uint8_t min = static_cast<uint16_t>(s.readNatural());
-    isValidMin(min);
-    if (s.get() != " ") {
-        std::string msg = "Error parsing Readable Date Time, expected space.";
+    res = s.readNatural();
+    uint8_t min = static_cast<uint8_t>(std::get<0>(res));
+    isValidMin(min, std::get<1>(res));
+    if (s.get() != ':') {
+        std::string msg = "Error parsing Readable Date Time - min, expected colon.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }// read space
-    epoch_seconds += min * SECONDS_PER_MIN;
+    epoch_seconds += min * SECONDS_PER_MINUTE;
 
-    uint8_t sec = static_cast<uint16_t>(s.readNatural());
-    isValidSec(sec);
-    if (s.get() != " ") {
-        std::string msg = "Error parsing Readable Date Time, expected space.";
+    res = s.readNatural();
+    uint8_t sec = static_cast<uint8_t>(std::get<0>(res));
+    isValidSec(sec, std::get<1>(res));
+    if (s.get() != ' ') {
+        std::string msg = "Error parsing Readable Date Time - sec, expected space.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }// read space
@@ -290,31 +333,39 @@ static uint64_t parseISO8601ReadableDateTime(ByteEStream& s) {
 
     // TODO:
     //    hmm... on second thought, might not be good idea to use tuple here lol... get/tie/forward? wth is that?
-    //    hmm...
-    uint16_t year = s.readNatural();
-    isValidYear(month);
-    epoch_seconds += year * SECONDS_PER_NON_LEAP_YEAR;
+    //    hmm... for now roll with this? 
+    std::tuple<uint64_t, uint8_t> res = s.readNatural("-");
+    uint16_t year = static_cast<uint16_t>(std::get<0>(res));
+    isValidYear(year, std::get<1>(res));
+    epoch_seconds += (year - 1970) * SECONDS_PER_NON_LEAP_YEAR;
+    epoch_seconds += getNumLeapYears(year) * SECONDS_PER_DAY;
 
-    uint8_t month = s.readNatural("-");
-    isValidMonth(month);
+    res = s.readNatural("-");
+    uint8_t month = static_cast<uint8_t>(std::get<0>(res));
+    isValidMonth(month, std::get<1>(res));
     epoch_seconds += secondsUpUntilMonth(month, year);
 
-    uint8_t day = s.readNatural("T");
-    isValidDay(day);
-    epoch_seconds += day * SECONDS_PER_DAY;
+    res = s.readNatural("T");
+    uint8_t day = static_cast<uint8_t>(std::get<0>(res));
+    isValidDay(day, std::get<1>(res));
+    epoch_seconds += (day - 1) * SECONDS_PER_DAY;
 
-    uint8_t hr = s.readNatural(":"));
-    isValidHr(hr);
+    res = s.readNatural(":");
+    uint8_t hr = static_cast<uint8_t>(std::get<0>(res));
+    isValidHr(hr, std::get<1>(res));
     epoch_seconds += hr * SECONDS_PER_HOUR;
 
-    uint8_t min = s.readNatural(":");
-    isValidMin(min);
-    epoch_seconds += min * SECONDS_PER_MIN;
+    res = s.readNatural(":");
+    uint8_t min = static_cast<uint8_t>(std::get<0>(res));
+    isValidMin(min, std::get<1>(res));
+    epoch_seconds += min * SECONDS_PER_MINUTE;
 
-    uint8_t sec = s.readNatural(" ");
-    isValidSec(sec);
+    res = s.readNatural("Z+-");
+    uint8_t sec = static_cast<uint8_t>(std::get<0>(res));
+    isValidSec(sec, std::get<1>(res));
     epoch_seconds += sec;
 
+    s.unget();
     epoch_seconds += parseReadableOffset(s);
 
     return epoch_seconds;
@@ -324,57 +375,74 @@ static uint64_t parseISO8601DateTime(ByteEStream& s) {
     // {04u}{02u}{02u}T{02u}{02u}{02u}
     uint64_t epoch_seconds = 0;
 
-    uint16_t year = static_cast<uint16_t>(s.readNatural(4));
-    isValidYear(month);
-    epoch_seconds += year * SECONDS_PER_NON_LEAP_YEAR;
+    std::tuple<uint64_t, uint8_t> res = s.readNatural(4);
+    uint16_t year = static_cast<uint16_t>(std::get<0>(res));
+    isValidYear(year, std::get<1>(res));
+    epoch_seconds += (year - 1970) * SECONDS_PER_NON_LEAP_YEAR;
+    epoch_seconds += getNumLeapYears(year) * SECONDS_PER_DAY;
 
-    uint8_t month = static_cast<uint16_t>(s.readNatural(2));
-    isValidMonth(month);
+    res = s.readNatural(2);
+    uint8_t month = static_cast<uint8_t>(std::get<0>(res));
+    isValidMonth(month, std::get<1>(res));
     epoch_seconds += secondsUpUntilMonth(month, year);
 
-    uint8_t day = static_cast<uint16_t>(s.readNatural(2));
-    isValidDay(day);
-    epoch_seconds += day * SECONDS_PER_DAY;
+    res = s.readNatural(2);
+    uint8_t day = static_cast<uint8_t>(std::get<0>(res));
+    isValidDay(day, std::get<1>(res));
+    epoch_seconds += (day - 1) * SECONDS_PER_DAY;
 
-    uint8_t hr = static_cast<uint16_t>(s.readNatural(2));
-    isValidHr(hr);
+    s.get(); // T
+
+    res = s.readNatural(2);
+    uint8_t hr = static_cast<uint8_t>(std::get<0>(res));
+    isValidHr(hr, std::get<1>(res));
     epoch_seconds += hr * SECONDS_PER_HOUR;
 
-    uint8_t min = static_cast<uint16_t>(s.readNatural(2));
-    isValidMin(min);
-    epoch_seconds += min * SECONDS_PER_MIN;
+    res = s.readNatural(2);
+    uint8_t min = static_cast<uint8_t>(std::get<0>(res));
+    isValidMin(min, std::get<1>(res));
+    epoch_seconds += min * SECONDS_PER_MINUTE;
 
-    uint8_t sec = static_cast<uint16_t>(s.readNatural(2));
-    isValidSec(sec);
+    res = s.readNatural(2);
+    uint8_t sec = static_cast<uint8_t>(std::get<0>(res));
+    isValidSec(sec, std::get<1>(res));
     epoch_seconds += sec;
 
-    s.get();
-
     int16_t offset = 0;
-    if (s.get() != "Z") {
-        uint8_t sign = s.get();
+    char c = s.get();
+    if (c != 'Z') {
         int8_t sign_mul = 0;
-        if (sign == '+') {
+        if (c == '+') {
             sign_mul = 1;
-        } else if (sign == '-') {
+        } else if (c == '-') {
             sign_mul = -1;
         } else {
             std::string msg = "Error parsing Readable Date Time, invalid sign.";
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }
-        // int8_t hour_offset = static_cast<uint8_t>(s.readNatural(1));
-        // int8_t min_offset = static_cast<uint8_t>(s.readNatural(2));
-        // epoch_seconds += sign_mul * (hour_offset * SECONDS_PER_HOUR + min_offset * SECONDS_PER_MIN);
+        res = s.readNatural(1);
+        int8_t hour_offset = static_cast<uint8_t>(std::get<0>(res));
+        if (std::get<1>(res) > 1) {
+            std::string msg = "Error parsing offset hour.";
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
+        }
+        res = s.readNatural(2);
+        int8_t min_offset = static_cast<uint8_t>(std::get<0>(res));
+        if (std::get<1>(res) > 2) {
+            std::string msg = "Error parsing offset min.";
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
+        }
 
-        // order of operations? lol, I think this is valid... ( ͡° ͜ʖ ͡°) 
-        epoch_seconds += sign_mul * (static_cast<uint8_t>(s.readNatural(1)) * SECONDS_PER_HOUR + static_cast<uint8_t>(s.readNatural(2)) * SECONDS_PER_MIN);
+        epoch_seconds += sign_mul * (hour_offset * SECONDS_PER_HOUR + min_offset * SECONDS_PER_MINUTE);
     }
 
     return epoch_seconds;
 }
 
-extern uint64_t getEpochFromFormattedDateTime(std::string dt, WylesLibs::Cal::DATETIME_FORMAT format = WylesLibs::Cal::READABLE) {
+extern uint64_t WylesLibs::Cal::getEpochFromFormattedDateTime(std::string dt, WylesLibs::Cal::DATETIME_FORMAT format) {
     ByteEStream s((uint8_t *)dt.data(), dt.size());
     if (format == WylesLibs::Cal::READABLE) {
         return parseReadableDateTime(s);

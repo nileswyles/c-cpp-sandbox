@@ -85,56 +85,18 @@ class EStreamI {
         virtual ssize_t write(T * b, size_t size) = 0;
 };
 
-template<typename T, typename RT>
-class StreamProcessor {
-    public:
-        ESharedPtr<LoopCriteria<T>> criteria;
-        ESharedPtr<Collector<T, RT>> collector; 
-        StreamProcessor() = default;
-        StreamProcessor(ESharedPtr<LoopCriteria<T>> criteria, ESharedPtr<Collector<T, RT>> collector): criteria(criteria), collector(collector) {};
-        virtual ~StreamProcessor() = default;
-
-        static RT streamCollect(EStreamI<T> * s, LoopCriteria<T> * criteria, StreamTask<T, RT> * task, Collector<T, RT> * collector) {
-            // ! IMPORTANT - not thread safe
-            if (task != nullptr) {
-                task->collector = collector;
-                task->criteria = criteria;
-            }
-
-            collector->initialize();
- 
-            T el = s->peek();
-            while (criteria->nextState(el) & LOOP_CRITERIA_STATE_GOOD) {
-                s->get();
-                if (task == nullptr) {
-                    collector->accumulate(el);
-                } else {
-                    task->perform(el);
-                }
-                el = s->peek();
-            }
-
-            if (task != nullptr) {
-                task->flush();
-                // ! IMPORTANT - make sure to reset collector and criteria references in the task, so that you can store tasks as instance variables without keeping collectors live.
-                //                  especially needed for direct the streamCollect function
-                task->collector = nullptr;
-                task->criteria = nullptr;
-            }
-            return collector->collect();
-        };
-
-        virtual RT streamCollect(EStreamI<T> * s, StreamTask<T, RT> * task) {
-            return StreamProcessor<T, RT>::streamCollect(s, ESHAREDPTR_GET_PTR(this->criteria), task, ESHAREDPTR_GET_PTR(this->collector));
-        }
-};
-
 template<typename T>
 class EStream: public EStreamI<T> {
     /*
         Read and Write from file descriptor
     */
     private:
+        static void initStreamProcessing(LoopCriteria<T> *& until_size_criteria, Collector<T, SharedArray<T>> *& array_collector) {
+            until_size_criteria = new LoopCriteria<T>(
+                LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, true, 0, SharedArray<T>())
+            );
+            array_collector = new ArrayCollector<T>();
+        }
         struct pollfd poll_fd;
         T ungot_el;
         bool ungot;
@@ -144,7 +106,8 @@ class EStream: public EStreamI<T> {
         size_t buffer_size;
         size_t cursor;
         size_t els_in_buffer;
-        StreamProcessor<T, SharedArray<T>> read_processor;
+        LoopCriteria<T> * until_size_criteria;
+        Collector<T, SharedArray<T>> * array_collector;
         std::ios_base::iostate flags;
         virtual bool readPastBuffer() {
             return this->cursor >= this->els_in_buffer;
@@ -181,10 +144,7 @@ class EStream: public EStreamI<T> {
             fd = -1;
             new_buffer = false;
             els_in_buffer = 0;
-            read_processor = StreamProcessor<T, SharedArray<T>>(
-                initReadCriteria<T>(), 
-                initReadCollector<T, SharedArray<T>>()
-            );
+            EStream::initStreamProcessing(until_size_criteria, array_collector);
         }
         EStream(T * b, const size_t bs) {
             ungot = false;
@@ -197,10 +157,7 @@ class EStream: public EStreamI<T> {
             fd = -1;
             new_buffer = false;
             els_in_buffer = bs;
-            read_processor = StreamProcessor<T, SharedArray<T>>(
-                initReadCriteria<T>(),
-                initReadCollector<T, SharedArray<T>>()
-            );
+            EStream::initStreamProcessing(until_size_criteria, array_collector);
         }
         EStream(const int fd): EStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
         EStream(const int p_fd, const size_t bs) {
@@ -219,10 +176,7 @@ class EStream: public EStreamI<T> {
             fd = p_fd;
             new_buffer = true;
             els_in_buffer = 0;
-            read_processor = StreamProcessor<T, SharedArray<T>>(
-                initReadCriteria<T>(),
-                initReadCollector<T, SharedArray<T>>()
-            );
+            EStream::initStreamProcessing(until_size_criteria, array_collector);
             poll_fd.fd = p_fd;
             poll_fd.events = POLLIN;
         }
@@ -230,6 +184,8 @@ class EStream: public EStreamI<T> {
             if (true == this->new_buffer) {
                 deleteCArray<T>(this->buffer, this->buffer_size);
             }
+            delete until_size_criteria;
+            delete array_collector;
         }
 
         // standard istream methods
@@ -322,8 +278,8 @@ class EStream: public EStreamI<T> {
             } else {
                 bool inclusive = true;
                 SharedArray<T> until;
-                *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until);
-                return this->read_processor.streamCollect(dynamic_cast<EStreamI<T> *>(this), operation);
+                *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
+                return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, this->array_collector);
             }
         }
         // ! IMPORTANT - inclusive means we read and consume the until character.
@@ -332,15 +288,41 @@ class EStream: public EStreamI<T> {
         //      The default value for the inclusive field is TRUE.
         SharedArray<T> read(SharedArray<T> until, StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) override {
             size_t until_size = 0;
-            *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until);
-            return this->read_processor.streamCollect(dynamic_cast<EStreamI<T> *>(this), operation);
+            *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
+            return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, this->array_collector);
         }
         ssize_t write(T * b, size_t size) override {
             return ::write(this->fd, (void *)b, size * sizeof(T));
         }
         template<typename RT>
         RT streamCollect(LoopCriteria<T> * criteria, StreamTask<T, RT> * task, Collector<T, RT> * collector) {
-            return StreamProcessor<T, RT>::streamCollect(this, criteria, task, collector);
+            // ! IMPORTANT - not thread safe
+            if (task != nullptr) {
+                task->collector = collector;
+                task->criteria = criteria;
+            }
+
+            collector->initialize();
+ 
+            T el = this->peek();
+            while (criteria->nextState(el) & LOOP_CRITERIA_STATE_GOOD) {
+                this->get();
+                if (task == nullptr) {
+                    collector->accumulate(el);
+                } else {
+                    task->perform(el);
+                }
+                el = this->peek();
+            }
+
+            if (task != nullptr) {
+                task->flush();
+                // ! IMPORTANT - make sure to reset collector and criteria references in the task, so that you can store tasks as instance variables without keeping collectors live.
+                //                  especially needed for direct the streamCollect function
+                task->collector = nullptr;
+                task->criteria = nullptr;
+            }
+            return collector->collect();
         }
 
         // ! IMPORTANT - purposely not explicitly swaping for all variables for the following reasons:

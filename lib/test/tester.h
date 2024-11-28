@@ -30,6 +30,7 @@ typedef struct Test {
 
 extern void ASSERT_STRING(TestArg * t, std::string result, std::string expected);
 extern void ASSERT_BOOLEAN(TestArg * t, bool result, bool expected);
+extern void ASSERT_UINT64(TestArg * t, uint64_t result, uint64_t expected);
 
 // static void sig_handler(int sig, siginfo_t * info, void * context) {
 //     // if (sig == SIGSEGV) {

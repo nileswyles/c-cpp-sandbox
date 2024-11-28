@@ -141,9 +141,9 @@ class HttpConnection {
 #endif
         HttpResponse * requestDispatcher(HttpRequest * request);
 
-        ReaderTaskDisallow whitespace_chain;
-        ReaderTaskDisallow whitespace_lc_chain;
-        ReaderTaskLC lowercase_task;
+        ReaderTaskDisallow<SharedArray<uint8_t>> whitespace_chain;
+        ReaderTaskDisallow<SharedArray<uint8_t> whitespace_lc_chain;
+        ReaderTaskLC<SharedArray<uint8_t>> lowercase_task;
         void writeResponse(HttpResponse * response, ByteEStream * io);
 
         void initializeStaticPaths(HttpServerConfig config, ThreadSafeMap<std::string, std::string> static_paths) {

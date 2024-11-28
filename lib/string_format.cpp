@@ -124,7 +124,7 @@ static void parseStringCaseModifier(std::string value, ByteEStream& s, Arg& arg)
 }
 
 static void parsePositionalNumberModifier(va_list args, ByteEStream& s, StringFormatOpts& opts, Arg& arg) {
-    double num = std::get<0>(s.readNatural());
+    uint64_t num = std::get<0>(s.readNatural());
     char next = s.peek();
     if (next == 'f' || next == 'e' || next == 'E') {
         opts.precision = static_cast<uint8_t>(num);
@@ -143,7 +143,7 @@ static void parsePositionalNumberModifier(va_list args, ByteEStream& s, StringFo
 }
 
 static void parseReferencedNumberModifier(ByteEStream& s, StringFormatOpts& opts, Arg& arg) {
-    double num = std::get<0>(s.readNatural());
+    uint64_t num = std::get<0>(s.readNatural());
     char next = s.peek();
     if (next == 'f' || next == 'e' || next == 'E') {
         opts.precision = static_cast<uint8_t>(num);

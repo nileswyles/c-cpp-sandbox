@@ -30,6 +30,15 @@
 #define LOGGER_MODULE_ENABLED LOGGER_READER_TEST
 #include "logger.h"
 
+#define ReaderTaskChain ReaderTaskChain<SharedArray<uint8_t>>
+#define ReaderTaskLC ReaderTaskLC<SharedArray<uint8_t>>
+#define ReaderTaskUC ReaderTaskUC<SharedArray<uint8_t>>
+#define ReaderTaskDisallow ReaderTaskDisallow<SharedArray<uint8_t>>
+#define ReaderTaskAllow ReaderTaskAllow<SharedArray<uint8_t>>
+#define ReaderTaskExact ReaderTaskExact<SharedArray<uint8_t>>
+#define ReaderTaskTrim ReaderTaskTrim<SharedArray<uint8_t>>
+#define ReaderTaskExtract ReaderTaskExtract<SharedArray<uint8_t>>
+
 using namespace WylesLibs;
 using namespace WylesLibs::Test;
 
@@ -62,8 +71,10 @@ static void readUntilAssert(TestArg * t, std::string result, std::string expecte
 }
 
 static void testReadUntil(TestArg * t) {
+    printf("lol...\n");
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
+    printf("hmmm...\n");
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     setTestString(test_string);
 

@@ -20,7 +20,6 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/estream_test.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp

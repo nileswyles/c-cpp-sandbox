@@ -41,18 +41,6 @@ namespace WylesLibs {
 
     // @ collectors
 
-    class ByteCollector: public Collector<uint8_t, SharedArray<uint8_t>> {
-        private:
-            SharedArray<uint8_t> data;
-        public:
-            ByteCollector() = default;
-            ~ByteCollector() override = default;
-            void initialize() override final;
-            void accumulate(uint8_t& c) override final;
-            void accumulate(SharedArray<uint8_t>& cs) override final;
-            SharedArray<uint8_t> collect() override final;
-    };
-
     class ByteStringCollector: public Collector<uint8_t, std::string> {
         private:
             std::string data;
@@ -64,9 +52,6 @@ namespace WylesLibs {
             void accumulate(SharedArray<uint8_t>& cs) override final;
             std::string collect() override final;
     };
-
-    template<>
-    ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>> initReadCollector<uint8_t, SharedArray<uint8_t>>();
 
     class NaturalCollector: public Collector<uint8_t, std::tuple<uint64_t, size_t>> {
         private:
@@ -95,55 +80,48 @@ namespace WylesLibs {
 
     class ByteEStream: public EStream<uint8_t> {
         private:
-            static void initProcessors(StreamProcessor<uint8_t, std::string>& string_read_processor, 
-                                            ESharedPtr<LoopCriteria<uint8_t>>& char_class_criteria,
-                                            ESharedPtr<Collector<uint8_t, std::tuple<uint64_t, size_t>>>& natural_collector,
-                                            ESharedPtr<Collector<uint8_t, std::tuple<double, size_t>>>& decimal_collector) {
-                string_read_processor = StreamProcessor<uint8_t, std::string>(
-                    initReadCriteria<uint8_t>(),
-                    ESharedPtr<Collector<uint8_t, std::string>>(
-                        dynamic_cast<Collector<uint8_t, std::string>>*>(
-                            new ByteStringCollector
-                        )
-                    )
+            static void initByteStreamProcessing(ByteIsCharClassCriteria** char_class_criteria,
+                                        Collector<uint8_t, std::tuple<uint64_t, size_t>>** natural_collector,
+                                        Collector<uint8_t, std::tuple<double, size_t>>** decimal_collector,
+                                        Collector<uint8_t, std::string>** string_collector) {
+                *char_class_criteria = new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
+                *natural_collector = dynamic_cast<Collector<uint8_t, std::tuple<uint64_t, size_t>>*>(
+                    new NaturalCollector
                 );
-                char_class_criteria = ESharedPtr<LoopCriteria<uint8_t>>(
-                    dynamic_cast<LoopCriteria<uint8_t>*>(
-                        new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS)
-                    )
-                ); 
-                natural_collector = ESharedPtr<Collector<uint8_t, std::tuple<uint64_t, size_t>>>(
-                    dynamic_cast<Collector<uint8_t, std::tuple<uint64_t, size_t>>*>(
-                        new NaturalCollector
-                    )
+                *decimal_collector = dynamic_cast<Collector<uint8_t, std::tuple<double, size_t>>*>(
+                    new DecimalCollector
                 );
-                decimal_collector = ESharedPtr<Collector<uint8_t, std::tuple<double, size_t>>>(
-                    dynamic_cast<Collector<uint8_t, std::tuple<double, size_t>>*>(
-                        new DecimalCollector
-                    )
+                *string_collector = dynamic_cast<Collector<uint8_t, std::string>*>(
+                    new ByteStringCollector
                 );
             }
         public:
-            // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-            StreamProcessor<uint8_t, std::string> string_read_processor;
-            ESharedPtr<LoopCriteria<uint8_t>> char_class_criteria;
-            ESharedPtr<Collector<uint8_t, std::tuple<uint64_t, size_t>>> natural_collector;
-            ESharedPtr<Collector<uint8_t, std::tuple<double, size_t>>> decimal_collector;
+            ByteIsCharClassCriteria * char_class_criteria;
+            Collector<uint8_t, std::tuple<uint64_t, size_t>> * natural_collector;
+            Collector<uint8_t, std::tuple<double, size_t>> * decimal_collector;
+            Collector<uint8_t, std::string> * string_collector;
 
             ByteEStream() {
-                ByteEStream::initProcessors(string_read_processor, char_class_criteria, natural_collector, decimal_collector);
+                ByteEStream::initByteStreamProcessing(&char_class_criteria, &natural_collector, &decimal_collector, &string_collector);
             }
             ByteEStream(uint8_t * b, const size_t bs): EStream<uint8_t>(b, bs) {
-                ByteEStream::initProcessors(string_read_processor, char_class_criteria, natural_collector, decimal_collector);
+                ByteEStream::initByteStreamProcessing(&char_class_criteria, &natural_collector, &decimal_collector, &string_collector);
             }
             ByteEStream(const int fd): ByteEStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
             ByteEStream(const int p_fd, const size_t bs): EStream<uint8_t>(p_fd, bs) {
-                ByteEStream::initProcessors(string_read_processor, char_class_criteria, natural_collector, decimal_collector);
+                ByteEStream::initByteStreamProcessing(&char_class_criteria, &natural_collector, &decimal_collector, &string_collector);
             }
-            ~ByteEStream() override = default;
+            ~ByteEStream() {
+                delete char_class_criteria;
+                delete natural_collector;
+                delete decimal_collector;
+                delete string_collector;
+
+                // ~EStream
+            }
 
             virtual SharedArray<uint8_t> read(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
-            virtual std::string readString(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
+            virtual std::string readString(std::string until = "\n", StreamTask<uint8_t, std::string> * operation = nullptr, bool inclusive = true);
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
             virtual std::tuple<uint64_t, size_t> readNatural(std::string until = "");
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5

@@ -16,6 +16,9 @@
 #define LOGGER_MODULE_ENABLED LOGGER_JSON_PARSER
 #include "logger.h"
 
+#define ReaderTaskExact ReaderTaskExact<SharedArray<uint8_t>>
+#define ReaderTaskExtract ReaderTaskExtract<SharedArray<uint8_t>>
+
 using namespace WylesLibs::Parser::Json;
 using namespace WylesLibs::Parser;
 using namespace WylesLibs::File;

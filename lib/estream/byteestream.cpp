@@ -28,31 +28,6 @@ LoopCriteriaState ByteIsCharClassCriteria::nextState(uint8_t& c) {
     }
 }
 
-void ByteCollector::initialize() {
-    this->data = SharedArray<uint8_t>();
-}
-
-void ByteCollector::accumulate(uint8_t& c) {
-    this->data.append(c);
-}
-
-void ByteCollector::accumulate(SharedArray<uint8_t>& cs) {
-    this->data.append(cs);
-}
-
-SharedArray<uint8_t> ByteCollector::collect() {
-    return this->data;
-}
-
-template<>
-ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>> WylesLibs::initReadCollector<uint8_t, SharedArray<uint8_t>>() {
-    return ESharedPtr<Collector<uint8_t, SharedArray<uint8_t>>>(
-        dynamic_cast<Collector<uint8_t, SharedArray<uint8_t>> *>(
-            new ByteCollector
-        )
-    );
-}
-
 void ByteStringCollector::initialize() {
     this->data = std::string();
 }
@@ -120,29 +95,28 @@ SharedArray<uint8_t> ByteEStream::read(std::string until, ReaderTask * operation
     //  if (LOOP_CRITERIA_UNTIL_MATCH == LoopCriteriaInfo<uint8_t>::info.mode) {
 }
 
-std::string ByteEStream::readString(std::string until, ReaderTask * operation, bool inclusive) {
+std::string ByteEStream::readString(std::string until, StreamTask<uint8_t, std::string> * operation, bool inclusive) {
     size_t until_size = 0;
-    *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, SharedArray<uint8_t>(until));
-    return this->string_read_processor.streamCollect(dynamic_cast<EStreamI<uint8_t> *>(this), operation);
+    *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, SharedArray<uint8_t>(until)));
+    return this->streamCollect<std::string>(this->until_size_criteria, operation, this->string_collector);
 }
 
 // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
 std::tuple<uint64_t, size_t> ByteEStream::readNatural(std::string until) {
     std::tuple<uint64_t, size_t> t;
     if (until == "") { // default
-        ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->char_class_criteria));
-        *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
- 
-        t = this->streamCollect(this, this->char_class_criteria, nullptr, this->natural_collector);
- 
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+        *this->char_class_criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
+
+        t = this->streamCollect<std::tuple<uint64_t, size_t>>(dynamic_cast<LoopCriteria<uint8_t> *>(this->char_class_criteria), nullptr, this->natural_collector);
     } else {
-        bool inclusive = true;
+        bool inclusive = false;
         size_t until_size = 0;
-        *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until);
-        t = this->streamCollect(this, this->read_processor.criteria, nullptr, this->natural_collector);
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+        *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
+
+        t = this->streamCollect<std::tuple<uint64_t, size_t>>(this->until_size_criteria, nullptr, this->natural_collector);
+        this->get(); // consume until char
     }
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
     return t;
 }
 
@@ -153,19 +127,17 @@ std::tuple<uint64_t, size_t> ByteEStream::readNatural(size_t n) {
     }
     std::tuple<uint64_t, size_t> t;
     if (n == 0) { // default
-        ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->char_class_criteria));
-        *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
- 
-        t = this->streamCollect(this, this->char_class_criteria, nullptr, this->natural_collector);
- 
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+        *this->char_class_criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
+
+        t = this->streamCollect<std::tuple<uint64_t, size_t>>(dynamic_cast<LoopCriteria<uint8_t> *>(this->char_class_criteria), nullptr, this->natural_collector);
     } else {
         bool inclusive = true;
-        SharedArray<T> until;
-        *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, SharedArray<uint8_t>(until));
-        t = this->streamCollect(this, this->read_processor.criteria, nullptr, this->natural_collector);
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+        SharedArray<uint8_t> until;
+        *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, SharedArray<uint8_t>(until)));
+
+        t = this->streamCollect<std::tuple<uint64_t, size_t>>(this->until_size_criteria, nullptr, this->natural_collector);
     }
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed natural, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
     return t;
 }
 
@@ -180,14 +152,16 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(std::string until) {
     }
     std::tuple<double, size_t> decimal_value;
     if (until == "") { // default
-        ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->char_class_criteria));
-        *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
-        decimal_value = this->streamCollect(this, this->char_class_criteria, nullptr, this->decimal_collector);
+        *this->char_class_criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
+
+        decimal_value = this->streamCollect<std::tuple<double, size_t>>(this->char_class_criteria, nullptr, this->decimal_collector);
     } else {
-        bool inclusive = true;
+        bool inclusive = false;
         size_t until_size = 0;
-        *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until);
-        decimal_value = this->streamCollect(this, this->read_processor.criteria, nullptr, this->decimal_collector);
+        *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
+
+        decimal_value = this->streamCollect<std::tuple<double, size_t>>(this->until_size_criteria, nullptr, this->decimal_collector);
+        this->get(); // consume until char
     }
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
     return std::make_tuple(static_cast<double>(std::get<0>(natural_value)) + std::get<0>(decimal_value), std::get<1>(natural_value), std::get<1>(decimal_value));
@@ -208,14 +182,15 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(size_t n) {
  
     std::tuple<double, size_t> decimal_value;
     if (n == 0) { // default
-        ByteIsCharClassCriteria * criteria = dynamic_cast<ByteIsCharClassCriteria *>(ESHAREDPTR_GET_PTR(this->decimal_processor.criteria));
-        *criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
-        decimal_value = this->streamCollect(this, this->char_class_criteria, nullptr, this->decimal_collector);
+        *this->char_class_criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
+
+        decimal_value = this->streamCollect<std::tuple<double, size_t>>(this->char_class_criteria, nullptr, this->decimal_collector);
     } else {
         bool inclusive = true;
-        SharedArray<T> until;
-        *(ESHAREDPTR_GET_PTR(this->read_processor.criteria)) = LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, SharedArray<uint8_t>(until));
-        decimal_value = this->streamCollect(this, this->read_processor.criteria, nullptr, this->decimal_collector);
+        SharedArray<uint8_t> until;
+        *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, SharedArray<uint8_t>(until)));
+
+        decimal_value = this->streamCollect<std::tuple<double, size_t>>(this->until_size_criteria, nullptr, this->decimal_collector);
     }
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
     return std::make_tuple(static_cast<double>(std::get<0>(natural_value)) + std::get<0>(decimal_value), std::get<1>(natural_value), std::get<1>(decimal_value));

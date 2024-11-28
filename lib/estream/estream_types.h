@@ -61,12 +61,12 @@ namespace WylesLibs {
                 return this->loop_criteria_info.state;
             }
             virtual LoopCriteriaState untilSizeNext() {
-                this->loop_criteria_info.until_size--;
                 if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_NOT_GOOD && this->loop_criteria_info.until_size > 0) {
                     this->loop_criteria_info.state = LOOP_CRITERIA_STATE_GOOD;
                 } else if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_GOOD && this->loop_criteria_info.until_size <= 0) {
                     this->loop_criteria_info.state = LOOP_CRITERIA_STATE_NOT_GOOD;
                 }
+                this->loop_criteria_info.until_size--;
                 return this->loop_criteria_info.state;
             }
         public:
@@ -85,17 +85,6 @@ namespace WylesLibs {
             }
     };
 
-    // TODO: 
-    //  eventually you might want to initialize these with some loop_criteria_information... so, this should accept another shared_ptr with that loop_criteria_information.
-    template<typename T>
-    ESharedPtr<LoopCriteria<T>> initReadCriteria() {
-        return ESharedPtr<LoopCriteria<T>>(
-            new LoopCriteria<T>(
-                LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, true, 0, SharedArray<T>())
-            )
-        );
-    }
-
     // @ collector
 
     template<typename T, typename RT>
@@ -111,12 +100,26 @@ namespace WylesLibs {
             virtual RT collect() = 0;
     };
 
-    template<typename T, typename RT>
-    ESharedPtr<Collector<T, RT>> initReadCollector() {
-        std::string msg("A specialization of initReadCollector is required for this datatype.");
-        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
-        throw std::runtime_error(msg);
-    }
+    template<typename T>
+    class ArrayCollector: public Collector<T, SharedArray<T>> {
+        private:
+            SharedArray<T> data;
+        public:
+            ArrayCollector() = default;
+            virtual ~ArrayCollector() = default;
+            virtual void initialize() {
+                this->data = SharedArray<T>();
+            }
+            virtual void accumulate(T& el) {
+                this->data.append(el);
+            }
+            virtual void accumulate(SharedArray<T>& els) {
+                this->data.append(els);
+            }
+            virtual SharedArray<T>collect() {
+                return this->data;
+            }
+    };
 
     template<typename T, typename RT>
     class StreamTask {

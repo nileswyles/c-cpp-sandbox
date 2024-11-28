@@ -46,7 +46,6 @@ class Arg {
 };
 
 extern std::string format(std::string format, ...);
-// LMAO
 #define MAX_FORMATTED_STRING_SIZE 1024
 extern std::string ssprintf(std::string format, ...);
 };

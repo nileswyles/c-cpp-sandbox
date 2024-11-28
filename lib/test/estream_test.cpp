@@ -71,10 +71,8 @@ static void readUntilAssert(TestArg * t, std::string result, std::string expecte
 }
 
 static void testReadUntil(TestArg * t) {
-    printf("lol...\n");
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    printf("hmmm...\n");
     const char * test_string = "TESTSTRINGWITHSPACE BLAH";
     setTestString(test_string);
 

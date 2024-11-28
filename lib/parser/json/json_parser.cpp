@@ -42,9 +42,6 @@ static bool parseKey(JsonObject * obj, ByteEStream * r);
 // 1
 static void parseObject(JsonObject * obj, ByteEStream * r);
 
-// LMAO ! IMPORTANT - design choice no unnecessary checks because not exposed to the world and code within this module should be trusted.
-//      SO, know what your doing if you edit this file.
-
 static void readWhiteSpaceUntil(ByteEStream * r, std::string until) {
     char c = r->peek();
     loggerPrintf(LOGGER_DEBUG, "Reading Whitespace Until: %s, %c\n", until.c_str(), c);

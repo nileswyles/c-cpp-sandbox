@@ -282,7 +282,6 @@ static void parsePositionalFormat(va_list args, ByteEStream& s, Arg& arg) {
     } else if (true == isDigit(c)) {
         s.unget();
 
-        printf("LMAO\n");
         parsePositionalNumberModifier(args, s, opts, arg);
     } else {
         s.unget();

@@ -296,6 +296,16 @@ class EStream: public EStreamI<T> {
         }
         template<typename RT>
         RT streamCollect(LoopCriteria<T> * criteria, StreamTask<T, RT> * task, Collector<T, RT> * collector) {
+            if (criteria == nullptr) {
+                std::string msg("Criteria argument is nullptr.");
+                loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+            if (collector == nullptr) {
+                std::string msg("Collector argument is nullptr.");
+                loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
             // ! IMPORTANT - not thread safe
             if (task != nullptr) {
                 task->collector = collector;

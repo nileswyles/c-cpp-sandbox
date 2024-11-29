@@ -2,12 +2,16 @@
 #define WYLESLIBS_ESTREAM_TYPES_H
 
 #include "datastructures/array.h"
-
-#include <memory>
 #include "memory/pointers.h"
+#include "string_format.h"
+
+#include <stdexcept>
+#include <memory>
 
 #include <stdint.h>
 #include <stdbool.h>
+
+#define ARBITRARY_SPATIAL_UNTIL_LIMIT 1 << 16
 
 namespace WylesLibs {
 
@@ -75,6 +79,11 @@ namespace WylesLibs {
         
             virtual LoopCriteriaState nextState(T& el) {
                 if (LOOP_CRITERIA_UNTIL_MATCH == this->loop_criteria_info.mode) {
+                    if (++this->loop_criteria_info.until_size > ARBITRARY_SPATIAL_UNTIL_LIMIT) {
+                        std::string msg = WylesLibs::format("Spatial until limit of {u} reached.", ARBITRARY_SPATIAL_UNTIL_LIMIT);
+                        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                        throw std::runtime_error(msg);
+                    }
                     return this->untilMatchNext(el);
                 } else {
                     return this->untilSizeNext();

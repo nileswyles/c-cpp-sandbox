@@ -1,5 +1,7 @@
 #include "estream/byteestream.h"
 
+#include "string_format.h"
+
 #include "string_utils.h"
 #include "global_consts.h"
 
@@ -22,6 +24,11 @@ LoopCriteriaState ByteIsCharClassCriteria::untilMatchNext(uint8_t& c) {
 }
 LoopCriteriaState ByteIsCharClassCriteria::nextState(uint8_t& c) {
     if (LOOP_CRITERIA_UNTIL_MATCH == this->loop_criteria_info.mode) {
+        if (++this->loop_criteria_info.until_size > ARBITRARY_SPATIAL_UNTIL_LIMIT) {
+            std::string msg = WylesLibs::format("Spatial until limit of {u} reached.", ARBITRARY_SPATIAL_UNTIL_LIMIT);
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+            throw std::runtime_error(msg);
+        }
         return this->untilMatchNext(c);
     } else {
         throw std::runtime_error("The match until size good function is not supported for this criteria class.");

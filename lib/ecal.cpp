@@ -100,10 +100,9 @@ static uint16_t getNumLeapYears(uint16_t year) {
     uint16_t year_cursor = 1972;
     while (year_cursor < year) {
         loggerPrintf(LOGGER_DEBUG, "year_cursor: %u, year: %u\n", year_cursor, year);
-        // if (isLeapYear(year_cursor)) { 
-        // these will always be leap year because 1972 is the first leap year after 1970... if year == 1970 or year == 1971, num_leap_years are appropriately 0.
-        num_leap_years++;
-        // }
+        if (isLeapYear(year_cursor)) { 
+            num_leap_years++;
+        }
         year_cursor += 4;
     }
     loggerPrintf(LOGGER_DEBUG, "num leap years: %u\n", num_leap_years);

@@ -6,6 +6,7 @@
 #include "estream/reader_task.h"
 #include "datastructures/array.h"
 
+#include <stdexcept>
 #include <memory>
 #include <tuple>
 

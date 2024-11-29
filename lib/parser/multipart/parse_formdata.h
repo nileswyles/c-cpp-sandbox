@@ -36,7 +36,7 @@ static void parse(ByteEStream * io, SharedArray<MultipartFile> files, std::unord
             bool has_name = false;
             for (uint8_t i = 0; i < 2; i++) {
                 std::string field = io->read("=").removeBack().toString();
-                ReaderTaskExtract extract('"', '"');
+                ReaderTaskExtract<SharedArray<uint8_t>> extract('"', '"');
                 std::string value = io->read(";", &extract).removeBack().toString();
                 if (field == "filename") {
                     is_file = true;

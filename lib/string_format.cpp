@@ -83,7 +83,7 @@ static std::string parseFloatFormat(ByteEStream& s, void * value, StringFormatOp
         }
     } else if (format_type != 'f') {
 #if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
-        loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", s.stream_log.c_str())
+        loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", s.stream_log.c_str());
 #endif
         std::basic_stringstream<char> ss;
         ss << "Invalid float format with format type: '" << format_type << "'";

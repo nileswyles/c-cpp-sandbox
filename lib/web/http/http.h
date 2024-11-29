@@ -22,6 +22,7 @@
 
 #include "memory/pointers.h"
 #include "estream/estream.h"
+#include "estream/reader_task.h"
 #include "estream/byteestream.h"
 #include "web/server.h"
 #include "config.h"
@@ -142,7 +143,7 @@ class HttpConnection {
         HttpResponse * requestDispatcher(HttpRequest * request);
 
         ReaderTaskDisallow<SharedArray<uint8_t>> whitespace_chain;
-        ReaderTaskDisallow<SharedArray<uint8_t> whitespace_lc_chain;
+        ReaderTaskDisallow<SharedArray<uint8_t>> whitespace_lc_chain;
         ReaderTaskLC<SharedArray<uint8_t>> lowercase_task;
         void writeResponse(HttpResponse * response, ByteEStream * io);
 
@@ -195,7 +196,7 @@ class HttpConnection {
             }
         }
         void initializeEStreamTasks() {
-            this->lowercase_task = ReaderTaskLC();
+            this->lowercase_task = ReaderTaskLC<SharedArray<uint8_t>>();
             this->whitespace_chain.to_disallow = "\t ";
             this->whitespace_lc_chain.to_disallow = "\t ";
             this->whitespace_lc_chain.next_operation = &this->lowercase_task;
@@ -261,9 +262,9 @@ static_assert(sizeof(HttpConnection) ==
     8 + // sizeof(SSL_CTX) +
     sizeof(ESharedPtr<HttpFileWatcher>) +
     sizeof(ESharedPtr<FileManager>) +
-    sizeof(ReaderTaskDisallow) +
-    sizeof(ReaderTaskDisallow) +
-    sizeof(ReaderTaskLC)
+    sizeof(ReaderTaskDisallow<SharedArray<uint8_t>>) +
+    sizeof(ReaderTaskDisallow<SharedArray<uint8_t>>) +
+    sizeof(ReaderTaskLC<SharedArray<uint8_t>>)
 );
 // static_assert(sizeof(HttpConnection) == 704);
 

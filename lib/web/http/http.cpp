@@ -57,6 +57,7 @@ void HttpConnection::parseRequest(HttpRequest * request, ByteEStream * io) {
     if (request == NULL || io == NULL) {
         throw std::runtime_error("lol....");
     }
+    // TODO: this is terrible as is... stringyness must work.
     request->method = io->read(" ").removeBack().toString();
     request->method = request->method.substr(0, request->method.size()-1);
 
@@ -77,7 +78,7 @@ void HttpConnection::parseRequest(HttpRequest * request, ByteEStream * io) {
 
         loggerPrintf(LOGGER_DEBUG, "field_name: '%s'\n", field_name.c_str());
 
-        ReaderTaskChain * chain = &this->whitespace_chain;
+        ReaderTaskChain<SharedArray<uint8_t>> * chain = &this->whitespace_chain;
         if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name.c_str())) {
             chain = &this->whitespace_lc_chain;
         }

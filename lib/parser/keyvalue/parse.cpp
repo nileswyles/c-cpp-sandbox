@@ -21,7 +21,7 @@ std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(
         delim_string += delim;
     }
     while (1) {
-        ReaderTaskDisallow ignore_whitespace(" \t");
+        ReaderTaskDisallow<SharedArray<uint8_t>> ignore_whitespace(" \t");
         SharedArray<uint8_t> field_name = reader->read("=\n", &ignore_whitespace);
         if (field_name.back() == '\n') {
             // empty line... we are done...

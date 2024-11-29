@@ -206,7 +206,7 @@ class EStream: public EStreamI<T> {
         T peek() override {
             if (true == this->good()) {
                 if (true == this->readPastBuffer()) {
-                    this->ungot_el = this->buffer[this->cursor];
+                    this->ungot_el = this->buffer[this->cursor - 1];
                     this->ungot = false;
                     this->fillBuffer();
                 }

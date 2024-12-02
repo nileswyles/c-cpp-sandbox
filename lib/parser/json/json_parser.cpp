@@ -78,7 +78,6 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
     c = r->peek();
     if (isDigit(c)) {
         std::tuple<double, size_t, size_t> t = r->readDecimal();
-        printf("logical fallacy: '%c'\n", r->peek());
         value = std::get<0>(t);
         natural_digits = std::get<1>(t);
         decimal_digits = std::get<2>(t);
@@ -91,7 +90,6 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
 
     std::string comp(" ,}\r\n\t");
     c = r->peek();
-    printf("char: '%c'\n", c);
     if (c == 'e' || c == 'E') {
         c = r->peek();
         if (c == '-') { 
@@ -299,7 +297,6 @@ static void parseValue(JsonArray * obj, ByteEStream * r) {
             r->get();
         }
         c = r->peek();
-        printf("%c, peeked char\n", c);
     }
     loggerPrintf(LOGGER_DEBUG, "Parsed Value, stream is at '%c', [0x%02X]\n", r->peek(), r->peek());
 }

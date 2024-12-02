@@ -7,7 +7,9 @@
 #include "controllers/example.h"
 
 #include "file/file_watcher.h"
+#ifdef WYLESLIBS_GCS_BUILD
 #include "file/file_gcs.h"
+#endif
 
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1
@@ -26,9 +28,9 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
 
         // this makes more sense extension of some Connection class?
         //  alright, I know I "c@n'T gr@MM@R" but definetly not that bad...
-        uint8_t onConnection(EStream * io) {
+        uint8_t onConnection(ByteEStream * io) {
             printf("Established websocket connection...\n");
-            printf("MESSAGE FROM CLIENT: %s\n", io->readUntil("}").toString().c_str());
+            printf("MESSAGE FROM CLIENT: %s\n", io->read("}").toString().c_str());
             return 1;
         }
 };
@@ -98,7 +100,7 @@ int main(int argc, char * argv[]) {
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
         HttpServerConfig config("config.json");
-        // ServerContext context(config, std::dynamic_pointer_cast<FileManager>(std::make_shared<GCSFileManager>("test-bucket-free-tier")));
+        // ServerContext context(config, std::dynamic_pointer_cast<FileManager>(ESharedPtr<GCSFileManager>(ESharedPtr<GCSFileManager>(std::make_shared<GCSFileManager>("test-bucket-free-tier")))));
         ServerContext context(config);
         server_context = &context;
 

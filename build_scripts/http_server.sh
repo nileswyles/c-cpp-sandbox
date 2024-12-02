@@ -28,17 +28,17 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/http_test/main.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/http_test/controllers/example.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/http_test/services/example.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/estream.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/server.c
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_watcher.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http_file_watcher.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_gcs.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory_gcs.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
 "
 
 INCLUDE_DIRS="-I $WYLESLIBS_BUILD_ROOT_DIR/http_test"
@@ -48,11 +48,20 @@ LD_FLAGS="
 -l crypto
 "
 
-GCS_ARGS=`$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/generate_gcs_arguments.sh`
+# ! IMPORTANT - 
+# 	to run the GCS build, set WYLESLIBS_GCS_BUILD=1
+if [ -n "$WYLESLIBS_GCS_BUILD" ]; then
+	GCS_ARGS=`$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/generate_gcs_arguments.sh`
+	DEFINES="$DEFINES -D WYLESLIBS_GCS_BUILD=1 "
+	SRC_FILES="$SRC_FILES -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_gcs.cpp
+		-s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory_gcs.cpp
+	"
+fi
+
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -r $WYLESLIBS_BUILD_ROOT_DIR/http_test --log $LOG_LEVEL $INCLUDE_DIRS $LD_FLAGS $GCS_ARGS $DEFINES$PROGRAM_ARG"
 # TODO: revisit quoted strings and whitespace (nl, tabs, etc) for bash shell... Also, wtf is dash shell? zsh and bash I think are mostly identical for most basic things?
-echo "\t"$CMD
+echo "    "$CMD
 exec $CMD
 
 

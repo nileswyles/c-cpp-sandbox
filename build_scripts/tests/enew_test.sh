@@ -20,9 +20,9 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/enew.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/memory/emalloc.c
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/memory/heap.c
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
 "
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n enew_test $SRC_FILES --log $LOG_LEVEL $DEFINES$TEST_ARG"
-echo "\t"$CMD
+echo "    "$CMD
 exec $CMD

@@ -3,6 +3,7 @@
 
 #include "file/stream_factory.h"
 #include <memory>
+#include "memory/pointers.h"
 #include <string>
 
 // TODO: compiler flags to not have to rely on google?
@@ -17,8 +18,8 @@ class GCSStreamFactory: public StreamFactory {
         GCSStreamFactory() = default;
         GCSStreamFactory(google::cloud::storage::Client client, std::string bucket_name): client(client), bucket_name(bucket_name), StreamFactory() {}
         ~GCSStreamFactory() override final = default; 
-        std::shared_ptr<std::basic_istream<char>> reader(std::string path, size_t offset = 0, size_t size = SIZE_MAX) override final;
-        std::shared_ptr<std::basic_ostream<char>> writer(std::string path) override final;
+        ESharedPtr<std::basic_istream<char>> reader(std::string path, size_t offset = 0, size_t size = SIZE_MAX) override final;
+        ESharedPtr<std::basic_ostream<char>> writer(std::string path) override final;
 };
 };
 

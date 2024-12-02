@@ -2,6 +2,7 @@
 #define SEQUENCE_ID_GENERATOR_H
 
 #include <memory>
+#include "memory/pointers.h"
 
 #include <math.h>
 #include <pthread.h>
@@ -12,7 +13,7 @@
 #include "web/server_config.h"
 #include "paths.h"
 #include "file/file.h"
-#include "estream/estream.h"
+#include "estream/byteestream.h"
 #include "string_utils.h"
 
 // make sure global logger level is initialized
@@ -42,17 +43,17 @@ namespace WylesLibs {
 
 class UniqueKeyGeneratorStore {
     private:
-        std::shared_ptr<FileManager> file_manager;
+        ESharedPtr<FileManager> file_manager;
         std::string file_path;
     public:
         UniqueKeyGeneratorStore() = default;
-        UniqueKeyGeneratorStore(std::shared_ptr<FileManager> file_manager, std::string file_path): file_manager(file_manager), file_path(file_path) {}
+        UniqueKeyGeneratorStore(ESharedPtr<FileManager> file_manager, std::string file_path): file_manager(file_manager), file_path(file_path) {}
         ~UniqueKeyGeneratorStore() = default;
         void refresh(uint64_t& current) {
             // read value from existing file...
             int fd = open(file_path.c_str(), O_RDONLY);
             if (fd != -1) {
-                EStream r(fd);
+                ByteEStream r(fd);
                 for (uint8_t i = 0; i < 16; i++) {
                     current = current << 4;
                     uint8_t byte = r.get();
@@ -72,7 +73,7 @@ class UniqueKeyGeneratorStore {
         void flush(SharedArray<uint8_t> data) {
             if (this->file_path.size() > 0) {
                 loggerPrintf(LOGGER_DEBUG, "Flushing sequence to data store at %s\n", this->file_path.c_str());
-                this->file_manager->write(this->file_path, data, false);
+                ESHAREDPTR_GET_PTR(this->file_manager)->write(this->file_path, data, false);
             }
         }
 };

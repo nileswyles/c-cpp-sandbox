@@ -3,12 +3,12 @@
 using namespace WylesLibs;
 
 template<>
-void WylesLibs::addElement<const char *>(const char ** buf, const size_t pos, const char * el) {
+void WylesLibs::addElement<const char *>(const char ** buffer, const size_t pos, const char * el) {
     char * new_cstring = newCArray<char>(strlen(el) + 1);
     strcpy(new_cstring, el);
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "String copied: %p, '%s'\n", el, el);
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "New String: %p, '%s'\n", new_cstring, new_cstring);
-    buf[pos] = new_cstring;
+    buffer[pos] = new_cstring;
 }
 
 // const char value...
@@ -32,12 +32,12 @@ void WylesLibs::deleteCArray<const char *>(const char ** e_buf, size_t size) {
 }
 
 template<>
-void WylesLibs::deleteCArrayElement<const char *>(const char ** buf, size_t pos) {
+void WylesLibs::deleteCArrayElement<const char *>(const char ** buffer, size_t pos) {
     loggerPrintf(LOGGER_DEBUG, "Deleting element of ptr type 'const char *' at %lu\n", pos);
     // deletes string. see allocation in addElement function above...
-    loggerPrintf(LOGGER_DEBUG_VERBOSE, "String being deleted: '%s'\n", buf[pos]);
-    if (buf != nullptr && buf[pos] != nullptr) {
-        delete[] buf[pos];
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "String being deleted: '%s'\n", buffer[pos]);
+    if (buffer != nullptr && buffer[pos] != nullptr) {
+        delete[] buffer[pos];
     }
 }
 

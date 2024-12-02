@@ -20,7 +20,7 @@ class ConnectionUpgrader {
         ConnectionUpgrader(std::string path, std::string protocol): path(path), protocol(protocol) {}
         virtual ~ConnectionUpgrader() = default;
 
-        virtual uint8_t onConnection(EStream * io) = 0;
+        virtual uint8_t onConnection(ByteEStream * io) = 0;
 };
 
 }

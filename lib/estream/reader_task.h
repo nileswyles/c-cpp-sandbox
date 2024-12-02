@@ -1,6 +1,7 @@
 #ifndef WYLESLIBS_READER_TASK_H
 #define WYLESLIBS_READER_TASK_H
 
+#include "estream/estream_types.h"
 #include "datastructures/array.h"
 #include "string_utils.h"
 
@@ -42,84 +43,79 @@ namespace WylesLibs {
 //          idk, seems useful?
 
 //      that means a parser within a parser, parsception LMAO
-class ReaderTask {
+//  result == tuple/array(whole_string_match, match groups...); ? i.e. entire string match is a group, group 1. 
+//      then you can differentiate further through typical group matching.
+//  
+//  functionality to support:
+//      - character classes
+//      - variable wildcard matching
+//      - escape sequences?
+//      - groups
+//      - positive/negative lookahead/behind
+
+//  
+//      - read_until shortest vs largest match vs until character vs byte count?
+//      should be doable and reasonably performant with clever buffering (memoization)? I don't think you need multiple passes? 
+//
+//      should be fun...
+
+typedef StreamTask<uint8_t, SharedArray<uint8_t>> ReaderTask;
+
+template<typename RT>
+class ReaderTaskChain: public StreamTask<uint8_t, RT> {
     public:
-        std::string read_until;
+        ReaderTask * next_operation;
 
-        virtual ~ReaderTask() = default;
-        // Good example of CPP OOP
-
-        // good example of "dynamic dispatch"?
-        // Virtual allows calling function defined in original type during object creation. Functions without virtual will call the function defined in the "current type".
-        //
-        //  Common example is to define and use a base class to cleanly select different functionality...
-        //      This means that you might cast a sub-class pointer to it's base class... Virtual is required to call the functionality in the sub-class after casting to base class.
-        //  Calls to ReaderTaskChain->flush (if not virtual) would call this function regardless of how it's defined in sub-classes.
-        //  By contrast, calls to perform (if virtual) call the function defined by the class-type at creation. *** Regardless of any casting/type-conversion along the way ***.
-
-        // good example of pure functions
-        //     There's {} (no-op) vs. =0, 
-        //      a class with a pure function (=0) is abstract and cannot be instantiated, but can be used as a pointer type.
-        //  This means the compiler throws an error if it doesn't find an implementation of the pure function in sub-classes. 
-
-        // override and final (called virt-specifier -- in CPP grammar specification)
-        // These appear to be optional and more a formality thing... Restrict behaviour as much as possible if not strictly necessary...
-
-        //  override says that function is virtual (supports dynamic dispatch) and overrides a virtual class.
-        //      - enables compiler check to ensure base class function is virtual...  
-        //  final says that function is virtual (supports dynamic dispatch) and cannot be overridden.
-        //      - compiler error is generated if user tries to override. 
-
-        virtual void flush(SharedArray<uint8_t>& buffer) = 0;
-        virtual void perform(SharedArray<uint8_t>& buffer, uint8_t c) = 0;
-};
-
-class ReaderTaskChain: public ReaderTask {
-    public:
-        ReaderTask * nextOperation;
-
-        ReaderTaskChain(): nextOperation(nullptr) {}
-        ReaderTaskChain(ReaderTaskChain * next): nextOperation(next) {}
+        ReaderTaskChain(): next_operation(nullptr) {}
+        ReaderTaskChain(ReaderTaskChain * next): next_operation(next) {}
         ~ReaderTaskChain() override = default;
 
-        void next(SharedArray<uint8_t>& buffer, uint8_t c) {
-            if (this->nextOperation == nullptr) {
-                buffer.append(c);
+        void initialize() override {}
+
+        void next(uint8_t& c) {
+            if (this->next_operation == nullptr) {
+                this->collectorAccumulate(c);
             } else {
-                this->nextOperation->perform(buffer, c);
+                // make sure to propogate collector and criteria objects... see estream.h::streamCollect
+                this->next_operation->collector = this->collector;
+                this->next_operation->criteria = this->criteria;
+                return this->next_operation->perform(c);
             }
         }
-        void flush(SharedArray<uint8_t>& buffer) override {
-            if (this->nextOperation != nullptr) {
-                this->nextOperation->flush(buffer);
+        void flush() override {
+            if (this->next_operation != nullptr) {
+                this->next_operation->flush();
             }
         }
-        virtual void perform(SharedArray<uint8_t>& buffer, uint8_t c) = 0;
+        virtual void perform(uint8_t& c) = 0;
 };
 
-class ReaderTaskLC: public ReaderTaskChain {
+template<typename RT>
+class ReaderTaskLC: public ReaderTaskChain<RT> {
     public:
         ~ReaderTaskLC() override = default;
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
+        void perform(uint8_t& c) final override {
             if (c >= 0x41 && c <= 0x5A) { // lowercase flag set and is upper case
         		c += 0x20; // lower case the char
         	}
-            this->next(buffer, c);
+            this->next(c);
         }
 };
 
-class ReaderTaskUC: public ReaderTaskChain {
+template<typename RT>
+class ReaderTaskUC: public ReaderTaskChain<RT> {
     public:
         ~ReaderTaskUC() override = default;
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
+        void perform(uint8_t& c) final override {
             if (c >= 0x61 && c <= 0x7A) {
         		c -= 0x20;
         	}
-            this->next(buffer, c);
+            this->next(c);
         }
 };
 
-class ReaderTaskDisallow: public ReaderTaskChain {
+template<typename RT>
+class ReaderTaskDisallow: public ReaderTaskChain<RT> {
     public:
         std::string to_disallow;
         bool strict;
@@ -129,7 +125,7 @@ class ReaderTaskDisallow: public ReaderTaskChain {
         ReaderTaskDisallow(std::string to_disallow, bool strict): to_disallow(to_disallow), strict(strict) {}
         ~ReaderTaskDisallow() override = default;
 
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
+        void perform(uint8_t& c) final override {
             bool ignored = false;
             if (this->to_disallow.find(c) != std::string::npos) { 
                 if (strict) {
@@ -141,12 +137,13 @@ class ReaderTaskDisallow: public ReaderTaskChain {
                 }
             } 
             if (false == ignored) {
-                this->next(buffer, c);
+                this->next(c);
             }
         }
 };
 
-class ReaderTaskAllow: public ReaderTaskChain {
+template<typename RT>
+class ReaderTaskAllow: public ReaderTaskChain<RT> {
     public:
         std::string to_allow;
         bool strict;
@@ -157,9 +154,9 @@ class ReaderTaskAllow: public ReaderTaskChain {
         ReaderTaskAllow(std::string to_allow, bool strict): to_allow(to_allow), strict(strict) {}
         ~ReaderTaskAllow() override = default;
 
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override {
+        void perform(uint8_t& c) final override {
             if (this->to_allow.find(c) != std::string::npos) { 
-                this->next(buffer, c);
+                this->next(c);
             } else {
                 if (strict) {
                     std::string msg = "Banned character found:";
@@ -170,22 +167,63 @@ class ReaderTaskAllow: public ReaderTaskChain {
         }
 };
 
-class ReaderTaskTrim: public ReaderTask {
+template<typename RT>
+class ReaderTaskExact: public ReaderTaskChain<RT> {
+    public:
+        std::string match;
+        size_t i;
+        bool strict;
+        bool is_match;
+
+        ReaderTaskExact(): match(""), i(0) {}
+        ReaderTaskExact(std::string match, bool strict = false): match(match), i(0), strict(strict) {}
+
+        void initialize() final override {
+            is_match = true;
+        }
+        void perform(uint8_t& c) final override {
+            if (this->match.at(i++) != c) {
+                is_match = false;
+                if (true == strict) {
+                    std::string msg("Invalid character found in exact match:");
+                    loggerPrintf(LOGGER_INFO, "%s '%c', '%s'\n", msg.c_str(), c, match.c_str());
+                    throw std::runtime_error(msg);
+                } else {
+                    this->criteriaPreemptiveBail(); // bail as soon as not match detected.
+                }
+            } else {
+                this->next(c);
+            }
+        }
+        void flush() override {
+            i = 0;
+        }
+};
+
+template<typename RT>
+class ReaderTaskTrim: public StreamTask<uint8_t, RT> {
     public:
         SharedArray<uint8_t> data;
         SharedArray<uint8_t> r_trim;
         bool l_trimming;
         bool r_trimming;
 
-        ReaderTaskTrim(): l_trimming(true), r_trimming(false) {}
+        ReaderTaskTrim() = default;
         ~ReaderTaskTrim() override = default;
 
-        void flush(SharedArray<uint8_t>& buffer) final override {}
-        void rTrimFlush(SharedArray<uint8_t>& buffer);
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override;
+        void initialize() final override {
+            data.remove(0, data.size());
+            r_trim.remove(0, data.size());
+            l_trimming = true;
+            r_trimming = false;
+        }
+        void flush() final override {}
+        void rTrimFlush();
+        void perform(uint8_t& c) final override;
 };
 
-class ReaderTaskExtract: public ReaderTask {
+template<typename RT>
+class ReaderTaskExtract: public StreamTask<uint8_t, RT> {
     public:
         SharedArray<uint8_t> data;
         SharedArray<uint8_t> r_trim;
@@ -197,17 +235,129 @@ class ReaderTaskExtract: public ReaderTask {
         uint8_t left_most_char;
         uint8_t right_most_char;
 
-        // TODO: might be good to initialize these (just read_until?) to something other than NUL in case that's the character... maybe some >128 but not 255...
-        ReaderTaskExtract(char left_most_char, char right_most_char): 
-            l_trimming(true), r_trimming(false), 
-                                                                      left_most_char(left_most_char), right_most_char(right_most_char), 
-                                                                      r_trim_non_whitespace(0), r_trim_read_until(0) {}
+        ReaderTaskExtract(char left_most_char, char right_most_char): left_most_char(left_most_char), right_most_char(right_most_char) {}
         ~ReaderTaskExtract() override = default;
 
-        void flush(SharedArray<uint8_t>& buffer) final override;
-        void rTrimFlush(SharedArray<uint8_t>& buffer);
-        void perform(SharedArray<uint8_t>& buffer, uint8_t c) final override;
+        void initialize() final override {
+            data.remove(0, data.size());
+            r_trim.remove(0, data.size());
+            l_trimming = true;
+            r_trimming = false;
+            r_trim_non_whitespace = 0;
+            r_trim_read_until = 0;
+        }
+        void flush() final override;
+        void rTrimFlush();
+        void perform(uint8_t& c) final override;
 };
+
+template<typename RT>
+void ReaderTaskTrim<RT>::rTrimFlush() {
+    if (this->r_trim.size() > 0) {
+        this->collectorAccumulate(this->r_trim);
+    }
+    r_trimming = false;
+}
+
+template<typename RT>
+void ReaderTaskTrim<RT>::perform(uint8_t& c) {
+    if (!this->l_trimming) {
+        if (STRING_UTILS_WHITESPACE.find(c) != std::string::npos) {
+            // if just trimming whitespace...
+            this->r_trimming = true;
+            this->r_trim.append(c);
+        } else if (this->r_trimming) {
+            if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+                rTrimFlush();
+                this->r_trimming = false;
+                this->collectorAccumulate(c);
+            } else {
+                // store whitespaces in r_trim buffer for flushing if we see non-whitespace.
+                this->collectorAccumulate(c);
+            }
+        } else {
+            this->collectorAccumulate(c);
+        }
+    } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+        // if just trimming whitespace...
+        this->l_trimming = false;
+        this->collectorAccumulate(c);
+    }
+}
+
+template<typename RT>
+void ReaderTaskExtract<RT>::flush() {
+    // if extracting token and non whitespace after token throw an exception...
+    if (r_trim_non_whitespace != 0) {
+        // TODO: maybe make this an option...
+        std::string msg = "Found non-whitespace char right of token.";
+        loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), r_trim_non_whitespace);
+        throw std::runtime_error(msg);
+    } else if (!this->l_trimming && !this->r_trimming) {
+        std::string msg = "Found open ended token.";
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
+    } else if (this->r_trim_read_until != 0) {
+        this->collectorAccumulate(this->r_trim_read_until);
+    }
+    this->initialize();
+}
+template<typename RT>
+void ReaderTaskExtract<RT>::rTrimFlush() {
+    if (this->r_trim.size() > 0) {
+        this->collectorAccumulate(this->r_trim);
+    }
+    this->r_trimming = false;
+}
+// TODO: bug fix/feature needed... if we reach an "until" character while r_trimming (when open, before right_most_char is reached), then we will exit.
+//  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ":": should yield :: not :. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
+template<typename RT>
+void ReaderTaskExtract<RT>::perform(uint8_t& c) {
+    if (!this->l_trimming) {
+        if (this->right_most_char == c) {
+            this->r_trimming = true;
+            this->r_trim.append(c);
+        } else if (this->r_trimming) {
+            if (this->right_most_char == c) {
+                // if extracting token and right_most_char found, flush and include right_most
+                // TODO: maybe make this an option...
+                // "blablbl" bblbnlbl    | == exception 
+                // "blablbl"    | == blablbl 
+                // "blablbl" " alknla| == blablbl - SEE TODO above... this might change.
+                rTrimFlush();
+                this->r_trim.append(c);
+                // this->collectorAccumulate(c);
+                // this->r_trimming = false;
+                this->r_trim_non_whitespace = 0;
+            } else {
+                this->r_trim.append(c);
+
+                if (this->criteriaState() & LOOP_CRITERIA_STATE_AT_LAST) {
+                    this->r_trim_read_until = c;
+                } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+                    // if not last character in stream and not whitespace
+
+                    // TODO: maybe make this an option...
+                    this->r_trim_non_whitespace = c;
+                }
+            }
+        } else {
+            this->collectorAccumulate(c);
+        }
+    } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
+        if (c == left_most_char) {
+            this->l_trimming = false;
+        } else if (this->criteriaState() & LOOP_CRITERIA_STATE_AT_LAST) {
+            // include until string if that's all... because decided that why peek if can just read and return until match.
+            //  more clunky non-sense?
+            this->collectorAccumulate(c);
+        } else {
+            std::string msg = "Found non-whitespace char left of token.";
+            loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
+            throw std::runtime_error(msg);
+        }
+    }
+}
 }
 
 #endif

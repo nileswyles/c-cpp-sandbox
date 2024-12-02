@@ -50,8 +50,16 @@ extern uint64_t WylesLibs::Cal::getZonedEpochTime(int16_t& offset) {
         // Date and time (GMT): Wednesday, January 1, 2025 12:00:00 AM
         epoch_seconds = 1735689600;
     } else if (invocations == 9) {
-        // testGetFormattedTimeFirstDayAfterLeapYear
-        // Date and time (GMT): Wednesday, January 1, 2025 12:00:00 AM
+        // testGetFormattedTimeMinus5
+        // Date and time (EST): Monday, February 27, 2023 12:00:00 AM
+        epoch_seconds = 1677456000;
+    } else if (invocations == 10) {
+        // testGetFormattedTimeMinus5ISO8601_READABLE
+        // Date and time (EST): Monday, February 27, 2023 12:00:00 AM
+        epoch_seconds = 1677456000;
+    } else if (invocations == 11) {
+        // testGetFormattedTimeMinus5ISO8601
+        // Date and time (EST): Monday, February 27, 2023 12:00:00 AM
         epoch_seconds = 1677456000;
     }
     return epoch_seconds;

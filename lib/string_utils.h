@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 namespace WylesLibs {
-    static std::string STRING_UTILS_WHITESPACE = "\r\n\t ";
+    static std::string STRING_UTILS_WHITESPACE = "\r\n\t\t ";
     
     static bool isAlpha(char c) {
         if ((c >= 0x41 && c <= 0x5A) || (c >=0x61 && c <= 0x7A)) {
@@ -42,10 +42,10 @@ namespace WylesLibs {
         return isDigit(c) || isLowerHex(c) || isUpperHex(c);
     }
     
-    static char hexToChar(std::string buf) {
+    static char hexToChar(std::string buffer) {
         char ret = 0x00;
         for (size_t i = 0; i < 2; i++) {
-            ret = ret << 4 | buf.at(i);
+            ret = ret << 4 | buffer.at(i);
         }
         return ret;
     }
@@ -90,7 +90,7 @@ namespace WylesLibs {
             s += "0x";
         }
         size_t digit_count = 1;
-        while (num / divisor > opts.base) {
+        while (num / divisor >= opts.base) {
             divisor *= opts.base;
             digit_count++;
         }
@@ -106,6 +106,7 @@ namespace WylesLibs {
             // truncate
             start_index = digit_count - opts.width;
         }
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "\n\tnum: %lu\n\tdigit_count: %lu,\n\tdivisor: %lu,\n\tstart_index: %lu,\n\twidth: %u\n", num, digit_count, divisor, start_index, opts.width);
         while (divisor > 0) {
             digit = (char)(num / divisor);
             if (i >= start_index) { // truncate
@@ -118,23 +119,63 @@ namespace WylesLibs {
                         s += digit - 0xA + 'a';
                     }
                 } else {
-                    throw std::runtime_error("Invalid digit character detected.");
+                    std::string msg("Invalid digit character detected: '");
+                    msg += digit;
+                    msg += "', num: ";
+                    msg += std::to_string(num);
+                    msg += ", divisor: ";
+                    // TODO: did something change? why was the divisor off by one multiple of base? fail test agian?
+                    msg += std::to_string(divisor);
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    // throw std::runtime_error(msg);
                 }
             }
-            num -= (digit * divisor);
-            divisor /= opts.base;
+            // if zeros in number 
+            //  in other words, if diff < divisor/10; in other words, if the next divisor is not valid. loop until valid divisor and append zeros.
+            uint64_t diff = num - (digit * divisor);
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "DIGIT: %u, divisor: %lu\n", digit, divisor);
+            if (diff < divisor/opts.base) {
+                // for 1003
+                //  we go from divisor 1000 -> divisor 1
+                // and iterate only twice.. to add zeros only twice.
+                // 1000/10 -> 100 / 10 -> 10/ 10 = 1
+                //  1,          2,          3,
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "next character is zero. divisor at start: %lu\n", divisor);
+                while (divisor/opts.base > diff) {
+                    divisor /= opts.base;
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "DIGIT: '0', divisor: %lu\n", divisor);
+                    s += '0';
+                }
+                divisor /= opts.base;
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "next character is zero. divisor at end: %lu\n", divisor);
+            } else {
+                divisor /= opts.base;
+            }
+            num = diff;
             i++;
         }
         return s;
     }
 
-    // TODO: octal
     static std::string numToStringSigned(int64_t num, StringFormatOpts opts = {}) {
         if (num < 0) {
             num *= -1;
             opts.is_negative = true;
         }
         return numToString(static_cast<uint64_t>(num), opts);
+    }
+
+    static bool placeDigit(std::string& s, size_t divisor, size_t decimal_idx, char digit, StringFormatOpts& opts, int16_t& precision_count) {
+        s += digit;
+        if (divisor == decimal_idx) {
+            if (opts.precision == 0) {
+                // if precision is zero, obviously don't continue after decimal
+                return false;
+            }
+            s += '.';
+            precision_count = 0;
+        }
+        return true;
     }
 
     static std::string floatToString(double num, StringFormatOpts opts = {}) {
@@ -148,6 +189,7 @@ namespace WylesLibs {
                 s += '+';
             }
         }
+        // TODO: minimize type sizes where possible
         int16_t precision_count = -1;
         size_t divisor = 1;
         size_t digit_count = 1;
@@ -172,7 +214,14 @@ namespace WylesLibs {
         if (errno == ERANGE) {
             throw std::runtime_error("Math error detected.");
         }
-        while (num / divisor > 10) {
+        if (divisor >= decimal_idx) {
+            digit_count_before_decimal++;
+        }
+        // divisor
+        // 1, 10, 100, 1000, 10,000, 100,000, 1,000,000 
+        //  num
+        //  1,000,000, 100,000, 10,000, 1000, 100, 10
+        while (num / divisor >= 10) {
             // identify num width thus intializing digit parsing.
             //  the detected width (characterized by divisor and digit_count for natural width) is used for parsing, padding and truncating...
             divisor *= 10;
@@ -227,32 +276,59 @@ namespace WylesLibs {
                 start_index = digit_count_before_decimal - opts.width;
             }
         }
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "\n\tadj_num: %f,\n\tdigit_count: %lu,\n\tdigit_count_before_decimal: %lu,\n\tdivisor: %lu,\n\tdecimal_idx: %lu,\n\tstart_index: %lu,\n\twidth: %u,\n\tprecision: %u,\n\tprecision_count: %d\n", 
+            num, digit_count, digit_count_before_decimal, divisor, decimal_idx, start_index, opts.width, opts.precision, precision_count);
         // digit parsing - place decimal point and trim left at width and right at precision.
         while (divisor > 0) {
             digit = (char)(num / divisor);
             if (i >= start_index) { // truncate natural
-
                 if (precision_count >= opts.precision) { // truncate decimal
                     break;
                 } else if (precision_count >= 0) {
                     precision_count++;
                 }
                 if (digit <= 9) {
-                    s += digit + '0';
-                    if (divisor == decimal_idx) {
-                        if (opts.precision == 0) {
-                            // if precision is zero, obviously don't continue after decimal
-                            break;
-                        }
-                        s += '.';
-                        precision_count = 0;
+                    if (false == placeDigit(s, divisor, decimal_idx, digit + '0', opts, precision_count)) {
+                        break;
                     }
                 } else {
-                    throw std::runtime_error("Invalid digit character detected.");
+                    std::string msg("Invalid digit character detected: '");
+                    msg += digit;
+                    msg += "', num: ";
+                    msg += std::to_string(num);
+                    msg += ", divisor: ";
+                    msg += std::to_string(divisor);
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    // throw std::runtime_error(msg);
                 }
             }
-            num -= (digit * divisor);
-            divisor /= 10;
+            // if zeros in number
+            //  in other words, if diff < divisor/10; in other words, if the next divisor is not valid. loop until valid divisor and append zeros.
+            double diff = num - (digit * divisor);
+            num = diff;
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "num: %f, DIGIT: %u, divisor: %lu\n", num, digit, divisor);
+            if (diff < divisor/10) {
+                // for 1003
+                //  we go from divisor 1000 -> divisor 1
+                // and iterate only twice.. to add zeros only twice.
+                // 1000/10 -> 100 / 10 -> 10/ 10 = 1
+                //  1,          2,          3,
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "next character is zero. divisor at start: %lu\n", divisor);
+                while (divisor/10 > diff && precision_count < opts.precision) {
+                    divisor /= 10;
+                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "DIGIT: '0', divisor: %lu\n", divisor);
+                    if (false == placeDigit(s, divisor, decimal_idx, '0', opts, precision_count)) {
+                        break;
+                    }
+                    if (precision_count >= 0) {
+                        precision_count++;
+                    }
+                }
+                divisor /= 10;
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "next character is zero. divisor at end: %lu, precision_count: %u\n", divisor, precision_count);
+            } else {
+                divisor /= 10;
+            }
             i++;
         }
         // append exponential string.

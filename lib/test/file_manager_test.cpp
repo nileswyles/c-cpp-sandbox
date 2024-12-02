@@ -1,5 +1,5 @@
 #include "tester.h"
-#ifdef FILE_MANAGER_GCS_TEST
+#ifdef WYLESLIBS_GCS_BUILD
 #include "file/file_gcs.h"
 #include "google/cloud/log.h"
 #else
@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include <memory>
+#include "memory/pointers.h"
 
 #ifndef LOGGER_FILE_MANAGER_TEST
 #define LOGGER_FILE_MANAGER_TEST 1
@@ -24,10 +25,10 @@ using namespace WylesLibs;
 using namespace WylesLibs::Test;
 using namespace WylesLibs::File;
 
-#ifdef FILE_MANAGER_GCS_TEST
-static std::shared_ptr<FileManager> file_manager = std::dynamic_pointer_cast<FileManager>(std::make_shared<GCSFileManager>("test-bucket-free-tier"));
+#ifdef WYLESLIBS_GCS_BUILD
+static FileManager * file_manager = dynamic_cast<FileManager *>(new GCSFileManager("test-bucket-free-tier"));
 #else
-static std::shared_ptr<FileManager> file_manager = std::make_shared<FileManager>();
+static FileManager * file_manager = new FileManager();
 #endif 
 static std::string test_directory = "./file_manager_test_dir";
 static const std::string test_file = Paths::join(test_directory, "file_manager_test.txt");

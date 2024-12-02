@@ -2,12 +2,13 @@
 #define WYLESLIBS_JSON_PARSER_H
 
 #include <memory>
+#include "memory/pointers.h"
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "datastructures/array.h"
-#include "estream/estream.h"
+#include "estream/byteestream.h"
 #include "file/file.h"
 
 #include "global_consts.h"
@@ -61,7 +62,6 @@ class JsonValue: public JsonBase {
         JsonType type;
         JsonValue(): type(NULL_TYPE) {}
         JsonValue(JsonType derived_type): type(derived_type) {}
-        // TODO: odd syntax but...
         ~JsonValue() override = default;
         std::string toJsonString() {
             return "";
@@ -144,10 +144,10 @@ class JsonString: public JsonValue {
 
 // LOL, over optimizating? probably but this should definitely minimize memory footprint some... probably not as much as one would think though?
 //  if nothing else, let's keep parsing stuff consistent... 
-extern std::shared_ptr<JsonValue> parseFile(std::shared_ptr<StreamFactory> stream_factory, std::string file_path);
-extern std::shared_ptr<JsonValue> parse(std::string json);
-extern std::shared_ptr<JsonValue> parse(SharedArray<uint8_t> json);
-extern std::shared_ptr<JsonValue> parse(ReaderEStream * r, size_t& i);
+extern ESharedPtr<JsonValue> parseFile(ESharedPtr<StreamFactory> stream_factory, std::string file_path);
+extern ESharedPtr<JsonValue> parse(std::string json);
+extern ESharedPtr<JsonValue> parse(SharedArray<uint8_t> json);
+extern ESharedPtr<JsonValue> parse(ByteEStream * r, size_t& i);
 
 extern std::string pretty(std::string json);
 

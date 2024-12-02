@@ -5,6 +5,7 @@
 #include <vector>
 #include <stddef.h>
 #include <stdbool.h>
+#include <signal.h>
 #include "logger.h"
 
 #define addTest(func)\
@@ -29,10 +30,18 @@ typedef struct Test {
 
 extern void ASSERT_STRING(TestArg * t, std::string result, std::string expected);
 extern void ASSERT_BOOLEAN(TestArg * t, bool result, bool expected);
+extern void ASSERT_UINT64(TestArg * t, uint64_t result, uint64_t expected);
+
+// static void sig_handler(int sig, siginfo_t * info, void * context) {
+//     // if (sig == SIGSEGV) {
+//         loggerPrintf(LOGGER_DEBUG, "SIGSEGV, status: %d, int: %d, addr: %p\n", info->si_status, info->si_errno, info->si_addr);
+//     // }
+// }
 
 #define TESTER_DEFAULT_TEST_FAIL_VALUE true
 class Tester {
     private:
+        struct sigaction act;
         std::string suite_name;
         void runTest(Test * test);
     public:
@@ -44,7 +53,14 @@ class Tester {
         size_t num_tests;
 
         Tester(std::string suite_name, SuiteFunction * before, TestFunction * before_each, SuiteFunction * after, TestFunction * after_each): 
-            suite_name(suite_name), before(before), before_each(before_each), after(after), after_each(after_each), num_tests(0) {}
+            suite_name(suite_name), before(before), before_each(before_each), after(after), after_each(after_each), num_tests(0) {
+                // act = {0};
+                // act.sa_flags = SA_SIGINFO;
+                // act.sa_sigaction = &sig_handler;
+                // if (sigaction(SIGSEGV, &act, NULL) == -1) {
+                //     loggerPrintf(LOGGER_DEBUG, "Failed to configure sig action and sig handler.\n");
+                // }
+        }
         Tester(std::string suite_name): Tester(suite_name, nullptr, nullptr, nullptr, nullptr) {}
 
         void addTestWithName(const char * name, TestFunction * func, const char * test_file_name, int line_number) {

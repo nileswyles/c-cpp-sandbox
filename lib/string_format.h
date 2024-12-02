@@ -31,7 +31,7 @@ namespace WylesLibs {
 //   done parsing format
 
 // yeah, so, should I use string and cursor or stringstream?
-// too much overhead from stringstream? ddd. stream from readerestream... right? lol that's the whole point...
+// too much overhead from stringstream? ddd. stream from IStreamEStream... right? lol that's the whole point...
 
 // let's be crude about this...
 #define WYLESLIBS_STRING_FORMAT_DEFAULT_ARG_TYPE_CHAR '|'
@@ -46,7 +46,6 @@ class Arg {
 };
 
 extern std::string format(std::string format, ...);
-// LMAO
 #define MAX_FORMATTED_STRING_SIZE 1024
 extern std::string ssprintf(std::string format, ...);
 };

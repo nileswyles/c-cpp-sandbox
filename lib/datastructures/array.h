@@ -1,6 +1,8 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
+#include "memory/pointers.h"
+
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -50,12 +52,12 @@ static inline T * newCArray(size_t size) {
 }
 
 template<typename T>
-void addElement(T * buf, const size_t pos, T el) {
+void addElement(T * buffer, const size_t pos, T el) {
     // copy assignment
-    buf[pos] = el;
+    buffer[pos] = el;
 }
 template<>
-void addElement<const char *>(const char ** buf, const size_t pos, const char * el);
+void addElement<const char *>(const char ** buffer, const size_t pos, const char * el);
 
 template<typename T>
 void deleteCArray(T * e_buf, size_t size) {
@@ -69,7 +71,7 @@ template<>
 void deleteCArray<const char *>(const char ** e_buf, size_t size);
 
 template<typename T>
-void deleteCArrayElement(T * buf, size_t pos) {
+void deleteCArrayElement(T * buffer, size_t pos) {
     // ! IMPORTANT - these types are presumably non-pointer types... if not, then the developer needs to create specialization and write tests (see cstrings).
     //  Not as easy to detect the need for this with functional testing, 
     //      so developer should add a specialization of this if a specialization of addElement is implemented...
@@ -77,7 +79,7 @@ void deleteCArrayElement(T * buf, size_t pos) {
     //  TODO: Compiler or lint check for this?
 }
 template<>
-void deleteCArrayElement<const char *>(const char ** buf, size_t pos);
+void deleteCArrayElement<const char *>(const char ** buffer, size_t pos);
 
 // TODO: again, member function "specialization" didn't work, so... I think the non-specialization stuff was working lol...
 //  revisit in future.
@@ -194,7 +196,7 @@ class Array {
                     while (i < size) {
                         left_buf = e_buf + i;
                         if (i + span < size) {
-                            // if right buf is within bounds... 
+                            // if right buffer is within bounds... 
                             //  else it's the odd element out (last element, so adhocly bring in the last odd element in later iterations.) 
                             right_buf = e_buf + i + span;
                             size_t right_size = span;
@@ -232,13 +234,13 @@ class Array {
             e_size = 0;
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
         }
-        Array(std::shared_ptr<std::basic_istream<T>>stream, size_t size) {
+        Array(ESharedPtr<std::basic_istream<T>> stream, size_t size) {
             e_cap = size;
             e_buf = newCArray<T>(e_cap);
             e_size = e_cap;
             e_sorted = ArraySort(ARRAY_SORT_UNSORTED);
 
-            stream->read(e_buf, e_size);
+            ESHAREDPTR_GET_PTR(stream)->read(e_buf, e_size);
         }
         Array(const std::string& s) {
             e_cap = s.size();
@@ -292,7 +294,7 @@ class Array {
                     recapped = true;
                     this->e_cap = new_cap;
                     // if recapped, copy elements up until pos.
-                    //  the rest will be automagically initialized by the insert operation... (see use of new_buf vs this->buf variables below)
+                    //  the rest will be automagically initialized by the insert operation... (see use of new_buf vs this->buffer variables below)
                     size_t total_size_up_to_pos = pos * sizeof(T);
                     for (size_t i = 0; i < pos; i++) {
                         new_buf[i] = (this->e_buf)[i];
@@ -541,7 +543,7 @@ class ArrayControl {
         //  could alternatively use constexpr to statically initialize the array but this is definitely nice to have.
         ArrayControl(std::initializer_list<T> list): ptr(new Array<T>(list)), instance_count(1) {}
         ArrayControl(const size_t initial_cap): ptr(new Array<T>(initial_cap)), instance_count(1) {}
-        ArrayControl(std::shared_ptr<std::basic_istream<T>> stream, size_t size): ptr(new Array<T>(stream, size)), instance_count(1) {}
+        ArrayControl(ESharedPtr<std::basic_istream<T>> stream, size_t size): ptr(new Array<T>(stream, size)), instance_count(1) {}
         ArrayControl(const std::string& s): ptr(new Array<T>(s)), instance_count(1) {}
         ~ArrayControl() {
             delete this->ptr;
@@ -549,6 +551,8 @@ class ArrayControl {
 };
 
 // @
+
+// Do you shared_ptr string, map, etc? lol kind of annoying but I think preferable to pointer syntax?
 
 template<typename T> 
 class SharedArray {
@@ -560,7 +564,7 @@ class SharedArray {
         SharedArray(): ctrl(new ArrayControl<T>()) {}
         SharedArray(std::initializer_list<T> list): ctrl(new ArrayControl<T>(list)) {}
         SharedArray(const size_t initial_cap): ctrl(new ArrayControl<T>(initial_cap)) {}
-        SharedArray(std::shared_ptr<std::basic_istream<T>> stream, size_t size): ctrl(new ArrayControl<T>(stream, size)) {}
+        SharedArray(ESharedPtr<std::basic_istream<T>> stream, size_t size): ctrl(new ArrayControl<T>(stream, size)) {}
         SharedArray(const std::string& s): ctrl(new ArrayControl<T>(s)) {}
 
         virtual ~SharedArray() {
@@ -677,15 +681,11 @@ class SharedArray {
         //          Either swap all variables explictly or use default functionality (which presumably does what I described above?). 
         //          This ensures it doesn't copy - avoiding dangling shlongs...
         SharedArray(SharedArray<T>&& x) {
-            ArrayControl<T> * tmp_ctrl = this->ctrl;
-            this->ctrl = x.ctrl;
-            x.ctrl = tmp_ctrl;
+            std::swap(this->ctrl, x.ctrl);
         }
         // Move assignment
         SharedArray<T>& operator= (SharedArray<T>&& x) {
-            ArrayControl<T> * tmp_ctrl = this->ctrl;
-            this->ctrl = x.ctrl;
-            x.ctrl = tmp_ctrl;
+            std::swap(this->ctrl, x.ctrl);
             return *this;
         }
         SharedArray<T>& operator+ (SharedArray<T>& x) {

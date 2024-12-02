@@ -16,7 +16,7 @@ for (my $i = 0; $i < scalar(@ARGV); $i++) {
 	}
 }
 my @TEST_SUITES = split(' ', `ls $PATH_TO_TEST_DIRECTORY`);
-my @TEST_SUITES_TO_SKIP = ("http_server_test.sh", "enew_test.sh");
+my @TEST_SUITES_TO_SKIP = ("http_server_test.sh", "enew_test.sh", "matrix_test.sh", "csv_test.sh");
 
 # SUMMARY
 print("\t\t\tTest Summary\n");

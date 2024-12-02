@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include "memory/pointers.h"
 
 #ifndef ALGO_SIGNED_LONG
 #define ALGO_SIGNED_LONG int64_t
@@ -91,7 +92,7 @@ namespace WylesLibs {
                     return this->view->start;
                 }
             }
-            MatrixVector<T>& insert(const size_t pos, const T * els, const size_t num_els) {
+            MatrixVector<T>& insert(const size_t pos, const T * els, const size_t num_els) override {
                 if (this->view == nullptr) {
                     this->ctrl->ptr->insert(pos, els, num_els);
                 } else {
@@ -101,7 +102,7 @@ namespace WylesLibs {
                 }
                 return *this;
             }
-            MatrixVector<T>& insert(const size_t pos, const T& el) {
+            MatrixVector<T>& insert(const size_t pos, const T& el) override {
                 if (this->view == nullptr) {
                     this->ctrl->ptr->insert(pos, el);
                 } else {
@@ -111,7 +112,7 @@ namespace WylesLibs {
                 }
                 return *this;
             }
-            MatrixVector<T>& uniqueAppend(const T& el) {
+            MatrixVector<T>& uniqueAppend(const T& el) override {
                 if (this->view == nullptr) {
                     this->ctrl->ptr->uniqueAppend(el);
                 } else {
@@ -121,7 +122,7 @@ namespace WylesLibs {
                 }
                 return *this;
             }
-            MatrixVector<T>& append(const T& el) {
+            MatrixVector<T>& append(const T& el) override {
                 if (this->view == nullptr) {
                     this->ctrl->ptr->append(el);
                 } else {
@@ -140,7 +141,7 @@ namespace WylesLibs {
                     throw std::runtime_error(message);
                 }
             }
-            MatrixVector<T>& append(const T * els, const size_t num_els) {
+            MatrixVector<T>& append(const T * els, const size_t num_els) override {
                 if (this->view == nullptr) {
                     this->ctrl->ptr->append(els, num_els);
                 } else {
@@ -150,7 +151,7 @@ namespace WylesLibs {
                 }
                 return *this;
             }
-            MatrixVector<T>& remove(const size_t pos, const size_t num_els) {
+            MatrixVector<T>& remove(const size_t pos, const size_t num_els) override {
                 if (this->view == nullptr) {
                     this->ctrl->ptr->remove(pos, num_els);
                 } else {
@@ -160,7 +161,7 @@ namespace WylesLibs {
                 }
                 return *this;
             }
-            MatrixVector<T>& removeEl(const T& el) {
+            MatrixVector<T>& removeEl(const T& el) override {
                 if (this->view == nullptr) {
                     this->ctrl->ptr->removeEl(el);
                 } else {
@@ -170,7 +171,7 @@ namespace WylesLibs {
                 }
                 return *this;
             }
-            MatrixVector<T>& remove(const size_t pos) {
+            MatrixVector<T>& remove(const size_t pos) override {
                 if (this->view == nullptr) {
                     this->ctrl->ptr->remove(pos);
                 } else {
@@ -180,7 +181,7 @@ namespace WylesLibs {
                 }
                 return *this;
             }
-            MatrixVector<T>& removeFront() {
+            MatrixVector<T>& removeFront() override {
                 if (this->view == nullptr) {
                     this->ctrl->ptr->removeFront();
                 } else {
@@ -190,7 +191,7 @@ namespace WylesLibs {
                 }
                 return *this;
             }
-            MatrixVector<T>& removeBack() {
+            MatrixVector<T>& removeBack() override {
                 if (this->view == nullptr) {
                     this->ctrl->ptr->removeBack();
                 } else {
@@ -200,7 +201,7 @@ namespace WylesLibs {
                 }
                 return *this;
             }
-            size_t size() {
+            size_t size() override {
                 if (this->view == nullptr) {
                     return this->ctrl->ptr->size();
                 } else {
@@ -504,14 +505,14 @@ namespace WylesLibs {
     };
     class GraphNode {
         public:
-            std::map<std::string, std::shared_ptr<GraphNode>> adjacency_map;
+            std::map<std::string, ESharedPtr<GraphNode>> adjacency_map;
             GraphNode() = default;
             virtual ~GraphNode() = default;
     };
     class Graph {
         public:
             // maybe i don't need shared ptr because I can keep this contained but let's seee...
-            SharedArray<std::shared_ptr<GraphNode>> node_list;
+            SharedArray<ESharedPtr<GraphNode>> node_list;
             Graph() = default;
             virtual ~Graph() = default;
     };

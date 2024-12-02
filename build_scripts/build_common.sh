@@ -55,16 +55,18 @@ fi
 
 REMOVED_WARNING_FLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-function -Wno-reorder -Wno-deprecated-declarations"
 
-echo "\n~Build: "
+echo "
+~Build: "
 BUILD_CMD="$CXX_COMPILER $DEBUG$SRC_FILES-iquote $QUOTE_INCLUDE_ROOT $INCLUDE_FILES$LIB_SEARCH_PATHS$DEFINES$LD_FLAGS-std=c++20 -Wall $REMOVED_WARNING_FLAGS -o $PROGRAM_PATH"
-echo "\t$BUILD_CMD"
+echo "    $BUILD_CMD"
 eval $BUILD_CMD
 
-echo "\n~Executing Program: "
+echo "
+~Executing Program: "
 if [ "$RUN_FROM" != "" ]; then
 	EXEC_CMD="cd $RUN_FROM && out/$NAME.out $PROGRAM_ARG"
 else
 	EXEC_CMD="$PROGRAM_PATH $PROGRAM_ARG"
 fi
-echo "\t$EXEC_CMD"
+echo "    $EXEC_CMD"
 eval $EXEC_CMD

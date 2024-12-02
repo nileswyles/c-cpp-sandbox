@@ -1,11 +1,12 @@
 #ifndef WYLESLIBS_SERVER_CONFIG_H
 #define WYLESLIBS_SERVER_CONFIG_H
 
-#include "string-format.h"
+#include "string_format.h"
 #include "parser/json/json.h"
 #include "file/stream_factory.h"
 
 #include <memory>
+#include "memory/pointers.h"
 
 using namespace WylesLibs;
 using namespace WylesLibs::Parser::Json;
@@ -19,8 +20,11 @@ class ServerConfig: public JsonBase {
         std::string resources_root;
 
         ServerConfig(): resources_root("./") {}
-        ServerConfig(std::string filepath): ServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>(), filepath))) {}
-        ServerConfig(std::shared_ptr<JsonObject> obj) {
+        ServerConfig(std::string filepath): ServerConfig(
+            parseFile(ESharedPtr<StreamFactory>(new StreamFactory), filepath)
+        ) {}
+        ServerConfig(ESharedPtr<JsonValue> obj_shared) {
+            JsonObject * obj = dynamic_cast<JsonObject *>(ESHAREDPTR_GET_PTR(obj_shared));
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             bool resources_root_required = true;
             for (size_t i = 0; i < obj->keys.size(); i++) {

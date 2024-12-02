@@ -6,6 +6,7 @@
 #include "file/stream_factory.h"
 
 #include <memory>
+#include "memory/pointers.h"
 #include <set>
 #include <string>
 
@@ -35,8 +36,11 @@ class HttpServerConfig: public ServerConfig {
         bool client_auth_enabled;
 
         HttpServerConfig(): static_path("./"), root_html_file("index.html"), address("127.0.0.1"), port(8080) {}
-        HttpServerConfig(std::string filepath): HttpServerConfig(std::dynamic_pointer_cast<JsonObject>(parseFile(std::make_shared<StreamFactory>(), filepath))) {}
-        HttpServerConfig(std::shared_ptr<JsonObject> obj): ServerConfig(obj) {
+        HttpServerConfig(std::string filepath): HttpServerConfig(
+            parseFile(ESharedPtr<StreamFactory>(new StreamFactory), filepath)
+        ) {}
+        HttpServerConfig(ESharedPtr<JsonValue> obj_shared): ServerConfig(obj_shared) {
+            JsonObject * obj = dynamic_cast<JsonObject *>(ESHAREDPTR_GET_PTR(obj_shared));
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             // Defaults for optional fields...
             // string defaults are already "" but let's be explicit....
@@ -59,8 +63,9 @@ class HttpServerConfig: public ServerConfig {
                 "path_to_cert",
                 "path_to_private_key"
             };
+            std::string key;
             for (size_t i = 0; i < obj->keys.size(); i++) {
-                std::string key = obj->keys.at(i);
+                key = obj->keys.at(i);
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if (key == "static_path") {

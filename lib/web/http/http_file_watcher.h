@@ -22,7 +22,7 @@ namespace WylesLibs::Http {
                     FileWatcher(paths_to_dirs, IN_CLOSE | IN_CREATE | IN_MOVE | IN_DELETE), config(config), static_paths(static_paths) {}
             ~HttpFileWatcher() override = default;
 
-            void handle(const struct inotify_event *event);
+            void handle(const struct inotify_event * event) override;
     };
 };
 #endif

@@ -29,7 +29,7 @@ void logArgs(size_t argc, char * argv[]) {
 }
 
 void logProcessArgs(size_t argc, char * argv[], char *envp[]) {
-    // TODO: logger debug environment variables
+    // logger debug environment variables
     loggerPrintf(LOGGER_DEBUG, "ARGV: \n");
     logArgs(argc, argv);
 

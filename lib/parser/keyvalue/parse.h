@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_KV_PARSE_H
 #define WYLESLIBS_KV_PARSE_H
 
-#include "estream/estream.h"
+#include "estream/byteestream.h"
 
 #include <string>
 #include <unordered_map>
@@ -20,13 +20,13 @@
 namespace WylesLibs::Parser::KeyValue {
 extern std::unordered_map<std::string, std::string> parse(std::string s, char key_delim, char delim);
 // ! IMPORTANT - Newline after kv string is required.
-extern std::unordered_map<std::string, std::string> parse(EStream * reader, char key_delim, char delim);
+extern std::unordered_map<std::string, std::string> parse(ByteEStream * reader, char key_delim, char delim);
 
 // LOL
 static std::unordered_map<std::string, std::string> parse(std::string s, char delim) {
     return parse(s, '=', delim);
 }
-static std::unordered_map<std::string, std::string> parse(EStream * reader, char delim) {
+static std::unordered_map<std::string, std::string> parse(ByteEStream * reader, char delim) {
     return parse(reader, '=', delim);
 }
 }

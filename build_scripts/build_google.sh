@@ -56,11 +56,13 @@ else
     # /home/vscode/vcpkg/packages/google-cloud-cpp_x64-linux/include
 fi
 
-echo "\nCreated env.sh in the install directory. "
+echo "
+Created env.sh in the install directory. "
 SCRIPT="#!/bin/bash
 export GOOGLE_CLOUD_VCPKG_INSTALL_DIR=$GOOGLE_CLOUD_VCPKG_INSTALL_DIR
 "
 echo "$SCRIPT" > $GOOGLE_CLOUD_INSTALL_DIR/env.sh 
 chmod 777 $GOOGLE_CLOUD_INSTALL_DIR/env.sh
-echo "\nRunning $GOOGLE_CLOUD_INSTALL_DIR/env.sh to initialize the shell environment."
+echo "
+Running $GOOGLE_CLOUD_INSTALL_DIR/env.sh to initialize the shell environment."
 eval "$GOOGLE_CLOUD_INSTALL_DIR/env.sh"

@@ -11,6 +11,7 @@ namespace WylesLibs::Cal {
     } DATETIME_FORMAT; 
 
     extern std::string getFormattedDateTime(int16_t offset = 0, DATETIME_FORMAT format = READABLE);
+    extern uint64_t getEpochFromFormattedDateTime(std::string dt, DATETIME_FORMAT format = READABLE);
 };
 
 #endif

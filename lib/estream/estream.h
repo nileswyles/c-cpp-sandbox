@@ -1,15 +1,16 @@
 #ifndef WYLESLIBS_ESTREAM_H
 #define WYLESLIBS_ESTREAM_H
 
-#include "estream/reader_task.h"
+#include "estream/estream_types.h"
 
-#include "file/stream_factory.h"
 #include "datastructures/array.h"
+#include "string_format.h"
 #include "string_utils.h"
 
 #include <string>
 #include <stdexcept>
 #include <memory>
+#include "memory/pointers.h"
 #include <ios>
 #include <istream>
 
@@ -23,134 +24,319 @@
 #include <openssl/ssl.h>
 #endif
 
-#define READER_RECOMMENDED_BUF_SIZE 8096
+#define ARBITRARY_LIMIT_BECAUSE_DUMB 4294967296
 
+// make sure global logger level is initialized...
+#ifndef GLOBAL_LOGGER_LEVEL
+#define GLOBAL_LOGGER_LEVEL 0
+#endif
+
+// if per module logger level not defined, set to global...
+#ifndef LOGGER_LEVEL_ESTREAM
+#define LOGGER_LEVEL_ESTREAM GLOBAL_LOGGER_LEVEL
+#endif
+
+// enable toggle...
+#ifndef LOGGER_ESTREAM
+#define LOGGER_ESTREAM 1
+#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_ESTREAM
+
+#undef LOGGER_LEVEL
+#define LOGGER_LEVEL LOGGER_LEVEL_ESTREAM
+#include "logger.h"
+
+#define MAX_STREAM_LOG_SIZE 255
+
+#define READER_RECOMMENDED_BUF_SIZE 8096
 // ! IMPORTANT - 
 //      server.c::MAX_CONNECTIONS is (1 << 16) 64KB... 
 //       64k * 4048 == 249072KB or ~256MB
 #define READER_RECOMMENDED_BUF_SIZE_SSL 4048
 
 namespace WylesLibs {
-class ReaderEStream {
+template<typename T>
+class EStreamI {
     /*
-        Read from stream
+        Read and Write from file descriptor
     */
-    // TODO: does this incur any additional overhead in inherited even though private?
-    private:
-        std::shared_ptr<std::basic_istream<char>> reader;
-        std::shared_ptr<File::StreamFactory> factory;
-        std::string path;
-        size_t file_offset;
-        size_t chunk_size;
     protected:
-        virtual bool readPastBuffer();
-        virtual void fillBuffer();
+        virtual bool readPastBuffer() = 0;
+        virtual void fillBuffer() = 0;
     public:
-#if GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
-        std::string stream_log; 
-#endif
-        ReaderEStream() = default;
-        // TODO: std::move? that's interesting
-        ReaderEStream(std::shared_ptr<std::basic_istream<char>> reader) {
-            factory = nullptr;
-            reader = reader;
-        }
-        ReaderEStream(std::shared_ptr<File::StreamFactory> factory, std::string path, size_t initial_offset = 0, size_t chunk_size = SIZE_MAX) {
-            factory = factory;
-            path = path;
-            file_offset = initial_offset;
-            chunk_size = chunk_size;
-            reader = factory->reader(path, initial_offset, chunk_size);
-        }
-        // peek until doesn't make much sense with static sized buffer... so let's omit for now...
-        // peek bytes cannot exceed bytes_left_in_buffer? so let's also omit...
-        virtual ~ReaderEStream() = default;
-        // standard istream
-        virtual uint8_t get();
-        virtual uint8_t peek();
-        virtual void unget();
-        virtual bool eof();
-        virtual bool good();
-        virtual bool fail();
-        void seekg(size_t offset);
+        EStreamI() = default;
+        virtual ~EStreamI() = default;
 
-        virtual SharedArray<uint8_t> readBytes(const size_t n);
+        // standard istream methods
+        virtual T get() = 0;
+        virtual T peek() = 0;
+        virtual void unget() = 0;
+        virtual bool eof() = 0;
+        virtual bool good() = 0;
+        virtual bool fail() = 0;
+        virtual SharedArray<T> readEls(const size_t n, StreamTask<T, SharedArray<T>> * operation = nullptr) = 0;
         // ! IMPORTANT - inclusive means we read and consume the until character.
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
-        virtual SharedArray<uint8_t> readUntil(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
-
-        virtual void readDecimal(double &value, size_t &digit_count);
-        virtual void readNatural(double &value, size_t &digit_count);
-
-        ReaderEStream(ReaderEStream && x) = default;
-        ReaderEStream& operator=(ReaderEStream && x) = default;
+        virtual SharedArray<T> read(SharedArray<T> until = SharedArray<T>(), StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) = 0;
+        virtual ssize_t write(T * b, size_t size) = 0;
 };
 
-class EStream: public ReaderEStream {
+template<typename T>
+class EStream: public EStreamI<T> {
     /*
         Read and Write from file descriptor
     */
     private:
+        static void initStreamProcessing(LoopCriteria<T> *& until_size_criteria, ArrayCollector<T> *& array_collector) {
+            until_size_criteria = new LoopCriteria<T>(
+                LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, true, 0, SharedArray<T>())
+            );
+            array_collector = new ArrayCollector<T>();
+        }
         struct pollfd poll_fd;
-        std::ios_base::iostate flags;
-        size_t ungot_char;
+        T ungot_el;
         bool ungot;
+        bool new_buffer;
     protected:
-        uint8_t * buf;
-        size_t buf_size;
+        T * buffer;
+        size_t buffer_size;
         size_t cursor;
-        size_t bytes_in_buffer;
-        bool readPastBuffer() override final;
-        void fillBuffer() override;
+        size_t els_in_buffer;
+        LoopCriteria<T> * until_size_criteria;
+        ArrayCollector<T> * array_collector;
+        std::ios_base::iostate flags;
+        virtual bool readPastBuffer() {
+            return this->cursor >= this->els_in_buffer;
+        }
+        virtual void fillBuffer() {
+            this->cursor = 0;
+            ssize_t ret = ::read(this->fd, this->buffer, this->buffer_size * sizeof(T));
+            // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
+            if (ret <= 0 || (size_t)ret > this->buffer_size) {
+                this->els_in_buffer = 0;
+                loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
+                this->flags |= std::ios_base::badbit;
+                throw std::runtime_error("Read error.");
+            } else {
+                this->els_in_buffer = ret;
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld els from transport layer.\n", ret);
+            }
+        }
     public:
+#if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
+        std::string stream_log; 
+#endif
         int fd;
-        EStream() = default;
-        EStream(uint8_t * p_buf, const size_t p_buf_size): ReaderEStream() {
+        // TODO: this is hella lame... lol think about default constructor stuff some more...
+        //      could alternatively initialize with nullptr and size 0 args from istreamestream. but that doesn't seem valid?
+        EStream() {
             ungot = false;
-            ungot_char = 0xFF;
+            ungot_el = 0xFF;
             flags = std::ios_base::goodbit;
-            buf = p_buf;
-            buf_size = p_buf_size;
+            buffer_size = 0;
+            buffer = nullptr;
             cursor = 0;
             // ! IMPORTANT - an exception is thrown and flags are updated if read past buffer. (see fillBuffer implementation)
             fd = -1;
-            bytes_in_buffer = p_buf_size;
+            new_buffer = false;
+            els_in_buffer = 0;
+            EStream::initStreamProcessing(until_size_criteria, array_collector);
+        }
+        EStream(T * b, const size_t bs) {
+            ungot = false;
+            ungot_el = 0xFF;
+            flags = std::ios_base::goodbit;
+            buffer_size = bs;
+            buffer = b;
+            cursor = 0;
+            // ! IMPORTANT - an exception is thrown and flags are updated if read past buffer. (see fillBuffer implementation)
+            fd = -1;
+            new_buffer = false;
+            els_in_buffer = bs;
+            EStream::initStreamProcessing(until_size_criteria, array_collector);
         }
         EStream(const int fd): EStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
-        EStream(const int p_fd, const size_t p_buf_size): ReaderEStream() {
-            ungot = false;
-            ungot_char = 0xFF;
-            flags = std::ios_base::goodbit;
+        EStream(const int p_fd, const size_t bs) {
             if (p_fd < 0) {
                 throw std::runtime_error("Invalid file descriptor provided.");
             }
-            if (p_buf_size < 1) {
+            if (bs < 1) {
                 throw std::runtime_error("Invalid buffer size provided.");
             }
-            poll_fd.fd = p_fd;
-            poll_fd.events = POLLIN;
-            buf_size = p_buf_size;
+            ungot = false;
+            ungot_el = 0xFF;
+            flags = std::ios_base::goodbit;
+            buffer_size = bs;
+            buffer = newCArray<T>(buffer_size);
             cursor = 0;
             fd = p_fd;
-            bytes_in_buffer = 0;
-            buf = newCArray<uint8_t>(buf_size);
+            new_buffer = true;
+            els_in_buffer = 0;
+            EStream::initStreamProcessing(until_size_criteria, array_collector);
+            poll_fd.fd = p_fd;
+            poll_fd.events = POLLIN;
         }
-        ~EStream() override = default;
-        // standard istream
-        uint8_t get() override;
-        uint8_t peek() override;
-        void unget() override;
-        bool eof() override;
-        bool good() override;
-        bool fail() override;
-        // char_type read() override;
+        virtual ~EStream() {
+            if (true == this->new_buffer) {
+                deleteCArray<T>(this->buffer, this->buffer_size);
+            }
+            delete this->until_size_criteria;
+            delete this->array_collector;
+        }
 
-        // ReaderEstream
-        SharedArray<uint8_t> readBytes(const size_t n) override;
-        // Write to FD
-        virtual ssize_t write(void *p_buf, size_t size);
+        // standard istream methods
+        T get() override {
+            T el = this->peek();
+            if (this->cursor == 0 && true == this->ungot) {
+                this->ungot = false;
+            }
+            this->cursor++;
+        #if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
+            this->stream_log += el;
+            if (this->stream_log.size() > MAX_STREAM_LOG_SIZE) {
+                this->stream_log.clear();
+            }
+        #endif
+            return el;
+        }
+        T peek() override {
+            if (true == this->good()) {
+                if (true == this->readPastBuffer()) {
+                    this->ungot_el = this->buffer[this->cursor - 1];
+                    this->ungot = false;
+                    this->fillBuffer();
+                }
+            } else if (this->cursor == 0 && true == this->ungot) {
+                return this->ungot_el;
+            }
+            return this->buffer[this->cursor];
+        }
+        void unget() override {
+            if (this->cursor == 0) { // fill buffer just called...
+                this->ungot = true;
+            } else {
+                this->cursor--; // is the normal case...
+            }
+        }
+        bool eof() override {
+            return this->flags & std::ios_base::eofbit;
+        }
+        bool good() override {
+            if (this->flags == 0) {
+                if (true == this->readPastBuffer()) {
+                    if (this->fd < 0) {
+                        this->flags |= std::ios_base::badbit;
+                    } else {
+                        if (1 != poll(&this->poll_fd, 1, 0)) {
+                            this->flags |= std::ios_base::badbit;
+                        }
+                    }
+                }
+            }
+            return this->flags == 0;
+        }
+        bool fail() override {
+            return this->flags & std::ios_base::failbit;
+        }
+        // TODO: overloading must work
+        SharedArray<T> readEls(const size_t n, StreamTask<T, SharedArray<T>> * operation = nullptr) override {
+            if (n == 0) {
+                throw std::runtime_error("It doesn't make sense to read zero els.");
+            } else if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
+                throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
+            }
+            SharedArray<T> data;
+            if (operation == nullptr) {
+                size_t els_read = 0;
+                if (true == this->readPastBuffer()) {
+                    this->fillBuffer();
+                } else if (this->cursor == 0 && true == this->ungot) {
+                    this->ungot = false;
+                    data.append(this->ungot_el);
+                    els_read++;
+                }
+                while (els_read < n) {
+                    size_t els_left_to_read = n - els_read;
+                    size_t els_left_in_buffer = this->els_in_buffer - this->cursor;
+                    if (els_left_to_read > els_left_in_buffer) {
+                        // copy data left in buffer and read more
+                        data.append(this->buffer + this->cursor, els_left_in_buffer);
+                        els_read += els_left_in_buffer;
+
+                        this->fillBuffer();
+                    } else {
+                        // else enough data in buffer
+                        data.append(this->buffer + this->cursor, els_left_to_read);
+                        this->cursor += els_left_to_read;
+                        els_read += els_left_to_read;
+                    }
+                } 
+            } else {
+                bool inclusive = true;
+                SharedArray<T> until;
+                *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
+                data = this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
+            }
+            return data;
+        }
+        // ! IMPORTANT - inclusive means we read and consume the until character.
+        //      inclusive value of false means the until character stays in the read buffer for the next read.
+        //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
+        //      The default value for the inclusive field is TRUE.
+        SharedArray<T> read(SharedArray<T> until, StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) override {
+            size_t until_size = 0;
+            *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
+            return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
+        }
+        ssize_t write(T * b, size_t size) override {
+            return ::write(this->fd, (void *)b, size * sizeof(T));
+        }
+        template<typename RT>
+        RT streamCollect(LoopCriteria<T> * criteria, StreamTask<T, RT> * task, Collector<T, RT> * collector) {
+            if (criteria == nullptr) {
+                std::string msg("Criteria argument is nullptr.");
+                loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+            if (collector == nullptr) {
+                std::string msg("Collector argument is nullptr.");
+                loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+            // ! IMPORTANT - not thread safe
+            if (task != nullptr) {
+                task->initialize();
+
+                task->collector = collector;
+                task->criteria = criteria;
+            }
+
+            collector->initialize();
+ 
+            T el = this->peek();
+            while (criteria->nextState(el) & LOOP_CRITERIA_STATE_GOOD) {
+                this->get();
+                if (task == nullptr) {
+                    collector->accumulate(el);
+                } else {
+                    task->perform(el);
+                }
+                el = this->peek();
+            }
+
+            if (task != nullptr) {
+                task->flush();
+                // ! IMPORTANT - make sure to reset collector and criteria references in the task, so that you can store tasks as instance variables without keeping collectors live.
+                //                  especially needed for direct the streamCollect function
+                task->collector = nullptr;
+                task->criteria = nullptr;
+            }
+            return collector->collect();
+        }
 
         // ! IMPORTANT - purposely not explicitly swaping for all variables for the following reasons:
         //      1. It gets complicated (and annoying) for heirarchical types and classes with many variables.
@@ -165,41 +351,20 @@ class EStream: public ReaderEStream {
         //          This ensures it doesn't copy - avoiding dangling shlongs...
         EStream(EStream && x) = default;
         EStream& operator=(EStream && x) = default;
-};
 
-#ifdef WYLESLIBS_SSL_ENABLED
-class SSLEStream: public EStream {
-    /*
-        Read and Write from openssl object
-    */
-    private:
-        SSL * ssl;
-        static SSL * acceptTLS(SSL_CTX * context, int fd, bool client_auth_enabled);
-    protected:
-        void fillBuffer() override final;
-    public:
-        SSLEStream() = default;
-        SSLEStream(SSL_CTX * context, int fd, bool client_auth_enabled): EStream(fd, READER_RECOMMENDED_BUF_SIZE_SSL) {
-            ssl = acceptTLS(context, fd, client_auth_enabled);
+        bool operator!() {
+            return this->good();
         }
-        ~SSLEStream() override final {
-            if (this->ssl != nullptr) {
-                SSL_shutdown(this->ssl);
-                SSL_free(this->ssl);
-            }
-        }
-        ssize_t write(void *p_buf, size_t size) override final;
-
-        SSLEStream(SSLEStream && x) = default;
-        SSLEStream& operator=(SSLEStream && x) = default;
+        // bool operator bool() {
+        //     return this->good();
+        // }
 };
-#endif
 };
 
 // @ static
 
 // assuming amd64 - what year are we in? LMAO
-// static_assert(sizeof(EStream) ==
+// static_assert(sizeof(ByteEStream) ==
 //     sizeof(char *) +
 //     sizeof(size_t) +
 //     sizeof(size_t) +
@@ -207,6 +372,6 @@ class SSLEStream: public EStream {
 //     sizeof(int) +
 //     4 // just because?
 // );
-// static_assert(sizeof(EStream) == 32);
+// static_assert(sizeof(ByteEStream) == 32);
 
 #endif

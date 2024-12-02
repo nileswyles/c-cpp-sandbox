@@ -5,8 +5,7 @@ using namespace WylesLibs;
 using namespace WylesLibs::File;
 namespace gcs = ::google::cloud::storage;
 
-// TODO: this can probably be getSize instead...
-uint64_t GCSFileManager::stat(std::string path) {
+/uint64_t GCSFileManager::stat(std::string path) {
     google::cloud::StatusOr<gcs::ObjectMetadata> object_metadata = client.GetObjectMetadata(this->bucket_name, path);
     if (!object_metadata) throw std::move(object_metadata).status();
     return static_cast<uint64_t>(object_metadata->size());

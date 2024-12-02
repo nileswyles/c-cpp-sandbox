@@ -18,10 +18,10 @@ fi
 # $WYLESLIBS_BUILD_ROOT_DIR/lib/json/json_mapper.cpp
 SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/estream_test.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/estream.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/reader_task.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/string-format.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
 "
@@ -31,6 +31,6 @@ LD_FLAGS="
 -l crypto
 "
 
-CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n iostream_test $SRC_FILES --log $LOG_LEVEL $LD_FLAGS $DEFINES$TEST_ARG"
-echo "\t"$CMD
+CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n estream_test $SRC_FILES --log $LOG_LEVEL $LD_FLAGS $DEFINES$TEST_ARG"
+echo "    "$CMD
 exec $CMD

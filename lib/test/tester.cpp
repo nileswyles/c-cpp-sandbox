@@ -24,7 +24,14 @@ extern void WylesLibs::Test::ASSERT_BOOLEAN(TestArg * t, bool result, bool expec
     }
 }
 
-static char line_number_str[INT_MAX/10] = {};
+extern void WylesLibs::Test::ASSERT_UINT64(TestArg * t, uint64_t result, uint64_t expected) {
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n%lu\n", result);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n%lu\n", expected);
+
+    if (result == expected) {
+        t->fail = false;
+    }
+}
 
 bool Tester::run(const char * name) {
     printf("\n-------------------- %s --------------------\n", this->suite_name.c_str());
@@ -53,14 +60,12 @@ bool Tester::run(const char * name) {
         }
         if (ran_test) {
             if (test.arg.fail) {
-                sprintf(line_number_str, "%d", test.line_number);
-
                 failed_names += '\t';
                 failed_names += test.name;
                 failed_names += " -> ";
                 failed_names += test.test_file_name;
                 failed_names += ":";
-                failed_names += std::string(line_number_str);
+                failed_names += std::to_string(test.line_number);
                 failed_names += '\n';
                 num_failed++;
             } else {

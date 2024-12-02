@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <memory>
+#include "memory/pointers.h"
 
 #ifndef LOGGER_FILE_WATCHER_TEST
 #define LOGGER_FILE_WATCHER_TEST 1
@@ -31,7 +32,7 @@ bool riskyDeleteBool = false;
 class TestFileWatcher: public FileWatcher {
     public:
         TestFileWatcher(SharedArray<std::string> paths): FileWatcher(paths, IN_CREATE | IN_MOVED_FROM | IN_MOVED_TO | IN_DELETE) {}
-        void handle(const struct inotify_event * event) {
+        void handle(const struct inotify_event * event) override {
             loggerPrintf(LOGGER_DEBUG, "MASK: %x, NAME: %s\n", event->mask, event->name);
             if (event->mask&IN_CREATE) {
                 loggerPrintf(LOGGER_DEBUG, "CREATE EVENT FOUND!\n");
@@ -51,7 +52,7 @@ class TestFileWatcher: public FileWatcher {
 
 static std::string test_directory = "./file_watcher_test_dir";
 static std::string test_directory_other = "./file_watcher_other_dir";
-static std::shared_ptr<TestFileWatcher> file_watcher;
+static ESharedPtr<TestFileWatcher> file_watcher;
 
 static void testFileWatcherFileCreated(TestArg * t) {
     riskyCreateBool = false;
@@ -110,13 +111,13 @@ static void beforeSuite() {
     fileWatcherThreadStart();
 
     SharedArray<std::string> paths{test_directory};
-    file_watcher = std::make_shared<TestFileWatcher>(paths);
-    file_watcher->initialize(file_watcher);
+    file_watcher = ESharedPtr<TestFileWatcher>(new TestFileWatcher(paths));
+    ESHAREDPTR_GET_PTR(file_watcher)->initialize(file_watcher.cast<FileWatcher>());
 }
 
 static void removeStoreFile() {
     fileWatcherThreadStop();
-    file_watcher.reset();
+    file_watcher = nullptr;
 
     system(("rm -r " + test_directory).c_str());
     system(("rm -r " + test_directory_other).c_str());

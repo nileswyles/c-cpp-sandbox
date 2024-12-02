@@ -340,10 +340,20 @@ static void testReadUntilUpperCaseExtract(TestArg * t) {
 static void testReadUntilCursorAtUntil(TestArg * t) {
     size_t buffer_size = READER_RECOMMENDED_BUF_SIZE;
     ByteEStream reader(1, buffer_size);
-    buffer = " BLAH";
+    const char * test_string = " BLAH";
+    setTestString(test_string);
 
     std::string result = reader.read(" ").toString();
     readUntilAssert(t, result, " ");
+
+    // TODO: we might also want to verify that the remainder of the test_string is in the buffer
+    // reader.read((size_t)4);
+
+    // test_string = " BLAH";
+    // setTestString(test_string);
+
+    // result = reader.read(" ", nullptr, false).toString();
+    // readUntilAssert(t, result, "");
 }
 
 static void testReadUntilFillBufferOnce(TestArg * t) {
@@ -356,7 +366,7 @@ static void testReadUntilFillBufferOnce(TestArg * t) {
         expected += '$';
     }
     expected[expected_size - 3] = ' ';
-    buffer = expected.c_str();
+    setTestString(expected.c_str());
     
     std::string result = reader.read(" ").toString();
     readUntilAssert(t, result, "$$$$$$$$$$$ ");
@@ -372,7 +382,7 @@ static void testReadUntilFillBufferTwice(TestArg * t) {
         expected += '$';
     }
     expected[expected_size - 3] = ' ';
-    buffer = expected.c_str();
+    setTestString(expected.c_str());
 
     std::string result = reader.read(" ").toString();
     readUntilAssert(t, result, "$$$$$$$$$$$$$$$$$$ ");

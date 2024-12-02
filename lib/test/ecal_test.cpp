@@ -1,6 +1,8 @@
 #include "tester.h"
 #include "ecal.h"
 
+#include <time.h>
+
 #ifndef LOGGER_ECAL_TEST
 #define LOGGER_ECAL_TEST 1
 #endif

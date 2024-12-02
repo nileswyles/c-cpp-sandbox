@@ -86,13 +86,13 @@ namespace WylesLibs {
                                         Collector<uint8_t, std::tuple<double, size_t>>** decimal_collector,
                                         Collector<uint8_t, std::string>** string_collector) {
                 *char_class_criteria = new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
-                *natural_collector = dynamic_cast<Collector<uint8_t, std::tuple<uint64_t, size_t>>*>(
+                *natural_collector = dynamic_cast<Collector<uint8_t, std::tuple<uint64_t, size_t>> *>(
                     new NaturalCollector
                 );
-                *decimal_collector = dynamic_cast<Collector<uint8_t, std::tuple<double, size_t>>*>(
+                *decimal_collector = dynamic_cast<Collector<uint8_t, std::tuple<double, size_t>> *>(
                     new DecimalCollector
                 );
-                *string_collector = dynamic_cast<Collector<uint8_t, std::string>*>(
+                *string_collector = dynamic_cast<Collector<uint8_t, std::string> *>(
                     new ByteStringCollector
                 );
             }

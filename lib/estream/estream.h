@@ -137,8 +137,8 @@ class EStream: public EStreamI<T> {
             ungot = false;
             ungot_el = 0xFF;
             flags = std::ios_base::goodbit;
-            buffer = nullptr;
             buffer_size = 0;
+            buffer = nullptr;
             cursor = 0;
             // ! IMPORTANT - an exception is thrown and flags are updated if read past buffer. (see fillBuffer implementation)
             fd = -1;
@@ -150,8 +150,8 @@ class EStream: public EStreamI<T> {
             ungot = false;
             ungot_el = 0xFF;
             flags = std::ios_base::goodbit;
-            buffer = b;
             buffer_size = bs;
+            buffer = b;
             cursor = 0;
             // ! IMPORTANT - an exception is thrown and flags are updated if read past buffer. (see fillBuffer implementation)
             fd = -1;
@@ -170,8 +170,8 @@ class EStream: public EStreamI<T> {
             ungot = false;
             ungot_el = 0xFF;
             flags = std::ios_base::goodbit;
-            buffer = newCArray<T>(buffer_size);
             buffer_size = bs;
+            buffer = newCArray<T>(buffer_size);
             cursor = 0;
             fd = p_fd;
             new_buffer = true;

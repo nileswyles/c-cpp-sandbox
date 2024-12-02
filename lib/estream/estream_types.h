@@ -39,7 +39,7 @@ namespace WylesLibs {
             size_t until_size;
             SharedArray<T> until;
             LoopCriteriaInfo(LoopCriteriaMode mode, bool inclusive, size_t until_size, SharedArray<T> until): 
-                mode(mode), inclusive(inclusive), until_size(until_size), until(until), state(LOOP_CRITERIA_STATE_NOT_GOOD) {
+                mode(mode), inclusive(inclusive), until_size(until_size), until(until), state(LOOP_CRITERIA_STATE_GOOD) {
             }
             virtual ~LoopCriteriaInfo() = default;
     };
@@ -116,16 +116,16 @@ namespace WylesLibs {
         public:
             ArrayCollector() = default;
             virtual ~ArrayCollector() = default;
-            virtual void initialize() {
+            void initialize() override final {
                 this->data = SharedArray<T>();
             }
-            virtual void accumulate(T& el) {
+            void accumulate(T& el) override final {
                 this->data.append(el);
             }
-            virtual void accumulate(SharedArray<T>& els) {
+            void accumulate(SharedArray<T>& els) override final {
                 this->data.append(els);
             }
-            virtual SharedArray<T>collect() {
+            SharedArray<T> collect() override final {
                 return this->data;
             }
     };

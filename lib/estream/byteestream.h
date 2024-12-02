@@ -122,6 +122,7 @@ namespace WylesLibs {
             }
 
             virtual SharedArray<uint8_t> read(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
+            virtual std::string readString(size_t n, StreamTask<uint8_t, std::string> * operation = nullptr);
             virtual std::string readString(std::string until = "\n", StreamTask<uint8_t, std::string> * operation = nullptr, bool inclusive = true);
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
             virtual std::tuple<uint64_t, size_t> readNatural(std::string until = "");

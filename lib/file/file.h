@@ -82,7 +82,7 @@ static SharedArray<uint8_t> read(ESharedPtr<IStreamEStream> s_shared, size_t off
         //     throw std::runtime_error("Error occured while reading istream until EOF.");
         // }
     } else {
-        file_data = s->read(size);
+        file_data = s->readEls(size);
     }
     return file_data;
 }

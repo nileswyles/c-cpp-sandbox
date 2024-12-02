@@ -170,7 +170,7 @@ static void parseString(JsonArray * obj, ByteEStream * r) {
                     //  i.e. "0F" -> 0x0F;
 
                     // TODO: very lame that I have to cast to access public, overloaded functions from base class.
-                    s += hexToChar(dynamic_cast<EStream<uint8_t> *>(r)->read(2).toString());
+                    s += hexToChar(r->readString(2));
                 }
             } else {
                 // actual characters can just be appended.
@@ -199,9 +199,8 @@ static void parseImmediate(JsonArray * obj, ByteEStream * r, std::string comp, J
     loggerPrintf(LOGGER_DEBUG, "Parsing %s\n", comp.c_str());
 
     try {
-        ReaderTaskExact task(comp);
-        // TODO: very lame that I have to cast to access public, overloaded functions from base class.
-        std::string actual = dynamic_cast<EStream<uint8_t> *>(r)->read(comp.size(), &task).toString();
+        ReaderTaskExact task(comp, true); // lmao
+        r->readString(comp.size(), &task);
         loggerPrintf(LOGGER_DEBUG, "Parsed %s, @ %c\n", comp.c_str(), r->peek());
         obj->addValue(value);
     } catch (std::exception& e) {

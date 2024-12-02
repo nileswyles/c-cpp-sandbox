@@ -92,6 +92,9 @@ namespace WylesLibs {
             virtual LoopCriteriaState state() {
                 return this->loop_criteria_info.state;
             }
+            virtual void preemptiveBail() {
+                this->loop_criteria_info.state = LOOP_CRITERIA_STATE_NOT_GOOD;
+            }
     };
 
     // @ collector
@@ -159,6 +162,8 @@ namespace WylesLibs {
             //  final says that function is virtual (supports dynamic dispatch) and cannot be overridden.
             //      - compiler error is generated if user tries to override. 
      
+            // the idea here is to initialize "static"-state (non-paramaterized state) required by the reader task for each streamCollect run. This is called by streamCollect once.
+            virtual void initialize() = 0; 
             virtual void flush() = 0;
             virtual void perform(T& el) = 0;
             virtual LoopCriteriaState criteriaState() {
@@ -168,6 +173,15 @@ namespace WylesLibs {
                     throw std::runtime_error(msg);
                 } else {
                     return this->criteria->state();
+                }
+            }
+            virtual void criteriaPreemptiveBail() {
+                if (this->criteria == nullptr) {
+                    std::string msg("Failed to get loop criteria. The criteria object was not initialized for this StreamTask.");
+                    loggerPrintf(LOGGER_DEBUG, "Exception: %s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                } else {
+                    return this->criteria->preemptiveBail();
                 }
             }
             virtual void collectorAccumulate(T& el) {

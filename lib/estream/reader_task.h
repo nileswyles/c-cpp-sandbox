@@ -70,6 +70,8 @@ class ReaderTaskChain: public StreamTask<uint8_t, RT> {
         ReaderTaskChain(ReaderTaskChain * next): next_operation(next) {}
         ~ReaderTaskChain() override = default;
 
+        void initialize() override {}
+
         void next(uint8_t& c) {
             if (this->next_operation == nullptr) {
                 this->collectorAccumulate(c);
@@ -170,15 +172,25 @@ class ReaderTaskExact: public ReaderTaskChain<RT> {
     public:
         std::string match;
         size_t i;
+        bool strict;
+        bool is_match;
 
         ReaderTaskExact(): match(""), i(0) {}
-        ReaderTaskExact(std::string match): match(match), i(0) {}
+        ReaderTaskExact(std::string match, bool strict = false): match(match), i(0), strict(strict) {}
 
+        void initialize() final override {
+            is_match = true;
+        }
         void perform(uint8_t& c) final override {
             if (this->match.at(i++) != c) {
-                std::string msg = "Invalid character found in exact match:";
-                loggerPrintf(LOGGER_INFO, "%s '%c', '%s'\n", msg.c_str(), c, match.c_str());
-                throw std::runtime_error(msg);
+                is_match = false;
+                if (true == strict) {
+                    std::string msg("Invalid character found in exact match:");
+                    loggerPrintf(LOGGER_INFO, "%s '%c', '%s'\n", msg.c_str(), c, match.c_str());
+                    throw std::runtime_error(msg);
+                } else {
+                    this->criteriaPreemptiveBail(); // bail as soon as not match detected.
+                }
             } else {
                 this->next(c);
             }
@@ -190,40 +202,28 @@ class ReaderTaskExact: public ReaderTaskChain<RT> {
 
 template<typename RT>
 class ReaderTaskTrim: public StreamTask<uint8_t, RT> {
-    private:
-        void initialize() {
-            data.remove(0, data.size());
-            r_trim.remove(0, data.size());
-            l_trimming = true;
-            r_trimming = true;
-        }
     public:
         SharedArray<uint8_t> data;
         SharedArray<uint8_t> r_trim;
         bool l_trimming;
         bool r_trimming;
 
-        ReaderTaskTrim(): l_trimming(true), r_trimming(false) {}
+        ReaderTaskTrim() = default;
         ~ReaderTaskTrim() override = default;
 
-        void flush() final override {
-            this->initialize();
+        void initialize() final override {
+            data.remove(0, data.size());
+            r_trim.remove(0, data.size());
+            l_trimming = true;
+            r_trimming = false;
         }
+        void flush() final override {}
         void rTrimFlush();
         void perform(uint8_t& c) final override;
 };
 
 template<typename RT>
 class ReaderTaskExtract: public StreamTask<uint8_t, RT> {
-    private:
-        void initialize() {
-            data.remove(0, data.size());
-            r_trim.remove(0, data.size());
-            l_trimming = true;
-            r_trimming = false;
-            r_trim_non_whitespace = 0;
-            r_trim_read_until = 0;
-        }
     public:
         SharedArray<uint8_t> data;
         SharedArray<uint8_t> r_trim;
@@ -235,13 +235,17 @@ class ReaderTaskExtract: public StreamTask<uint8_t, RT> {
         uint8_t left_most_char;
         uint8_t right_most_char;
 
-        // TODO: might be good to initialize these (just read_until?) to something other than NUL in case that's the character... maybe some >128 but not 255...
-        ReaderTaskExtract(char left_most_char, char right_most_char): 
-            l_trimming(true), r_trimming(false), 
-                                                                      left_most_char(left_most_char), right_most_char(right_most_char), 
-                                                                      r_trim_non_whitespace(0), r_trim_read_until(0) {}
+        ReaderTaskExtract(char left_most_char, char right_most_char): left_most_char(left_most_char), right_most_char(right_most_char) {}
         ~ReaderTaskExtract() override = default;
 
+        void initialize() final override {
+            data.remove(0, data.size());
+            r_trim.remove(0, data.size());
+            l_trimming = true;
+            r_trimming = false;
+            r_trim_non_whitespace = 0;
+            r_trim_read_until = 0;
+        }
         void flush() final override;
         void rTrimFlush();
         void perform(uint8_t& c) final override;

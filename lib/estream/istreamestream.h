@@ -53,7 +53,7 @@ class IStreamEStream: public ByteEStream {
         bool fail() override;
         virtual void seekg(size_t offset);
 
-        SharedArray<uint8_t> read(const size_t n, StreamTask<uint8_t, SharedArray<uint8_t>> * operation = nullptr) override;
+        SharedArray<uint8_t> readEls(const size_t n, StreamTask<uint8_t, SharedArray<uint8_t>> * operation = nullptr) override;
 
         ssize_t write(uint8_t * b, size_t size) override;
 

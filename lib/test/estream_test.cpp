@@ -73,8 +73,7 @@ static void readUntilAssert(TestArg * t, std::string result, std::string expecte
 static void testReadUntil(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "TESTSTRINGWITHSPACE BLAH";
-    setTestString(test_string);
+    setTestString("TESTSTRINGWITHSPACE BLAH");
 
     std::string result = reader.read(" ").toString();
     std::string expected = "TESTSTRINGWITHSPACE ";
@@ -85,8 +84,7 @@ static void testReadUntil(TestArg * t) {
 static void testReadUntilUpperCase(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "TESTSTRINGWITHSPACE BLAH";
-    setTestString(test_string);
+    setTestString("TESTSTRINGWITHSPACE BLAH");
 
     ReaderTaskUC uppercase;
     std::string result = reader.read(" ", (ReaderTask *)&uppercase).toString();
@@ -98,8 +96,7 @@ static void testReadUntilUpperCase(TestArg * t) {
 static void testReadUntilLowerCase(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "TESTSTRINGWITHSPACE BLAH";
-    setTestString(test_string);
+    setTestString("TESTSTRINGWITHSPACE BLAH");
 
     ReaderTaskLC lowercase;
     std::string result = reader.read(" ", (ReaderTask *)&lowercase).toString();
@@ -111,8 +108,7 @@ static void testReadUntilLowerCase(TestArg * t) {
 static void testReadUntilAllow(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
-    setTestString(test_string);
+    setTestString("\"TESTSTRINGWITHSPACE\"BLAH ");
 
     ReaderTaskAllow allow("ABC");
     std::string result = reader.read(" ", (ReaderTask *)&allow).toString();
@@ -124,8 +120,7 @@ static void testReadUntilAllow(TestArg * t) {
 static void testReadUntilAllowStrict(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "\"TESTSTRINGWITHSPACE\"BLAH ";
-    setTestString(test_string);
+    setTestString("\"TESTSTRINGWITHSPACE\"BLAH ");
 
     ReaderTaskAllow allow("ABC", true);
     bool exception = false;
@@ -135,7 +130,7 @@ static void testReadUntilAllowStrict(TestArg * t) {
         exception = true;
     }
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", buffer_start);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
     ASSERT_BOOLEAN(t, exception, true);
 }
@@ -143,8 +138,7 @@ static void testReadUntilAllowStrict(TestArg * t) {
 static void testReadUntilDisallow(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "TESTSTRING";
-    setTestString(test_string);
+    setTestString("TESTSTRING");
 
     ReaderTaskDisallow disallow("IO");
     std::string result = reader.read(" ", (ReaderTask *)&disallow).toString();
@@ -156,8 +150,7 @@ static void testReadUntilDisallow(TestArg * t) {
 static void testReadUntilDisallowStrict(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "TESTSTRING";
-    setTestString(test_string);
+    setTestString("TESTSTRING");
 
     ReaderTaskDisallow disallow("IO", true);
     bool exception = false;
@@ -167,7 +160,7 @@ static void testReadUntilDisallowStrict(TestArg * t) {
         exception = true;
     }
 
-    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", test_string);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n%s\n", buffer_start);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
     ASSERT_BOOLEAN(t, exception, true);
 }
@@ -175,8 +168,7 @@ static void testReadUntilDisallowStrict(TestArg * t) {
 static void testReadUntilTrim(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "     TESTSTRINGWITHSPACE     ";
-    setTestString(test_string);
+    setTestString("     TESTSTRINGWITHSPACE     ");
 
     ReaderTaskTrim trim;
     std::string result = reader.read(" ", (ReaderTask *)&trim).toString();
@@ -188,8 +180,7 @@ static void testReadUntilTrim(TestArg * t) {
 static void testReadUntilLTrim(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "     TESTSTRINGWITHSPACE";
-    setTestString(test_string);
+    setTestString("     TESTSTRINGWITHSPACE");
 
     ReaderTaskTrim trim;
     std::string result = reader.read(" ", (ReaderTask *)&trim).toString();
@@ -201,8 +192,7 @@ static void testReadUntilLTrim(TestArg * t) {
 static void testReadUntilRTrim(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "TESTSTRINGWITHSPACE     ";
-    setTestString(test_string);
+    setTestString("TESTSTRINGWITHSPACE     ");
 
     ReaderTaskTrim trim;
     std::string result = reader.read(" ", (ReaderTask *)&trim).toString();
@@ -214,8 +204,7 @@ static void testReadUntilRTrim(TestArg * t) {
 static void testReadUntilDisallowSpaceTrim(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "       TESTSTRINGWITHSPACE       ";
-    setTestString(test_string);
+    setTestString("       TESTSTRINGWITHSPACE       ");
 
     ReaderTaskDisallow disallow(" ");
     ReaderTaskTrim trim;
@@ -229,8 +218,7 @@ static void testReadUntilDisallowSpaceTrim(TestArg * t) {
 static void testReadUntilExtract(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "\"TESTSTRINGWITHSPACE\"    ";
-    setTestString(test_string);
+    setTestString("\"TESTSTRINGWITHSPACE\"    ");
 
     ReaderTaskExtract extract('"','"');
     std::string result = reader.read(" ", (ReaderTask *)&extract).toString();
@@ -245,8 +233,7 @@ static void testReadUntilExtractNonWhiteCharacterAfterRightToken(TestArg * t) {
     // ! IMPORTANT - if readUntil space and extracting then it will include a whitespace so, this works.
     // const char * test_string = "\"TESTSTRINGWITHSPACE\" ABLBK ";
     //  but this results in an exception.
-    const char * test_string = "\"TESTSTRINGWITHSPACE\"ABLBK ";
-    setTestString(test_string);
+    setTestString("\"TESTSTRINGWITHSPACE\"ABLBK ");
 
     ReaderTaskExtract extract('"','"');
     bool exception = false;
@@ -262,8 +249,7 @@ static void testReadUntilExtractNonWhiteCharacterAfterRightToken(TestArg * t) {
 static void testReadUntilAllowExtract(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "\"TESTSTRINGWITHSPACE\"    ";
-    setTestString(test_string);
+    setTestString("\"TESTSTRINGWITHSPACE\"    ");
 
     ReaderTaskAllow allow("ABC\"");
     ReaderTaskExtract extract('"', '"');
@@ -277,8 +263,7 @@ static void testReadUntilAllowExtract(TestArg * t) {
 static void testReadUntilAllowExtractException(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "\"TESTSTRINGWITHSPACE\"    ";
-    setTestString(test_string);
+    setTestString("\"TESTSTRINGWITHSPACE\"    ");
 
     ReaderTaskAllow allow("ABC");
     ReaderTaskExtract extract('"', '"');
@@ -295,8 +280,7 @@ static void testReadUntilAllowExtractException(TestArg * t) {
 static void testReadUntilDisallowExtract(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "\"TESTSTRINGWITHSPACE\"     ";
-    setTestString(test_string);
+    setTestString("\"TESTSTRINGWITHSPACE\"     ");
 
     ReaderTaskDisallow disallow("IO");
     ReaderTaskExtract extract('"', '"');
@@ -310,8 +294,7 @@ static void testReadUntilDisallowExtract(TestArg * t) {
 static void testReadUntilLowerCaseExtract(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "\"TESTSTRINGWITHSPACE\"   ";
-    setTestString(test_string);
+    setTestString("\"TESTSTRINGWITHSPACE\"   ");
 
     ReaderTaskLC lowercase;
     ReaderTaskExtract extract('"','"');
@@ -325,8 +308,7 @@ static void testReadUntilLowerCaseExtract(TestArg * t) {
 static void testReadUntilUpperCaseExtract(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    const char * test_string = "\"TESTSTRINGWiTHSPACE\"    ";
-    setTestString(test_string);
+    setTestString("\"TESTSTRINGWiTHSPACE\"    ");
 
     ReaderTaskUC uppercase;
     ReaderTaskExtract extract('"','"');
@@ -338,22 +320,19 @@ static void testReadUntilUpperCaseExtract(TestArg * t) {
 }
 
 static void testReadUntilCursorAtUntil(TestArg * t) {
-    size_t buffer_size = READER_RECOMMENDED_BUF_SIZE;
-    ByteEStream reader(1, buffer_size);
-    const char * test_string = " BLAH";
-    setTestString(test_string);
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    setTestString(" BLAH");
 
-    std::string result = reader.read(" ").toString();
+    std::string result = reader.read(" ", nullptr, true).toString();
     readUntilAssert(t, result, " ");
+}
 
-    // TODO: we might also want to verify that the remainder of the test_string is in the buffer
-    // reader.read((size_t)4);
+static void testReadUntilCursorAtUntilNotInclusive(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    setTestString(" BLAH");
 
-    // test_string = " BLAH";
-    // setTestString(test_string);
-
-    // result = reader.read(" ", nullptr, false).toString();
-    // readUntilAssert(t, result, "");
+    std::string result = reader.read(" ", nullptr, false).toString();
+    readUntilAssert(t, result, "");
 }
 
 static void testReadUntilFillBufferOnce(TestArg * t) {
@@ -421,6 +400,7 @@ int main(int argc, char * argv[]) {
     t.addTest(testReadUntilUpperCaseExtract);
 
     t.addTest(testReadUntilCursorAtUntil);
+    t.addTest(testReadUntilCursorAtUntilNotInclusive);
     t.addTest(testReadUntilFillBufferOnce);
     t.addTest(testReadUntilFillBufferTwice);
 

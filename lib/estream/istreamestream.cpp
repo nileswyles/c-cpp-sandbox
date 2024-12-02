@@ -58,21 +58,21 @@ void IStreamEStream::seekg(size_t offset) {
     ESHAREDPTR_GET_PTR(this->reader)->seekg(offset);
 }
 
-SharedArray<uint8_t> IStreamEStream::read(const size_t n, StreamTask<uint8_t, SharedArray<uint8_t>> * operation) {
+SharedArray<uint8_t> IStreamEStream::readEls(const size_t n, StreamTask<uint8_t, SharedArray<uint8_t>> * operation) {
     if (n == 0) {
         throw std::runtime_error("It doesn't make sense to read zero els.");
     } else if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
         throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
     }
+    SharedArray<uint8_t> data;
     if (operation == nullptr) {
-        SharedArray<uint8_t> data;
         for (size_t i = 0; i < n; i++) {
             data.append(this->get());
         }
-        return data;
     } else {
-        return this->read(n, operation);
+        data = this->readEls(n, operation);
     }
+    return data;
 }
 ssize_t IStreamEStream::write(uint8_t * b, size_t size) {
     throw std::runtime_error("This function is not available for this extension of ByteEStream base.");

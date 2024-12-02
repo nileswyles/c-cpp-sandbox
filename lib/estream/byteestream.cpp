@@ -102,6 +102,13 @@ SharedArray<uint8_t> ByteEStream::read(std::string until, ReaderTask * operation
     //  if (LOOP_CRITERIA_UNTIL_MATCH == LoopCriteriaInfo<uint8_t>::info.mode) {
 }
 
+std::string ByteEStream::readString(size_t n, StreamTask<uint8_t, std::string> * operation) {
+    bool inclusive = true;
+    SharedArray<uint8_t> until;
+    *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
+    return this->streamCollect<std::string>(this->until_size_criteria, operation, this->string_collector);
+}
+
 std::string ByteEStream::readString(std::string until, StreamTask<uint8_t, std::string> * operation, bool inclusive) {
     size_t until_size = 0;
     *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, SharedArray<uint8_t>(until)));

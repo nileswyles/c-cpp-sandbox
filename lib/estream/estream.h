@@ -76,7 +76,7 @@ class EStreamI {
         virtual bool eof() = 0;
         virtual bool good() = 0;
         virtual bool fail() = 0;
-        virtual SharedArray<T> read(const size_t n, StreamTask<T, SharedArray<T>> * operation = nullptr) = 0;
+        virtual SharedArray<T> readEls(const size_t n, StreamTask<T, SharedArray<T>> * operation = nullptr) = 0;
         // ! IMPORTANT - inclusive means we read and consume the until character.
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
@@ -242,14 +242,15 @@ class EStream: public EStreamI<T> {
         bool fail() override {
             return this->flags & std::ios_base::failbit;
         }
-        SharedArray<T> read(const size_t n, StreamTask<T, SharedArray<T>> * operation = nullptr) override {
+        // TODO: overloading must work
+        SharedArray<T> readEls(const size_t n, StreamTask<T, SharedArray<T>> * operation = nullptr) override {
             if (n == 0) {
                 throw std::runtime_error("It doesn't make sense to read zero els.");
             } else if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
                 throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
             }
+            SharedArray<T> data;
             if (operation == nullptr) {
-                SharedArray<T> data;
                 size_t els_read = 0;
                 if (true == this->readPastBuffer()) {
                     this->fillBuffer();
@@ -274,13 +275,13 @@ class EStream: public EStreamI<T> {
                         els_read += els_left_to_read;
                     }
                 } 
-                return data;
             } else {
                 bool inclusive = true;
                 SharedArray<T> until;
                 *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
-                return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
+                data = this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
             }
+            return data;
         }
         // ! IMPORTANT - inclusive means we read and consume the until character.
         //      inclusive value of false means the until character stays in the read buffer for the next read.
@@ -308,6 +309,8 @@ class EStream: public EStreamI<T> {
             }
             // ! IMPORTANT - not thread safe
             if (task != nullptr) {
+                task->initialize();
+
                 task->collector = collector;
                 task->criteria = criteria;
             }

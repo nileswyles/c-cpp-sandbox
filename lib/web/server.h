@@ -1,28 +1,37 @@
 #ifndef WYLESLIBS_SERVER_H
 #define WYLESLIBS_SERVER_H
 
-#if defined __cplusplus
-extern "C"
-{
-#endif
-
 #include <stdint.h>
+
+#include "threads/etasker.h"
 
 #define SERVER_MINIMUM_CONNECTION_SPEED 131072 // 128kbps
 
-typedef uint8_t(connection_handler_t)(int);
+namespace WylesLibs {
+    typedef void(ServerConnectionTasker *)(ETasker * tasker, int fd, uint64_t initial_socket_timeout_s);
 
-extern void serverListen(const char * address, const uint16_t port, connection_handler_t * handler);
-extern void serverDisableConnectionTimeout(int fd);
-extern void serverSetConnectionTimeout(int fd, uint32_t timeout_s);
-extern void serverSetInitialConnectionTimeout(int fd, uint32_t timeout_s);
-extern void serverSetSocketTimeout(int fd, uint32_t timeout_s);
-extern void serverSetInitialSocketTimeout(int fd, uint32_t timeout_s);
-extern uint32_t serverGetConnectionTimeout(int fd);
-extern uint32_t serverGetSocketTimeout(int fd);
+    class Server {
+        protected:
+            uint64_t initial_socket_timeout_s;
+            ETasker tasker;
+        public:
+            Server() {
+                initial_socket_timeout_s = 2;
+                tasker = ETasker(SIZE_MAX, initial_socket_timeout_s);
+            }
+            virtual ~Server() = default;
 
-#if defined __cplusplus
-}
-#endif
+            void disableConnectionTimeout(int fd);
+            void setConnectionTimeout(int fd, uint32_t timeout_s);
+            void setInitialConnectionTimeout(int fd, uint32_t timeout_s);
+            void setSocketTimeout(int fd, uint32_t timeout_s);
+            void setInitialSocketTimeout(int fd, uint32_t timeout_s);
+            uint32_t getConnectionTimeout(int fd);
+            uint32_t getSocketTimeout(int fd);
+            void listen(const char * address, const uint16_t port);
+
+            virtual void onConnection(int fd) = 0;
+    };
+};
 
 #endif

@@ -53,7 +53,7 @@ static Url parseUrl(ByteEStream * io) {
     return url;
 }
 
-void HttpConnection::parseRequest(HttpRequest * request, ByteEStream * io) {
+void HttpServer::parseRequest(HttpRequest * request, ByteEStream * io) {
     if (request == NULL || io == NULL) {
         throw std::runtime_error("lol....");
     }
@@ -116,7 +116,7 @@ void HttpConnection::parseRequest(HttpRequest * request, ByteEStream * io) {
             // at 128Kb/s can transfer just under 2Mb (bits...) in 15s.
             //  if set min transfer rate at 128Kb/s, 
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
-            serverSetConnectionTimeout(io->fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
+           this->setConnectionTimeout(io->fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
             Multipart::FormData::parse(io, request->files, request->form_content, this->file_manager);
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
@@ -125,7 +125,7 @@ void HttpConnection::parseRequest(HttpRequest * request, ByteEStream * io) {
     }
 }
 
-void HttpConnection::processRequest(ByteEStream * io, HttpRequest * request) {
+void HttpServer::processRequest(ByteEStream * io, HttpRequest * request) {
         HttpResponse * response = this->handleStaticRequest(request); 
         if (response != nullptr) {
             this->writeResponse(response, io);
@@ -161,7 +161,7 @@ void HttpConnection::processRequest(ByteEStream * io, HttpRequest * request) {
         }
 }
 
-HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
+HttpResponse * HttpServer::handleStaticRequest(HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING STATIC REQUEST\n");
     HttpResponse * response = nullptr;
     std::string path;
@@ -192,7 +192,7 @@ HttpResponse * HttpConnection::handleStaticRequest(HttpRequest * request) {
     return response;
 }
 
-bool HttpConnection::handleWebsocketRequest(ByteEStream * io, HttpRequest * request) {
+bool HttpServer::handleWebsocketRequest(ByteEStream * io, HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING WEBSOCKET REQUEST\n");
     bool upgraded = 0;
     if (request->fields["upgrade"].contains("websocket") && request->fields["connection"].contains("upgrade")) {
@@ -231,7 +231,7 @@ bool HttpConnection::handleWebsocketRequest(ByteEStream * io, HttpRequest * requ
 
                     this->writeResponse(response, io);
 
-                    serverDisableConnectionTimeout(io->fd);
+                   this->disableConnectionTimeout(io->fd);
                     upgrader->onConnection(io);
 
                     // NOTE: the upgrade function should indefinetly block until the connection is intended to be closed.
@@ -244,7 +244,7 @@ bool HttpConnection::handleWebsocketRequest(ByteEStream * io, HttpRequest * requ
 }
 
 #ifdef WYLESLIBS_HTTP_DEBUG
-HttpResponse * HttpConnection::handleTimeoutRequests(ByteEStream * io, HttpRequest * request) {
+HttpResponse * HttpServer::handleTimeoutRequests(ByteEStream * io, HttpRequest * request) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "HANDLING TIMEOUT REQUEST\n");
     HttpResponse * response = nullptr;
     if (request->url.path == "/timeout" && request->method == "POST") {
@@ -256,19 +256,19 @@ HttpResponse * HttpConnection::handleTimeoutRequests(ByteEStream * io, HttpReque
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if (key == "socket") {
-                    serverSetInitialSocketTimeout(io->fd, (uint32_t)setVariableFromJsonValue<double>(value));
+                   this->setInitialSocketTimeout(io->fd, (uint32_t)setVariableFromJsonValue<double>(value));
                 } else if (key == "connection") {
-                    serverSetInitialConnectionTimeout(io->fd, (uint32_t)setVariableFromJsonValue<double>(value));
+                   this->setInitialConnectionTimeout(io->fd, (uint32_t)setVariableFromJsonValue<double>(value));
                 }
             }
 
             std::string responseJson("{\"socket\":");
             char timeout[11];
-            sprintf(timeout, "%d", serverGetSocketTimeout(io->fd));
+            sprintf(timeout, "%d",this->getSocketTimeout(io->fd));
             responseJson += timeout;
 
             responseJson += ",\"connection\":";
-            sprintf(timeout, "%d", serverGetConnectionTimeout(io->fd));
+            sprintf(timeout, "%d",this->getConnectionTimeout(io->fd));
             responseJson += timeout;
             responseJson += "}";
      
@@ -281,7 +281,7 @@ HttpResponse * HttpConnection::handleTimeoutRequests(ByteEStream * io, HttpReque
     } else if (request->url.path == "/timeout/socket" && request->method == "GET") {
         std::string responseJson("{\"socket\":");
         char timeout[11];
-        sprintf(timeout, "%d", serverGetSocketTimeout(io->fd));
+        sprintf(timeout, "%d",this->getSocketTimeout(io->fd));
         responseJson += timeout;
         responseJson += "}";
 
@@ -293,7 +293,7 @@ HttpResponse * HttpConnection::handleTimeoutRequests(ByteEStream * io, HttpReque
     } else if (request->url.path == "/timeout/connection" && request->method == "GET") {
         std::string responseJson("{\"connection\":");
         char timeout[11];
-        sprintf(timeout, "%d", serverGetConnectionTimeout(io->fd));
+        sprintf(timeout, "%d",this->getConnectionTimeout(io->fd));
         responseJson += timeout;
         responseJson += "}";
 
@@ -307,7 +307,7 @@ HttpResponse * HttpConnection::handleTimeoutRequests(ByteEStream * io, HttpReque
 }
 #endif
 
-HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
+HttpResponse * HttpServer::requestDispatcher(HttpRequest * request) {
     // for login filters, initializing auth context, etc
     for (size_t i = 0; i < this->request_filters.size(); i++) {
         this->request_filters[i](request);
@@ -331,50 +331,12 @@ HttpResponse * HttpConnection::requestDispatcher(HttpRequest * request) {
     return response;
 }
 
-
-uint8_t HttpConnection::onConnection(int fd) {
-    ByteEStream eio;
-#ifdef WYLESLIBS_SSL_ENABLED
-    SSLEStream sslio;
-#endif
-    HttpRequest request;
-    ByteEStream * io;
-    bool acceptedTLS = false;
-    try {
-#ifdef WYLESLIBS_SSL_ENABLED
-        if (this->config.tls_enabled) {
-            sslio = SSLEStream(this->context, fd, this->config.client_auth_enabled); // initializes ssl object for connection
-            acceptedTLS = true;
-            io = dynamic_cast<ByteEStream *>(&sslio);
-        } else {
-            eio = ByteEStream(fd);
-            io = &eio;
-        }
-#else
-        eio = ByteEStream(fd);
-        io = &eio;
-#endif
-        this->parseRequest(&request, io);
-        loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
-        this->processRequest(io, &request);
-    } catch (const std::exception& e) {
-        loggerPrintf(LOGGER_INFO, "Exception thrown while processing request: %s\n", e.what());
-        if (this->config.tls_enabled && false == acceptedTLS) {
-            // then deduce error occured while initializing ssl
-            loggerPrintf(LOGGER_DEBUG, "Error accepting and configuring TLS connection.\n");
-        } else {
-            // respond with empty HTTP status code 500
-            HttpResponse * err = new HttpResponse;
-            writeResponse(err, io);
-        }
-    }
-
-    close(fd); // doc's say you shouldn't retry close so ignore ret
-
-    return 1;
+void HttpServer::onConnection(int fd) {
+    // thread abstraction, this launches a thread and processes http request...
+    this->tasker->run(ESharedPtr<HttpConnectionETask>(new HttpConnectionETask(fd, this->initial_socket_timeout_s, this)));
 }
 
-void HttpConnection::writeResponse(HttpResponse * response, ByteEStream * io) {
+void HttpServer::writeResponse(HttpResponse * response, ByteEStream * io) {
     std::string data = response->toString();
     // ! IMPORTANT - this response pointer will potentially come from an end-user (another developer)... YOU WILL ENCOUNTER PROBLEMS IF THE POINTER IS CREATED USING MALLOC AND NOT NEW
     delete response;

@@ -36,6 +36,8 @@
 #include "paths.h"
 #include "datastructures/array.h"
 
+#include "web/http/http_connection_etask.h"
+
 // #ifndef WYLESLIBS_HTTP_DEBUG
 // #define WYLESLIBS_HTTP_DEBUG 0
 // #endif
@@ -116,8 +118,10 @@ typedef HttpResponse *(RequestProcessor)(HttpRequest *);
 typedef void(* RequestFilter)(HttpRequest *);
 typedef void(* ResponseFilter)(HttpResponse *);
 
+// TODO: this is kind of a behemoth of a class/file, might or might not be necessary.
+
 // voila!
-class HttpConnection {
+class HttpServer: public Server {
     private:
         RequestProcessor * processor;
         map<std::string, map<std::string, RequestProcessor *>> request_map;
@@ -201,10 +205,12 @@ class HttpConnection {
             this->whitespace_lc_chain.to_disallow = "\t ";
             this->whitespace_lc_chain.next_operation = &this->lowercase_task;
         }
+
+        friend HttpConnectionETask; // lol.
     public:
-        HttpConnection() = default;
+        HttpServer() = default;
         // haha, funny how that worked out...
-        HttpConnection(HttpServerConfig pConfig, map<std::string, map<std::string, RequestProcessor *>> pRequest_map, 
+        HttpServer(HttpServerConfig pConfig, map<std::string, map<std::string, RequestProcessor *>> pRequest_map, 
                         SharedArray<RequestFilter> pRequest_filters, SharedArray<ResponseFilter> pResponse_filters, 
                         SharedArray<ConnectionUpgrader *> pUpgraders, ESharedPtr<FileManager> file_manager) {
             config = pConfig;
@@ -215,7 +221,7 @@ class HttpConnection {
             processor = nullptr;
             file_manager = file_manager;
         }
-        HttpConnection(HttpServerConfig config, RequestProcessor * processor, SharedArray<ConnectionUpgrader *> upgraders, ESharedPtr<FileManager> file_manager): 
+        HttpServer(HttpServerConfig config, RequestProcessor * processor, SharedArray<ConnectionUpgrader *> upgraders, ESharedPtr<FileManager> file_manager): 
             config(config), processor(processor), upgraders(upgraders), file_manager(file_manager) {
                 if (processor == nullptr) {
                     std::string msg = "Processor can not be a nullptr when invoking this constructor.";
@@ -223,13 +229,11 @@ class HttpConnection {
                     throw std::runtime_error(msg);
                 }
         }
-        ~HttpConnection() {
+        ~HttpServer() {
             if (this->context != nullptr) {
                 SSL_CTX_free(this->context);
             }
         }
-
-        uint8_t onConnection(int conn_fd);
 
         // ! IMPORTANT - this needs to be explicitly called by construction caller because CPP.
         void initialize() {
@@ -240,6 +244,8 @@ class HttpConnection {
             //     file_watcher = ESharedPtr<HttpFileWatcher>(new HttpFileWatcher(config, &static_paths, paths, &static_paths_mutex));
             //     file_watcher->initialize(file_watcher);
         }
+
+        void onConnection(int fd) override;
 };
 
 // @ static
@@ -251,7 +257,7 @@ static_assert(sizeof(Url) ==
 ); 
 static_assert(sizeof(Url) == 88);
 
-static_assert(sizeof(HttpConnection) == 
+static_assert(sizeof(HttpServer) == 
     sizeof(RequestProcessor *) +
     sizeof(map<std::string, map<std::string, RequestProcessor *>>) +
     sizeof(SharedArray<RequestFilter>) + 
@@ -266,7 +272,7 @@ static_assert(sizeof(HttpConnection) ==
     sizeof(ReaderTaskDisallow<SharedArray<uint8_t>>) +
     sizeof(ReaderTaskLC<SharedArray<uint8_t>>)
 );
-// static_assert(sizeof(HttpConnection) == 704);
+// static_assert(sizeof(HttpServer) == 704);
 
 };
 

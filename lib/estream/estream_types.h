@@ -138,7 +138,7 @@ namespace WylesLibs {
         public:
             Collector<T, RT> * collector;
             LoopCriteria<T> * criteria;
-            virtual ~StreamTask() = default;
+            virtual ~StreamTask() {}
             // Good example of CPP OOP
      
             // good example of "dynamic dispatch"?

@@ -39,6 +39,10 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/threads/etasker.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/threads/multithreaded_signals.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/server_connection_etask.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http_connection_etask.cpp
 "
 
 INCLUDE_DIRS="-I $WYLESLIBS_BUILD_ROOT_DIR/http_test"

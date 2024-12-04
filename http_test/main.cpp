@@ -1,6 +1,7 @@
 #include "web/http/http.h"
 #include "web/http/connection.h"
 #include "web/http/config.h"
+#include "web/http/http_connection_task.h"
 #include "web/services.h"
 #include "web/server_context.h"
 
@@ -10,6 +11,8 @@
 #ifdef WYLESLIBS_GCS_BUILD
 #include "file/file_gcs.h"
 #endif
+
+#include <pthread.h>
 
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1
@@ -55,16 +58,9 @@ static map<std::string, map<std::string, RequestProcessor *>> requestMap{
     {"/exampleDontCare", {{"", Controller::example }}} 
 };
 
-// Generally, direct access to global contexts (state) are frowned upon... but this should be fine...
-//    alternatively, can move this to each service layer module...
-//    or pass along 'only' via function params... (absolutely not, some centralization is needed to keep this from becoming a mess.) 
-
-// But again, it might depend on the application? This is an example application to illustrate how you would use the http library...
 static ServerContext * server_context = nullptr;
 
-// again, why?
 extern ServerContext * WylesLibs::getServerContext() {
-    // LOL
     if (server_context == nullptr) {
         std::string msg = "ServerContext is a null pointer.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
@@ -74,16 +70,35 @@ extern ServerContext * WylesLibs::getServerContext() {
     }
 }
 
-static HttpConnection connection;
+static HttpServer connection;
 
-static uint8_t connectionHandler(int conn_fd) {
-    // because instance functions can't be passed to function pointer args?
-    return connection.onConnection(conn_fd);
+// ! IMPORTANT - this pattern must be implemented in all multithreaded applications that leverage the etasker stuff.
+//                  this is decoupled from etasker to support multiple etasker instances, other ways of threading, process forking, etc.. (see fileWatcher)
+#include "multithreaded_signals.h"
+void * sig_handler(int sig, siginfo_t * info, void * context) {
+    pthread_t pthread = pthread_self();
+    if (thread_specific_sig_handlers.contains(pthread)) {
+        (thread_specific_sig_handlers[pthread])(sig, info, context);
+    } else {
+        raise(sig);
+    }
+}
+
+void initProcessSigHandler() {
+    struct sigaction act = { 0 };
+    act.sa_flags = SA_SIGINFO;
+    act.sa_sigaction = &sig_handler;
+    if (sigaction(SIGKILL, &act, NULL) == -1 || sigaction(SIGSEGV, &act, NULL) == -1) {
+        std::string msg("Failed to configure sig action and sig handler.\n");
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+        throw std::runtime_error(msg);
+    }
 }
 
 int main(int argc, char * argv[]) {
     int ret = 0;
     try {
+        initProcessSigHandler();
         // ! IMPORTANT
         // Might be good to get in the habit of evaluating size of types used from libs to determine whether to malloc or not?
         //  modern stack sizes are large enough but might matter in an embedded system?
@@ -92,9 +107,9 @@ int main(int argc, char * argv[]) {
         //  More generally, larger stack size allocations vs larger heap.
 
         //  so, if need access to more memory you can call new where needed at point of creation of each thread. Like here.
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpConnection: %lu, Size of ServerContext: %lu\n", sizeof(HttpConnection), sizeof(ServerContext));
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpServer: %lu, Size of ServerContext: %lu\n", sizeof(HttpServer), sizeof(ServerContext));
         // if you see this in header files, then maybe their worthy lol...
-        // static_assert(sizeof(HttpConnection) == 0); 
+        // static_assert(sizeof(HttpServer) == 0); 
         // but maybe this isn't a good idea because now we definetly have this type in program?
         // static_assert(sizeof(Array<uint8_t>) == 0); 
 
@@ -114,11 +129,11 @@ int main(int argc, char * argv[]) {
     
         fileWatcherThreadStart();
 
-        connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders, context.file_manager); 
+        connection = HttpServer(config, requestMap, requestFilters, responseFilters, upgraders, context.file_manager); 
         connection.initialize();
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
-        serverListen(config.address.c_str(), (uint16_t)config.port, connectionHandler);
+        connection.listen(config.address.c_str(), (uint16_t)config.port);
     } catch (const std::exception& e) {
         // loggerPrintf(LOGGER_INFO, "%s\n", std::stacktrace::current().to_string().c_str());
         // redundant try/catch? let's show where exception handled...

@@ -1,6 +1,9 @@
 #ifndef WYLESLIB_HTTP_TYPES_H
 #define WYLESLIB_HTTP_TYPES_H
 
+#include <unordered_map>
+#include <map>
+
 #include "memory/pointers.h"
 #include "web/authorization.h"
 #include "datastructures/array.h"

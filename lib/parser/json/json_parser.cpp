@@ -16,7 +16,7 @@
 #define LOGGER_MODULE_ENABLED LOGGER_JSON_PARSER
 #include "logger.h"
 
-#define ReaderTaskExact ReaderTaskExact<SharedArray<uint8_t>>
+#define ReaderTaskExact ReaderTaskExact<std::string>
 #define ReaderTaskExtract ReaderTaskExtract<SharedArray<uint8_t>>
 
 using namespace WylesLibs::Parser::Json;
@@ -110,7 +110,7 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
             exponential_multiplier *= 10;
         }
         loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
-    } else if (comp.find(c) == std::string::npos) { // if not one of the characters in comp throw exception...
+    } else if (comp.find(c) == std::string::npos) { // if one of the characters in comp throw exception...
         std::string msg = "Invalid number.";
         loggerPrintf(LOGGER_INFO, "%s, found '%c'\n", msg.c_str(), c);
         throw std::runtime_error(msg);

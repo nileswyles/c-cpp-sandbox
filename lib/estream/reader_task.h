@@ -64,7 +64,7 @@ typedef StreamTask<uint8_t, SharedArray<uint8_t>> ReaderTask;
 template<typename RT>
 class ReaderTaskChain: public StreamTask<uint8_t, RT> {
     public:
-        ReaderTask * next_operation;
+        StreamTask<uint8_t, RT> * next_operation;
 
         ReaderTaskChain(): next_operation(nullptr) {}
         ReaderTaskChain(ReaderTaskChain * next): next_operation(next) {}

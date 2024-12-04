@@ -20,6 +20,7 @@
 // other
 #include <openssl/ssl.h>
 
+#include "web/http/http_types.h"
 #include "memory/pointers.h"
 #include "estream/estream.h"
 #include "estream/reader_task.h"
@@ -56,75 +57,13 @@ static SharedArray<const char *> FIELD_VALUES_TO_LOWER_CASE{
     "upgrade"
 };
 
-typedef struct Url {
-    std::string path;
-    std::unordered_map<std::string, std::string> query_map;
-} Url;
-
-class HttpRequest {
-    public:
-        std::string method;
-        Url url;
-        std::string version;
-        
-        std::map<std::string, SharedArray<std::string>> fields;
-        std::map<std::string, SharedArray<std::string>> cookies;
-
-        size_t content_length;
-        ESharedPtr<JsonValue> json_content;
-        SharedArray<MultipartFile> files;
-        std::unordered_map<std::string, std::string> form_content;
-        SharedArray<uint8_t> content;
-
-        Authorization auth;
-
-        HttpRequest() = default;
-        ~HttpRequest() = default;
-};
-
-class HttpResponse {
-    public:
-        std::string status_code;
-        std::string method;
-        std::string version;
-        std::unordered_map<std::string, std::string> fields;
-        std::unordered_map<std::string, std::string> cookies;
-        SharedArray<uint8_t> content;
-
-        HttpResponse(): version("HTTP/1.1"), status_code("500") {
-			fields["Connection"].append("close");
-        }
-        ~HttpResponse() = default;
-
-        std::string toString() {
-            // header = this->version + " " + strconv.Itoa(status_code) + " " + status_map[r.StatusCode] + "\n";
-            std::string response = this->version + " " + this->status_code + "\n";
-            for (const auto& [key, value] : this->fields) {
-				response += key + ": " + value + "\n";
-			}
-            for (const auto& [key, value] : this->cookies) {
-				response += "set-cookie: " + value + "\n";
-			}
-			response += "\n";
-            response += content.toString();
-            return response;
-        }
-};
-
-// typedef HttpResponse *(RequestProcessor)(HttpRequest *);
-//  vs.
-// typedef HttpResponse *(* RequestProcessor)(HttpRequest *);
-typedef HttpResponse *(RequestProcessor)(HttpRequest *);
-typedef void(* RequestFilter)(HttpRequest *);
-typedef void(* ResponseFilter)(HttpResponse *);
-
 // TODO: this is kind of a behemoth of a class/file, might or might not be necessary.
 
 // voila!
 class HttpServer: public Server {
     private:
         RequestProcessor * processor;
-        map<std::string, map<std::string, RequestProcessor *>> request_map;
+        map<std::string, map<::std::string, RequestProcessor *>> request_map;
         SharedArray<RequestFilter> request_filters;
         SharedArray<ResponseFilter> response_filters;
         SharedArray<ConnectionUpgrader *> upgraders;

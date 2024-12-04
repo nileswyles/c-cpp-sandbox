@@ -1,7 +1,8 @@
 #include "web/http/http.h"
+#include "web/http/http_types.h"
 #include "web/http/connection.h"
 #include "web/http/config.h"
-#include "web/http/http_connection_task.h"
+#include "web/http/http_connection_etask.h"
 #include "web/services.h"
 #include "web/server_context.h"
 

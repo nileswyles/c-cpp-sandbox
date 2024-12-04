@@ -1,7 +1,7 @@
 #ifndef EXAMPLE_CONTROLLER_H
 #define EXAMPLE_CONTROLLER_H
 
-#include "web/http/http.h"
+#include "web/http/http_types.h"
 
 using namespace WylesLibs::Http;
 

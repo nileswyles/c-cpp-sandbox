@@ -104,6 +104,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <sys/sysinfo.h>
+#include <signal.h>
 
 #ifndef LOGGER_ETASKER
 #define LOGGER_ETASKER 1
@@ -119,10 +120,10 @@ namespace WylesLibs {
     class ETask {
         public:
             ETask() = default;
-            ~ETask() = default;
+            virtual ~ETask() = default;
             virtual void initialize() = 0;
             virtual void run() = 0;
-            virtual onExit() = 0;
+            virtual void onExit() = 0;
     };
 
     class EThread {
@@ -131,6 +132,7 @@ namespace WylesLibs {
             uint64_t timeout_s;
             ESharedPtr<ETask> task;
             ESharedPtr<jmp_buf> env; // ! IMPORTANT - since queuing is a common and exceptions are expensive, longjmp and setjmp to return back to thread context from signal preemption.
+            EThread() = default;
             EThread(ESharedPtr<ETask> ta, uint64_t ts, ESharedPtr<jmp_buf> env) {
                 task = ta;
 
@@ -141,13 +143,19 @@ namespace WylesLibs {
             ~EThread() = default;
     };
 
-    typedef struct ThreadArg {
-        ESharedPtr<ETask> task;
-    } ThreadArg;
-    
+    template<typename T>
+    class ThreadArg {
+        public:
+            // as opposed to casting to void? Is there a reason not too? other than ...
+            T * tasker;
+            ESharedPtr<ETask> task;
+            ThreadArg(T * tasker, ESharedPtr<ETask> task): tasker(tasker), task(task) {}
+            ~ThreadArg() = default;
+    };
+
     class ETasker {
         private:
-            std::map<std::string, EThread> thread_pool;
+            std::map<pthread_t, EThread> thread_pool;
             std::list<ESharedPtr<ETask>> thread_pool_queue;
             size_t thread_limit;
 
@@ -156,15 +164,24 @@ namespace WylesLibs {
             pthread_attr_t attr;
             bool fixed;
 
+            static void * timerProcessStatic(void * ptr) {
+                ETasker * tasker = static_cast<ETasker *>(ptr);
+                return tasker->timerProcess(ptr);
+            }
+            static void * threadContextStatic(void * ptr) {
+                ThreadArg<ETasker> * thread_arg = static_cast<ThreadArg<ETasker> *>(ptr);
+                return thread_arg->tasker->threadContext(ptr);
+            }
             void taskRun(ESharedPtr<ETask> task);
-            void timerProcess(void * arg);
-            void * threadSigAction(int sig, siginfo_t * info, void * context);
+            void * timerProcess(void * arg);
             void * threadContext(void * arg);
             void threadTeardown();
         public:
+            static std::map<pthread_t, ETasker *> thread_specific_sig_handlers;
+
             uint64_t initial_timeout_s;
             ETasker(): ETasker(SIZE_MAX, DEFAULT_ETASKER_TIMEOUT_S, false) {}
-            ETasker(size_t tl): ETasker(tl, DEFAULT_ETASKER_TIMEOUT_S, false) {
+            ETasker(size_t tl): ETasker(tl, DEFAULT_ETASKER_TIMEOUT_S, false) {}
             ETasker(size_t tl, uint64_t ts, bool fixed) {
                 pthread_attr_init(&attr); // ! IMPORTANT - pthread_create arg is const.
                 pthread_attr_setdetachstate(&attr, 1);
@@ -172,12 +189,11 @@ namespace WylesLibs {
                 initial_timeout_s = ts;
                 
                 pthread_mutex_init(&mutex, nullptr);
-                pthread_create(&timer_thread, &attr, timerProcess, NULL);
                 fixed = fixed;
 
                 if (true == fixed) {
                     int nprocs = get_nprocs();
-                    if (tl > nprocs) {
+                    if (tl > static_cast<size_t>(nprocs)) {
                         std::string msg = WylesLibs::format("Fixed thread pool cannot be of larger than nprocs {d}", nprocs);
                         loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", msg.c_str());
                         throw std::runtime_error(msg);
@@ -190,8 +206,10 @@ namespace WylesLibs {
                 pthread_mutex_destroy(&this->mutex);
             }
 
+            void startTimeoutThread();
             void setThreadTimeout(uint64_t ts);
             uint64_t getThreadTimeout();
+            void threadSigAction(int sig, siginfo_t * info, void * context);
             void run(ESharedPtr<ETask> task);
     };
 };

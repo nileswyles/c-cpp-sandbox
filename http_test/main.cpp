@@ -74,12 +74,11 @@ extern ServerContext * WylesLibs::getServerContext() {
 static HttpServer connection;
 
 // ! IMPORTANT - this pattern must be implemented in all multithreaded applications that leverage the etasker stuff.
-//                  this is decoupled from etasker to support multiple etasker instances, other ways of threading, process forking, etc.. (see fileWatcher)
-#include "multithreaded_signals.h"
-void * sig_handler(int sig, siginfo_t * info, void * context) {
+void sig_handler(int sig, siginfo_t * info, void * context) {
     pthread_t pthread = pthread_self();
-    if (thread_specific_sig_handlers.contains(pthread)) {
-        (thread_specific_sig_handlers[pthread])(sig, info, context);
+    if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
+        ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
+        etasker->threadSigAction(sig, info, context);
     } else {
         raise(sig);
     }

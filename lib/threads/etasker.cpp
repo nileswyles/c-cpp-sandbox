@@ -1,20 +1,29 @@
 #include "etasker.h" 
 
-#include "multithreaded_signals.h"
+#include <stdio.h>
 
 using namespace WylesLibs;
+
+std::map<pthread_t, ETasker *> ETasker::thread_specific_sig_handlers = std::map<pthread_t, ETasker *>();
+
+void ETasker::startTimeoutThread() {
+    pthread_create(&this->timer_thread, &this->attr, ETasker::timerProcessStatic, this);
+}
 
 void ETasker::setThreadTimeout(uint64_t ts) {
     pthread_mutex_lock(&this->mutex);
     pthread_t pthread = pthread_self();
-    this->thread_pool_queue[pthread].timeout_s = ts;
+    EThread ethread = this->thread_pool.at(pthread);
+    ethread.timeout_s = ts;
+    this->thread_pool[pthread] = ethread; // std::move?
     pthread_mutex_unlock(&this->mutex);
 }
 
 uint64_t ETasker::getThreadTimeout() {
     pthread_mutex_lock(&this->mutex);
     pthread_t pthread = pthread_self();
-    uint64_t timeout_s = this->thread_pool_queue[pthread].timeout_s;
+    EThread ethread = this->thread_pool.at(pthread);
+    uint64_t timeout_s = ethread.timeout_s;
     pthread_mutex_unlock(&this->mutex);
     return timeout_s;
 }
@@ -31,8 +40,8 @@ void ETasker::run(ESharedPtr<ETask> task) {
 
 void ETasker::taskRun(ESharedPtr<ETask> task) {
     pthread_t thread;
-    ThreadArg * arg = new ThreadArg(task);
-    int ret = pthread_create(&thread, &this->attr, this->threadContext, arg);
+    ThreadArg<ETasker> * arg = new ThreadArg<ETasker>(this, task);
+    int ret = pthread_create(&thread, &this->attr, ETasker::threadContextStatic, arg);
     if (ret != 0) {
         std::string msg("Failed to create ETasker thread.");
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
@@ -40,7 +49,7 @@ void ETasker::taskRun(ESharedPtr<ETask> task) {
     }
 }
 
-void ETasker::timerProcess(void * arg) {
+void * ETasker::timerProcess(void * arg) {
     while(1) {
         pthread_mutex_lock(&this->mutex);
         for (auto i: this->thread_pool) {
@@ -48,8 +57,8 @@ void ETasker::timerProcess(void * arg) {
             EThread ethread = i.second;
             struct timespec t;
             clock_gettime(CLOCK_MONOTONIC, &t);
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "fd: %d, start: %ld, timeout: %u, current_time: %lu\n", ethread.start_time.tv_sec, ethread.timeout_s, t.tv_sec);
-            if (ethread.start_time.tv_sec + ethread.timeout_s <= t.tv_sec) {
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "start: %ld, timeout: %lu, current_time: %lu\n", ethread.start_time.tv_sec, ethread.timeout_s, t.tv_sec);
+            if (static_cast<uint64_t>(ethread.start_time.tv_sec) + ethread.timeout_s <= static_cast<uint64_t>(t.tv_sec)) {
                 loggerPrintf(LOGGER_DEBUG, "Thread expired sending signal.\n");
                 pthread_kill(pthread, SIGKILL);
             }
@@ -59,20 +68,21 @@ void ETasker::timerProcess(void * arg) {
     }
 }
 
-void * ETasker::threadSigAction(int sig, siginfo_t * info, void * context) {
+void ETasker::threadSigAction(int sig, siginfo_t * info, void * context) {
     this->threadTeardown();
 }
 
 void * ETasker::threadContext(void * arg) {
-    ThreadArg * a = (ThreadArg *)arg;
+    ThreadArg<ETasker> * a = static_cast<ThreadArg<ETasker> *>(arg);
     // ! IMPORTANT - every application must implement a sig handler that processes SIGKILL.
-    WylesLibs::registerThreadSigActionHandler(this->threadSigAction);
-
-    jmp_buf * env = new jmp_buf;
+    jmp_buf env;
     pthread_t pthread = pthread_self();
 
+    // register sig handler for thread
+    ETasker::thread_specific_sig_handlers[pthread] = this;
+
     pthread_mutex_lock(&this->mutex);
-    this->thread_pool[pthread] = EThread(a->task, ESharedPtr<jmp_buf>(env));
+    this->thread_pool[pthread] = EThread(a->task, this->initial_timeout_s, ESharedPtr<jmp_buf>(&env));
     pthread_mutex_unlock(&this->mutex);
 
     delete a; // free before function call, so that it can terminate thread however it wants... 
@@ -91,8 +101,8 @@ void * ETasker::threadContext(void * arg) {
         }
         pthread_mutex_unlock(&this->mutex);
     }
-    task->initialize();
-    task->run();
+    ESHAREDPTR_GET_PTR(task)->initialize();
+    ESHAREDPTR_GET_PTR(task)->run();
 
     if (true == this->fixed) {
         this->thread_pool[pthread].task = nullptr;
@@ -111,19 +121,20 @@ void ETasker::threadTeardown() {
 
     pthread_t pthread = pthread_self();
     EThread ethread = this->thread_pool[pthread];
-    ethread.task->onExit();
+    ESHAREDPTR_GET_PTR(ethread.task)->onExit();
 
     // TODO:
     //      if this fails, we don't retry. just the way it is for now.
-    if (this->thread_pool_queue.size() > 0) {
+    if (this->thread_limit != SIZE_MAX && this->thread_pool_queue.size() > 0) {
         this->thread_pool[pthread].task = nullptr;
 
         pthread_mutex_unlock(&this->mutex);
         ::longjmp(ESHAREDPTR_GET_REF(ethread.env), 1);
     } else {
+        ETasker::thread_specific_sig_handlers.erase(pthread);
         this->thread_pool.erase(pthread);
         pthread_mutex_unlock(&this->mutex);
         // semi-colon; (line-separator)
-        pthread_exit();
+        pthread_exit(NULL);
     }
 }

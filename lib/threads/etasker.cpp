@@ -125,7 +125,7 @@ void * ETasker::threadContext(void * arg) {
 
 void ETasker::threadTeardown() {
     pthread_t pthread = pthread_self();
-    // lol... 
+
     pthread_mutex_lock(&this->mutex);
     EThread ethread = this->thread_pool[pthread];
     pthread_mutex_unlock(&this->mutex);
@@ -139,9 +139,13 @@ void ETasker::threadTeardown() {
         pthread_mutex_unlock(&this->mutex);
         ::longjmp(ESHAREDPTR_GET_REF(ethread.env), 1);
     } else {
+        pthread_mutex_unlock(&this->mutex); // because deadlocks?
+
         pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
         ETasker::thread_specific_sig_handlers.erase(pthread);
         pthread_mutex_unlock(&ETasker::thread_specific_sig_handler_mutex);
+
+        pthread_mutex_lock(&this->mutex);
         this->thread_pool.erase(pthread);
         pthread_mutex_unlock(&this->mutex);
         // semi-colon; (line-separator)

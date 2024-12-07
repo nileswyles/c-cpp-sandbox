@@ -165,6 +165,7 @@ namespace WylesLibs {
             std::map<pthread_t, EThread> thread_pool;
             std::list<ESharedPtr<ETask>> thread_pool_queue;
             size_t thread_limit;
+            size_t num_threads;
 
             pthread_mutex_t mutex;
             pthread_t timer_thread; 
@@ -351,9 +352,10 @@ namespace WylesLibs {
             ETasker(): ETasker(SIZE_MAX, DEFAULT_ETASKER_TIMEOUT_S, false) {}
             ETasker(size_t tl): ETasker(tl, DEFAULT_ETASKER_TIMEOUT_S, false) {}
             ETasker(size_t tl, uint64_t ts, bool fixed): ETasker(tl, ts, fixed, PTHREAD_STACK_MIN) {}
-            ETasker(size_t tl, uint64_t ts, bool fixed, size_t stack_size) {
+            ETasker(size_t tl, uint64_t timeout_s, bool fixed, size_t stack_size) {
                 thread_limit = tl;
-                initial_timeout_s = ts;
+                initial_timeout_s = timeout_s;
+                num_threads = 0;
                 
                 pthread_mutex_init(&mutex, nullptr);
                 fixed = fixed;

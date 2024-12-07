@@ -29,10 +29,13 @@ uint64_t ETasker::getThreadTimeout() {
 int ETasker::run(ESharedPtr<ETask> task) {
     int ret = 0;
     pthread_mutex_lock(&this->mutex);
-    if (this->thread_limit != SIZE_MAX && this->thread_pool.size() > this->thread_limit) {
+    if (this->thread_limit != SIZE_MAX && this->num_threads >= this->thread_limit) {
         this->thread_pool_queue.push_back(task);
     } else {
         ret = this->taskRun(task);
+        if (ret == 0) {
+            this->num_threads++;
+        }
     }
     pthread_mutex_unlock(&this->mutex);
     return ret;
@@ -70,6 +73,7 @@ void * ETasker::timerProcess(void * arg) {
 
 void ETasker::threadSigAction(int sig, siginfo_t * info, void * context) {
     pthread_t pthread = pthread_self();
+    loggerPrintf(LOGGER_DEBUG_VERBOSE, "sig action: %d for pthread %ld\n", sig, pthread);
     if (sig == SIGKILL && pthread == this->timer_thread) {
         pthread_exit(NULL);
     } else {
@@ -143,7 +147,7 @@ void ETasker::threadTeardown() {
     ESHAREDPTR_GET_PTR(ethread.task)->onExit();
 
     pthread_mutex_lock(&this->mutex);
-    if (this->thread_limit != SIZE_MAX && this->thread_pool_queue.size() > 0) {
+    if (this->thread_limit != SIZE_MAX) {
         this->thread_pool[pthread].task = nullptr;
 
         pthread_mutex_unlock(&this->mutex);
@@ -161,6 +165,7 @@ void ETasker::threadTeardown() {
         delete ethread.pthread;
         delete ethread.pthread_attr;
         this->thread_pool.erase(pthread);
+        this->num_threads--;
         pthread_mutex_unlock(&this->mutex);
         // semi-colon; (line-separator)
         pthread_exit(NULL);

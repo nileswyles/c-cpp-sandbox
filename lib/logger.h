@@ -43,11 +43,11 @@ static const char * LOG_LEVEL_STRINGS[5] = {
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
-        fprintf(file, "%s:%d (thread: %lu) [%s] (%s) -> " fmt,\
+        fprintf(file, "[%s] (thread: %lu) {%s:%d} (%s) -> " fmt,\
+            LOG_LEVEL_STRINGS[min],\
+            pthread_self(),\
             __FILE__,\
             __LINE__,\
-            pthread_self(),\
-            LOG_LEVEL_STRINGS[min],\
             __func__,\
             ##__VA_ARGS__\
         );\
@@ -60,12 +60,12 @@ static const char * LOG_LEVEL_STRINGS[5] = {
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
-        fprintf(file, "%s {%s:%d} (thread: %lu) [%s] (%s) -> " fmt,\
+        fprintf(file, "%s [%s] (thread: %lu) {%s:%d} (%s) -> " fmt,\
             WylesLibs::Cal::getFormattedDateTime(0).c_str(),\
+            LOG_LEVEL_STRINGS[min],\
+            pthread_self(),\
             __FILE__,\
             __LINE__,\
-            pthread_self(),\
-            LOG_LEVEL_STRINGS[min],\
             __func__,\
             ##__VA_ARGS__\
         );\

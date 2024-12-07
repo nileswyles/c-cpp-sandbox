@@ -130,9 +130,53 @@ void testETasker(TestArg * t) {
     // should be ~15 seconds, give an extra second just because...
     //      then test all config permutations.
     size_t numIndividualThreads = threadsSeen.size();
-    if (static_cast<uint64_t>(after.tv_sec - prior.tv_sec) > sleep_time 
+    uint64_t elapsed_time = static_cast<uint64_t>(after.tv_sec - prior.tv_sec);
+    loggerPrintf(LOGGER_DEBUG, "Elapsed Time: %lu\n", elapsed_time);
+    if (elapsed_time > sleep_time 
         || numRuns != expectedNumRuns 
         || numIndividualThreads != expectedNumRuns) {
+        t->fail = true;
+    } else {
+        t->fail = false;
+    }
+}
+
+void testETaskerThreadLimit(TestArg * t) {
+    size_t procs = get_nprocs();
+    size_t procs_mul = 4;
+    size_t expectedNumRuns = procs * procs_mul;
+    loggerPrintf(LOGGER_DEBUG, "nprocs: %lu, procs_mul: %lu\n", procs, procs_mul);
+
+    size_t limit = procs;
+    ETasker lol(limit, 16 * procs_mul, false);
+
+    struct timespec prior;
+    clock_gettime(CLOCK_MONOTONIC, &prior);
+
+    ESharedPtr<TestETask> ptr(new TestETask());
+    for (size_t i = 0; i < expectedNumRuns; i++) {
+        lol.run(ptr);
+    }
+
+    while (expectedNumRuns != numExited) {
+        for (auto i: ETasker::thread_specific_sig_handlers) {
+            threadsSeen.insert(i.first);
+        }
+        usleep(270); // lol... flaky? yeah 
+    }
+
+    struct timespec after;
+    clock_gettime(CLOCK_MONOTONIC, &after);
+
+    size_t sleep_time = 16 * procs_mul;
+    // should be ~15 seconds, give an extra second just because...
+    //      then test all config permutations.
+    size_t numIndividualThreads = threadsSeen.size();
+    uint64_t elapsed_time = static_cast<uint64_t>(after.tv_sec - prior.tv_sec);
+    loggerPrintf(LOGGER_DEBUG, "Elapsed Time: %lu\n", elapsed_time);
+    if (elapsed_time > sleep_time 
+        || numRuns != expectedNumRuns 
+        || numIndividualThreads != limit) {
         t->fail = true;
     } else {
         t->fail = false;
@@ -160,7 +204,7 @@ int main(int argc, char * argv[]) {
     // }
 
     t.addTest(testETasker);
-    // t.addTest(testETaskerThreadLimit);
+    t.addTest(testETaskerThreadLimit);
     // t.addTest(testETaskerThreadLimitFixed);
     // t.addTest(testETaskerThreadLimitBursty);
     // t.addTest(testETaskerThreadLimitFixedBursty);

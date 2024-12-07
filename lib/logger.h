@@ -43,7 +43,7 @@ static const char * LOG_LEVEL_STRINGS[5] = {
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
-        fprintf(file, "%s:%d (thread: %lu) [%s] (%s) " fmt,\
+        fprintf(file, "%s:%d (thread: %lu) [%s] (%s) -> " fmt,\
             __FILE__,\
             __LINE__,\
             pthread_self(),\

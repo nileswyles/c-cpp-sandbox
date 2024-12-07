@@ -353,9 +353,7 @@ static void testJsonArray(TestArg * t) {
         size_t i = 0;
         JsonValue * obj = ESHAREDPTR_GET_PTR(parse(s));
         if (obj != nullptr) {
-            printf("wtf?\n");
             if (obj->type == ARRAY) {
-                printf("wtf?\n");
                 loggerPrintf(LOGGER_TEST_VERBOSE, "JSON to Parse: \n");
                 loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(s).c_str());
                 JsonArray * values = dynamic_cast<JsonArray *>(obj);

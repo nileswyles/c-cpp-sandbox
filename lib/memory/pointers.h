@@ -65,7 +65,6 @@ class ESharedPtr {
         }
         T * getPtr(const char * file_name, int line) {
             if (true == this->isNullPtr()) {
-                printf("wtf? this format?, %d\n", line);
                 std::string msg = WylesLibs::format("Attempted to retrieve ptr at: {s}:{d}", file_name, line);
                 loggerPrintf(LOGGER_INFO, "Exception: %s\n", msg.c_str());
                 throw std::runtime_error(msg);

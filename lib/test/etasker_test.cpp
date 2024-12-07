@@ -22,6 +22,8 @@ static size_t numRuns = 0;
 static size_t numExited = 0;
 static std::set<pthread_t> threadsSeen;
 
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 class TestETask: public ETask {
     public:
         TestETask() {}
@@ -32,23 +34,29 @@ class TestETask: public ETask {
         }
         void run() {
             sleep(5);
-            loggerPrintf(LOGGER_DEBUG, "run called\n");
-            // numRuns++;
+            pthread_mutex_lock(&mutex);
+            numRuns++;
+            loggerPrintf(LOGGER_DEBUG, "run called, %lu\n", numRuns);
+            pthread_mutex_unlock(&mutex);
         }
         void onExit() {
             sleep(5);
-            loggerPrintf(LOGGER_DEBUG, "onExit called\n");
-            // numExited++;
+            pthread_mutex_lock(&mutex);
+            numExited++;
+            loggerPrintf(LOGGER_DEBUG, "onExit called, %lu\n", numExited);
+            pthread_mutex_unlock(&mutex);
         }
 };
 
 void sig_handler1(int sig) {
     pthread_t pthread = pthread_self();
+        printf("timer thread not in list\n");
     if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
         ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
         // etasker->threadSigAction(sig, info, context);
         etasker->threadSigAction(sig, nullptr, nullptr);
     } else {
+        printf("timer thread not in list\n");
         raise(sig);
     }
 }
@@ -65,7 +73,6 @@ void sig_handler1(int sig) {
 
 void testETasker(TestArg * t) {
     ETasker lol(SIZE_MAX, 17, false);
-    lol.startTimeoutThread();
 
     struct timespec prior;
     clock_gettime(CLOCK_MONOTONIC, &prior);
@@ -126,6 +133,8 @@ void testETasker(TestArg * t) {
         || numRuns != expectedNumRuns 
         || numIndividualThreads != expectedNumRuns) {
         t->fail = true;
+    } else {
+        t->fail = false;
     }
 }
 

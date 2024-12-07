@@ -160,10 +160,174 @@ namespace WylesLibs {
             size_t thread_limit;
 
             pthread_mutex_t mutex;
-            pthread_t timer_thread;
-            pthread_attr_t attr;
+            pthread_t timer_thread; // IMPORTANT - as of 2024, this is defined as a "thread identifier", I expect it to be unique and comparable-type.
+            pthread_attr_t attr; // IMPORTANT - as of 2024, this is only used by the pthread_create function - storage doesn't have to remain throughout the lifecycle of the thread.
+            // i'm not finnnaaaa do that LOLOLOLOLOLOLOLOLOL
             bool fixed;
+            
+            static void setThreadAttributes(pthread_attr_t * attr, size_t stack_size) {
+                int i = 0;
+                i = pthread_attr_init(attr); // ! IMPORTANT - pthread_create arg is const.
+                if (i != 0) {
+                    std::string msg("Failed to init ETasker thread attr.");
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                i = pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED);
+                if (i != 0) {
+                    std::string msg("Failed to set ETasker thread attr detach state to PTHREAD_CREATE_DETACHED.");
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                i = pthread_attr_setinheritsched(attr, PTHREAD_EXPLICIT_SCHED);
+                if (i != 0) {
+                    std::string msg("Failed to set ETasker thread inherit state to PTHREAD_EXPLICIT_SCHED.");
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                i = pthread_attr_setschedpolicy(attr, SCHED_OTHER); // OTHER is the default? CFS?
+                if (i != 0) {
+                    std::string msg("Failed to set ETasker thread sched policy to SCHED_OTHER.");
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                struct sched_param param = {
+                    .sched_priority = 0
+                };
+                i = pthread_attr_setschedparam(attr, &param);
+                if (i != 0) {
+                    std::string msg = WylesLibs::format("Failed to set ETasker thread sched param - sched priority to {d}.", param.sched_priority);
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                i = pthread_attr_setstacksize(attr, stack_size);
+                if (i != 0) {
+                    std::string msg = WylesLibs::format("Failed to set ETasker thread stack size to: {d}", stack_size);
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                i = pthread_attr_setscope(attr, PTHREAD_SCOPE_SYSTEM);
+                if (i != 0) {
+                    std::string msg("Failed to set ETasker thread scope to PTHREAD_SCOPE_SYSTEM.");
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
 
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Logging Thread Atrributes for ETasker created threads: \n");
+                ETasker::logThreadAttributes(attr);
+            }
+            static void setTimerThreadAttributes(pthread_attr_t * attr) {
+                int i = 0;
+                i = pthread_attr_init(attr); // ! IMPORTANT - pthread_create arg is const.
+                if (i != 0) {
+                    std::string msg("Failed to init ETasker thread attr.");
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                i = pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED);
+                if (i != 0) {
+                    std::string msg("Failed to set ETasker thread attr detach state to PTHREAD_CREATE_DETACHED.");
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                i = pthread_attr_setinheritsched(attr, PTHREAD_EXPLICIT_SCHED);
+                if (i != 0) {
+                    std::string msg("Failed to set ETasker thread inherit state to PTHREAD_EXPLICIT_SCHED.");
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                i = pthread_attr_setschedpolicy(attr, SCHED_FIFO);
+                if (i != 0) {
+                    std::string msg("Failed to set ETasker thread sched policy to SCHED_FIFO.");
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                struct sched_param param = {
+                    .sched_priority = 99
+                };
+                i = pthread_attr_setschedparam(attr, &param);
+                if (i != 0) {
+                    std::string msg = WylesLibs::format("Failed to set ETasker thread sched param - sched priority to {d}.", param.sched_priority);
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                i = pthread_attr_setstacksize(attr, PTHREAD_STACK_MIN);
+                if (i != 0) {
+                    std::string msg = WylesLibs::format("Failed to set ETasker thread stack size to: {d}", PTHREAD_STACK_MIN);
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                i = pthread_attr_setscope(attr, PTHREAD_SCOPE_SYSTEM);
+                if (i != 0) {
+                    std::string msg("Failed to set ETasker thread scope to PTHREAD_SCOPE_SYSTEM.");
+                    loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Logging Thread Atrributes for the ETasker Timer thread: \n");
+                ETasker::logThreadAttributes(attr);
+            }
+            static void logThreadAttributes(pthread_attr_t * attr) {
+                int s, i;
+                size_t v;
+                void *stack_addr;
+                struct sched_param sp;
+                s = pthread_attr_getdetachstate(attr, &i);
+                if (s != 0)
+                    std::runtime_error("Failed to log pthread_attr_getdetachstate.");
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Detach state        = %s\n",
+                       (i == PTHREAD_CREATE_DETACHED) ? "PTHREAD_CREATE_DETACHED" :
+                       (i == PTHREAD_CREATE_JOINABLE) ? "PTHREAD_CREATE_JOINABLE" :
+                       "???");
+
+                s = pthread_attr_getscope(attr, &i);
+                if (s != 0)
+                    std::runtime_error("Failed to log pthread_attr_getscope.");
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Scope               = %s\n",
+                       (i == PTHREAD_SCOPE_SYSTEM)  ? "PTHREAD_SCOPE_SYSTEM" :
+                       (i == PTHREAD_SCOPE_PROCESS) ? "PTHREAD_SCOPE_PROCESS" :
+                       "???");
+
+                s = pthread_attr_getinheritsched(attr, &i);
+                if (s != 0)
+                    std::runtime_error("Failed to log pthread_attr_getinheritsched.");
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Inherit scheduler   = %s\n",
+                       (i == PTHREAD_INHERIT_SCHED)  ? "PTHREAD_INHERIT_SCHED" :
+                       (i == PTHREAD_EXPLICIT_SCHED) ? "PTHREAD_EXPLICIT_SCHED" :
+                       "???"
+                );
+
+                s = pthread_attr_getschedpolicy(attr, &i);
+                if (s != 0)
+                    std::runtime_error("Failed to log pthread_attr_getschedpolicy.");
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Scheduling policy   = %s\n",
+                       (i == SCHED_OTHER) ? "SCHED_OTHER" :
+                       (i == SCHED_FIFO)  ? "SCHED_FIFO" :
+                       (i == SCHED_RR)    ? "SCHED_RR" :
+                       "???"
+                );
+
+                s = pthread_attr_getschedparam(attr, &sp);
+                if (s != 0)
+                    std::runtime_error("Failed to log pthread_attr_getschedparam.");
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Scheduling priority = %d\n", sp.sched_priority);
+
+                s = pthread_attr_getguardsize(attr, &v);
+                if (s != 0)
+                    std::runtime_error("Failed to log pthread_attr_getguardsize.");
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Guard size          = %zu bytes\n", v);
+
+                s = pthread_attr_getstack(attr, &stack_addr, &v);
+                if (s != 0)
+                    std::runtime_error("Failed to log pthread_attr_getstack.");
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Stack address       = %p\n", stack_addr);
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Stack size          = %#zx bytes\n", v);
+
+                s = pthread_attr_getstacksize(attr, &v);
+                if (s != 0)
+                    std::runtime_error("Failed to log pthread_attr_getstack.");
+                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Stack size          = %zu bytes\n", v);
+            }
             static void * timerProcessStatic(void * ptr) {
                 ETasker * tasker = static_cast<ETasker *>(ptr);
                 return tasker->timerProcess(ptr);
@@ -172,24 +336,34 @@ namespace WylesLibs {
                 ThreadArg<ETasker> * thread_arg = static_cast<ThreadArg<ETasker> *>(ptr);
                 return thread_arg->tasker->threadContext(ptr);
             }
+            static pthread_mutex_t thread_specific_sig_handler_mutex;
             void taskRun(ESharedPtr<ETask> task);
             void * timerProcess(void * arg);
             void * threadContext(void * arg);
             void threadTeardown();
         public:
             static std::map<pthread_t, ETasker *> thread_specific_sig_handlers;
-
             uint64_t initial_timeout_s;
+
             ETasker(): ETasker(SIZE_MAX, DEFAULT_ETASKER_TIMEOUT_S, false) {}
             ETasker(size_t tl): ETasker(tl, DEFAULT_ETASKER_TIMEOUT_S, false) {}
-            ETasker(size_t tl, uint64_t ts, bool fixed) {
-                pthread_attr_init(&attr); // ! IMPORTANT - pthread_create arg is const.
-                pthread_attr_setdetachstate(&attr, 1);
+            ETasker(size_t tl, uint64_t ts, bool fixed): ETasker(tl, ts, fixed, PTHREAD_STACK_MIN) {}
+            ETasker(size_t tl, uint64_t ts, bool fixed, size_t stack_size) {
+                ETasker::setThreadAttributes(&attr, stack_size);
                 thread_limit = tl;
                 initial_timeout_s = ts;
                 
                 pthread_mutex_init(&mutex, nullptr);
                 fixed = fixed;
+
+                // intialize timer
+                pthread_attr_t timer_attr;
+                ETasker::setTimerThreadAttributes(&timer_attr);
+                // TODO: hmm... this in constructor?
+                pthread_create(&this->timer_thread, &timer_attr, ETasker::timerProcessStatic, this);
+                pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
+                ETasker::thread_specific_sig_handlers[this->timer_thread] = this;
+                pthread_mutex_unlock(&ETasker::thread_specific_sig_handler_mutex);
 
                 if (true == fixed) {
                     int nprocs = get_nprocs();
@@ -202,11 +376,13 @@ namespace WylesLibs {
             } // any other thread paramaters.
 
             ~ETasker() {
-                pthread_kill(this->timer_thread, SIGKILL);
+                // pthread_kill(this->timer_thread, SIGKILL);
+                pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
+                ETasker::thread_specific_sig_handlers.erase(this->timer_thread);
+                pthread_mutex_unlock(&ETasker::thread_specific_sig_handler_mutex);
                 pthread_mutex_destroy(&this->mutex);
             }
 
-            void startTimeoutThread();
             void setThreadTimeout(uint64_t ts);
             uint64_t getThreadTimeout();
             void threadSigAction(int sig, siginfo_t * info, void * context);

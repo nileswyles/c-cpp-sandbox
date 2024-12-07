@@ -9,6 +9,11 @@ void ServerConnectionETask::initialize() {
     socklen_t uint32_t_len = sizeof(uint32_t);
     socklen_t timeval_len = sizeof(struct timeval);
 
+    // TODO: 
+    //  make sure to explicitly set all options to some value because the defaults may change from system to system?
+    //      idk, for portability... may not be necessary
+
+    //      think about which of these parameters can be configured at os especially for http... i.e. when should I use os's values vs mine.
     uint32_t buf_size = RCV_SND_BUF_DEFAULTS;
     setsockopt(this->fd, SOL_SOCKET, SO_RCVBUF, &buf_size, uint32_t_len);
     setsockopt(this->fd, SOL_SOCKET, SO_SNDBUF, &buf_size, uint32_t_len);

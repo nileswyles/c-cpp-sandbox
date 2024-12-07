@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <pthread.h>
 
 #include "ecal.h"
 
@@ -52,10 +53,10 @@ static const char * LOG_LEVEL_STRINGS[5] = {
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
-        fprintf(file, "%s {%s:%d} [%s] (%s) -> " fmt,\
+        fprintf(file, "%s {%s:%d} (thread: %lu) [%s] (%s) -> " fmt,\
             WylesLibs::Cal::getFormattedDateTime(0).c_str(),\
             __FILE__, __LINE__,\
-            LOG_LEVEL_STRINGS[min],\
+            pthread_self(), LOG_LEVEL_STRINGS[min],\
             __func__, ##__VA_ARGS__);\
     }
 #endif
@@ -67,10 +68,10 @@ static const char * LOG_LEVEL_STRINGS[5] = {
         if (LOGGER_LEVEL >= LOGGER_TEST) {\
             file = stdout;\
         }\
-        fprintf(file, "%s {%s:%d} [%s] (%s) -> ",\
+        fprintf(file, "%s {%s:%d} (thread: %lu) [%s] (%s) -> ",\
             WylesLibs::Cal::getFormattedDateTime(0).c_str(),\
             __FILE__, __LINE__,\
-            LOG_LEVEL_STRINGS[min],\
+            pthread_self(), LOG_LEVEL_STRINGS[min],\
             __func__);\
         for (size_t i = 0; i < size; i++) {\
             char c = ((char *)arr)[i];\

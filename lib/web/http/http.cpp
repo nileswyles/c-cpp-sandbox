@@ -116,7 +116,8 @@ void HttpServer::parseRequest(HttpRequest * request, ByteEStream * io) {
             // at 128Kb/s can transfer just under 2Mb (bits...) in 15s.
             //  if set min transfer rate at 128Kb/s, 
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
-           this->setConnectionTimeout(io->fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
+            this->setConnectionTimeout(io->fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
+            nice(-4);
             Multipart::FormData::parse(io, request->files, request->form_content, this->file_manager);
         } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
         } else {
@@ -231,7 +232,8 @@ bool HttpServer::handleWebsocketRequest(ByteEStream * io, HttpRequest * request)
 
                     this->writeResponse(response, io);
 
-                   this->disableConnectionTimeout(io->fd);
+                    this->disableConnectionTimeout(io->fd);
+                    nice(-7);
                     upgrader->onConnection(io);
 
                     // NOTE: the upgrade function should indefinetly block until the connection is intended to be closed.
@@ -331,9 +333,9 @@ HttpResponse * HttpServer::requestDispatcher(HttpRequest * request) {
     return response;
 }
 
-void HttpServer::onConnection(int fd) {
+int HttpServer::onConnection(int fd) {
     // thread abstraction, this launches a thread and processes http request...
-    this->tasker->run(ESharedPtr<HttpConnectionETask>(new HttpConnectionETask(fd, this->initial_socket_timeout_s, this)));
+    return this->tasker->run(ESharedPtr<HttpConnectionETask>(new HttpConnectionETask(fd, this->initial_socket_timeout_s, this)));
 }
 
 void HttpServer::writeResponse(HttpResponse * response, ByteEStream * io) {

@@ -108,6 +108,7 @@ void testETasker(TestArg * t) {
     //          right? proceeding agaain per usual...
     size_t procs_mul = 4;
     size_t expectedNumRuns = get_nprocs() * procs_mul;
+    // size_t expectedNumRuns = 1 << 16;
     loggerPrintf(LOGGER_DEBUG, "nprocs: %u, procs_mul: %lu\n", get_nprocs(), procs_mul);
     ESharedPtr<TestETask> ptr(new TestETask());
     for (size_t i = 0; i < expectedNumRuns; i++) {

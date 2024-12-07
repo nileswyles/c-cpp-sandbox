@@ -90,10 +90,14 @@ void Server::listen(const char * address, const uint16_t port) {
                     pthread_attr_init(&attr);
                     pthread_attr_setdetachstate(&attr, 1);
      
+                    // TODO: thread sched for this.... lower priority fifo? or default ok? nice = 0, cfs - finish existing before proceeding?
                     int conn = accept(fd, NULL, NULL);
                     while (conn != -1) {
-                        this->onConnection(conn);
-                        // don't care about exceptions... just stop the entire process for now.
+                        while (0 != this->onConnection(conn) && errno == EAGAIN) {
+                            // block here until can create new threads again... this is somewhat likely?
+                            //  listen is configured to queue up to MAX_CONNECTIONS so backlog shouldn't be an issue.
+                            //  don't care about exceptions... just stop the entire process for now.
+                        }
                         conn = accept(fd, NULL, NULL);
                     }
                     if (conn == -1) {

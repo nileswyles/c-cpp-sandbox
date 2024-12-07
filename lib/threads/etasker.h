@@ -131,16 +131,20 @@ namespace WylesLibs {
             struct timespec start_time;
             uint64_t timeout_s;
             ESharedPtr<ETask> task;
-            ESharedPtr<jmp_buf> env; // ! IMPORTANT - since queuing is a common and exceptions are expensive, longjmp and setjmp to return back to thread context from signal preemption.
+            jmp_buf * env; // ! IMPORTANT - since queuing is a common and exceptions are expensive, longjmp and setjmp to return back to thread context from signal preemption.
+            pthread_t * pthread;
+            pthread_attr_t * pthread_attr;
             EThread() = default;
-            EThread(ESharedPtr<ETask> ta, uint64_t ts, ESharedPtr<jmp_buf> env) {
+            EThread(ESharedPtr<ETask> ta, uint64_t ts, jmp_buf * env, pthread_t * thread, pthread_attr_t * attr) {
                 task = ta;
 
                 clock_gettime(CLOCK_MONOTONIC, &start_time);
                 timeout_s = ts;
                 env = env;
+                pthread = thread;
+                pthread_attr = attr;
             }
-            ~EThread() = default;
+            ~EThread() {}
     };
 
     template<typename T>
@@ -149,7 +153,10 @@ namespace WylesLibs {
             // as opposed to casting to void? Is there a reason not too? other than ...
             T * tasker;
             ESharedPtr<ETask> task;
-            ThreadArg(T * tasker, ESharedPtr<ETask> task): tasker(tasker), task(task) {}
+            pthread_t * pthread;
+            pthread_attr_t * pthread_attr;
+            ThreadArg(T * tasker, ESharedPtr<ETask> task, pthread_t * pthread, pthread_attr_t * pthread_attr): 
+                tasker(tasker), task(task), pthread(pthread), pthread_attr(pthread_attr) {}
             ~ThreadArg() = default;
     };
 
@@ -160,10 +167,12 @@ namespace WylesLibs {
             size_t thread_limit;
 
             pthread_mutex_t mutex;
-            pthread_t timer_thread; // IMPORTANT - as of 2024, this is defined as a "thread identifier", I expect it to be unique and comparable-type.
-            pthread_attr_t attr; // IMPORTANT - as of 2024, this is only used by the pthread_create function - storage doesn't have to remain throughout the lifecycle of the thread.
+            pthread_t timer_thread; 
+            // IMPORTANT - as of 2024, this is defined as a "thread identifier", I expect it to be unique and comparable-type.
+            pthread_attr_t timer_attr;
             // i'm not finnnaaaa do that LOLOLOLOLOLOLOLOLOL
             bool fixed;
+            size_t new_thread_stack_size;
             
             static void setThreadAttributes(pthread_attr_t * attr, size_t stack_size) {
                 int i = 0;
@@ -212,9 +221,6 @@ namespace WylesLibs {
                     loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 }
-
-                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Logging Thread Atrributes for ETasker created threads: \n");
-                ETasker::logThreadAttributes(attr);
             }
             static void setTimerThreadAttributes(pthread_attr_t * attr) {
                 int i = 0;
@@ -263,9 +269,6 @@ namespace WylesLibs {
                     loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 }
-
-                loggerPrintf(LOGGER_DEBUG_VERBOSE, "Logging Thread Atrributes for the ETasker Timer thread: \n");
-                ETasker::logThreadAttributes(attr);
             }
             static void logThreadAttributes(pthread_attr_t * attr) {
                 int s, i;
@@ -337,7 +340,7 @@ namespace WylesLibs {
                 return thread_arg->tasker->threadContext(ptr);
             }
             static pthread_mutex_t thread_specific_sig_handler_mutex;
-            void taskRun(ESharedPtr<ETask> task);
+            int taskRun(ESharedPtr<ETask> task);
             void * timerProcess(void * arg);
             void * threadContext(void * arg);
             void threadTeardown();
@@ -349,17 +352,15 @@ namespace WylesLibs {
             ETasker(size_t tl): ETasker(tl, DEFAULT_ETASKER_TIMEOUT_S, false) {}
             ETasker(size_t tl, uint64_t ts, bool fixed): ETasker(tl, ts, fixed, PTHREAD_STACK_MIN) {}
             ETasker(size_t tl, uint64_t ts, bool fixed, size_t stack_size) {
-                ETasker::setThreadAttributes(&attr, stack_size);
                 thread_limit = tl;
                 initial_timeout_s = ts;
                 
                 pthread_mutex_init(&mutex, nullptr);
                 fixed = fixed;
+                new_thread_stack_size = stack_size;
 
                 // intialize timer
-                pthread_attr_t timer_attr;
                 ETasker::setTimerThreadAttributes(&timer_attr);
-                // TODO: hmm... this in constructor?
                 pthread_create(&this->timer_thread, &timer_attr, ETasker::timerProcessStatic, this);
                 pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
                 ETasker::thread_specific_sig_handlers[this->timer_thread] = this;
@@ -386,7 +387,7 @@ namespace WylesLibs {
             void setThreadTimeout(uint64_t ts);
             uint64_t getThreadTimeout();
             void threadSigAction(int sig, siginfo_t * info, void * context);
-            void run(ESharedPtr<ETask> task);
+            int run(ESharedPtr<ETask> task);
     };
 };
 #endif

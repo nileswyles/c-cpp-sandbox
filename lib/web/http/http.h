@@ -184,7 +184,7 @@ class HttpServer: public Server {
             //     file_watcher->initialize(file_watcher);
         }
 
-        void onConnection(int fd) override;
+        int onConnection(int fd) override;
 };
 
 // @ static

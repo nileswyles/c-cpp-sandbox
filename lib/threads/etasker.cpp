@@ -77,7 +77,7 @@ void ETasker::threadSigAction(int sig, siginfo_t * info, void * context) {
     if (sig == SIGKILL && pthread == this->timer_thread) {
         pthread_exit(NULL);
     } else {
-        this->threadTeardown();
+        this->threadTeardown(false);
     }
 }
 
@@ -110,48 +110,83 @@ void * ETasker::threadContext(void * arg) {
     delete a; // free before function call, so that it can terminate thread however it wants... 
     ::setjmp(env);
 
-    ESharedPtr<ETask> task = this->thread_pool[pthread].task;
-    if (true == task.isNullPtr()) {
+    bool terminate = false;
+    while (1) {
+        try {
+            processThread();
+        } catch (ETaskerUnWind& e) {
+            // unwound stack continue normally
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", e.what());
+        } catch (std::exception& e) {
+            loggerPrintf(LOGGER_INFO, "%s\n", e.what());
+            loggerPrintf(LOGGER_INFO, "Caught exception terminating thread.\n");
+
+            terminate = true;
+        }
+        if (true == terminate) {
+            // to ensure exception object is deallocated? it says not globally allocated but does that imply it's placed on the stack lololol?
+            //      VAGINA
+            this->threadTeardown(true);
+        }
+    }
+
+    return NULL;
+}
+
+void ETasker::processThread() {
+    pthread_t pthread = pthread_self();
+    while (true == this->thread_pool[pthread].task.isNullPtr()) {
         while (this->thread_pool_queue.size() == 0) {} // fixed thread pool loop block while waiting for task.
 
         pthread_mutex_lock(&this->mutex);
         if (this->thread_pool_queue.size() > 0) {
             this->thread_pool[pthread].task = this->thread_pool_queue.front();
             this->thread_pool_queue.pop_front();
-        } else {
-            ::longjmp(*(this->thread_pool[pthread].env), 1);
         }
         pthread_mutex_unlock(&this->mutex);
     }
+
+    ESharedPtr<ETask> task = this->thread_pool[pthread].task;
     ESHAREDPTR_GET_PTR(task)->initialize();
     ESHAREDPTR_GET_PTR(task)->run();
 
     if (true == this->fixed) {
         this->thread_pool[pthread].task = nullptr;
-        ::longjmp(*(this->thread_pool[pthread].env), 1);
+        // clear task variable for when this function is called again in main loop
     } else {
         // graceful thread teardown
         //  if items are queued, it will loop back to beginning of thread context using longjmp, otherwise it tears down the thread.
-        this->threadTeardown();
+        this->threadTeardown(false);
     }
-
-    return NULL;
 }
 
-void ETasker::threadTeardown() {
+void ETasker::threadTeardown(bool force) {
     pthread_t pthread = pthread_self();
 
     pthread_mutex_lock(&this->mutex);
     EThread ethread = this->thread_pool[pthread];
     pthread_mutex_unlock(&this->mutex);
-    ESHAREDPTR_GET_PTR(ethread.task)->onExit();
+    try {
+        if (false == ethread.task.isNullPtr()) {
+            ESHAREDPTR_GET_PTR(ethread.task)->onExit();
+        }
+    } catch (std::exception& e) {
+        loggerPrintf(LOGGER_INFO, "%s\n", e.what());
+        loggerPrintf(LOGGER_INFO, "Caught exception in task::onExit. Please review your code there may be a leak!\n");
+    }
 
     pthread_mutex_lock(&this->mutex);
-    if (this->thread_limit != SIZE_MAX) {
+    if (this->thread_limit != SIZE_MAX && false == force) {
         this->thread_pool[pthread].task = nullptr;
 
         pthread_mutex_unlock(&this->mutex);
+#ifdef WYLESLIBS_ETASKER_LONGJMP
         ::longjmp(*(ethread.env), 1);
+#else
+        // TODO: read more about performance impact of this... 
+        //      I'm assuming it's less than creating a new thread and comperable to longjmp. Only difference is an extra allocation (of the exception object) since there's only one try catch up the stack?
+        throw ETaskerUnWind(pthread);
+#endif
     } else {
         pthread_mutex_unlock(&this->mutex); // because deadlocks?
 

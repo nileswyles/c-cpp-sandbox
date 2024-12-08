@@ -126,6 +126,23 @@ namespace WylesLibs {
             virtual void onExit() = 0;
     };
 
+    class ETaskerUnWind: public std::exception {
+        private:
+            pthread_t pthread;
+            std::string msg;
+        public:
+            ETaskerUnWind(pthread_t pthread): pthread(pthread) {}
+            virtual ~ETaskerUnWind() {}
+            const char * what() {
+                msg = WylesLibs::format("Unwinding stack for thread: {d}", pthread);
+                return msg.c_str();
+            }
+            ETaskerUnWind(const ETaskerUnWind&) = default;
+            ETaskerUnWind& operator=(const ETaskerUnWind&) = default;
+            ETaskerUnWind(ETaskerUnWind&&) = default;
+            ETaskerUnWind& operator=(ETaskerUnWind&&) = default;
+    };
+
     class EThread {
         public:
             struct timespec start_time;
@@ -134,6 +151,7 @@ namespace WylesLibs {
             jmp_buf * env; // ! IMPORTANT - since queuing is a common and exceptions are expensive, longjmp and setjmp to return back to thread context from signal preemption.
             pthread_t * pthread;
             pthread_attr_t * pthread_attr;
+
             EThread() = default;
             EThread(ESharedPtr<ETask> ta, uint64_t ts, jmp_buf * env, pthread_t * thread, pthread_attr_t * attr) {
                 task = ta;
@@ -344,7 +362,8 @@ namespace WylesLibs {
             int taskRun(ESharedPtr<ETask> task);
             void * timerProcess(void * arg);
             void * threadContext(void * arg);
-            void threadTeardown();
+            void threadTeardown(bool force);
+            void processThread();
         public:
             static std::map<pthread_t, ETasker *> thread_specific_sig_handlers;
             uint64_t initial_timeout_s;

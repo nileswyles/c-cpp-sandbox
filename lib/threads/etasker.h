@@ -127,15 +127,11 @@ namespace WylesLibs {
     };
 
     class ETaskerUnWind: public std::exception {
-        private:
-            pthread_t pthread;
-            std::string msg;
         public:
-            ETaskerUnWind(pthread_t pthread): pthread(pthread) {}
+            ETaskerUnWind() {}
             virtual ~ETaskerUnWind() {}
             const char * what() {
-                msg = WylesLibs::format("Unwinding stack for thread: {d}", pthread);
-                return msg.c_str();
+                return nullptr;
             }
             ETaskerUnWind(const ETaskerUnWind&) = default;
             ETaskerUnWind& operator=(const ETaskerUnWind&) = default;

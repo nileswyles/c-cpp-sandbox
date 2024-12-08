@@ -61,16 +61,6 @@ void sig_handler1(int sig) {
     }
 }
 
-// void sig_handler1(int sig, siginfo_t * info, void * context) {
-//     pthread_t pthread = pthread_self();
-//     if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
-//         ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
-//         etasker->threadSigAction(sig, info, context);
-//     } else {
-//         raise(sig);
-//     }
-// }
-
 void testETasker(TestArg * t) {
     ETasker lol(SIZE_MAX, 17, false);
 

@@ -116,7 +116,7 @@ void * ETasker::threadContext(void * arg) {
             processThread();
         } catch (ETaskerUnWind& e) {
             // unwound stack continue normally
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", e.what());
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Unwound stack for this thread: %ld.\n", pthread);
         } catch (std::exception& e) {
             loggerPrintf(LOGGER_INFO, "%s\n", e.what());
             loggerPrintf(LOGGER_INFO, "Caught exception terminating thread.\n");
@@ -185,7 +185,7 @@ void ETasker::threadTeardown(bool force) {
 #else
         // TODO: read more about performance impact of this... 
         //      I'm assuming it's less than creating a new thread and comperable to longjmp. Only difference is an extra allocation (of the exception object) since there's only one try catch up the stack?
-        throw ETaskerUnWind(pthread);
+        throw ETaskerUnWind();
 #endif
     } else {
         pthread_mutex_unlock(&this->mutex); // because deadlocks?

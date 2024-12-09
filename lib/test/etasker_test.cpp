@@ -171,7 +171,7 @@ void testETaskerBursty(TestArg * t) {
     size_t procs = get_nprocs();
     size_t procs_mul = 2;
 
-    size_t expected_individual_threads = procs * procs_mul; // in practice, it's not immediately re-using the pthread id's so keep like this but monitor
+    size_t expected_individual_threads = procs * procs_mul;
     uint64_t expected_elapsed_time = 16 * procs_mul;
     size_t expected_num_runs = procs * procs_mul;
 
@@ -196,7 +196,7 @@ void testETaskerThreadLimitBursty(TestArg * t) {
     size_t procs = get_nprocs();
     size_t procs_mul = 2;
 
-    size_t expected_individual_threads = procs * procs_mul; // in practice, it's not immediately re-using the pthread id's so keep like this but monitor
+    size_t expected_individual_threads = procs * procs_mul;
     uint64_t expected_elapsed_time = 16 * procs_mul;
     size_t expected_num_runs = procs * 2;
 

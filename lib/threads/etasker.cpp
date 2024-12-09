@@ -176,7 +176,7 @@ void ETasker::threadTeardown(bool force) {
     }
 
     pthread_mutex_lock(&this->mutex);
-    if (this->thread_limit != SIZE_MAX && false == force) {
+    if (this->thread_limit != SIZE_MAX && this->thread_pool_queue.size() > 0 && false == force) {
         this->thread_pool[pthread].task = nullptr;
 
         pthread_mutex_unlock(&this->mutex);

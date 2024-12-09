@@ -18,9 +18,10 @@
 using namespace WylesLibs;
 using namespace WylesLibs::Test;
 
-static size_t numRuns = 0;
-static size_t numExited = 0;
+static size_t num_runs = 0;
+static size_t num_exited = 0;
 static std::set<pthread_t> threadsSeen;
+static std::set<pthread_t> threadsSeen2;
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -35,38 +36,123 @@ class TestETask: public ETask {
         void run() {
             sleep(5);
             pthread_mutex_lock(&mutex);
-            numRuns++;
-            loggerPrintf(LOGGER_DEBUG, "run called, %lu\n", numRuns);
+            num_runs++;
+            loggerPrintf(LOGGER_DEBUG, "run called, %lu\n", num_runs);
             pthread_mutex_unlock(&mutex);
         }
         void onExit() {
             sleep(5);
             pthread_mutex_lock(&mutex);
-            numExited++;
-            loggerPrintf(LOGGER_DEBUG, "onExit called, %lu\n", numExited);
+            num_exited++;
+            loggerPrintf(LOGGER_DEBUG, "onExit called, %lu\n", num_exited);
             pthread_mutex_unlock(&mutex);
         }
 };
 
 void sig_handler1(int sig) {
     pthread_t pthread = pthread_self();
-        printf("timer thread not in list\n");
     if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
         ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
         // etasker->threadSigAction(sig, info, context);
         etasker->threadSigAction(sig, nullptr, nullptr);
     } else {
-        printf("timer thread not in list\n");
         raise(sig);
     }
 }
 
-void testETasker(TestArg * t) {
-    ETasker lol(SIZE_MAX, 17, false);
+uint64_t runTasksBursty(size_t thread_limit, uint64_t expected_elapsed_time, uint64_t expected_num_runs, bool fixed = false) {
+    ETasker lol(thread_limit, expected_elapsed_time + 5, fixed);
 
     struct timespec prior;
     clock_gettime(CLOCK_MONOTONIC, &prior);
 
+    ESharedPtr<TestETask> ptr(new TestETask());
+    for (size_t i = 0; i < expected_num_runs/2; i++) {
+        lol.run(ptr);
+    }
+
+    while (expected_num_runs/2 != num_exited) {
+        for (auto i: ETasker::thread_specific_sig_handlers) {
+            threadsSeen.insert(i.first);
+        }
+        usleep(270);
+    }
+
+    while (lol.threads() > 0) {}
+    usleep(750); // needs to be enough to ensure threads are exited
+    
+    for (size_t i = expected_num_runs/2; i < expected_num_runs; i++) {
+        lol.run(ptr);
+    }
+
+    while (expected_num_runs != num_exited) {
+        for (auto i: ETasker::thread_specific_sig_handlers) {
+            threadsSeen2.insert(i.first);
+        }
+        usleep(270);
+    }
+
+    while (lol.threads() > 0) {}
+    usleep(270);
+
+    struct timespec after;
+    clock_gettime(CLOCK_MONOTONIC, &after);
+
+    uint64_t elapsed_time_s = static_cast<uint64_t>(after.tv_sec - prior.tv_sec);
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Precise elapsed time: %lus, %luns\n", elapsed_time_s, after.tv_nsec - prior.tv_nsec);
+
+    return elapsed_time_s;
+}
+
+uint64_t runTasks(size_t thread_limit, uint64_t expected_elapsed_time, uint64_t expected_num_runs, bool fixed = false) {
+    ETasker lol(thread_limit, expected_elapsed_time + 5, fixed);
+
+    struct timespec prior;
+    clock_gettime(CLOCK_MONOTONIC, &prior);
+
+    ESharedPtr<TestETask> ptr(new TestETask());
+    for (size_t i = 0; i < expected_num_runs; i++) {
+        lol.run(ptr);
+    }
+
+    while (expected_num_runs != num_exited) {
+        for (auto i: ETasker::thread_specific_sig_handlers) {
+            threadsSeen.insert(i.first);
+        }
+        usleep(270);
+    }
+
+    while (lol.threads() > 0) {}
+    usleep(270);
+
+    struct timespec after;
+    clock_gettime(CLOCK_MONOTONIC, &after);
+
+    uint64_t elapsed_time_s = static_cast<uint64_t>(after.tv_sec - prior.tv_sec);
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Precise elapsed time: %lus, %luns\n", elapsed_time_s, after.tv_nsec - prior.tv_nsec);
+
+    return elapsed_time_s;
+}
+
+void assert(TestArg * t, uint64_t expected_elapsed_time, uint64_t actual_elapsed_time,  
+                size_t expected_individual_threads, size_t actual_individual_threads, size_t expected_num_runs) {
+    loggerPrintf(LOGGER_TEST, "Test Assertion: \n");
+    loggerPrintf(LOGGER_TEST, "Actual Elapsed Time: %lu, Expected Elapsed Time: <=%lu\n", actual_elapsed_time, expected_elapsed_time);
+    loggerPrintf(LOGGER_TEST, "Actual Num Runs: %lu, Expected Num Runs: %lu\n", num_runs, expected_num_runs);
+    loggerPrintf(LOGGER_TEST, "Actual Individual Threads: %lu, Expected Individual Threads: %lu\n", actual_individual_threads, expected_individual_threads);
+
+    if (actual_elapsed_time > expected_elapsed_time 
+        || num_runs != expected_num_runs 
+        || actual_individual_threads != expected_individual_threads) {
+        t->fail = true;
+    } else {
+        t->fail = false;
+    }
+}
+
+void testETasker(TestArg * t) {
     // hmm.. might limit to 1 to avoid flakiness or is there some queue limit at os that can be leveraged to ensure these are all "parallel"? 
     //      to ensure context switching happens at sleep function call.
     //      in a single threaded/single core machine
@@ -97,85 +183,87 @@ void testETasker(TestArg * t) {
 
     //          right? proceeding agaain per usual...
     size_t procs_mul = 4;
-    size_t expectedNumRuns = get_nprocs() * procs_mul;
-    // size_t expectedNumRuns = 1 << 16;
-    loggerPrintf(LOGGER_DEBUG, "nprocs: %u, procs_mul: %lu\n", get_nprocs(), procs_mul);
-    ESharedPtr<TestETask> ptr(new TestETask());
-    for (size_t i = 0; i < expectedNumRuns; i++) {
-        lol.run(ptr);
-    }
+    size_t procs = get_nprocs();
 
-    while (expectedNumRuns != numExited) {
-        for (auto i: ETasker::thread_specific_sig_handlers) {
-            threadsSeen.insert(i.first);
-        }
-        usleep(270); // lol... flaky? yeah 
-    }
+    size_t expected_individual_threads = procs * procs_mul;
+    uint64_t expected_elapsed_time = 16;
+    size_t expected_num_runs = procs * procs_mul;
+    
+    uint64_t actual_elapsed_time = runTasks(SIZE_MAX, expected_elapsed_time, expected_num_runs, false);
 
-    struct timespec after;
-    clock_gettime(CLOCK_MONOTONIC, &after);
+    size_t actual_individual_threads = threadsSeen.size();
+    assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
+}
 
-    // size_t sleep_time = 16 * procs_mul;
-    size_t sleep_time = 16;
-    // should be ~15 seconds, give an extra second just because...
-    //      then test all config permutations.
-    size_t numIndividualThreads = threadsSeen.size();
-    uint64_t elapsed_time = static_cast<uint64_t>(after.tv_sec - prior.tv_sec);
-    loggerPrintf(LOGGER_DEBUG, "Elapsed Time: %lu\n", elapsed_time);
-    if (elapsed_time > sleep_time 
-        || numRuns != expectedNumRuns 
-        || numIndividualThreads != expectedNumRuns) {
-        t->fail = true;
-    } else {
-        t->fail = false;
-    }
+void testETaskerBursty(TestArg * t) {
+    size_t procs = get_nprocs();
+    size_t procs_mul = 2;
+
+    size_t expected_individual_threads = procs * procs_mul; // in practice, it's not immediately re-using the pthread id's so keep like this but monitor
+    uint64_t expected_elapsed_time = 16 * procs_mul;
+    size_t expected_num_runs = procs * procs_mul;
+
+    uint64_t actual_elapsed_time = runTasksBursty(SIZE_MAX, expected_elapsed_time, expected_num_runs, false);
+    size_t actual_individual_threads = threadsSeen.size() + threadsSeen2.size();
+    assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
 }
 
 void testETaskerThreadLimit(TestArg * t) {
     size_t procs = get_nprocs();
+
+    size_t expected_individual_threads = procs;
+    uint64_t expected_elapsed_time = 16;
+    size_t expected_num_runs = procs;
+
+    uint64_t actual_elapsed_time  = runTasks(procs, expected_elapsed_time, expected_num_runs, false);
+    size_t actual_individual_threads = threadsSeen.size();
+    assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
+}
+
+void testETaskerThreadLimitBursty(TestArg * t) {
+    size_t procs = get_nprocs();
+    size_t procs_mul = 2;
+
+    size_t expected_individual_threads = procs * procs_mul; // in practice, it's not immediately re-using the pthread id's so keep like this but monitor
+    uint64_t expected_elapsed_time = 16 * procs_mul;
+    size_t expected_num_runs = procs * 2;
+
+    uint64_t actual_elapsed_time = runTasksBursty(procs, expected_elapsed_time, expected_num_runs, false);
+
+    size_t actual_individual_threads = threadsSeen.size() + threadsSeen2.size();
+    assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
+}
+
+void testETaskerThreadLimitPastLimit(TestArg * t) {
+    size_t procs = get_nprocs();
     size_t procs_mul = 4;
-    size_t expectedNumRuns = procs * procs_mul;
-    loggerPrintf(LOGGER_DEBUG, "nprocs: %lu, procs_mul: %lu\n", procs, procs_mul);
 
-    size_t limit = procs;
-    ETasker lol(limit, 16 * procs_mul, false);
+    size_t expected_individual_threads = procs;
+    uint64_t expected_elapsed_time = 16 * procs_mul;
+    size_t expected_num_runs = procs * procs_mul;
 
-    struct timespec prior;
-    clock_gettime(CLOCK_MONOTONIC, &prior);
+    uint64_t actual_elapsed_time  = runTasks(procs, expected_elapsed_time, expected_num_runs, false);
+    size_t actual_individual_threads = threadsSeen.size();
+    assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
+}
 
-    ESharedPtr<TestETask> ptr(new TestETask());
-    for (size_t i = 0; i < expectedNumRuns; i++) {
-        lol.run(ptr);
-    }
+void testETaskerThreadLimitFixedBursty(TestArg * t) {
+    size_t procs = get_nprocs();
+    size_t procs_mul = 2;
 
-    while (expectedNumRuns != numExited) {
-        for (auto i: ETasker::thread_specific_sig_handlers) {
-            threadsSeen.insert(i.first);
-        }
-        usleep(270); // lol... flaky? yeah 
-    }
+    size_t expected_individual_threads = procs * procs_mul;
+    uint64_t expected_elapsed_time = 16 * procs_mul;
+    size_t expected_num_runs = procs * 2;
 
-    struct timespec after;
-    clock_gettime(CLOCK_MONOTONIC, &after);
+    uint64_t actual_elapsed_time = runTasksBursty(procs, expected_elapsed_time, expected_num_runs, true);
 
-    size_t sleep_time = 16 * procs_mul;
-    // should be ~15 seconds, give an extra second just because...
-    //      then test all config permutations.
-    size_t numIndividualThreads = threadsSeen.size();
-    uint64_t elapsed_time = static_cast<uint64_t>(after.tv_sec - prior.tv_sec);
-    loggerPrintf(LOGGER_DEBUG, "Elapsed Time: %lu\n", elapsed_time);
-    if (elapsed_time > sleep_time 
-        || numRuns != expectedNumRuns 
-        || numIndividualThreads != limit) {
-        t->fail = true;
-    } else {
-        t->fail = false;
-    }
+    size_t actual_individual_threads = threadsSeen.size() + threadsSeen2.size();
+    assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
 }
 
 static void beforeEach(TestArg * t) {
-    numRuns = 0;
-    numExited = 0;
+    num_runs = 0;
+    num_exited = 0;
     threadsSeen.clear();
 }
 
@@ -194,10 +282,13 @@ int main(int argc, char * argv[]) {
     // }
 
     t.addTest(testETasker);
+    t.addTest(testETaskerBursty);
     t.addTest(testETaskerThreadLimit);
+    t.addTest(testETaskerThreadLimitBursty);
+    t.addTest(testETaskerThreadLimitPastLimit);
     // t.addTest(testETaskerThreadLimitFixed);
-    // t.addTest(testETaskerThreadLimitBursty);
-    // t.addTest(testETaskerThreadLimitFixedBursty);
+    t.addTest(testETaskerThreadLimitFixedBursty);
+    // t.addTest(testETaskerThreadLimitFixedPastLimit);
 
     bool passed = false;
     if (argc > 1) {

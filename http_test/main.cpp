@@ -58,16 +58,10 @@ static map<std::string, map<std::string, RequestProcessor *>> requestMap{
     {"/exampleDontCare", {{"", Controller::example }}} 
 };
 
-static HttpServer * server_context = nullptr;
+static HttpServer server_context;
 
 extern Server * WylesLibs::getServerContext() {
-    if (server_context == nullptr) {
-        std::string msg = "ServerContext is a null pointer.";
-        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
-        throw std::runtime_error(msg);
-    } else {
-        return dynamic_cast<Server *>(server_context);
-    }
+    return dynamic_cast<Server *>(&server_context);
 }
 
 // ! IMPORTANT - this pattern must be implemented in all multithreaded applications that leverage the etasker stuff.
@@ -81,59 +75,57 @@ void sig_handler(int sig, siginfo_t * info, void * context) {
     }
 }
 
-void initProcessSigHandler() {
-    struct sigaction act = { 0 };
-    act.sa_flags = SA_SIGINFO;
-    act.sa_sigaction = &sig_handler;
-    if (sigaction(SIGKILL, &act, NULL) == -1 || sigaction(SIGSEGV, &act, NULL) == -1) {
-        std::string msg("Failed to configure sig action and sig handler.\n");
-        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
-        throw std::runtime_error(msg);
+void sig_handler1(int sig) {
+    pthread_t pthread = pthread_self();
+    if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
+        ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
+        etasker->threadSigAction(sig, nullptr, nullptr);
+    } else {
+        raise(sig);
     }
 }
 
+void initProcessSigHandler() {
+    // struct sigaction act = { 0 };
+    // act.sa_flags = SA_SIGINFO;
+    // act.sa_sigaction = &sig_handler;
+    // if (sigaction(SIGKILL, &act, NULL) == -1 || sigaction(SIGSEGV, &act, NULL) == -1) {
+    //     std::string msg("Failed to configure sig action and sig handler.\n");
+    //     loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+    //     throw std::runtime_error(msg);
+    // }
+
+    // workaround because idk?
+    signal(SIGKILL, sig_handler1);
+    signal(SIGSEGV, sig_handler1);
+}
+
 int main(int argc, char * argv[]) {
-    int ret = 0;
+    int exit_value = 0;
     try {
-        initProcessSigHandler();
-        // ! IMPORTANT
-        // Might be good to get in the habit of evaluating size of types used from libs to determine whether to malloc or not?
-        //  modern stack sizes are large enough but might matter in an embedded system?
-        //  can also just look at header file...
-        //  you can't assume they ptr everything and there's actually a compelling argument to not.
-        //  More generally, larger stack size allocations vs larger heap.
-
-        //  so, if need access to more memory you can call new where needed at point of creation of each thread. Like here.
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpServer: %lu\n", sizeof(HttpServer));
-        // if you see this in header files, then maybe their worthy lol...
-        // static_assert(sizeof(HttpServer) == 0); 
-        // but maybe this isn't a good idea because now we definetly have this type in program?
-        // static_assert(sizeof(Array<uint8_t>) == 0); 
-
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpServer: %lu\n", sizeof(HttpServer));
+
+        initProcessSigHandler();
+
         HttpServerConfig config("config.json");
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created config object.\n");
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpServerConfig: %lu\n", sizeof(HttpServerConfig));
+
         SharedArray<ConnectionUpgrader *> upgraders;
         WebsocketJsonRpcConnection upgrader("/testpath", "jsonrpc");
+
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created upgrader object.\n");
         ConnectionUpgrader * upgrader_ptr = &upgrader;
         upgraders.append(upgrader_ptr);
-        // upgraders.append(&upgrader_ptr, 1);
-    
         fileWatcherThreadStart();
 
         ESharedPtr<FileManager> file_manager(new FileManager);
         // ESharedPtr<FileManager> file_manager = ESharedPtr<GCSFileManager>(new GCSFileManager("test-bucket-free-tier"));
-        *server_context = HttpServer(config, requestMap, requestFilters, responseFilters, upgraders, file_manager); 
-
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
-        (*server_context).listen(config.address.c_str(), (uint16_t)config.port);
+        server_context = HttpServer(config, requestMap, requestFilters, responseFilters, upgraders, file_manager); 
+        server_context.listen(config.address.c_str(), (uint16_t)config.port);
     } catch (const std::exception& e) {
-        // loggerPrintf(LOGGER_INFO, "%s\n", std::stacktrace::current().to_string().c_str());
-        // redundant try/catch? let's show where exception handled...
         loggerPrintf(LOGGER_INFO, "%s\n", e.what());
-        // exit program same way as if this weren't caught...
-        throw e;
+        exit_value = 1;
     }
-    return ret;
+    return exit_value;
 }

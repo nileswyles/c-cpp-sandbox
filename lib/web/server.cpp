@@ -37,7 +37,7 @@ void Server::setSocketTimeout(int fd, uint64_t timeout_s) {
     socklen_t timeval_len = sizeof(struct timeval);
 
     struct timeval timeout = {
-        .tv_sec = timeout_s,
+        .tv_sec = static_cast<__time_t>(timeout_s),
         .tv_usec = 0,
     };
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);

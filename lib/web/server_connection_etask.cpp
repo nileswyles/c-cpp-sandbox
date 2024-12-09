@@ -56,7 +56,7 @@ void ServerConnectionETask::initialize() {
     // should be minimum value greater than max(SO_RCVBUF, READER_BUF_SIZE)/128kbps (aribitrary minimum connection speed)
     //  default RCVBUF == 131072, READER_BUF_SIZE == 8096, so ~1.024 seconds. Let's round to 2 seconds.
     struct timeval timeout = {
-        .tv_sec = this->socket_timeout_s,
+        .tv_sec = static_cast<__time_t>(this->socket_timeout_s),
         .tv_usec = 0,
     };
     setsockopt(this->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);

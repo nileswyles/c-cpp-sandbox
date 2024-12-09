@@ -274,6 +274,7 @@ int main(int argc, char * argv[]) {
     Tester t("ETasker Tests", nullptr, beforeEach, nullptr, nullptr);
 
     signal(SIGKILL, sig_handler1);
+    signal(SIGSEGV, sig_handler1);
     // struct sigaction act = { 0 };
     // act.sa_flags = SA_SIGINFO;
     // act.sa_sigaction = &sig_handler1;

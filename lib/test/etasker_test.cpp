@@ -219,6 +219,18 @@ void testETaskerThreadLimitPastLimit(TestArg * t) {
     assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
 }
 
+void testETaskerThreadLimitFixed(TestArg * t) {
+    size_t procs = get_nprocs();
+
+    size_t expected_individual_threads = procs;
+    uint64_t expected_elapsed_time = 16;
+    size_t expected_num_runs = procs;
+
+    uint64_t actual_elapsed_time  = runTasks(procs, expected_elapsed_time, expected_num_runs, true);
+    size_t actual_individual_threads = threadsSeen.size();
+    assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
+}
+
 void testETaskerThreadLimitFixedBursty(TestArg * t) {
     size_t procs = get_nprocs();
     size_t procs_mul = 2;
@@ -230,6 +242,19 @@ void testETaskerThreadLimitFixedBursty(TestArg * t) {
     uint64_t actual_elapsed_time = runTasksBursty(procs, expected_elapsed_time, expected_num_runs, true);
 
     size_t actual_individual_threads = threadsSeen.size() + threadsSeen2.size();
+    assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
+}
+
+void testETaskerThreadLimitFixedPastLimit(TestArg * t) {
+    size_t procs = get_nprocs();
+    size_t procs_mul = 4;
+
+    size_t expected_individual_threads = procs;
+    uint64_t expected_elapsed_time = 16 * procs_mul;
+    size_t expected_num_runs = procs * procs_mul;
+
+    uint64_t actual_elapsed_time  = runTasks(procs, expected_elapsed_time, expected_num_runs, true);
+    size_t actual_individual_threads = threadsSeen.size();
     assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
 }
 
@@ -258,9 +283,9 @@ int main(int argc, char * argv[]) {
     t.addTest(testETaskerThreadLimit);
     t.addTest(testETaskerThreadLimitBursty);
     t.addTest(testETaskerThreadLimitPastLimit);
-    // t.addTest(testETaskerThreadLimitFixed);
+    t.addTest(testETaskerThreadLimitFixed);
     t.addTest(testETaskerThreadLimitFixedBursty);
-    // t.addTest(testETaskerThreadLimitFixedPastLimit);
+    t.addTest(testETaskerThreadLimitFixedPastLimit);
 
     bool passed = false;
     if (argc > 1) {

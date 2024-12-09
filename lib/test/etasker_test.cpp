@@ -138,6 +138,7 @@ uint64_t runTasks(size_t thread_limit, uint64_t expected_elapsed_time, uint64_t 
 
 void assert(TestArg * t, uint64_t expected_elapsed_time, uint64_t actual_elapsed_time,  
                 size_t expected_individual_threads, size_t actual_individual_threads, size_t expected_num_runs) {
+    printf("\n");
     loggerPrintf(LOGGER_TEST, "Test Assertion: \n");
     loggerPrintf(LOGGER_TEST, "Actual Elapsed Time: %lu, Expected Elapsed Time: <=%lu\n", actual_elapsed_time, expected_elapsed_time);
     loggerPrintf(LOGGER_TEST, "Actual Num Runs: %lu, Expected Num Runs: %lu\n", num_runs, expected_num_runs);
@@ -153,35 +154,6 @@ void assert(TestArg * t, uint64_t expected_elapsed_time, uint64_t actual_elapsed
 }
 
 void testETasker(TestArg * t) {
-    // hmm.. might limit to 1 to avoid flakiness or is there some queue limit at os that can be leveraged to ensure these are all "parallel"? 
-    //      to ensure context switching happens at sleep function call.
-    //      in a single threaded/single core machine
-    //      thread 1 - - - - sleep
-    //       2 - - - - - - - - sleep
-    //       3 - - - - - - - - - sleep
-    //       there's still some parallelism even though it's a single core. I'm pretty sure that's how it works... context switching only capable at os 
-
-    //      otherwise, latency is a big problem when interacting with database.
-
-    //      you might want the other configurations however for other server tasks.
-
-    //      lol, again, let's revisit other models?
-    //          long-running operations == socket tasks?
-    //          so in http context -> geet fd from lissten, add fd to list of things to poll when information available, call parse request -> 
-    //          then request passed to controller which does some other things
-    //          let's say it accesses another server (another long-running operation)
-    //          then you will add to queue which adds to poll list
-    //          
-    //          alright, following that train of thought, you might come up with something where you group into a list of events? 
-    //              some threads polling and when fd == POLLIN you process some event via thread pool.
-    //              so, then you need to worry about sharing state...
-    //              in this example, the unit of work/event is something similar to how the functions in http are split up.
-
-    //          another way to think about it is you have threads polling fds for async stuff... then you cond wait from other threads?
-
-    //          hmm... sure that might work but not the correct place to context switch imo?
-
-    //          right? proceeding agaain per usual...
     size_t procs_mul = 4;
     size_t procs = get_nprocs();
 

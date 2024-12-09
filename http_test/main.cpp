@@ -4,7 +4,6 @@
 #include "web/http/config.h"
 #include "web/http/http_connection_etask.h"
 #include "web/services.h"
-#include "web/server_context.h"
 
 #include "controllers/example.h"
 
@@ -59,19 +58,17 @@ static map<std::string, map<std::string, RequestProcessor *>> requestMap{
     {"/exampleDontCare", {{"", Controller::example }}} 
 };
 
-static ServerContext * server_context = nullptr;
+static HttpServer * server_context = nullptr;
 
-extern ServerContext * WylesLibs::getServerContext() {
+extern Server * WylesLibs::getServerContext() {
     if (server_context == nullptr) {
         std::string msg = "ServerContext is a null pointer.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     } else {
-        return server_context;
+        return dynamic_cast<Server *>(server_context);
     }
 }
-
-static HttpServer connection;
 
 // ! IMPORTANT - this pattern must be implemented in all multithreaded applications that leverage the etasker stuff.
 void sig_handler(int sig, siginfo_t * info, void * context) {
@@ -107,7 +104,7 @@ int main(int argc, char * argv[]) {
         //  More generally, larger stack size allocations vs larger heap.
 
         //  so, if need access to more memory you can call new where needed at point of creation of each thread. Like here.
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpServer: %lu, Size of ServerContext: %lu\n", sizeof(HttpServer), sizeof(ServerContext));
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpServer: %lu\n", sizeof(HttpServer));
         // if you see this in header files, then maybe their worthy lol...
         // static_assert(sizeof(HttpServer) == 0); 
         // but maybe this isn't a good idea because now we definetly have this type in program?
@@ -115,10 +112,6 @@ int main(int argc, char * argv[]) {
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
         HttpServerConfig config("config.json");
-        // ServerContext context(config, std::dynamic_pointer_cast<FileManager>(ESharedPtr<GCSFileManager>(ESharedPtr<GCSFileManager>(std::make_shared<GCSFileManager>("test-bucket-free-tier")))));
-        ServerContext context(config);
-        server_context = &context;
-
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created config object.\n");
         SharedArray<ConnectionUpgrader *> upgraders;
         WebsocketJsonRpcConnection upgrader("/testpath", "jsonrpc");
@@ -129,11 +122,12 @@ int main(int argc, char * argv[]) {
     
         fileWatcherThreadStart();
 
-        connection = HttpServer(config, requestMap, requestFilters, responseFilters, upgraders, context.file_manager); 
-        connection.initialize();
+        ESharedPtr<FileManager> file_manager(new FileManager);
+        // ESharedPtr<FileManager> file_manager = ESharedPtr<GCSFileManager>(new GCSFileManager("test-bucket-free-tier"));
+        *server_context = HttpServer(config, requestMap, requestFilters, responseFilters, upgraders, file_manager); 
 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
-        connection.listen(config.address.c_str(), (uint16_t)config.port);
+        (*server_context).listen(config.address.c_str(), (uint16_t)config.port);
     } catch (const std::exception& e) {
         // loggerPrintf(LOGGER_INFO, "%s\n", std::stacktrace::current().to_string().c_str());
         // redundant try/catch? let's show where exception handled...

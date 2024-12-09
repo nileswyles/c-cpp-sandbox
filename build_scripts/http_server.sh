@@ -30,7 +30,7 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/http_test/services/example.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/server.c
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/server.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_watcher.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http_file_watcher.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
@@ -40,7 +40,6 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/threads/etasker.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/threads/multithreaded_signals.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/server_connection_etask.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http_connection_etask.cpp
 "

@@ -1,6 +1,32 @@
 #include "web/server_connection_etask.h"
 
+#include <sys/socket.h>
+
+// make sure global logger level is initialized...
+#ifndef GLOBAL_LOGGER_LEVEL
+#define GLOBAL_LOGGER_LEVEL 0
+#endif
+
+// if per module logger level not defined, set to global...
+#ifndef LOGGER_LEVEL_SERVER_CONNECTION_ETASK
+#define LOGGER_LEVEL_SERVER_CONNECTION_ETASK GLOBAL_LOGGER_LEVEL
+#endif
+
+// enable toggle...
+#ifndef LOGGER_LEVEL_SERVER_CONNECTION_ETASK
+#define LOGGER_LEVEL_SERVER_CONNECTION_ETASK 1
+#endif
+
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED LOGGER_LEVEL_SERVER_CONNECTION_ETASK
+
+#undef LOGGER_LEVEL
+#define LOGGER_LEVEL LOGGER_LEVEL_SERVER_CONNECTION_ETASK
+#include "logger.h"
+
 #define RCV_SND_BUF_DEFAULTS 131072
+
+using namespace WylesLibs;
 
 // TODO: review openssl and socket documentation as well as throughly test this code because uncertainty is a thing.
 void ServerConnectionETask::initialize() {
@@ -30,7 +56,7 @@ void ServerConnectionETask::initialize() {
     // should be minimum value greater than max(SO_RCVBUF, READER_BUF_SIZE)/128kbps (aribitrary minimum connection speed)
     //  default RCVBUF == 131072, READER_BUF_SIZE == 8096, so ~1.024 seconds. Let's round to 2 seconds.
     struct timeval timeout = {
-        .tv_sec = this->socket_timeout,
+        .tv_sec = this->socket_timeout_s,
         .tv_usec = 0,
     };
     setsockopt(this->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);

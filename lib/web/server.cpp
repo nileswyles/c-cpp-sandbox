@@ -14,27 +14,26 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-#include "etasker.h"
+#include "threads/etasker.h"
 
 #define MAX_CONNECTIONS (1 << 16)
-#define INITIAL_CONNECTION_TIMEOUT_S 15
 
 void Server::disableConnectionTimeout(int fd) {
     tasker.setThreadTimeout(SIZE_MAX);
 }
 
-void Server::setConnectionTimeout(int fd, uint32_t timeout_s) {
+void Server::setConnectionTimeout(int fd, uint64_t timeout_s) {
     if (timeout_s > INITIAL_CONNECTION_TIMEOUT_S) {
         tasker.setThreadTimeout(timeout_s);
     }
 }
 
-void Server::setInitialConnectionTimeout(int fd, uint32_t timeout_s) {
+void Server::setInitialConnectionTimeout(int fd, uint64_t timeout_s) {
     tasker.setThreadTimeout(timeout_s);
     tasker.initial_timeout_s = timeout_s;
 }
 
-void Server::setSocketTimeout(int fd, uint32_t timeout_s) {
+void Server::setSocketTimeout(int fd, uint64_t timeout_s) {
     socklen_t timeval_len = sizeof(struct timeval);
 
     struct timeval timeout = {
@@ -45,16 +44,16 @@ void Server::setSocketTimeout(int fd, uint32_t timeout_s) {
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);
 }
 
-void Server::setInitialSocketTimeout(int fd, uint32_t timeout_s) {
+void Server::setInitialSocketTimeout(int fd, uint64_t timeout_s) {
     this->setSocketTimeout(fd, timeout_s);
-    INITIAL_SOCKET_TIMEOUT_S = timeout_s;
+    this->initial_socket_timeout_s = timeout_s;
 }
 
-uint64_t Server::setConnectionTimeout(int fd) {
+uint64_t Server::getConnectionTimeout(int fd) {
     return tasker.getThreadTimeout();
 }
 
-uint32_t Server::getSocketTimeout(int fd) {
+uint64_t Server::getSocketTimeout(int fd) {
     socklen_t timeval_len = sizeof(struct timeval);
     struct timeval rcv_timeout = {0};
     getsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, &timeval_len);
@@ -82,7 +81,7 @@ void Server::listen(const char * address, const uint16_t port) {
                 return;
             } else {
                 // queue up to MAX_CONNECTIONS before refusing connections.
-                if (listen(fd, MAX_CONNECTIONS) == -1) {
+                if (::listen(fd, MAX_CONNECTIONS) == -1) {
                     loggerPrintf(LOGGER_DEBUG, "Error listening\n");
                 } else {
                     loggerPrintf(LOGGER_INFO, "Listening on %s:%u\n", address, port);

@@ -366,6 +366,7 @@ namespace WylesLibs {
 
             ETasker(): ETasker(SIZE_MAX, DEFAULT_ETASKER_TIMEOUT_S, false) {}
             ETasker(size_t tl): ETasker(tl, DEFAULT_ETASKER_TIMEOUT_S, false) {}
+            ETasker(size_t tl, uint64_t ts): ETasker(tl, ts, false, PTHREAD_STACK_MIN) {}
             ETasker(size_t tl, uint64_t ts, bool fixed): ETasker(tl, ts, fixed, PTHREAD_STACK_MIN) {}
             ETasker(size_t tl, uint64_t timeout_s, bool fixed, size_t stack_size) {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "ETasker initilaized with the following parameters:\n\tthread_limit: %lu, timeout_s: %lu, fixed: %s, stack_size: %lu\n", tl, timeout_s, fixed ? "true" : "false", stack_size);

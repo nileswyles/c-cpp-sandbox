@@ -7,10 +7,10 @@ namespace WylesLibs {
     class ServerConnectionETask: public ETask {
         protected:
             int fd;
-            uint64_t socket_timeout;
+            uint64_t socket_timeout_s;
         public:
-            ServerETask(int fd, uint64_t socket_timeout): fd(fd), socket_timeout(socket_timeout) {}
-            ~ServerETask() = default;
+            ServerConnectionETask(int fd, uint64_t socket_timeout_s): fd(fd), socket_timeout_s(socket_timeout_s) {}
+            virtual ~ServerConnectionETask() = default;
             void initialize() override;
     };
 }

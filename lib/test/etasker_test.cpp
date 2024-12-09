@@ -153,6 +153,12 @@ void assert(TestArg * t, uint64_t expected_elapsed_time, uint64_t actual_elapsed
     }
 }
 
+// TODO: unnecessary tests?
+//      bursty less than limit
+//        run tasks < thread limit, wait and run up until limit
+//        run tasks < thread limit, wait and past limit
+//      repeat for fixed?
+//      or just infer that it works given that these work?
 void testETasker(TestArg * t) {
     size_t procs_mul = 4;
     size_t procs = get_nprocs();

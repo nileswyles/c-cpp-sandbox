@@ -7,8 +7,11 @@
 #include "memory/pointers.h"
 #include "web/authorization.h"
 #include "datastructures/array.h"
+#include "parser/multipart/multipart_file.h"
+#include "parser/json/json.h"
 
 using namespace WylesLibs;
+using namespace WylesLibs::Parser::Json;
 
 namespace WylesLibs::Http {
 
@@ -28,7 +31,7 @@ class HttpRequest {
 
         size_t content_length;
         ESharedPtr<JsonValue> json_content;
-        SharedArray<MultipartFile> files;
+        SharedArray<WylesLibs::MultipartFile> files;
         std::unordered_map<std::string, std::string> form_content;
         SharedArray<uint8_t> content;
 

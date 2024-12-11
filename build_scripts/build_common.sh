@@ -69,4 +69,4 @@ else
 	EXEC_CMD="$PROGRAM_PATH $PROGRAM_ARG"
 fi
 echo "    $EXEC_CMD"
-eval $EXEC_CMD
+exec $EXEC_CMD

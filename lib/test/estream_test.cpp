@@ -463,6 +463,15 @@ static void testReadUntilAtEndOfStreamButAlsoUntil(TestArg * t) {
     }
 }
 
+static void testReadEls(TestArg * t) {
+}
+
+static void testReadElsFullBuffer(TestArg * t) {
+}
+
+static void testReadElsReaderTask(TestArg * t) {
+}
+
 static void testPeek(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
     setTestString(" %$lol");
@@ -614,7 +623,7 @@ static void testReadNaturalUntilNoConsume(TestArg * t) {
 
 static void testReadNaturalN(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
-    std::string data("100000|");
+    std::string data("100000");
     setTestString(data.c_str());
 
     std::tuple<uint64_t, size_t> result = reader.readNatural(6);
@@ -798,7 +807,7 @@ static void testReadUntilIStreamEStream(TestArg * t) {
     readUntilAssert(t, result, "IdkSomeString|");
 }
 
-static void testReadBytesIStreamEStream(TestArg * t) {
+static void testReadElsIStreamEStream(TestArg * t) {
     ESharedPtr<std::basic_stringstream<char>> stream(new std::basic_stringstream<char>("IdkSomeString|"));
     IStreamEStream reader(stream);
 
@@ -857,6 +866,11 @@ int main(int argc, char * argv[]) {
     t.addTest(testReadUntilFillBufferOnce);
     t.addTest(testReadUntilFillBufferTwice);
     t.addTest(testReadUntilAtEndOfStreamButAlsoUntil); 
+
+    t.addTest(testReadEls);
+    t.addTest(testReadElsFullBuffer);
+    t.addTest(testReadElsReaderTask);
+
     t.addTest(testPeek);
     t.addTest(testPeekNoMoreData);
     t.addTest(testUnget);
@@ -891,7 +905,7 @@ int main(int argc, char * argv[]) {
 
     // more limited set of tests using the istream.
     t.addTest(testReadUntilIStreamEStream);
-    t.addTest(testReadBytesIStreamEStream);
+    t.addTest(testReadElsIStreamEStream);
     t.addTest(testReadUntilIStreamEStreamReaderTask);
 
     bool passed = false;

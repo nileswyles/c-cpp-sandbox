@@ -290,8 +290,8 @@ void ReaderTaskExtract<RT>::flush() {
     // if extracting token and non whitespace after token throw an exception...
     if (r_trim_non_whitespace != 0) {
         // TODO: maybe make this an option...
-        std::string msg = "Found non-whitespace char right of token.";
-        loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), r_trim_non_whitespace);
+        std::string msg = WylesLibs::format("Found non-whitespace char right of token. '{c}'", r_trim_non_whitespace);
+        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     } else if (!this->l_trimming && !this->r_trimming) {
         std::string msg = "Found open ended token.";
@@ -335,7 +335,7 @@ void ReaderTaskExtract<RT>::perform(uint8_t& c) {
                 if (this->criteriaState() & LOOP_CRITERIA_STATE_AT_LAST) {
                     this->r_trim_read_until = c;
                 } else if (STRING_UTILS_WHITESPACE.find(c) == std::string::npos) {
-                    // if not last character in stream and not whitespace
+                    // if not last character in stream and not whitespace (and r_trimming)
 
                     // TODO: maybe make this an option...
                     this->r_trim_non_whitespace = c;
@@ -352,8 +352,8 @@ void ReaderTaskExtract<RT>::perform(uint8_t& c) {
             //  more clunky non-sense?
             this->collectorAccumulate(c);
         } else {
-            std::string msg = "Found non-whitespace char left of token.";
-            loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
+            std::string msg = WylesLibs::format("Found non-whitespace char left of token. '{c}'", c);
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }
     }

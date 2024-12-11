@@ -116,7 +116,7 @@ std::string ByteEStream::readString(std::string until, StreamTask<uint8_t, std::
 }
 
 // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-std::tuple<uint64_t, size_t> ByteEStream::readNatural(std::string until) {
+std::tuple<uint64_t, size_t> ByteEStream::readNatural(std::string until, bool consume) {
     std::tuple<uint64_t, size_t> t;
     if (until == "") { // default
         *this->char_class_criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
@@ -128,9 +128,15 @@ std::tuple<uint64_t, size_t> ByteEStream::readNatural(std::string until) {
         *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
 
         t = this->streamCollect<std::tuple<uint64_t, size_t>>(this->until_size_criteria, nullptr, this->natural_collector);
-        this->get(); // consume until char
+        if (true == consume) {
+            this->get(); // consume until char
+        }
     }
-    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+    loggerExec(LOGGER_DEBUG_VERBOSE,
+        if (true == this->good()) {
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed natural, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+        }
+    );
     return t;
 }
 
@@ -151,18 +157,26 @@ std::tuple<uint64_t, size_t> ByteEStream::readNatural(size_t n) {
 
         t = this->streamCollect<std::tuple<uint64_t, size_t>>(this->until_size_criteria, nullptr, this->natural_collector);
     }
-    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed natural, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+    loggerExec(LOGGER_DEBUG_VERBOSE,
+        if (true == this->good()) {
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed natural, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+        }
+    );
     return t;
 }
 
 // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-std::tuple<double, size_t, size_t> ByteEStream::readDecimal(std::string until) {
+std::tuple<double, size_t, size_t> ByteEStream::readDecimal(std::string until, bool consume) {
     std::tuple<uint64_t, size_t> natural_value = this->readNatural();
 
     char c = this->peek();
     if (c != '.') {
-        this->get();
+        if (until != "" && true == consume) {
+            this->get(); // consume until char
+        }
         return std::make_tuple(static_cast<double>(std::get<0>(natural_value)), std::get<1>(natural_value), 0);
+    } else {
+        this->get(); // consume .
     }
     std::tuple<double, size_t> decimal_value;
     if (until == "") { // default
@@ -175,9 +189,15 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(std::string until) {
         *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
 
         decimal_value = this->streamCollect<std::tuple<double, size_t>>(this->until_size_criteria, nullptr, this->decimal_collector);
-        this->get(); // consume until char
+        if (until != "" && true == consume) {
+            this->get(); // consume until char
+        }
     }
-    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+    loggerExec(LOGGER_DEBUG_VERBOSE,
+        if (true == this->good()) {
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+        }
+    );
     return std::make_tuple(static_cast<double>(std::get<0>(natural_value)) + std::get<0>(decimal_value), std::get<1>(natural_value), std::get<1>(decimal_value));
 }
 
@@ -186,28 +206,31 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(size_t n) {
     if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
         throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
     }
-    std::tuple<uint64_t, size_t> natural_value = this->readNatural(0);
+    std::tuple<uint64_t, size_t> natural_value = this->readNatural();
 
-    char c = this->peek();
-    if (c != '.') {
-        this->get();
-        return std::make_tuple(static_cast<double>(std::get<0>(natural_value)), std::get<1>(natural_value), 0);
+    size_t num_natural_digits = std::get<1>(natural_value);
+    if (num_natural_digits >= n || this->peek() != '.') {
+        return std::make_tuple(static_cast<double>(std::get<0>(natural_value)), num_natural_digits, 0);
+    } else {
+        // num_natural_digits != n && this->peek() == '.'
+        this->get(); // consume .
     }
  
+    size_t num_to_read = n - num_natural_digits - 1;
     std::tuple<double, size_t> decimal_value;
-    if (n == 0) { // default
-        *this->char_class_criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
-
-        decimal_value = this->streamCollect<std::tuple<double, size_t>>(this->char_class_criteria, nullptr, this->decimal_collector);
-    } else {
+    if (num_to_read != 0) { // default
         bool inclusive = true;
         SharedArray<uint8_t> until;
-        *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, SharedArray<uint8_t>(until)));
+        *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, num_to_read, SharedArray<uint8_t>(until)));
 
         decimal_value = this->streamCollect<std::tuple<double, size_t>>(this->until_size_criteria, nullptr, this->decimal_collector);
     }
-    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
-    return std::make_tuple(static_cast<double>(std::get<0>(natural_value)) + std::get<0>(decimal_value), std::get<1>(natural_value), std::get<1>(decimal_value));
+    loggerExec(LOGGER_DEBUG_VERBOSE,
+        if (true == this->good()) {
+            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed decimal, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+        }
+    );
+    return std::make_tuple(static_cast<double>(std::get<0>(natural_value)) + std::get<0>(decimal_value), num_natural_digits, std::get<1>(decimal_value));
 }
 
 

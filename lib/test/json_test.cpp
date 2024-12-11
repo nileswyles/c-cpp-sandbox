@@ -202,7 +202,7 @@ static std::string createNestedArray(size_t length) {
 static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size_t expected_size) {
     try {
         ESharedPtr<JsonValue> value_shared = parse(s);
-        if (ESHAREDPTR_GET_PTR(value_shared)->type == OBJECT) {
+        if (ESHAREDPTR_GET_PTR(value_shared)->type == WylesLibs::Parser::Json::OBJECT) {
             // ! IMPORTANT - Interesting example of both implicit and explicit ESharedPtr type conversions.
             //     ESharedPtr<JsonObject> obj_shared = value_shared.cast<JsonObject>();
             //     ESharedPtr<JsonObject> obj_shared = (ESharedPtr<JsonObject>)value_shared;
@@ -245,7 +245,7 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
         size_t i = 0;
         ESharedPtr<JsonValue> value_shared = parse(s);
         std::string actual;
-        if (ESHAREDPTR_GET_PTR(value_shared)->type == OBJECT) {
+        if (ESHAREDPTR_GET_PTR(value_shared)->type == WylesLibs::Parser::Json::OBJECT) {
             // if (obj->toJsonString() == s 
             //     && obj->keys.size() == 77 * 2; 
             //     && obj->values.size() == 77 * 2) {
@@ -257,7 +257,7 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
             // TODO: write tests for the pretty function... because this relies on it.
             ESharedPtr<JsonObject> obj_shared = value_shared.cast<JsonObject>();
             actual = pretty(ESHAREDPTR_GET_PTR(obj_shared)->toJsonString());
-        } else if (ESHAREDPTR_GET_PTR(value_shared)->type == ARRAY) {
+        } else if (ESHAREDPTR_GET_PTR(value_shared)->type == WylesLibs::Parser::Json::ARRAY) {
             ESharedPtr<JsonArray> arr_shared = value_shared.cast<JsonArray>();
             actual = pretty(ESHAREDPTR_GET_PTR(arr_shared)->toJsonString());
         }
@@ -276,13 +276,12 @@ static void parseObjectAndAssertStringComparison(TestArg * t, std::string s) {
     }
 }
 
-static void parseObjectAndAssertMalformedJson(TestArg * t, std::string s) {
+static void parseObjectAndAssertMalformedJson(TestArg * t, std::string s, std::string expected_exception_str) {
     try {
         size_t i = 0;
         ESharedPtr<JsonValue> obj = parse(s);
     } catch (const std::exception& e) {
-        std::cout << "Exception: \n" << e.what() << '\n';
-        t->fail = false;
+        ASSERT_STRING(t, std::string(e.what()), expected_exception_str);
     }
 }
 
@@ -353,7 +352,8 @@ static void testJsonArray(TestArg * t) {
         size_t i = 0;
         JsonValue * obj = ESHAREDPTR_GET_PTR(parse(s));
         if (obj != nullptr) {
-            if (obj->type == ARRAY) {
+            printf("Object type: %d\n", obj->type);
+            if (obj->type == WylesLibs::Parser::Json::ARRAY) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "JSON to Parse: \n");
                 loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(s).c_str());
                 JsonArray * values = dynamic_cast<JsonArray *>(obj);
@@ -372,6 +372,8 @@ static void testJsonArray(TestArg * t) {
                 if (validation_count == 4 && values->size() == 4) {
                     t->fail = false;
                 }
+            } else {
+                loggerPrintf(LOGGER_TEST_VERBOSE, "Invalid object type.\n");
             }
         }
     } catch (const std::exception& e) {
@@ -395,6 +397,7 @@ static void testJsonEmptyObject(TestArg * t) {
     std::string s("{}");
     User expected;
 
+    parseObjectAndAssertMalformedJson(t, s, "Read error. No more data in the stream to fill buffer.");
     parseObjectAndAssert(t, s, expected, 0);
 }
 
@@ -451,26 +454,26 @@ static void testJsonAll(TestArg * t) {
 
 static void testJsonMalformedOpenObject(TestArg * t) {
     std::string s("{");
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Read error. No more data in the stream to fill buffer.");
 }
 
 static void testJsonMalformedOpenArray(TestArg * t) {
     std::string s("[");
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Read error. No more data in the stream to fill buffer.");
 }
 
 static void testJsonMalformedOpenNestedObject(TestArg * t) {
     std::string s("{ \n");
     s += "\"nested\": {, \n";
     s += "}\n";
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Found non-whitespace char left of token. ','");
 }
 
 static void testJsonMalformedOpenNestedArray(TestArg * t) {
     std::string s("[ \n");
     s += "[, \n";
     s += "]\n";
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Read error. No more data in the stream to fill buffer.");
 }
 
 static void testJsonMalformedOpenEndKeyString(TestArg * t) {
@@ -478,28 +481,28 @@ static void testJsonMalformedOpenEndKeyString(TestArg * t) {
     s += "\"name: \"username\", \n";
     s += "}\n";
 
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Found open ended token.");
 }
 
 static void testJsonMalformedOpenEndValueString(TestArg * t) {
     std::string s("{ \n");
     s += "\"name\": \"username, \n";
     s += "}\n";
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Read error. No more data in the stream to fill buffer.");
 }
 
 static void testJsonMalformedOpenStartKeyString(TestArg * t) {
     std::string s("{ \n");
     s += "name\": \"username\", \n";
     s += "}\n";
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Found non-whitespace char left of token. 'n'");
 }
 
 static void testJsonMalformedOpenStartValueString(TestArg * t) {
     std::string s("{ \n");
     s += "\"name\": username\", \n";
     s += "}\n";
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Found non-whitespace char left of value token. 'u'");
 }
 
 static void testJsonMalformedIncompleteBoolean(TestArg * t) {
@@ -507,7 +510,7 @@ static void testJsonMalformedIncompleteBoolean(TestArg * t) {
     s += "\"name\": fals, \n";
     s += "}\n";
 
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Invalid immediate value - throw away the whole object. Don't rest on your laurels!");
 }
 
 static void testJsonMalformedIncompleteNull(TestArg * t) {
@@ -515,7 +518,7 @@ static void testJsonMalformedIncompleteNull(TestArg * t) {
     s += "\"name\": nu, \n";
     s += "}\n";
 
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Invalid immediate value - throw away the whole object. Don't rest on your laurels!");
 }
 
 static void testJsonMalformedNonWhitespaceInBetweenTokens(TestArg * t) {
@@ -523,7 +526,7 @@ static void testJsonMalformedNonWhitespaceInBetweenTokens(TestArg * t) {
     s += "\"name\":dnlanksal\"test\", \n";
     s += "}\n";
 
-    parseObjectAndAssertMalformedJson(t, s);
+    parseObjectAndAssertMalformedJson(t, s, "Found non-whitespace char left of value token. 'd'");
 }
 
 static void testPretty(TestArg * t) {

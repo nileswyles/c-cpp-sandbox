@@ -135,7 +135,7 @@ class EStream: public EStreamI<T> {
         //      could alternatively initialize with nullptr and size 0 args from istreamestream. but that doesn't seem valid?
         EStream() {
             ungot = false;
-            ungot_el = 0xFF;
+            // ungot_el = T();
             flags = std::ios_base::goodbit;
             buffer_size = 0;
             buffer = nullptr;
@@ -148,7 +148,7 @@ class EStream: public EStreamI<T> {
         }
         EStream(T * b, const size_t bs) {
             ungot = false;
-            ungot_el = 0xFF;
+            ungot_el = 0;
             flags = std::ios_base::goodbit;
             buffer_size = bs;
             buffer = b;
@@ -168,7 +168,7 @@ class EStream: public EStreamI<T> {
                 throw std::runtime_error("Invalid buffer size provided.");
             }
             ungot = false;
-            ungot_el = 0xFF;
+            ungot_el = 0;
             flags = std::ios_base::goodbit;
             buffer_size = bs;
             buffer = newCArray<T>(buffer_size);
@@ -193,8 +193,9 @@ class EStream: public EStreamI<T> {
             T el = this->peek();
             if (this->cursor == 0 && true == this->ungot) {
                 this->ungot = false;
+            } else {
+                this->cursor++;
             }
-            this->cursor++;
         #if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
             this->stream_log += el;
             if (this->stream_log.size() > MAX_STREAM_LOG_SIZE) {
@@ -210,7 +211,13 @@ class EStream: public EStreamI<T> {
                     this->ungot = false;
                     this->fillBuffer();
                 }
-            } else if (this->cursor == 0 && true == this->ungot) {
+            } else {
+                // throw exception, if using status bits then you should check good outside of this.
+                std::string msg("Read error. No more data in the stream to fill buffer.");
+                loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+            if (this->cursor == 0 && true == this->ungot) {
                 return this->ungot_el;
             }
             return this->buffer[this->cursor];
@@ -318,12 +325,18 @@ class EStream: public EStreamI<T> {
             collector->initialize();
  
             T el = this->peek();
+            // TODO:
+            //  would be interesting to support multiple criteria and specify some logic about how they relate... maybe a criteria that combines some?
             while (criteria->nextState(el) & LOOP_CRITERIA_STATE_GOOD) {
                 this->get();
                 if (task == nullptr) {
                     collector->accumulate(el);
                 } else {
                     task->perform(el);
+                }
+                if (false == this->good() && criteria->state() & LOOP_CRITERIA_STATE_AT_LAST) {
+                    // if no more data in the buffer but already at until then just break. else try to read regardless of whether good and throw exception if no more data.
+                    break;
                 }
                 el = this->peek();
             }

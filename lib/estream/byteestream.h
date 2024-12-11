@@ -125,11 +125,13 @@ namespace WylesLibs {
             virtual std::string readString(size_t n, StreamTask<uint8_t, std::string> * operation = nullptr);
             virtual std::string readString(std::string until = "\n", StreamTask<uint8_t, std::string> * operation = nullptr, bool inclusive = true);
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-            virtual std::tuple<uint64_t, size_t> readNatural(std::string until = "");
+            // "" == DIGIT CLASS criteria
+            virtual std::tuple<uint64_t, size_t> readNatural(std::string until = "", bool consume = true);
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
             virtual std::tuple<uint64_t, size_t> readNatural(size_t n);
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-            virtual std::tuple<double, size_t, size_t> readDecimal(std::string until = "");
+            // "" == DIGIT CLASS criteria
+            virtual std::tuple<double, size_t, size_t> readDecimal(std::string until = "", bool consume = true);
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
             virtual std::tuple<double, size_t, size_t> readDecimal(size_t n);
 

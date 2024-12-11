@@ -32,9 +32,8 @@ foreach(@TEST_SUITES_TO_SKIP) {
 
 my $DELIMETER= "\n\n@###################################################################\n";
 
-# TODO:
-#   eventually per test timeouts. 
 my $timeout = 60; 
+my %EXTENDED_TIMES = ("etasker_test.sh" => $timeout * 10);
 
 my %passed_map = ();
 my %failed_map = ();
@@ -50,18 +49,22 @@ foreach (@TEST_SUITES) {
     }
     if (!$skip) {
         my $CMD = "$PATH_TO_TEST_DIRECTORY/$test --log $LOG_LEVEL $DEFINES";
-        print("~Executing test:\n\t$CMD\n");
+        my $actual_timeout = int($timeout);
+        if ($EXTENDED_TIMES{$test} > $actual_timeout) {
+            $actual_timeout = int($EXTENDED_TIMES{$test});
+        }
+        print("~Executing test:\n\t$CMD"."with timeout: $actual_timeout\n");
         my $time_before = time;
-        my $result = system("etimeout/bin/etimeout $timeout $CMD");
+        my $result = system("etimeout/bin/etimeout $actual_timeout $CMD");
         my $result_code = $?;
-        printf("\n~Finished executing test.\n");
-        # printf("system result $result vs result code $result_code\n");
+        print("\n~Finished executing test.\n");
+        # print("system result $result vs result code $result_code\n");
 
         my $time_elapsed = time - $time_before;
         my $mins = int($time_elapsed / 60);
         my $seconds = $time_elapsed - ($mins * 60);
         # here because timeout...
-        printf("\nTime elapsed: \n$mins Minutes and $seconds Seconds \n");
+        print("\nTime elapsed: \n$mins Minutes and $seconds Seconds \n");
 
         if ($result != 0) {
             $failed_map{$test} = int($result_code);

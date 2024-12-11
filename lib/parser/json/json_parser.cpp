@@ -110,7 +110,8 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
             exponential_multiplier *= 10;
         }
         loggerPrintf(LOGGER_DEBUG, "Exponential Sign: %d, Exponential Multiplier: %f\n", exponential_sign, exponential_multiplier);
-    } else if (comp.find(c) == std::string::npos) { // if one of the characters in comp throw exception...
+    } else if (comp.find(c) == std::string::npos) { // if one of the characters is not in comp, throw exception...
+        // if not the delimeter character then it's an invalid number.
         std::string msg = "Invalid number.";
         loggerPrintf(LOGGER_INFO, "%s, found '%c'\n", msg.c_str(), c);
         throw std::runtime_error(msg);
@@ -128,7 +129,11 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
 
     obj->addValue((JsonValue *) new JsonNumber(value * sign, natural_digits, decimal_digits));
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Number, stream is at '%c' [0x%02X]\n", r->peek(), r->peek());
+    loggerExec(LOGGER_DEBUG,
+        if (true == r->good()) {
+            loggerPrintf(LOGGER_DEBUG, "Parsed Number, stream is at '%c' [0x%02X]\n", r->peek(), r->peek());
+        }
+    );
 }
 
 static void parseString(JsonArray * obj, ByteEStream * r) {
@@ -140,8 +145,8 @@ static void parseString(JsonArray * obj, ByteEStream * r) {
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     std::string s;
     char prev_c = (char)0x00;
-    uint16_t string_count = 0;
-    while (JSON_STRING_SIZE_LIMIT > string_count && (c != '"' || prev_c == '\\')) {
+    size_t string_count = 0;
+    while (MAX_LENGTH_OF_JSON_STRING_VALUES > string_count && (c != '"' || prev_c == '\\')) {
         /*
             '"'
             '\'
@@ -192,7 +197,11 @@ static void parseString(JsonArray * obj, ByteEStream * r) {
 
     obj->addValue((JsonValue *) new JsonString(s));
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed String: %s, stream is at '%c' [0x%02X]\n", s.c_str(), r->peek(), r->peek());
+    loggerExec(LOGGER_DEBUG,
+        if (true == r->good()) {
+            loggerPrintf(LOGGER_DEBUG, "Parsed String: %s, stream is at '%c' [0x%02X]\n", s.c_str(), r->peek(), r->peek());
+        }
+    );
 }
 
 static void parseImmediate(JsonArray * obj, ByteEStream * r, std::string comp, JsonValue * value) {
@@ -226,15 +235,23 @@ static void parseArray(JsonArray * arr, ByteEStream * r) {
     char c = r->get();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
     while(c != ']') {
-        if (c == '[' || c == ',') { 
+        if (c == '[' || c == ',') {
             parseValue(arr, r);
             loggerPrintf(LOGGER_DEBUG, "Returned from parseValue function.\n");
         }
-        loggerPrintf(LOGGER_DEBUG, "%c\n", r->peek());
+        loggerExec(LOGGER_DEBUG,
+            if (true == r->good()) {
+                loggerPrintf(LOGGER_DEBUG, "%c\n", r->peek());
+            }
+        );
         c = r->get();
     }
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Array, stream is at '%c', [%X]\n", r->peek(), r->peek());
+    loggerExec(LOGGER_DEBUG,
+        if (true == r->good()) {
+            loggerPrintf(LOGGER_DEBUG, "Parsed Array, stream is at '%c', [%X]\n", r->peek(), r->peek());
+        }
+    );
 }
 
 static void parseValue(JsonArray * obj, ByteEStream * r) {
@@ -277,8 +294,8 @@ static void parseValue(JsonArray * obj, ByteEStream * r) {
 #if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
                 loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", r->stream_log.c_str());
 #endif
-                std::string msg = "Non-whitespace found left of value token.";
-                loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
+                std::string msg = WylesLibs::format("Found non-whitespace char left of value token. '{c}'", c);
+                loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             } else {
                 // consume whitespace...
@@ -288,8 +305,8 @@ static void parseValue(JsonArray * obj, ByteEStream * r) {
 #if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
             loggerPrintf(LOGGER_DEBUG, "Stream buffer dump: \n'%s'\n", r->stream_log.c_str());
 #endif
-            std::string msg = "Non-whitespace found right of value token.";
-            loggerPrintf(LOGGER_INFO, "%s '%c'\n", msg.c_str(), c);
+            std::string msg = WylesLibs::format("Found non-whitespace char right of value token. '{c}'", c);
+            loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         } else {
             // consume whitespace...
@@ -297,11 +314,19 @@ static void parseValue(JsonArray * obj, ByteEStream * r) {
         }
         c = r->peek();
     }
-    loggerPrintf(LOGGER_DEBUG, "Parsed Value, stream is at '%c', [0x%02X]\n", r->peek(), r->peek());
+    loggerExec(LOGGER_DEBUG,
+        if (true == r->good()) {
+            loggerPrintf(LOGGER_DEBUG, "Parsed Value, stream is at '%c', [0x%02X]\n", r->peek(), r->peek());
+        }
+    );
 }
 
 static bool parseKey(JsonObject * obj, ByteEStream * r) {
-    loggerPrintf(LOGGER_DEBUG, "Parsing Key. %c\n", r->peek());
+    loggerExec(LOGGER_DEBUG,
+        if (true == r->good()) {
+            loggerPrintf(LOGGER_DEBUG, "Parsing Key. %c\n", r->peek());
+        }
+    );
 
     ReaderTaskExtract extract('"', '"');
     SharedArray<uint8_t> key = r->read(":}", &extract);
@@ -331,7 +356,11 @@ static bool parseKey(JsonObject * obj, ByteEStream * r) {
         throw std::runtime_error(msg);
     }
 
-    loggerPrintf(LOGGER_DEBUG, "Parsed Key String: '%s', stream is at '%c' [0x%02X]\n", key_string.c_str(), r->peek(), r->peek());
+    loggerExec(LOGGER_DEBUG,
+        if (true == r->good()) {
+            loggerPrintf(LOGGER_DEBUG, "Parsed Key String: '%s', stream is at '%c' [0x%02X]\n", key_string.c_str(), r->peek(), r->peek());
+        }
+    );
 
     obj->addKey(key_string);
 
@@ -381,6 +410,7 @@ extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parse(SharedArray<uint8_t>
         throw std::runtime_error(msg);
     }
     size_t i = 0;
+
     ByteEStream r(json.begin(), json.size());
     return parse(&r, i);
 }

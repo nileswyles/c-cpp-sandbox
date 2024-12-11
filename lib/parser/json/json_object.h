@@ -16,7 +16,7 @@ class JsonObject: public JsonValue {
         JsonArray values;
         size_t depth;
         JsonObject(): JsonObject(0) {}
-        JsonObject(size_t depth): depth(depth), JsonValue(OBJECT) {
+        JsonObject(size_t depth): depth(depth), JsonValue(WylesLibs::Parser::Json::OBJECT) {
             if (depth > MAX_JSON_DEPTH) {
                 throw std::runtime_error("JsonObject creation error... TOO MUCH DEPTH!");
             }

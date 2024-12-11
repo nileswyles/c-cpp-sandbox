@@ -18,9 +18,8 @@ namespace WylesLibs::Parser::Json {
 class JsonArray: public JsonValue, public std::vector<JsonValue *> {
     public:
         size_t depth;
-        JsonType value_type;
         JsonArray(): JsonArray(0) {}
-        JsonArray(size_t depth): depth(depth), JsonValue(ARRAY), std::vector<JsonValue *>() {
+        JsonArray(size_t depth): depth(depth), JsonValue(WylesLibs::Parser::Json::ARRAY), std::vector<JsonValue *>() {
             if (depth > MAX_JSON_DEPTH) {
                 throw std::runtime_error("JsonArray: creation error... TOO MUCH DEPTH!");
             }

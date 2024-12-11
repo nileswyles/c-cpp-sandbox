@@ -57,6 +57,7 @@ bool Tester::run(const char * name) {
             test.arg.fail = true;
             ran_test = true;
             loggerPrintf(LOGGER_INFO, "Exception: %s\n", e.what());
+            printf("\n\nTest Failed!\n");
         }
         if (ran_test) {
             if (test.arg.fail) {

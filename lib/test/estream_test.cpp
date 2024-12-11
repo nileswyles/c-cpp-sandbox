@@ -47,7 +47,7 @@ static const char * buffer;
 
 // ! IMPORTANT - overriding stdlib's implementation of read (which is apparently weakly linked...)... ByteEStream's calls to read use this function. 
 extern ssize_t read(int fd, void * b, size_t nbytes) {
-    size_t ret = MIN(nbytes, strlen(buffer) + 1); // always return NUL byte of string
+    size_t ret = MIN(nbytes, strlen(buffer));
     memcpy(b, buffer, ret);
     loggerPrintf(LOGGER_DEBUG, "READ RETURNED (%ld): \n", ret);
     loggerPrintByteArray(LOGGER_DEBUG, (uint8_t*)b, ret);
@@ -56,7 +56,7 @@ extern ssize_t read(int fd, void * b, size_t nbytes) {
 }
 
 extern int poll(struct pollfd *__fds, nfds_t __nfds, int __timeout) {
-    return 1;
+    return buffer_start + strlen(buffer_start) > buffer;
 }
 
 static void setTestString(const char * s) {
@@ -70,6 +70,69 @@ static void readUntilAssert(TestArg * t, std::string result, std::string expecte
     ASSERT_STRING(t, result, expected);
 }
 
+static void readNaturalAssert(TestArg * t, ByteEStream& r, std::tuple<uint64_t, size_t> result, std::tuple<uint64_t, size_t> expected, char expected_until) {
+    uint64_t actual_num = std::get<0>(result);
+    size_t actual_num_digits = std::get<1>(result);
+    char actual_get = r.get();
+    loggerPrintf(LOGGER_TEST, "Actual number: %lu, num_digits: %lu, reader.get: %c\n", actual_num, actual_num_digits, actual_get);
+    uint64_t expected_num = std::get<0>(expected);
+    size_t expected_num_digits = std::get<1>(expected);
+    loggerPrintf(LOGGER_TEST, "Expected number: %lu, num_digits: %lu, reader.get: %c\n", expected_num, expected_num_digits, expected_until);
+    if (actual_num == expected_num && actual_num_digits == expected_num_digits && actual_get == expected_until) {
+        t->fail = false;
+    }
+}
+
+static void readDecimalAssert(TestArg * t, ByteEStream& r, std::tuple<double, size_t, size_t> result, std::tuple<double, size_t, size_t> expected, char expected_until) {
+    double actual_num = std::get<0>(result);
+    size_t actual_num_natural_digits = std::get<1>(result);
+    size_t actual_num_decimal_digits = std::get<2>(result);
+    char actual_get = r.get();
+    loggerPrintf(LOGGER_TEST, "Actual number: %f, num_natural_digits: %lu, num_decimal_digits: %lu, reader.get: %c\n", 
+                    actual_num, actual_num_natural_digits, actual_num_decimal_digits, actual_get);
+    double expected_num = std::get<0>(expected);
+    size_t expected_num_natural_digits = std::get<1>(expected);
+    size_t expected_num_decimal_digits = std::get<2>(expected);
+    loggerPrintf(LOGGER_TEST, "Expected number: %f, num_natural_digits: %lu, num_decimal_digits: %lu, reader.get: %c\n", 
+                    expected_num, expected_num_natural_digits, expected_num_decimal_digits, expected_until);
+    if (result == expected && actual_get == expected_until) {
+        t->fail = false;
+    }
+}
+
+static void readNaturalAssertConsume(TestArg * t, ByteEStream& r, std::tuple<uint64_t, size_t> result, std::tuple<uint64_t, size_t> expected, bool expected_good) {
+    uint64_t actual_num = std::get<0>(result);
+    size_t actual_num_digits = std::get<1>(result);
+    bool actual_good = r.good();
+    loggerPrintf(LOGGER_TEST, "Actual number: %lu, num_digits: %lu, reader.good: %s\n", actual_num, actual_num_digits, true == actual_good ? "true" : "false");
+    uint64_t expected_num = std::get<0>(expected);
+    size_t expected_num_digits = std::get<1>(expected);
+    loggerPrintf(LOGGER_TEST, "Expected number: %lu, num_digits: %lu, reader.good: %s\n", expected_num, expected_num_digits, true == expected_good ? "true" : "false");
+
+    if (result == expected && actual_good == expected_good) {
+        t->fail = false;
+    }
+}
+
+static void readDecimalAssertConsume(TestArg * t, ByteEStream& r, std::tuple<double, size_t, size_t> result, std::tuple<double, size_t, size_t> expected, bool expected_good) {
+    double actual_num = std::get<0>(result);
+    size_t actual_num_natural_digits = std::get<1>(result);
+    size_t actual_num_decimal_digits = std::get<2>(result);
+    bool actual_good = r.good();
+    loggerPrintf(LOGGER_TEST, "Actual number: %f, num_natural_digits: %lu, num_decimal_digits: %lu, reader.good: %s\n", 
+                    actual_num, actual_num_natural_digits, actual_num_decimal_digits, true == actual_good ? "true" : "false");
+    double expected_num = std::get<0>(expected);
+    size_t expected_num_natural_digits = std::get<1>(expected);
+    size_t expected_num_decimal_digits = std::get<2>(expected);
+    loggerPrintf(LOGGER_TEST, "Expected number: %f, num_natural_digits: %lu, num_decimal_digits: %lu, reader.good: %s\n", 
+                    expected_num, expected_num_natural_digits, expected_num_decimal_digits, true == expected_good ? "true" : "false");
+
+    if (result == expected && actual_good == expected_good) {
+        t->fail = false;
+    }
+}
+
+
 static void testReadUntil(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
@@ -79,6 +142,22 @@ static void testReadUntil(TestArg * t) {
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     readUntilAssert(t, result, expected);
+}
+
+static void testReadUntilLimit(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    std::string data;
+    for (size_t i = 0; i < (1 << 16); i++) {
+        data += "|";
+    }
+    data += " ";
+    setTestString(data.c_str());
+    try {
+        std::string result = reader.read(" ").toString();
+    } catch (std::exception& e) {
+        ASSERT_STRING(t, std::string(e.what()), "Spatial until limit of 65536 reached.");
+    }
 }
 
 static void testReadUntilUpperCase(TestArg * t) {
@@ -138,11 +217,11 @@ static void testReadUntilAllowStrict(TestArg * t) {
 static void testReadUntilDisallow(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
 
-    setTestString("TESTSTRING");
+    setTestString("TESTSTRING ");
 
     ReaderTaskDisallow disallow("IO");
     std::string result = reader.read(" ", (ReaderTask *)&disallow).toString();
-    std::string expected = "TESTSTRNG";
+    std::string expected = "TESTSTRNG ";
 
     readUntilAssert(t, result, expected);
 }
@@ -367,6 +446,381 @@ static void testReadUntilFillBufferTwice(TestArg * t) {
     readUntilAssert(t, result, "$$$$$$$$$$$$$$$$$$ ");
 }
 
+static void testReadUntilAtEndOfStreamButAlsoUntil(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    setTestString(" BLAH|");
+
+    std::string expected(" BLAH|");
+    std::string result = reader.read("|", nullptr, true).toString();
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n'%s'\n", buffer_start);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n'%s'\n", result.c_str());
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected:\n'%s'\n", expected.c_str());
+
+    if (result == expected || false == reader.good()) {
+        t->fail = false;
+    }
+}
+
+static void testPeek(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    setTestString(" %$lol");
+
+    char peeked_char = reader.peek();
+    reader.get();
+    char second_peeked_char = reader.peek();
+    loggerPrintf(LOGGER_TEST, "Peeked Char: %x, '%c', Second Peeked Char: %x, '%c', Expected: ' ' and '@'\n", peeked_char, peeked_char, second_peeked_char, second_peeked_char);
+    if (peeked_char != ' ' && second_peeked_char != '%') {
+        t->fail = true;
+    } else {
+        t->fail = false;
+    }
+}
+
+static void testPeekNoMoreData(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    std::string str = " BLAH";
+    setTestString(str.c_str());
+    for (size_t i = 0; i < str.size(); i++) {
+        reader.get();
+    }
+    try {
+        reader.peek();
+    } catch (std::exception& e) {
+        ASSERT_STRING(t, std::string(e.what()), "Read error. No more data in the stream to fill buffer.");
+    }
+}
+
+static void testUnget(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    setTestString(" @LAH");
+
+    char peeked_char = reader.get();
+    reader.unget();
+    char second_peeked_char = reader.get();
+    loggerPrintf(LOGGER_TEST, "Peeked Char: %x, '%c', Second Peeked Char: %x, '%c', Expected: ' ' and ' '\n", peeked_char, peeked_char, second_peeked_char, second_peeked_char);
+    if (peeked_char == ' ' && second_peeked_char == ' ') {
+        t->fail = false;
+    }
+}
+
+static void testUngetLastCharacterBeforeFillBuffer(TestArg * t) {
+    size_t buffer_size = 2;
+    ByteEStream reader(1, buffer_size);
+    setTestString(" 277");
+
+    for (size_t i = 0; i < buffer_size; i++) {
+        reader.get();
+    }
+    // cursor == buffer_size;
+    //  unget last element
+    reader.unget();
+    char ungot_char = reader.get();
+    loggerPrintf(LOGGER_TEST, "Ungot Char: %x, '%c', Expected: 0x32, '2'\n", ungot_char, ungot_char);
+    if (ungot_char == '2') {
+        t->fail = false;
+    }
+}
+
+static void testUngetHaventGotten(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    setTestString(" BLAH");
+
+    reader.unget(); // no-op, because bytes_in_buffer == cursor... so not good and will fillBuffer when get is called.
+    char ungot_char = reader.get();
+    // default value of ungot_el
+    loggerPrintf(LOGGER_TEST, "Ungot Char: %x, '%c', Expected: 20, ' '\n", ungot_char, ungot_char);
+    if (ungot_char == ' ') {
+        t->fail = false;
+    }
+}
+
+static void testGet(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    setTestString(" %$lol");
+
+    // TODO: kind of a dumb test?
+    char peeked_char = reader.get();
+    char second_peeked_char = reader.get();
+    if (peeked_char == ' ' && second_peeked_char == '%') {
+        t->fail = false;
+    }
+}
+
+static void testGood(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    setTestString(" %$lol");
+
+    bool reader_good_1 = reader.good();
+    reader.get();
+    reader.get();
+    bool reader_good_2 = reader.good();
+    if (true == reader_good_1 && true == reader_good_2) {
+        t->fail = false;
+    }
+}
+
+static void testGoodNoMoreData(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data(" %$lol");
+    setTestString(data.c_str());
+
+    // nul char
+    for (size_t i = 0; i < data.size(); i++) {
+        reader.get();
+    }
+    if (false == reader.good()) {
+        t->fail = false;
+    }
+}
+
+static void testReadNaturalUntilDigitClassEmpty(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("|");
+    setTestString(data.c_str());
+
+    std::tuple<uint64_t, size_t> result = reader.readNatural();
+    readNaturalAssert(t, reader, result, std::make_tuple(0, 0), '|');
+}
+
+static void testReadNaturalUntilDigitClass(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<uint64_t, size_t> result = reader.readNatural();
+    readNaturalAssert(t, reader, result, std::make_tuple(100000, 6), '|');
+}
+
+static void testReadNaturalUntil(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<uint64_t, size_t> result = reader.readNatural("|");
+    readNaturalAssertConsume(t, reader, result, std::make_tuple(100000, 6), false);
+}
+
+static void testReadNaturalUntilNoConsume(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<uint64_t, size_t> result = reader.readNatural("|", false);
+    readNaturalAssert(t, reader, result, std::make_tuple(100000, 6), '|');
+}
+
+static void testReadNaturalN(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<uint64_t, size_t> result = reader.readNatural(6);
+    readNaturalAssert(t, reader, result, std::make_tuple(100000, 6), '|');
+}
+
+static void testReadNaturalNDigitClass(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<uint64_t, size_t> result = reader.readNatural(0);
+    readNaturalAssert(t, reader, result, std::make_tuple(100000, 6), '|');
+}
+
+// TODO: same for until, and n...
+// static void testReadDecimalUntilDigitClassEmpty(TestArg * t) {
+static void testReadDecimalUntilDigitClassEmpty(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal();
+    readDecimalAssert(t, reader, result, std::make_tuple(0.0, 0, 0), '|');
+}
+
+static void testReadDecimalDigitClass(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000.1239000|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal();
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.1239, 6, 7), '|');
+}
+
+static void testReadDecimalUntil(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000.1239000|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal("|"); // default consume = true
+    readDecimalAssertConsume(t, reader, result, std::make_tuple(100000.1239, 6, 7), false);
+}
+
+static void testReadDecimalUntilNoConsume(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000.1239000|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal("|", false); // default consume = true
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.1239, 6, 7), '|');
+}
+
+static void testReadDecimalDigitClassNoDecimalPart(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal();
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+}
+
+static void testReadDecimalUntilNoDecimalPart(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal("|");
+    readDecimalAssertConsume(t, reader, result, std::make_tuple(100000.0, 6, 0), false);
+}
+
+static void testReadDecimalUntilNoConsumeNoDecimalPart(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal("|", false);
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+}
+
+static void testReadDecimalN(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    size_t num_digits = 6;
+    std::tuple<double, size_t, size_t> result = reader.readDecimal(num_digits);
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, num_digits, 0), '|');
+}
+
+static void testReadDecimalNDigitClass(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal(0);
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+}
+
+static void testReadDecimalLimit(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    try {
+        reader.readDecimal(4294967297);
+    } catch(std::exception& e) {
+        ASSERT_STRING(t, std::string(e.what()), "You're reading more than the limit specified... Read less, or you know what, don't read at all.");
+    }
+}
+
+static void testReadDecimalDigitClassNoDecimalPartDecimal(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000.|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal();
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+}
+
+static void testReadDecimalUntilNoDecimalPartDecimal(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000.|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal("|", false);
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+}
+
+static void testReadDecimalNNoDecimalPart(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal(6);
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+}
+
+static void testReadDecimalNNoDecimalPartDecimal(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000.|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal(6);
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '.');
+}
+
+static void testReadDecimalNNoDecimalPartDecimalCorrect(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000.|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal(7);
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+}
+
+static void testReadDecimalNDigitClassNoDecimal(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal();
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+}
+
+static void testReadDecimalNDigitClassNoDecimalPartDecimal(TestArg * t) {
+    ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
+    std::string data("100000.|");
+    setTestString(data.c_str());
+
+    std::tuple<double, size_t, size_t> result = reader.readDecimal();
+    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+}
+
+static void testReadUntilIStreamEStream(TestArg * t) {
+    ESharedPtr<std::basic_stringstream<char>> stream(new std::basic_stringstream<char>("IdkSomeString|"));
+    IStreamEStream reader(stream);
+
+    std::string result = reader.read("|").toString();
+
+    readUntilAssert(t, result, "IdkSomeString|");
+}
+
+static void testReadBytesIStreamEStream(TestArg * t) {
+    ESharedPtr<std::basic_stringstream<char>> stream(new std::basic_stringstream<char>("IdkSomeString|"));
+    IStreamEStream reader(stream);
+
+    std::string result = reader.readEls(13).toString();
+
+    readUntilAssert(t, result, "IdkSomeString");
+}
+
+static void testReadUntilIStreamEStreamReaderTask(TestArg * t) {
+    ESharedPtr<std::basic_stringstream<char>> stream(new std::basic_stringstream<char>("IdkSomeString|"));
+    IStreamEStream reader(stream);
+
+    ReaderTaskLC lowercase;
+    std::string result = reader.read("|", (ReaderTask *)&lowercase).toString();
+
+    readUntilAssert(t, result, "idksomestring|");
+}
+
+
+// TODO:
+// static void testReadStringIStreamEStream(TestArg * t) {
+// }
 
 int main(int argc, char * argv[]) {
     Tester t("EStream Tests");
@@ -377,6 +831,7 @@ int main(int argc, char * argv[]) {
 
     // make sure to write a test.
     t.addTest(testReadUntil);
+    t.addTest(testReadUntilLimit);
     t.addTest(testReadUntilUpperCase);
     t.addTest(testReadUntilLowerCase);
     t.addTest(testReadUntilAllow);
@@ -388,9 +843,7 @@ int main(int argc, char * argv[]) {
     // t.addTest(testReadUntilTrim);
     // t.addTest(testReadUntilLTrim);
     t.addTest(testReadUntilRTrim);
-
     t.addTest(testReadUntilDisallowSpaceTrim);
-
     t.addTest(testReadUntilExtract);
     t.addTest(testReadUntilExtractNonWhiteCharacterAfterRightToken);
     t.addTest(testReadUntilAllowExtract);
@@ -403,10 +856,43 @@ int main(int argc, char * argv[]) {
     t.addTest(testReadUntilCursorAtUntilNotInclusive);
     t.addTest(testReadUntilFillBufferOnce);
     t.addTest(testReadUntilFillBufferTwice);
+    t.addTest(testReadUntilAtEndOfStreamButAlsoUntil); 
+    t.addTest(testPeek);
+    t.addTest(testPeekNoMoreData);
+    t.addTest(testUnget);
+    t.addTest(testUngetLastCharacterBeforeFillBuffer);
+    t.addTest(testUngetHaventGotten);
+    t.addTest(testGet);
+    t.addTest(testGood);
+    t.addTest(testGoodNoMoreData);
+    t.addTest(testReadNaturalUntilDigitClassEmpty);
+    t.addTest(testReadNaturalUntilDigitClass);
+    t.addTest(testReadNaturalUntil);
+    t.addTest(testReadNaturalUntilNoConsume);
+    t.addTest(testReadNaturalN);
+    t.addTest(testReadNaturalNDigitClass);
+    t.addTest(testReadDecimalUntilDigitClassEmpty);
+    t.addTest(testReadDecimalDigitClass); 
+    t.addTest(testReadDecimalUntil);
+    t.addTest(testReadDecimalUntilNoConsume);
+    t.addTest(testReadDecimalDigitClassNoDecimalPart); 
+    t.addTest(testReadDecimalDigitClassNoDecimalPartDecimal);
+    t.addTest(testReadDecimalUntilNoDecimalPart);
+    t.addTest(testReadDecimalUntilNoDecimalPartDecimal);
+    t.addTest(testReadDecimalUntilNoConsumeNoDecimalPart);
+    t.addTest(testReadDecimalN);
+    t.addTest(testReadDecimalNNoDecimalPart);
+    t.addTest(testReadDecimalNNoDecimalPartDecimal);
+    t.addTest(testReadDecimalNNoDecimalPartDecimalCorrect);
+    t.addTest(testReadDecimalNDigitClass);
+    t.addTest(testReadDecimalNDigitClassNoDecimal);
+    t.addTest(testReadDecimalNDigitClassNoDecimalPartDecimal);
+    t.addTest(testReadDecimalLimit);
 
-    // TODO:
-    // istreamestream readuntil readbytes, collector stuff...
-    //  consecutive streamcollects..., etc.
+    // more limited set of tests using the istream.
+    t.addTest(testReadUntilIStreamEStream);
+    t.addTest(testReadBytesIStreamEStream);
+    t.addTest(testReadUntilIStreamEStreamReaderTask);
 
     bool passed = false;
     if (argc > 1) {

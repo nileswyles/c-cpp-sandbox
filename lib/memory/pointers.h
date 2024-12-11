@@ -133,7 +133,7 @@ class ESharedPtr {
         ESharedPtr(ESharedPtr<C>& x) {
             ctrl_container = new EPointerControl<T>*(
                 new EPointerControl<T>(
-                    (*x.ctrl_container)->ptr,
+                    (T *)(*x.ctrl_container)->ptr,
                     (*x.ctrl_container)->e_instance_count
                 )
             );
@@ -142,17 +142,18 @@ class ESharedPtr {
         template<typename C>
         ESharedPtr<T>& operator= (ESharedPtr<C>& x) {
             (*this->ctrl_container)->e_instance_count = (*x.ctrl_container)->e_instance_count;
-            (*this->ctrl_container)->ptr = (*x.ctrl_container)->ptr;
+            (*this->ctrl_container)->ptr = (T *)(*x.ctrl_container)->ptr;
             (*(*this->ctrl_container)->e_instance_count)++;
             return *this;
         }
         // explicit casting
         template<typename C>
         ESharedPtr<C> cast() {
+            printf("%p\n", (C *)(*this->ctrl_container)->ptr);
             return ESharedPtr<C>(
                 new EPointerControl<C>*(
                     new EPointerControl<C>(
-                        (C *)ESHAREDPTR_GET_PTR((*this)),
+                        (C *)(*this->ctrl_container)->ptr,
                         (*this->ctrl_container)->e_instance_count
                     )
                 )

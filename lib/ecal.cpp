@@ -159,8 +159,7 @@ extern std::string WylesLibs::Cal::getFormattedDateTime(int16_t offset, WylesLib
         if (offset != 0) {
             formatted_offset = WylesLibs::format("{+d}:{-02d}", static_cast<int64_t>(offset/100), static_cast<int64_t>(offset));
         }
-        // return WylesLibs::format("{s} {u} {u}, {02u}:{02u}:{02u} ", MONTH_NAME[month], static_cast<uint64_t>(day + 1), static_cast<uint64_t>(year), static_cast<uint64_t>(hr), static_cast<uint64_t>(min), static_cast<uint64_t>(sec)) + formatted_offset;
-        return WylesLibs::format("{s} {u} {u}, {u}:{u}:{u} ", MONTH_NAME[month], static_cast<uint64_t>(day + 1), static_cast<uint64_t>(year), static_cast<uint64_t>(hr), static_cast<uint64_t>(min), static_cast<uint64_t>(sec)) + formatted_offset;
+        return WylesLibs::format("{s} {u} {u}, {02u}:{02u}:{02u} ", MONTH_NAME[month], static_cast<uint64_t>(day + 1), static_cast<uint64_t>(year), static_cast<uint64_t>(hr), static_cast<uint64_t>(min), static_cast<uint64_t>(sec)) + formatted_offset;
     } else if (format == WylesLibs::Cal::ISO8601_READABLE) {
         if (offset != 0) {
             formatted_offset = WylesLibs::format("{+d}:{-02d}", static_cast<int64_t>(offset/100), static_cast<int64_t>(offset));

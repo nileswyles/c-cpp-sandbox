@@ -51,6 +51,8 @@ static Url parseUrl(ByteEStream * io) {
     //  ByteEStream can probably use string for readuntil but let's roll with this for now.
     //  Hesitant for obvious reasons...
     std::string pathString = path.toString();
+
+    // TODO: if lower bounds check...
     url.path = pathString.substr(0, pathString.size()-1);
 
     return url;
@@ -60,7 +62,7 @@ void HttpConnectionETask::parseRequest(HttpRequest * request, ByteEStream * io) 
     if (request == NULL || io == NULL) {
         throw std::runtime_error("lol....");
     }
-    // TODO: this is terrible as is... stringyness must work.
+    // TODO: this is terrible as is... stringyness must work. lower bounds check if can't get removeBack functionality working.
     request->method = io->read(" ").removeBack().toString();
     request->method = request->method.substr(0, request->method.size()-1);
 

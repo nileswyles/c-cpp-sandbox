@@ -540,8 +540,8 @@ static void testUngetHaventGotten(TestArg * t) {
     reader.unget(); // no-op, because bytes_in_buffer == cursor... so not good and will fillBuffer when get is called.
     char ungot_char = reader.get();
     // default value of ungot_el
-    loggerPrintf(LOGGER_TEST, "Ungot Char: %x, '%c', Expected: 20, ' '\n", ungot_char, ungot_char);
-    if (ungot_char == ' ') {
+    loggerPrintf(LOGGER_TEST, "Ungot Char: %x, '%c', Expected: 0, ''\n", ungot_char, ungot_char); 
+    if (ungot_char == 0x00) {
         t->fail = false;
     }
 }

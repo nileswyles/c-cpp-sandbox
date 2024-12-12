@@ -244,7 +244,7 @@ static int16_t parseReadableOffset(ByteEStream &s) {
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }// read space
-        res = s.readNatural();
+        res = s.readNatural(2);
         int8_t min_offset = static_cast<uint8_t>(std::get<0>(res));
         if (std::get<1>(res) > 2) {
             std::string msg = "Error parsing offset min.";
@@ -359,12 +359,13 @@ static uint64_t parseISO8601ReadableDateTime(ByteEStream& s) {
     isValidMin(min, std::get<1>(res));
     epoch_seconds += min * SECONDS_PER_MINUTE;
 
-    res = s.readNatural("Z+-");
+    res = s.readNatural("Z+-", false);
     uint8_t sec = static_cast<uint8_t>(std::get<0>(res));
     isValidSec(sec, std::get<1>(res));
     epoch_seconds += sec;
 
-    s.unget();
+    // TODO: ungetting wasn't working.
+    // s.unget();
     epoch_seconds += parseReadableOffset(s);
 
     return epoch_seconds;

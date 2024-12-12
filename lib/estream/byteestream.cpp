@@ -218,7 +218,7 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(size_t n) {
  
     size_t num_to_read = n - num_natural_digits - 1;
     std::tuple<double, size_t> decimal_value;
-    if (num_to_read != 0) { // default
+    if (num_to_read > 0) { // default
         bool inclusive = true;
         SharedArray<uint8_t> until;
         *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, num_to_read, SharedArray<uint8_t>(until)));

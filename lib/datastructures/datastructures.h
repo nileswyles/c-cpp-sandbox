@@ -78,6 +78,7 @@ namespace WylesLibs {
             };
             size_t viewEnd() {
                 if (this->view == nullptr) {
+                    // TODO: must have at least one element?
                     return this->size() - 1;
                 } else {
                     // # inclusive...

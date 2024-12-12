@@ -507,6 +507,7 @@ class Array {
             size_t i = this->find(el);
             if (i == SIZE_MAX) {
                 this->append(el); 
+                // TODO: must have at least one element?
                 i = this->size() - 1;
             }
             return (this->e_buf)[i];

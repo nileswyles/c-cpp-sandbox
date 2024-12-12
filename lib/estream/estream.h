@@ -135,7 +135,7 @@ class EStream: public EStreamI<T> {
         //      could alternatively initialize with nullptr and size 0 args from istreamestream. but that doesn't seem valid?
         EStream() {
             ungot = false;
-            // ungot_el = T();
+            ungot_el = T();
             flags = std::ios_base::goodbit;
             buffer_size = 0;
             buffer = nullptr;
@@ -148,7 +148,7 @@ class EStream: public EStreamI<T> {
         }
         EStream(T * b, const size_t bs) {
             ungot = false;
-            ungot_el = 0;
+            ungot_el = T();
             flags = std::ios_base::goodbit;
             buffer_size = bs;
             buffer = b;
@@ -168,7 +168,7 @@ class EStream: public EStreamI<T> {
                 throw std::runtime_error("Invalid buffer size provided.");
             }
             ungot = false;
-            ungot_el = 0;
+            ungot_el = T();
             flags = std::ios_base::goodbit;
             buffer_size = bs;
             buffer = newCArray<T>(buffer_size);
@@ -207,8 +207,9 @@ class EStream: public EStreamI<T> {
         T peek() override {
             if (true == this->good()) {
                 if (true == this->readPastBuffer()) {
-                    this->ungot_el = this->buffer[this->cursor - 1];
-                    this->ungot = false;
+                    if (this->cursor != 0) {
+                        this->ungot_el = this->buffer[this->cursor - 1];
+                    }
                     this->fillBuffer();
                 }
             } else {

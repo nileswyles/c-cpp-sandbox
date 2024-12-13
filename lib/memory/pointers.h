@@ -4,6 +4,7 @@
 #include "logger.h"
 #include "string_format.h"
 
+#include <stdexcept>
 #include <memory>
 
 #define ESHAREDPTR_GET_PTR(eshared_ptr) eshared_ptr.getPtr(__FILE__, __LINE__)

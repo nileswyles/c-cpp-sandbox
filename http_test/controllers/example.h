@@ -11,6 +11,6 @@ extern HttpResponse * example(HttpRequest * request);
 extern HttpResponse * example2(HttpRequest * request);
 extern HttpResponse * example3(HttpRequest * request);
 
-}
+};
 
 #endif

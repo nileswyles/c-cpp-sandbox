@@ -320,17 +320,11 @@ HttpResponse * HttpConnectionETask::requestDispatcher(HttpRequest * request) {
         this->server->request_filters[i](request);
     }
     HttpResponse * response = nullptr;
-    // lol, should I even bother with content-type?
-    //  let's leave it there until I start building an actual API... might not be as useful as once thought.
-    std::string content_type;
-    if (request->fields["content-type"].size() > 0) {
-        content_type = request->fields["content-type"].front();
-    }
-    if (this->server->request_map[request->url.path].contains("")) {
-        // indicates that the user does not care about content type.
-        response = this->server->request_map[request->url.path][""](request);
-    } else if (this->server->request_map[request->url.path].contains(content_type)) {
-        response = this->server->request_map[request->url.path][content_type](request);
+    RequestProcessor * processor = this->server->request_map[request->url.path];
+    if (processor == nullptr) {
+        response = new HttpResponse;
+    } else {
+        response = processor(request);
     }
     for (size_t i = 0; i < this->server->response_filters.size(); i++) {
         this->server->response_filters[i](response);

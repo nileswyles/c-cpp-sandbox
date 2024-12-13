@@ -10,7 +10,7 @@
 
 using namespace Controller;
 
-// stilll don't understand why Controller:: is needed... but okay
+HTTP_METHOD("/example", example)
 extern HttpResponse * Controller::example(HttpRequest * request) {
     HttpResponse * response = new HttpResponse;
     response->status_code = "200";
@@ -18,6 +18,7 @@ extern HttpResponse * Controller::example(HttpRequest * request) {
     return response;
 }
 
+HTTP_METHOD("/example2", example2)
 extern HttpResponse * Controller::example2(HttpRequest * request) {
     HttpResponse * response = new HttpResponse;
     response->status_code = "200";
@@ -25,6 +26,7 @@ extern HttpResponse * Controller::example2(HttpRequest * request) {
     return response;
 }
 
+HTTP_METHOD("/example3", example3)
 extern HttpResponse * Controller::example3(HttpRequest * request) {
     HttpResponse * response = new HttpResponse;
     response->status_code = "200";

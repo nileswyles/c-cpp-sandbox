@@ -40,26 +40,11 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
 
 static SharedArray<RequestFilter> requestFilters{};
 static SharedArray<ResponseFilter> responseFilters{};
-// TODO:
-// hmm... unordered maps here?
-// and yes you're all crazy this should and was working?
-//  maybe move the initialization of this to constructor of each controller class?
-//      something like Controller classes initialized in main function and receive reference to this map...
-//      and constructor populates... worse because controller initialization still needed? also this? ("because instance functions can't be passed to function pointer args?")
 
-//      alternatively,
-//      define a map in each controller file and main function gets and merges before intializing http server?
-//      maybe that pattern is only required on larger projects?
-static map<std::string, map<std::string, RequestProcessor *>> requestMap{
-    {"/example", {{"application/json", Controller::example }}},
-    {"/example2", {{"multipart/byteranges", Controller::example2 }}},
-    {"/example3", {{"application/x-www-form-urlencoded", Controller::example3 }}},
-    {"/example4", {{"multipart/formdata", Controller::example }}},
-    {"/exampleDontCare", {{"", Controller::example }}} 
-};
+// initialize requestMap --- see http_types.h and example.cpp for more details.
+std::map<std::string, RequestProcessor *> WylesLibs::Http::requestMap = std::map<std::string, RequestProcessor *>();
 
 static HttpServer server_context;
-
 extern Server * WylesLibs::getServerContext() {
     return dynamic_cast<Server *>(&server_context);
 }
@@ -121,7 +106,7 @@ int main(int argc, char * argv[]) {
 
         ESharedPtr<FileManager> file_manager(new FileManager);
         // ESharedPtr<FileManager> file_manager = ESharedPtr<GCSFileManager>(new GCSFileManager("test-bucket-free-tier"));
-        server_context = HttpServer(config, requestMap, requestFilters, responseFilters, upgraders, file_manager); 
+        server_context = HttpServer(config, WylesLibs::Http::requestMap, requestFilters, responseFilters, upgraders, file_manager); 
         server_context.listen(config.address.c_str(), (uint16_t)config.port);
     } catch (const std::exception& e) {
         loggerPrintf(LOGGER_INFO, "%s\n", e.what());

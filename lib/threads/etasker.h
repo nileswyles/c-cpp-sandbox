@@ -396,7 +396,7 @@ namespace WylesLibs {
             } // any other thread paramaters.
 
             ~ETasker() {
-                // pthread_kill(this->timer_thread, SIGKILL);
+                pthread_kill(this->timer_thread, SIGKILL);
                 pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
                 ETasker::thread_specific_sig_handlers.erase(this->timer_thread);
                 pthread_mutex_unlock(&ETasker::thread_specific_sig_handler_mutex);

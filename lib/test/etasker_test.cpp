@@ -20,6 +20,7 @@ using namespace WylesLibs::Test;
 
 static size_t num_runs = 0;
 static size_t num_exited = 0;
+static size_t num_exited_via_signal = 0;
 static std::set<pthread_t> threadsSeen;
 static std::set<pthread_t> threadsSeen2;
 
@@ -52,6 +53,9 @@ class TestETask: public ETask {
 void sig_handler1(int sig) {
     pthread_t pthread = pthread_self();
     if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
+        pthread_mutex_lock(&mutex);
+        num_exited_via_signal++;
+        pthread_mutex_unlock(&mutex);
         ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
         // etasker->threadSigAction(sig, info, context);
         etasker->threadSigAction(sig, nullptr, nullptr);
@@ -264,6 +268,58 @@ void testETaskerThreadLimitFixedPastLimit(TestArg * t) {
     assert(t, expected_elapsed_time, actual_elapsed_time, expected_individual_threads, actual_individual_threads, expected_num_runs);
 }
 
+void testETaskerTimeLimit(TestArg * t) {
+    size_t procs_mul = 4;
+    size_t procs = get_nprocs();
+
+    size_t expected_individual_threads = procs * procs_mul;
+    uint64_t expected_elapsed_time = 13; // > initialize.sleep(5) + run.sleep(5) && < onExit.sleep(5) 
+    size_t expected_num_runs = procs * procs_mul;
+
+    ETasker lol(expected_individual_threads, expected_elapsed_time, false);
+
+    struct timespec prior;
+    clock_gettime(CLOCK_MONOTONIC, &prior);
+
+    ESharedPtr<TestETask> ptr(new TestETask());
+    for (size_t i = 0; i < expected_num_runs; i++) {
+        lol.run(ptr);
+    }
+
+    while (num_exited_via_signal < expected_num_runs) {
+        usleep(270);
+    }
+
+    while (lol.threads() > 0) {}
+    usleep(270);
+
+    struct timespec after;
+    clock_gettime(CLOCK_MONOTONIC, &after);
+
+    uint64_t elapsed_time_s = static_cast<uint64_t>(after.tv_sec - prior.tv_sec);
+
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Precise elapsed time: %lus, %luns\n", elapsed_time_s, after.tv_nsec - prior.tv_nsec);
+
+    size_t actual_individual_threads = threadsSeen.size();
+    printf("\n");
+    loggerPrintf(LOGGER_TEST, "Test Assertion: \n");
+    loggerPrintf(LOGGER_TEST, "Actual Elapsed Time: %lu, Expected Elapsed Time: <=%lu\n", elapsed_time_s, expected_elapsed_time + 1);
+    loggerPrintf(LOGGER_TEST, "Actual Num Runs: %lu, Expected Num Runs: %lu\n", num_runs, expected_num_runs);
+    loggerPrintf(LOGGER_TEST, "Actual Num Exits: %lu, Expected Num Exits: %u\n", num_exited, 0);
+    loggerPrintf(LOGGER_TEST, "Actual Num Exits Via Signal: %lu, Expected Num Exits Via Signal: %lu\n", num_exited_via_signal, expected_num_runs);
+    loggerPrintf(LOGGER_TEST, "Actual Individual Threads: %lu, Expected Individual Threads: %lu\n", actual_individual_threads, expected_individual_threads);
+
+    if (elapsed_time_s > expected_elapsed_time 
+        || num_runs != expected_num_runs 
+        || num_exited != 0
+        || num_exited_via_signal != expected_num_runs
+        || actual_individual_threads != expected_individual_threads) {
+        t->fail = true;
+    } else {
+        t->fail = false;
+    }
+}
+
 static void beforeEach(TestArg * t) {
     num_runs = 0;
     num_exited = 0;
@@ -293,6 +349,7 @@ int main(int argc, char * argv[]) {
     t.addTest(testETaskerThreadLimitFixed);
     t.addTest(testETaskerThreadLimitFixedBursty);
     t.addTest(testETaskerThreadLimitFixedPastLimit);
+    t.addTest(testETaskerTimeLimit);
 
     bool passed = false;
     if (argc > 1) {

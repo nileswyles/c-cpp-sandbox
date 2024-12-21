@@ -110,21 +110,21 @@ void HttpConnectionETask::parseRequest(HttpRequest * request, ByteEStream * io) 
         throw std::runtime_error("Too many fields in request.");
     }
 
-    if (request->method == "POST" && request->fields["content-type"].size() > 0 && request->content_length != SIZE_MAX) {
-        loggerPrintf(LOGGER_DEBUG, "Content-Type: %s, Content-Length: %ld\n", request->fields["content-type"].front().c_str(), request->content_length);
-        if ("application/json" == request->fields["content-type"].front()) {
+    if (request->method == "POST" && request->fields[CONTENT_TYPE_KEY].size() > 0 && request->content_length != SIZE_MAX) {
+        loggerPrintf(LOGGER_DEBUG, "Content-Type: %s, Content-Length: %ld\n", request->fields[CONTENT_TYPE_KEY].front().c_str(), request->content_length);
+        if ("application/json" == request->fields[CONTENT_TYPE_KEY].front()) {
             size_t i = 0;
             request->json_content = Json::parse(io, i);
-        } else if ("application/x-www-form-urlencoded" == request->fields["content-type"].front()) {
+        } else if ("application/x-www-form-urlencoded" == request->fields[CONTENT_TYPE_KEY].front()) {
             request->form_content = KeyValue::parse(io, '&');
-        } else if ("multipart/formdata" == request->fields["content-type"].front()) {
+        } else if ("multipart/formdata" == request->fields[CONTENT_TYPE_KEY].front()) {
             // at 128Kb/s can transfer just under 2Mb (bits...) in 15s.
             //  if set min transfer rate at 128Kb/s, 
             //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
             this->server->setConnectionTimeout(io->fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
             nice(-4);
             Multipart::FormData::parse(io, request->files, request->form_content, this->server->file_manager);
-        } else if ("multipart/byteranges" == request->fields["content-type"].front()) {
+        } else if ("multipart/byteranges" == request->fields[CONTENT_TYPE_KEY].front()) {
         } else {
             request->content = ((EStream<uint8_t> *)io)->read((size_t)request->content_length);
         }
@@ -320,7 +320,7 @@ HttpResponse * HttpConnectionETask::requestDispatcher(HttpRequest * request) {
         this->server->request_filters[i](request);
     }
     HttpResponse * response = nullptr;
-    RequestProcessor * processor = this->server->request_map[request->url.path];
+    RequestProcessor * processor = this->server->request_map[*request];
     if (processor == nullptr) {
         response = new HttpResponse;
     } else {

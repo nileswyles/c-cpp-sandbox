@@ -59,30 +59,30 @@ namespace WylesLibs::Http {
             bool operator!= (HttpRequest& x) {
                 return false == (*this == x) ? true : false;
             }
-            // to support std::map... to support std::unordered_map template overload std::hash for this type. (std::hash<HttpRequest>)
-            //      or implement keyhash and keyequal and pass to template parameters list when declaring std::unordered_map.
-            bool operator< (const HttpRequest& x) {
-                std::string this_string_hash = this->url.path + this->method;
-                std::string x_string_hash = x.url.path + x.method;
-                if (this->fields[CONTENT_TYPE_KEY].size() > 0) {
-                    SharedArray<std::string> this_content_type = this->fields[CONTENT_TYPE_KEY];
-                    this_string_hash += this_content_type.front();
-                    SharedArray<std::string> x_content_type = x.fields[CONTENT_TYPE_KEY];
-                    x_string_hash += x_content_type.front();
-                }
-                return this_string_hash < x_string_hash;
-            }
-            bool operator> (HttpRequest& x) {
-                std::string this_string_hash = this->url.path + this->method;
-                std::string x_string_hash = x.url.path + x.method;
-                if (this->fields[CONTENT_TYPE_KEY].size() > 0) {
-                    SharedArray<std::string> this_content_type = this->fields[CONTENT_TYPE_KEY];
-                    this_string_hash += this_content_type.front();
-                    SharedArray<std::string> x_content_type = x.fields[CONTENT_TYPE_KEY];
-                    x_string_hash += x_content_type.front();
-                }
-                return this_string_hash > x_string_hash;
-            }
+            // // to support std::map... to support std::unordered_map template overload std::hash for this type. (std::hash<HttpRequest>), default comparator is std::less
+            // //      or implement keyhash and keyequal and pass to template parameters list when declaring std::unordered_map.
+            // bool operator< (const HttpRequest& x) {
+            //     std::string this_string_hash = this->url.path + this->method;
+            //     std::string x_string_hash = x.url.path + x.method;
+            //     if (this->fields[CONTENT_TYPE_KEY].size() > 0) {
+            //         SharedArray<std::string> this_content_type = this->fields[CONTENT_TYPE_KEY];
+            //         this_string_hash += this_content_type.front();
+            //         SharedArray<std::string> x_content_type = x.fields[CONTENT_TYPE_KEY];
+            //         x_string_hash += x_content_type.front();
+            //     }
+            //     return this_string_hash < x_string_hash;
+            // }
+            // bool operator> (HttpRequest& x) {
+            //     std::string this_string_hash = this->url.path + this->method;
+            //     std::string x_string_hash = x.url.path + x.method;
+            //     if (this->fields[CONTENT_TYPE_KEY].size() > 0) {
+            //         SharedArray<std::string> this_content_type = this->fields[CONTENT_TYPE_KEY];
+            //         this_string_hash += this_content_type.front();
+            //         SharedArray<std::string> x_content_type = x.fields[CONTENT_TYPE_KEY];
+            //         x_string_hash += x_content_type.front();
+            //     }
+            //     return this_string_hash > x_string_hash;
+            // }
     };
 
     class HttpResponse {
@@ -121,7 +121,22 @@ namespace WylesLibs::Http {
     typedef void(* RequestFilter)(HttpRequest *);
     typedef void(* ResponseFilter)(HttpResponse *);
 
-    extern std::map<HttpRequest, RequestProcessor *> requestMap;
+    class HttpProcessorItem {
+        public:
+            HttpRequest request;
+            RequestProcessor * processor;
+
+            HttpProcessorItem() = default;
+            HttpProcessorItem(HttpRequest request, RequestProcessor * processor): request(request), processor(processor) {}
+            ~HttpProcessorItem() = default;
+
+            bool operator== (HttpProcessorItem& x) {
+                return this->request == x.request;
+            }
+    };
+
+    // extern std::map<HttpRequest, RequestProcessor *> requestMap;
+    extern SharedArray<HttpProcessorItem> requestMap;
 
 // @ static
 
@@ -133,10 +148,12 @@ namespace WylesLibs::Http {
     static_assert(sizeof(Url) == 88);
 
     #define HTTP_GET(path, func, ...) \
-        static auto func ## _map = WylesLibs::Http::requestMap.insert({HttpRequest(std::string(path), std::string("GET"), ##__VA_ARGS__), func});
+        static auto func ## _map = WylesLibs::Http::requestMap.append({HttpRequest(std::string(path), std::string("GET"), ##__VA_ARGS__), func});
+        // static auto func ## _map = WylesLibs::Http::requestMap.insert({HttpRequest(std::string(path), std::string("GET"), ##__VA_ARGS__), func});
 
     #define HTTP_POST(path, func, ...) \
-        static auto func ## _map = WylesLibs::Http::requestMap.insert({HttpRequest(std::string(path), std::string("POST"), ##__VA_ARGS__), func});
+        static auto func ## _map = WylesLibs::Http::requestMap.append({HttpRequest(std::string(path), std::string("POST"), ##__VA_ARGS__), func});
+        // static auto func ## _map = WylesLibs::Http::requestMap.insert({HttpRequest(std::string(path), std::string("POST"), ##__VA_ARGS__), func});
 };
 
 #endif

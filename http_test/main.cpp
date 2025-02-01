@@ -42,7 +42,8 @@ static SharedArray<RequestFilter> requestFilters{};
 static SharedArray<ResponseFilter> responseFilters{};
 
 // initialize requestMap --- see http_types.h and example.cpp for more details.
-std::map<HttpRequest, RequestProcessor *> WylesLibs::Http::requestMap = std::map<HttpRequest, RequestProcessor *>();
+// std::map<HttpRequest, RequestProcessor *> WylesLibs::Http::requestMap = std::map<HttpRequest, RequestProcessor *>();
+SharedArray<HttpProcessorItem> WylesLibs::Http::requestMap = SharedArray<HttpProcessorItem>();
 
 static HttpServer server_context;
 extern Server * WylesLibs::getServerContext() {

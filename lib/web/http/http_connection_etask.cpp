@@ -319,11 +319,12 @@ HttpResponse * HttpConnectionETask::requestDispatcher(HttpRequest * request) {
     for (size_t i = 0; i < this->server->request_filters.size(); i++) {
         this->server->request_filters[i](request);
     }
-    HttpResponse * response = nullptr;
-    RequestProcessor * processor = this->server->request_map[*request];
-    if (processor == nullptr) {
-        response = new HttpResponse;
-    } else {
+    HttpResponse * response = new HttpResponse;
+
+    HttpProcessorItem test_item(*request, nullptr);
+    if (this->server->request_map.contains(test_item)) {
+        RequestProcessor * processor = this->server->request_map[test_item].processor;
+        delete response;
         response = processor(request);
     }
     for (size_t i = 0; i < this->server->response_filters.size(); i++) {

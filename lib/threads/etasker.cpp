@@ -75,6 +75,9 @@ void ETasker::threadSigAction(int sig, siginfo_t * info, void * context) {
     pthread_t pthread = pthread_self();
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "sig action: %d for pthread %ld\n", sig, pthread);
     if (sig == SIGKILL && pthread == this->timer_thread) {
+        pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
+        ETasker::thread_specific_sig_handlers.erase(this->timer_thread);
+        pthread_mutex_unlock(&ETasker::thread_specific_sig_handler_mutex);
         pthread_exit(NULL);
     } else {
         this->threadTeardown(false);
@@ -191,6 +194,7 @@ void ETasker::threadTeardown(bool force) {
         pthread_mutex_unlock(&this->mutex); // because deadlocks?
 
         pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
+        // ! IMPORTANT - we don't want dangling ptrs
         ETasker::thread_specific_sig_handlers.erase(pthread);
         pthread_mutex_unlock(&ETasker::thread_specific_sig_handler_mutex);
 

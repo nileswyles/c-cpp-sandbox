@@ -134,7 +134,8 @@ class HttpServer: public Server {
 
     public:
         RequestProcessor * processor;
-        std::map<HttpRequest, RequestProcessor *> request_map;
+        SharedArray<HttpProcessorItem> request_map;
+        // std::map<HttpRequest, RequestProcessor *> request_map;
         SharedArray<RequestFilter> request_filters;
         SharedArray<ResponseFilter> response_filters;
         SharedArray<ConnectionUpgrader *> upgraders;
@@ -152,15 +153,16 @@ class HttpServer: public Server {
 
         HttpServer() = default;
         HttpServer(HttpServerConfig config, 
-                        std::map<HttpRequest, RequestProcessor *> request_map, 
+                        // std::map<HttpRequest, RequestProcessor *> request_map, 
+                        SharedArray<HttpProcessorItem> request_map, 
                         SharedArray<RequestFilter> request_filters, SharedArray<ResponseFilter> response_filters, 
                         SharedArray<ConnectionUpgrader *> upgraders, ESharedPtr<FileManager> file_manager) {
 
             loggerExec(LOGGER_DEBUG_VERBOSE,
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Request Paths: \n");
-                for (auto p: WylesLibs::Http::requestMap) {
-                    loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", p.first.url.path.c_str());
-                }
+                // for (auto p: WylesLibs::Http::requestMap) {
+                //     loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", p.first.url.path.c_str());
+                // }
             )
             this->config = config;
             this->request_map = request_map;

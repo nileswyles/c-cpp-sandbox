@@ -36,7 +36,7 @@ LoopCriteriaState ByteIsCharClassCriteria::nextState(uint8_t& c) {
 }
 
 void ByteStringCollector::initialize() {
-    this->data = std::string();
+    this->data = "";
 }
 
 void ByteStringCollector::accumulate(uint8_t& c) {

@@ -319,13 +319,15 @@ HttpResponse * HttpConnectionETask::requestDispatcher(HttpRequest * request) {
     for (size_t i = 0; i < this->server->request_filters.size(); i++) {
         this->server->request_filters[i](request);
     }
-    HttpResponse * response = new HttpResponse;
+    HttpResponse * response = nullptr;
 
     HttpProcessorItem test_item(*request, nullptr);
     if (this->server->request_map.contains(test_item)) {
         RequestProcessor * processor = this->server->request_map[test_item].processor;
-        delete response;
         response = processor(request);
+    }
+    if (response == nullptr) {
+        response = new HttpResponse;
     }
     for (size_t i = 0; i < this->server->response_filters.size(); i++) {
         this->server->response_filters[i](response);

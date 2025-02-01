@@ -346,6 +346,7 @@ namespace WylesLibs {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Stack size          = %zu bytes\n", v);
             }
             static void * timerProcessStatic(void * ptr) {
+                sleep(1); // lol...
                 ETasker * tasker = static_cast<ETasker *>(ptr);
                 return tasker->timerProcess(ptr);
             }

@@ -354,6 +354,7 @@ namespace WylesLibs {
                 return thread_arg->tasker->threadContext(ptr);
             }
             static pthread_mutex_t thread_specific_sig_handler_mutex;
+            bool hasThreads();
             int taskRun(ESharedPtr<ETask> task);
             void * timerProcess(void * arg);
             void * threadContext(void * arg);
@@ -399,17 +400,17 @@ namespace WylesLibs {
                     pthread_t pthread = i.first;
                     pthread_kill(pthread, SIGKILL);
                 }
+                pthread_mutex_unlock(&this->mutex);
                 size_t teardown_timeout_s = 7;
-                while (teardown_timeout_s > 0 && (this->thread_pool.size() > 0 || true == ETasker::thread_specific_sig_handlers.contains(this->timer_thread))) {
+                while (teardown_timeout_s > 0 && true == this->hasThreads()) {
                     sleep(1);
                     teardown_timeout_s--;
                 }
-                if (teardown_timeout_s == 0 && (this->thread_pool.size() > 0 || true == ETasker::thread_specific_sig_handlers.contains(this->timer_thread))) {
+                if (teardown_timeout_s == 0 && true == this->hasThreads()) {
                     std::string msg("Failed to teardown threads within specified timeout.");
                     loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 }
-                pthread_mutex_unlock(&this->mutex);
                 pthread_mutex_destroy(&this->mutex);
             }
 

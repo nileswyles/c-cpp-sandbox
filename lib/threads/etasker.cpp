@@ -41,6 +41,17 @@ int ETasker::run(ESharedPtr<ETask> task) {
     return ret;
 }
 
+bool ETasker::hasThreads() {
+    pthread_mutex_lock(&this->mutex);
+    bool has_threads = this->thread_pool.size() > 0;
+    pthread_mutex_unlock(&this->mutex);
+
+    pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
+    has_threads = has_threads || true == ETasker::thread_specific_sig_handlers.contains(this->timer_thread);
+    pthread_mutex_unlock(&ETasker::thread_specific_sig_handler_mutex);
+    return has_threads;
+}
+
 int ETasker::taskRun(ESharedPtr<ETask> task) {
     // this is most definetly not necessary but to demonstrate cool club behaviour? I think it's implied these are reallocated by pthread_create?
     pthread_t * thread = new pthread_t;

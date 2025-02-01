@@ -379,10 +379,7 @@ namespace WylesLibs {
 
                 // intialize timer
                 ETasker::setTimerThreadAttributes(&timer_attr);
-                pthread_create(&this->timer_thread, &timer_attr, ETasker::timerProcessStatic, this);
-                pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
-                ETasker::thread_specific_sig_handlers[this->timer_thread] = this;
-                pthread_mutex_unlock(&ETasker::thread_specific_sig_handler_mutex);
+                pthread_create(&timer_thread, &timer_attr, ETasker::timerProcessStatic, this);
 
                 if (true == fixed) {
                     int nprocs = get_nprocs();
@@ -403,11 +400,11 @@ namespace WylesLibs {
                     pthread_kill(pthread, SIGKILL);
                 }
                 size_t teardown_timeout_s = 7;
-                while (teardown_timeout_s > 0 && this->thread_pool.size() > 0) {
+                while (teardown_timeout_s > 0 && (this->thread_pool.size() > 0 || true == ETasker::thread_specific_sig_handlers.contains(this->timer_thread))) {
                     sleep(1);
                     teardown_timeout_s--;
                 }
-                if (teardown_timeout_s == 0) {
+                if (teardown_timeout_s == 0 && (this->thread_pool.size() > 0 || true == ETasker::thread_specific_sig_handlers.contains(this->timer_thread))) {
                     std::string msg("Failed to teardown threads within specified timeout.");
                     loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);

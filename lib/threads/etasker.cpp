@@ -53,6 +53,11 @@ int ETasker::taskRun(ESharedPtr<ETask> task) {
 void * ETasker::timerProcess(void * arg) {
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "Logging Thread Atrributes for the ETasker Timer thread: \n");
     ETasker::logThreadAttributes(&this->timer_attr);
+
+    pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
+    ETasker::thread_specific_sig_handlers[timer_thread] = this;
+    pthread_mutex_unlock(&ETasker::thread_specific_sig_handler_mutex);
+
     while(1) {
         pthread_mutex_lock(&this->mutex);
         for (auto i: this->thread_pool) {

@@ -411,6 +411,8 @@ namespace WylesLibs {
                     std::string msg("Failed to teardown threads within specified timeout.");
                     loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
+                } else {
+                    sleep(1);
                 }
                 pthread_mutex_destroy(&this->mutex);
             }

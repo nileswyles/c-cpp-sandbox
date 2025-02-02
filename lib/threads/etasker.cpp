@@ -83,7 +83,7 @@ void * ETasker::timerProcess(void * arg) {
             }
         }
         pthread_mutex_unlock(&this->mutex);
-        sleep(4); // thread priority is set to the maximum so decided +-4 seconds to further free up the core for other processes in the system.
+        sleep(4); // thread priority is set to the maximum so decided on +-4 seconds to further free up the core for other processes in the system.
     }
 }
 

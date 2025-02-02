@@ -328,6 +328,10 @@ class EStream: public EStreamI<T> {
             T el = this->peek();
             // TODO:
             //  would be interesting to support multiple criteria and specify some logic about how they relate... maybe a criteria that combines some?
+            //  the thought here is maybe I can create a better abstraction for state machines or logic?
+            //  dry state-machines, lol idk... 
+            //  criteria1 or criteria2 and criteria3 where criteria are themselves state machines?
+            //  maybe not very useful.
             while (criteria->nextState(el) & LOOP_CRITERIA_STATE_GOOD) {
                 this->get();
                 if (task == nullptr) {

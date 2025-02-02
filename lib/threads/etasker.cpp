@@ -43,7 +43,7 @@ int ETasker::run(ESharedPtr<ETask> task) {
 
 bool ETasker::hasThreads() {
     pthread_mutex_lock(&this->mutex);
-    bool has_threads = this->thread_pool.size() > 0;
+    bool has_threads = this->num_threads > 0;
     pthread_mutex_unlock(&this->mutex);
 
     pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);

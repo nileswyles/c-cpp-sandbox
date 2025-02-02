@@ -412,7 +412,7 @@ namespace WylesLibs {
                     loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", msg.c_str());
                     throw std::runtime_error(msg);
                 } else {
-                    sleep(1);
+                    sleep(1); // give enough time for pthread_exit to finish on all threads.
                 }
                 pthread_mutex_destroy(&this->mutex);
             }

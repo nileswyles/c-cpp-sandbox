@@ -527,11 +527,8 @@ class TestReadElsReaderTask: public StreamTask<uint32_t, SharedArray<uint32_t>> 
         ~TestReadElsReaderTask() {}
         void initialize() override final {
             element_count = 0;
- 
         }
-        void flush() override final {
- 
-        }
+        void flush() override final {}
         void perform(uint32_t& el) override final {
             uint32_t e = el;
             if (++element_count == 2) {
@@ -554,8 +551,7 @@ static void testReadElsReaderTask(TestArg * t) {
         0x44444444
     };
     TestReadElsReaderTask task;
-    // ! IMPORTANT (TODO?) - implicit type coersion works but explicit casting to abstract type doesn't? lol sure, if this becomes an issue then default behaviour is just pass-through. 
-    SharedArray<uint32_t> result = reader.readEls(4, &task);
+    SharedArray<uint32_t> result = reader.readEls(4, static_cast<StreamTask<uint32_t, SharedArray<uint32_t>> *>(&task));
 
     readElsAssert<uint32_t>(t, result, expected);
 }

@@ -351,30 +351,28 @@ static void testJsonArray(TestArg * t) {
     try {
         size_t i = 0;
         JsonValue * obj = ESHAREDPTR_GET_PTR(parse(s));
-        if (obj != nullptr) {
-            printf("Object type: %d\n", obj->type);
-            if (obj->type == WylesLibs::Parser::Json::ARRAY) {
-                loggerPrintf(LOGGER_TEST_VERBOSE, "JSON to Parse: \n");
-                loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(s).c_str());
-                JsonArray * values = dynamic_cast<JsonArray *>(obj);
-                loggerPrintf(LOGGER_TEST_VERBOSE, "Parsed JSON Array: \n");
-                loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(values->toJsonString()).c_str());
-                size_t validation_count = 0;
-                for (size_t i = 0; i < values->size(); i++) {
-                    JsonValue * value = values->at(i);
-                    if (value->type == BOOLEAN) {
-                        bool actual = ((JsonBoolean *)value)->getValue();
-                        if (expected[i] == actual) {
-                            validation_count++;
-                        }
+        printf("Object type: %u\n", obj->type);
+        if (obj->type == WylesLibs::Parser::Json::ARRAY) {
+            loggerPrintf(LOGGER_TEST_VERBOSE, "JSON to Parse: \n");
+            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(s).c_str());
+            JsonArray * values = dynamic_cast<JsonArray *>(obj);
+            loggerPrintf(LOGGER_TEST_VERBOSE, "Parsed JSON Array: \n");
+            loggerPrintf(LOGGER_TEST_VERBOSE, "%s\n", pretty(values->toJsonString()).c_str());
+            size_t validation_count = 0;
+            for (size_t i = 0; i < values->size(); i++) {
+                JsonValue * value = values->at(i);
+                if (value->type == BOOLEAN) {
+                    bool actual = ((JsonBoolean *)value)->getValue();
+                    if (expected[i] == actual) {
+                        validation_count++;
                     }
                 }
-                if (validation_count == 4 && values->size() == 4) {
-                    t->fail = false;
-                }
-            } else {
-                loggerPrintf(LOGGER_TEST_VERBOSE, "Invalid object type.\n");
             }
+            if (validation_count == 4 && values->size() == 4) {
+                t->fail = false;
+            }
+        } else {
+            loggerPrintf(LOGGER_TEST_VERBOSE, "Invalid object type.\n");
         }
     } catch (const std::exception& e) {
         std::cout << "Exception: \n" << e.what() << '\n';

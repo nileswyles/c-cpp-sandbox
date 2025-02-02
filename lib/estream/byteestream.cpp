@@ -239,13 +239,13 @@ void SSLEStream::fillBuffer() {
     this->cursor = 0;
     ssize_t ret = SSL_read(this->ssl, this->buffer, this->buffer_size * sizeof(uint8_t)); // TODO: sizeof(uint8_t) == 1;
     // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
-    if (ret <= 0 || (size_t)ret > this->buffer_size) {
+    if (ret <= 0 || (size_t)ret > this->buffer_size * sizeof(uint8_t)) {
         this->els_in_buffer = 0;
         loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
         this->flags |= std::ios_base::badbit;
         throw std::runtime_error("Read error.");
     } else {
-        this->els_in_buffer = ret;
+        this->els_in_buffer = ret / sizeof(uint8_t);
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld els from tls layer.\n", ret);
     }
 }

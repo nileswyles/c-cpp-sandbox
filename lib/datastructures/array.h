@@ -485,7 +485,7 @@ class Array {
             return (this->e_buf)[this->size()-1];
         }
         std::string toString() {
-            return std::string((char *)(this->e_buf), this->size());
+            return std::string((char *)(this->e_buf), this->size() * sizeof(T));
         }
         T& operator[] (const size_t pos) {
             size_t i = pos;

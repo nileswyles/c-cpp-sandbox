@@ -116,13 +116,13 @@ class EStream: public EStreamI<T> {
             this->cursor = 0;
             ssize_t ret = ::read(this->fd, this->buffer, this->buffer_size * sizeof(T));
             // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
-            if (ret <= 0 || (size_t)ret > this->buffer_size) {
+            if (ret <= 0 || (size_t)ret > this->buffer_size * sizeof(T)) {
                 this->els_in_buffer = 0;
                 loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
                 this->flags |= std::ios_base::badbit;
                 throw std::runtime_error("Read error.");
             } else {
-                this->els_in_buffer = ret;
+                this->els_in_buffer = ret / sizeof(T);
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld els from transport layer.\n", ret);
             }
         }

@@ -70,6 +70,15 @@ static void readUntilAssert(TestArg * t, std::string result, std::string expecte
     ASSERT_STRING(t, result, expected);
 }
 
+template<typename T>
+static void readElsAssert(TestArg * t, SharedArray<T> result, SharedArray<T> expected) {
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n'%s'\n", buffer_start);
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Expected String: %s\n", expected.toString().c_str());
+    loggerPrintf(LOGGER_TEST_VERBOSE, "Actual String: %s\n", result.toString().c_str());
+
+    ASSERT_ARRAY<T>(t, result, expected);
+}
+
 static void readNaturalAssert(TestArg * t, ByteEStream& r, std::tuple<uint64_t, size_t> result, std::tuple<uint64_t, size_t> expected, char expected_until) {
     uint64_t actual_num = std::get<0>(result);
     size_t actual_num_digits = std::get<1>(result);
@@ -330,7 +339,7 @@ static void testReadUntilAllowExtract(TestArg * t) {
 
     setTestString("\"TESTSTRINGWITHSPACE\"    ");
 
-    ReaderTaskAllow allow("ABC\"");
+    ReaderTaskAllow allow("A\"BC");
     ReaderTaskExtract extract('"', '"');
     allow.next_operation = &extract;
     std::string result = reader.read(" ", (ReaderTask *)&allow).toString();
@@ -464,12 +473,91 @@ static void testReadUntilAtEndOfStreamButAlsoUntil(TestArg * t) {
 }
 
 static void testReadEls(TestArg * t) {
+    EStream<uint32_t> reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    // 0x41414141 0x42424242 0x43434343 0x44444444
+    setTestString("AAAABBBBCCCCDDDD");
+
+    SharedArray<uint32_t> expected{
+        0x41414141,
+        0x42424242,
+        0x43434343,
+        0x44444444
+    };
+    SharedArray<uint32_t> result = reader.readEls(4);
+
+    readElsAssert<uint32_t>(t, result, expected);
 }
 
 static void testReadElsFullBuffer(TestArg * t) {
+    const size_t buffer_size = 4;
+    EStream<uint32_t> reader(1, buffer_size);
+
+    // 0x41414141 0x42424242 0x43434343 0x44444444
+    setTestString("AAAABBBBCCCCDDDD");
+
+    SharedArray<uint32_t> expected{
+        0x41414141,
+        0x42424242,
+        0x43434343,
+        0x44444444
+    };
+    SharedArray<uint32_t> result = reader.readEls(buffer_size);
+
+    readElsAssert<uint32_t>(t, result, expected);
+
+    if (t->fail == true) {
+        return;
+    }
+    t->fail = true;
+
+    try {
+        SharedArray<uint32_t> lol = reader.readEls(1);
+        loggerPrintf(LOGGER_TEST_VERBOSE, "Read didn't throw an exception: 0x%X", lol.at(0));
+    } catch(std::exception& e) {
+        loggerPrintf(LOGGER_TEST_VERBOSE, "Exception: %s\n", e.what());
+        t->fail = false;
+    }
 }
 
+class TestReadElsReaderTask: public StreamTask<uint32_t, SharedArray<uint32_t>> {
+    public:
+        size_t element_count;
+        TestReadElsReaderTask() {}
+        ~TestReadElsReaderTask() {}
+        void initialize() override final {
+            element_count = 0;
+ 
+        }
+        void flush() override final {
+ 
+        }
+        void perform(uint32_t& el) override final {
+            uint32_t e = el;
+            if (++element_count == 2) {
+                e = 0x45454545;
+            }
+            this->collectorAccumulate(e);
+        }
+};
+
 static void testReadElsReaderTask(TestArg * t) {
+    EStream<uint32_t> reader(1, READER_RECOMMENDED_BUF_SIZE);
+
+    // 0x41414141 0x42424242 0x43434343 0x44444444
+    setTestString("AAAABBBBCCCCDDDD");
+
+    SharedArray<uint32_t> expected{
+        0x41414141,
+        0x45454545,
+        0x43434343,
+        0x44444444
+    };
+    TestReadElsReaderTask task;
+    // ! IMPORTANT (TODO?) - implicit type coersion works but explicit casting to abstract type doesn't? lol sure, if this becomes an issue then default behaviour is just pass-through. 
+    SharedArray<uint32_t> result = reader.readEls(4, &task);
+
+    readElsAssert<uint32_t>(t, result, expected);
 }
 
 static void testPeek(TestArg * t) {
@@ -623,8 +711,7 @@ static void testReadNaturalUntilNoConsume(TestArg * t) {
 
 static void testReadNaturalN(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
-    std::string data("100000");
-    setTestString(data.c_str());
+    setTestString("100000");
 
     std::tuple<uint64_t, size_t> result = reader.readNatural(6);
     readNaturalAssert(t, reader, result, std::make_tuple(100000, 6), '|');

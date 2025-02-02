@@ -123,10 +123,10 @@ namespace WylesLibs::Http {
     static_assert(sizeof(Url) == 88);
 
     #define HTTP_GET(path, func, ...) \
-        static auto func ## _map = WylesLibs::Http::requestMap.append({HttpRequest(std::string(path), std::string("GET"), ##__VA_ARGS__), func});
+        static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("GET"), ##__VA_ARGS__), func});
 
     #define HTTP_POST(path, func, ...) \
-        static auto func ## _map = WylesLibs::Http::requestMap.append({HttpRequest(std::string(path), std::string("POST"), ##__VA_ARGS__), func});
+        static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("POST"), ##__VA_ARGS__), func});
 };
 
 #endif

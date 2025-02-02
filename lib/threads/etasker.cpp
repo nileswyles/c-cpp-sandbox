@@ -143,7 +143,7 @@ void * ETasker::threadContext(void * arg) {
             terminate = true;
         }
         if (true == terminate) {
-            // to ensure exception object is deallocated? it says not globally allocated but does that imply it's placed on the stack lololol?
+            // make sure is called pthread_exit after the exception object is deallocated - documentation says it's not globally allocated but does that imply it's on the stack lololol? 
             //      VAGINA
             this->threadTeardown(true);
         }

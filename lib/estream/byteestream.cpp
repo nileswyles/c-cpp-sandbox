@@ -92,14 +92,7 @@ std::tuple<double, size_t> DecimalCollector::collect() {
 }
 
 SharedArray<uint8_t> ByteEStream::read(std::string until, ReaderTask * operation, bool inclusive) {
-    // TODO:
-    // So, this works, but this doesn't?
-    //  I think this is BS...
-    //  I think the correct behaviour is that the derived classes inherit base interface
-    //      with the access level defined by the access specifier before the name in the class definition.
     return EStream<uint8_t>::read(SharedArray<uint8_t>(until), operation, inclusive);
-    // This doesn't work...
-    //  if (LOOP_CRITERIA_UNTIL_MATCH == LoopCriteriaInfo<uint8_t>::info.mode) {
 }
 
 std::string ByteEStream::readString(size_t n, StreamTask<uint8_t, std::string> * operation) {

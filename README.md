@@ -36,3 +36,5 @@ Usage:
 The following example runs the http_server application:
 
 ```./build_scripts/tests.pl -l 4```
+
+This is a work in progress - it's currently not stable.

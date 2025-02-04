@@ -1,8 +1,9 @@
 #include "web/http/http.h"
+#include "web/http/http_types.h"
 #include "web/http/connection.h"
 #include "web/http/config.h"
+#include "web/http/http_connection_etask.h"
 #include "web/services.h"
-#include "web/server_context.h"
 
 #include "controllers/example.h"
 
@@ -10,6 +11,8 @@
 #ifdef WYLESLIBS_GCS_BUILD
 #include "file/file_gcs.h"
 #endif
+
+#include <pthread.h>
 
 #ifndef LOGGER_HTTP_SERVER_TEST
 #define LOGGER_HTTP_SERVER_TEST 1
@@ -37,94 +40,77 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
 
 static SharedArray<RequestFilter> requestFilters{};
 static SharedArray<ResponseFilter> responseFilters{};
-// TODO:
-// hmm... unordered maps here?
-// and yes you're all crazy this should and was working?
-//  maybe move the initialization of this to constructor of each controller class?
-//      something like Controller classes initialized in main function and receive reference to this map...
-//      and constructor populates... worse because controller initialization still needed? also this? ("because instance functions can't be passed to function pointer args?")
 
-//      alternatively,
-//      define a map in each controller file and main function gets and merges before intializing http server?
-//      maybe that pattern is only required on larger projects?
-static map<std::string, map<std::string, RequestProcessor *>> requestMap{
-    {"/example", {{"application/json", Controller::example }}},
-    {"/example2", {{"multipart/byteranges", Controller::example2 }}},
-    {"/example3", {{"application/x-www-form-urlencoded", Controller::example3 }}},
-    {"/example4", {{"multipart/formdata", Controller::example }}},
-    {"/exampleDontCare", {{"", Controller::example }}} 
-};
+// initialize requestMap --- see http_types.h and controllers/example.cpp for more details.
+SharedArray<HttpProcessorItem> WylesLibs::Http::requestMap = SharedArray<HttpProcessorItem>();
 
-// Generally, direct access to global contexts (state) are frowned upon... but this should be fine...
-//    alternatively, can move this to each service layer module...
-//    or pass along 'only' via function params... (absolutely not, some centralization is needed to keep this from becoming a mess.) 
+static HttpServer server_context;
+extern Server * WylesLibs::getServerContext() {
+    return dynamic_cast<Server *>(&server_context);
+}
 
-// But again, it might depend on the application? This is an example application to illustrate how you would use the http library...
-static ServerContext * server_context = nullptr;
-
-// again, why?
-extern ServerContext * WylesLibs::getServerContext() {
-    // LOL
-    if (server_context == nullptr) {
-        std::string msg = "ServerContext is a null pointer.";
-        loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
-        throw std::runtime_error(msg);
+// ! IMPORTANT - this pattern must be implemented in all multithreaded applications that leverage the etasker stuff.
+void sig_handler(int sig, siginfo_t * info, void * context) {
+    pthread_t pthread = pthread_self();
+    if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
+        ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
+        etasker->threadSigAction(sig, info, context);
     } else {
-        return server_context;
+        raise(sig);
     }
 }
 
-static HttpConnection connection;
+void sig_handler1(int sig) {
+    pthread_t pthread = pthread_self();
+    if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
+        ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
+        etasker->threadSigAction(sig, nullptr, nullptr);
+    } else {
+        raise(sig);
+    }
+}
 
-static uint8_t connectionHandler(int conn_fd) {
-    // because instance functions can't be passed to function pointer args?
-    return connection.onConnection(conn_fd);
+void initProcessSigHandler() {
+    // struct sigaction act = { 0 };
+    // act.sa_flags = SA_SIGINFO;
+    // act.sa_sigaction = &sig_handler;
+    // if (sigaction(SIGKILL, &act, NULL) == -1 || sigaction(SIGSEGV, &act, NULL) == -1) {
+    //     std::string msg("Failed to configure sig action and sig handler.\n");
+    //     loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
+    //     throw std::runtime_error(msg);
+    // }
+
+    // workaround because idk?
+    signal(SIGKILL, sig_handler1);
+    signal(SIGSEGV, sig_handler1);
 }
 
 int main(int argc, char * argv[]) {
-    int ret = 0;
+    int exit_value = 0;
     try {
-        // ! IMPORTANT
-        // Might be good to get in the habit of evaluating size of types used from libs to determine whether to malloc or not?
-        //  modern stack sizes are large enough but might matter in an embedded system?
-        //  can also just look at header file...
-        //  you can't assume they ptr everything and there's actually a compelling argument to not.
-        //  More generally, larger stack size allocations vs larger heap.
-
-        //  so, if need access to more memory you can call new where needed at point of creation of each thread. Like here.
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpConnection: %lu, Size of ServerContext: %lu\n", sizeof(HttpConnection), sizeof(ServerContext));
-        // if you see this in header files, then maybe their worthy lol...
-        // static_assert(sizeof(HttpConnection) == 0); 
-        // but maybe this isn't a good idea because now we definetly have this type in program?
-        // static_assert(sizeof(Array<uint8_t>) == 0); 
-
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Launching HTTP Server.\n");
-        HttpServerConfig config("config.json");
-        // ServerContext context(config, std::dynamic_pointer_cast<FileManager>(ESharedPtr<GCSFileManager>(ESharedPtr<GCSFileManager>(std::make_shared<GCSFileManager>("test-bucket-free-tier")))));
-        ServerContext context(config);
-        server_context = &context;
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpServer: %lu\n", sizeof(HttpServer));
 
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created config object.\n");
+        initProcessSigHandler();
+
+        HttpServerConfig config("config.json");
+        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Size of HttpServerConfig: %lu\n", sizeof(HttpServerConfig));
+
         SharedArray<ConnectionUpgrader *> upgraders;
         WebsocketJsonRpcConnection upgrader("/testpath", "jsonrpc");
+
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created upgrader object.\n");
         ConnectionUpgrader * upgrader_ptr = &upgrader;
         upgraders.append(upgrader_ptr);
-        // upgraders.append(&upgrader_ptr, 1);
-    
         fileWatcherThreadStart();
 
-        connection = HttpConnection(config, requestMap, requestFilters, responseFilters, upgraders, context.file_manager); 
-        connection.initialize();
-
-        loggerPrintf(LOGGER_DEBUG_VERBOSE, "Created connection object.\n");
-        serverListen(config.address.c_str(), (uint16_t)config.port, connectionHandler);
+        ESharedPtr<FileManager> file_manager(new FileManager);
+        // ESharedPtr<FileManager> file_manager = ESharedPtr<GCSFileManager>(new GCSFileManager("test-bucket-free-tier"));
+        server_context = HttpServer(config, WylesLibs::Http::requestMap, requestFilters, responseFilters, upgraders, file_manager); 
+        server_context.listen(config.address.c_str(), (uint16_t)config.port);
     } catch (const std::exception& e) {
-        // loggerPrintf(LOGGER_INFO, "%s\n", std::stacktrace::current().to_string().c_str());
-        // redundant try/catch? let's show where exception handled...
         loggerPrintf(LOGGER_INFO, "%s\n", e.what());
-        // exit program same way as if this weren't caught...
-        throw e;
+        exit_value = 1;
     }
-    return ret;
+    return exit_value;
 }

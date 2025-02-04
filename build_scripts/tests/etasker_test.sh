@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TEST_ARG=""
-DEFINES="-DWYLESLIBS_LOGGER_TIME_DISABLED=1 "
+DEFINES=""
 LOG_LEVEL=0
 while true; do
 	case "$1" in
@@ -16,7 +16,7 @@ if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
 fi
 
 SRC_FILES="
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/string_format_test.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/etasker_test.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
@@ -26,8 +26,9 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/threads/etasker.cpp
 "
 
-CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n string_format_test $SRC_FILES --log $LOG_LEVEL $DEFINES$TEST_ARG"
+CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n etasker_test $SRC_FILES --log $LOG_LEVEL $DEFINES$TEST_ARG"
 echo "    "$CMD
 exec $CMD

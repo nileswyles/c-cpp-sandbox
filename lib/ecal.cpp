@@ -159,7 +159,7 @@ extern std::string WylesLibs::Cal::getFormattedDateTime(int16_t offset, WylesLib
         if (offset != 0) {
             formatted_offset = WylesLibs::format("{+d}:{-02d}", static_cast<int64_t>(offset/100), static_cast<int64_t>(offset));
         }
-        return WylesLibs::format("{s} {u} {u}, {u}:{u}:{u} ", MONTH_NAME[month], static_cast<uint64_t>(day + 1), static_cast<uint64_t>(year), static_cast<uint64_t>(hr), static_cast<uint64_t>(min), static_cast<uint64_t>(sec)) + formatted_offset;
+        return WylesLibs::format("{s} {u} {u}, {02u}:{02u}:{02u} ", MONTH_NAME[month], static_cast<uint64_t>(day + 1), static_cast<uint64_t>(year), static_cast<uint64_t>(hr), static_cast<uint64_t>(min), static_cast<uint64_t>(sec)) + formatted_offset;
     } else if (format == WylesLibs::Cal::ISO8601_READABLE) {
         if (offset != 0) {
             formatted_offset = WylesLibs::format("{+d}:{-02d}", static_cast<int64_t>(offset/100), static_cast<int64_t>(offset));
@@ -244,7 +244,7 @@ static int16_t parseReadableOffset(ByteEStream &s) {
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }// read space
-        res = s.readNatural();
+        res = s.readNatural(2);
         int8_t min_offset = static_cast<uint8_t>(std::get<0>(res));
         if (std::get<1>(res) > 2) {
             std::string msg = "Error parsing offset min.";
@@ -359,12 +359,13 @@ static uint64_t parseISO8601ReadableDateTime(ByteEStream& s) {
     isValidMin(min, std::get<1>(res));
     epoch_seconds += min * SECONDS_PER_MINUTE;
 
-    res = s.readNatural("Z+-");
+    res = s.readNatural("Z+-", false);
     uint8_t sec = static_cast<uint8_t>(std::get<0>(res));
     isValidSec(sec, std::get<1>(res));
     epoch_seconds += sec;
 
-    s.unget();
+    // TODO: ungetting wasn't working.
+    // s.unget();
     epoch_seconds += parseReadableOffset(s);
 
     return epoch_seconds;

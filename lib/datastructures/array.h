@@ -485,7 +485,7 @@ class Array {
             return (this->e_buf)[this->size()-1];
         }
         std::string toString() {
-            return std::string((char *)(this->e_buf), this->size());
+            return std::string((char *)(this->e_buf), this->size() * sizeof(T));
         }
         T& operator[] (const size_t pos) {
             size_t i = pos;
@@ -507,6 +507,7 @@ class Array {
             size_t i = this->find(el);
             if (i == SIZE_MAX) {
                 this->append(el); 
+                // TODO: must have at least one element?
                 i = this->size() - 1;
             }
             return (this->e_buf)[i];

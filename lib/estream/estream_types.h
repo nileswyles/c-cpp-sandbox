@@ -67,7 +67,9 @@ namespace WylesLibs {
             virtual LoopCriteriaState untilSizeNext() {
                 if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_NOT_GOOD && this->loop_criteria_info.until_size > 0) {
                     this->loop_criteria_info.state = LOOP_CRITERIA_STATE_GOOD;
-                } else if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_GOOD && this->loop_criteria_info.until_size <= 0) {
+                } else if (this->loop_criteria_info.state == LOOP_CRITERIA_STATE_GOOD && this->loop_criteria_info.until_size == 1) {
+                    this->loop_criteria_info.state = LOOP_CRITERIA_STATE_GOOD_AT_LAST;
+                } else if (this->loop_criteria_info.state & LOOP_CRITERIA_STATE_GOOD && this->loop_criteria_info.until_size <= 0) {
                     this->loop_criteria_info.state = LOOP_CRITERIA_STATE_NOT_GOOD;
                 }
                 this->loop_criteria_info.until_size--;
@@ -138,7 +140,7 @@ namespace WylesLibs {
         public:
             Collector<T, RT> * collector;
             LoopCriteria<T> * criteria;
-            virtual ~StreamTask() = default;
+            virtual ~StreamTask() {}
             // Good example of CPP OOP
      
             // good example of "dynamic dispatch"?

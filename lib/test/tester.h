@@ -6,6 +6,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <signal.h>
+
+#include "datastructures/array.h"
 #include "logger.h"
 
 #define addTest(func)\
@@ -31,6 +33,23 @@ typedef struct Test {
 extern void ASSERT_STRING(TestArg * t, std::string result, std::string expected);
 extern void ASSERT_BOOLEAN(TestArg * t, bool result, bool expected);
 extern void ASSERT_UINT64(TestArg * t, uint64_t result, uint64_t expected);
+
+template<typename T>
+extern void ASSERT_ARRAY(TestArg * t, SharedArray<T> result, SharedArray<T> expected) {
+    if (expected.size() != result.size()) {
+        t->fail = true;
+        return;
+    }
+    for (size_t i = 0; i < expected.size(); i++) {
+        loggerPrintf(LOGGER_TEST_VERBOSE, "Expected: 0x%X\n", expected[i]);
+        loggerPrintf(LOGGER_TEST_VERBOSE, "Actual: 0x%X\n", result[i]);
+        if (expected[i] != result[i]) {
+            t->fail = true;
+            return;
+        }
+    }
+    t->fail = false;
+}
 
 // static void sig_handler(int sig, siginfo_t * info, void * context) {
 //     // if (sig == SIGSEGV) {

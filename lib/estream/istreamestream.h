@@ -24,14 +24,15 @@ class IStreamEStream: public ByteEStream {
         size_t file_offset;
         size_t chunk_size;
     protected:
-        virtual bool readPastBuffer();
-        virtual void fillBuffer();
+        bool readPastBuffer() override;
+        void fillBuffer() override;
     public:
         IStreamEStream() = default;
         // TODO: std::move? that's interesting
-        IStreamEStream(ESharedPtr<std::basic_istream<char>> reader): ByteEStream() {
+        IStreamEStream(ESharedPtr<std::basic_stringstream<char>> r): ByteEStream() {
             factory = nullptr;
-            reader = reader;
+            // reader = r.cast<std::basic_istream<char>>();
+            reader = r;
         }
         IStreamEStream(ESharedPtr<File::StreamFactory> factory, std::string path, size_t initial_offset = 0, size_t chunk_size = SIZE_MAX): ByteEStream() {
             factory = factory;

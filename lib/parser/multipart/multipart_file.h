@@ -5,9 +5,7 @@
 #include <string>
 #include <map>
 
-#include "web/server_context.h"
 #include "paths.h"
-#include "key_generator.h"
 
 namespace WylesLibs {
 
@@ -20,13 +18,13 @@ class MultipartFile {
 
         MultipartFile(): resource_root("./") {}
         MultipartFile(std::string name) {
-            resource_root = "";
             id = "";
+            resource_root = "";
             name = name;
         }
-        MultipartFile(ServerContext * context, std::string name) {
-            resource_root = context->config.resources_root;
-            id = context->key_generator.next();
+        MultipartFile(std::string id, std::string resource_root, std::string name) {
+            id = id;
+            resource_root = resource_root;
             name = name;
         }
         ~MultipartFile() = default;

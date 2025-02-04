@@ -109,20 +109,20 @@ class EStream: public EStreamI<T> {
         LoopCriteria<T> * until_size_criteria;
         ArrayCollector<T> * array_collector;
         std::ios_base::iostate flags;
-        virtual bool readPastBuffer() {
+        bool readPastBuffer() override {
             return this->cursor >= this->els_in_buffer;
         }
-        virtual void fillBuffer() {
+        void fillBuffer() override {
             this->cursor = 0;
             ssize_t ret = ::read(this->fd, this->buffer, this->buffer_size * sizeof(T));
             // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
-            if (ret <= 0 || (size_t)ret > this->buffer_size) {
+            if (ret <= 0 || (size_t)ret > this->buffer_size * sizeof(T)) {
                 this->els_in_buffer = 0;
                 loggerPrintf(LOGGER_INFO, "Read error: %d, ret: %ld\n", errno, ret);
                 this->flags |= std::ios_base::badbit;
                 throw std::runtime_error("Read error.");
             } else {
-                this->els_in_buffer = ret;
+                this->els_in_buffer = ret / sizeof(T);
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Read %ld els from transport layer.\n", ret);
             }
         }
@@ -135,7 +135,7 @@ class EStream: public EStreamI<T> {
         //      could alternatively initialize with nullptr and size 0 args from istreamestream. but that doesn't seem valid?
         EStream() {
             ungot = false;
-            ungot_el = 0xFF;
+            ungot_el = T();
             flags = std::ios_base::goodbit;
             buffer_size = 0;
             buffer = nullptr;
@@ -148,7 +148,7 @@ class EStream: public EStreamI<T> {
         }
         EStream(T * b, const size_t bs) {
             ungot = false;
-            ungot_el = 0xFF;
+            ungot_el = T();
             flags = std::ios_base::goodbit;
             buffer_size = bs;
             buffer = b;
@@ -168,7 +168,7 @@ class EStream: public EStreamI<T> {
                 throw std::runtime_error("Invalid buffer size provided.");
             }
             ungot = false;
-            ungot_el = 0xFF;
+            ungot_el = T();
             flags = std::ios_base::goodbit;
             buffer_size = bs;
             buffer = newCArray<T>(buffer_size);
@@ -193,8 +193,9 @@ class EStream: public EStreamI<T> {
             T el = this->peek();
             if (this->cursor == 0 && true == this->ungot) {
                 this->ungot = false;
+            } else {
+                this->cursor++;
             }
-            this->cursor++;
         #if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
             this->stream_log += el;
             if (this->stream_log.size() > MAX_STREAM_LOG_SIZE) {
@@ -206,11 +207,18 @@ class EStream: public EStreamI<T> {
         T peek() override {
             if (true == this->good()) {
                 if (true == this->readPastBuffer()) {
-                    this->ungot_el = this->buffer[this->cursor - 1];
-                    this->ungot = false;
+                    if (this->cursor != 0) {
+                        this->ungot_el = this->buffer[this->cursor - 1];
+                    }
                     this->fillBuffer();
                 }
-            } else if (this->cursor == 0 && true == this->ungot) {
+            } else {
+                // throw exception, if using status bits then you should check good outside of this.
+                std::string msg("Read error. No more data in the stream to fill buffer.");
+                loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+            if (this->cursor == 0 && true == this->ungot) {
                 return this->ungot_el;
             }
             return this->buffer[this->cursor];
@@ -307,6 +315,9 @@ class EStream: public EStreamI<T> {
                 loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
+
+            collector->initialize();
+
             // ! IMPORTANT - not thread safe
             if (task != nullptr) {
                 task->initialize();
@@ -314,16 +325,24 @@ class EStream: public EStreamI<T> {
                 task->collector = collector;
                 task->criteria = criteria;
             }
-
-            collector->initialize();
  
             T el = this->peek();
+            // TODO:
+            //  would be interesting to support multiple criteria and specify some logic about how they relate... maybe a criteria that combines some?
+            //  the thought here is maybe I can create a better abstraction for state machines or logic?
+            //  dry state-machines, lol idk... 
+            //  criteria1 or criteria2 and criteria3 where criteria are themselves state machines?
+            //  maybe not very useful.
             while (criteria->nextState(el) & LOOP_CRITERIA_STATE_GOOD) {
                 this->get();
                 if (task == nullptr) {
                     collector->accumulate(el);
                 } else {
                     task->perform(el);
+                }
+                if (false == this->good() && criteria->state() & LOOP_CRITERIA_STATE_AT_LAST) {
+                    // if no more data in the buffer but already at until then just break. else try to read regardless of whether good and throw exception if no more data.
+                    break;
                 }
                 el = this->peek();
             }

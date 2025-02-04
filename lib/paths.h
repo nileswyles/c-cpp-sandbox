@@ -28,6 +28,8 @@ static string getExtension(string path) {
 static string join(string path1, string path2) {
     // ./blah/blah/ /path2/file2.html - ./blah/blah/path2/file/file.html
     // ../blah/../ path2/file2.html - ../blah/../path2/file2.html
+
+    // TODO: must have at least one element.
     if (path1.size() > 0 && path1[path1.size() - 1] != '/') {
         path1 += "/";
     }

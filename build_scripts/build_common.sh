@@ -31,6 +31,8 @@ while true; do
 done
 
 # see logger.h for log level values
+# TODO: remember to remove need to set LOGGER_LEVEL... this was a stop-gap to support legacy stuff, need to update all files.
+#		And actually don't need to set GLOBAL_LOGGER_LEVEL in each file.
 DEFINES=$DEFINES"-D GLOBAL_LOGGER_LEVEL=$LOG_LEVEL -D LOGGER_LEVEL=$LOG_LEVEL "
 
 if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
@@ -59,7 +61,7 @@ echo "
 ~Build: "
 BUILD_CMD="$CXX_COMPILER $DEBUG$SRC_FILES-iquote $QUOTE_INCLUDE_ROOT $INCLUDE_FILES$LIB_SEARCH_PATHS$DEFINES$LD_FLAGS-std=c++20 -Wall $REMOVED_WARNING_FLAGS -o $PROGRAM_PATH"
 echo "    $BUILD_CMD"
-eval $BUILD_CMD
+$BUILD_CMD
 
 echo "
 ~Executing Program: "
@@ -69,4 +71,4 @@ else
 	EXEC_CMD="$PROGRAM_PATH $PROGRAM_ARG"
 fi
 echo "    $EXEC_CMD"
-eval $EXEC_CMD
+$EXEC_CMD

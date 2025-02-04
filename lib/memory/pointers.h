@@ -4,6 +4,7 @@
 #include "logger.h"
 #include "string_format.h"
 
+#include <stdexcept>
 #include <memory>
 
 #define ESHAREDPTR_GET_PTR(eshared_ptr) eshared_ptr.getPtr(__FILE__, __LINE__)
@@ -18,6 +19,17 @@ namespace WylesLibs {
                     As an aside, you can, more generally, use function templates to get around the circular dependency thing lmao... see estream.h should I update that? Probably not? in that situation a common interface was the better approach?
                         but yeah, a useful tool indeed.
 */
+
+class ESharedPtrException: public std::runtime_error {
+    public:
+        /** Takes a character string describing the error.  */
+        ESharedPtrException(const std::string& arg): std::runtime_error(arg) {}
+        ESharedPtrException(const char * arg): std::runtime_error(arg) {}
+ 
+        ESharedPtrException(ESharedPtrException&&) noexcept;
+        ESharedPtrException& operator=(ESharedPtrException&&) noexcept;
+};
+
 template<typename T>
 class EPointerControl {
     public:
@@ -46,7 +58,7 @@ class ESharedPtr {
             if (cc == nullptr || *cc == nullptr) {
                 std::string msg("Cannot create an ESharedPtr from a nullptr ctrl class.");
                 loggerPrintf(LOGGER_INFO, "Exception: %s\n", msg.c_str());
-                throw std::runtime_error(msg);
+                throw ESharedPtrException(msg);
             }
             ctrl_container = cc;
             (*(*ctrl_container)->e_instance_count)++;
@@ -65,10 +77,9 @@ class ESharedPtr {
         }
         T * getPtr(const char * file_name, int line) {
             if (true == this->isNullPtr()) {
-                printf("wtf? this format?, %d\n", line);
                 std::string msg = WylesLibs::format("Attempted to retrieve ptr at: {s}:{d}", file_name, line);
                 loggerPrintf(LOGGER_INFO, "Exception: %s\n", msg.c_str());
-                throw std::runtime_error(msg);
+                throw ESharedPtrException(msg);
             }
             return (*this->ctrl_container)->ptr;
         }
@@ -76,7 +87,7 @@ class ESharedPtr {
             if (true == this->isNullPtr()) {
                 std::string msg = WylesLibs::format("Attempted to retrieve ptr at: {s}:{d}", file_name, line);
                 loggerPrintf(LOGGER_INFO, "Exception: %s\n", msg.c_str());
-                throw std::runtime_error(msg);
+                throw ESharedPtrException(msg);
             }
             return *(*this->ctrl_container)->ptr;
         }
@@ -123,7 +134,7 @@ class ESharedPtr {
         ESharedPtr(ESharedPtr<C>& x) {
             ctrl_container = new EPointerControl<T>*(
                 new EPointerControl<T>(
-                    (T *)ESHAREDPTR_GET_PTR(x),
+                    (T *)(*x.ctrl_container)->ptr,
                     (*x.ctrl_container)->e_instance_count
                 )
             );
@@ -132,17 +143,18 @@ class ESharedPtr {
         template<typename C>
         ESharedPtr<T>& operator= (ESharedPtr<C>& x) {
             (*this->ctrl_container)->e_instance_count = (*x.ctrl_container)->e_instance_count;
-            (*this->ctrl_container)->ptr = (T *)ESHAREDPTR_GET_PTR(x);
+            (*this->ctrl_container)->ptr = (T *)(*x.ctrl_container)->ptr;
             (*(*this->ctrl_container)->e_instance_count)++;
             return *this;
         }
         // explicit casting
         template<typename C>
         ESharedPtr<C> cast() {
+            printf("%p\n", (C *)(*this->ctrl_container)->ptr);
             return ESharedPtr<C>(
                 new EPointerControl<C>*(
                     new EPointerControl<C>(
-                        (C *)ESHAREDPTR_GET_PTR((*this)),
+                        (C *)(*this->ctrl_container)->ptr,
                         (*this->ctrl_container)->e_instance_count
                     )
                 )

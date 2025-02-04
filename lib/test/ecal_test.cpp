@@ -16,19 +16,19 @@ using namespace WylesLibs::Test;
 
 static void testGetFormattedTime(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Feb 27 2023, 0:0:0 Z";
+    std::string expected = "Feb 27 2023, 00:00:00 Z";
 
     ASSERT_STRING(t, time, expected);
 }
 static void testGetFormattedTime1970(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Jan 2 1970, 0:0:0 Z";
+    std::string expected = "Jan 2 1970, 00:00:00 Z";
 
     ASSERT_STRING(t, time, expected);
 }
 static void testGetFormattedTimeLeapYearBeforeLeapDay(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Feb 27 2024, 0:0:0 Z";
+    std::string expected = "Feb 27 2024, 00:00:00 Z";
 
     ASSERT_STRING(t, time, expected);
 }
@@ -46,7 +46,7 @@ static void testGetFormattedTimeLastDayBeforeLeapYear(TestArg * t) {
 }
 static void testGetFormattedTimeFirstDayOfLeapYear(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Jan 1 2024, 0:0:0 Z";
+    std::string expected = "Jan 1 2024, 00:00:00 Z";
 
     ASSERT_STRING(t, time, expected);
 }
@@ -58,13 +58,13 @@ static void testGetFormattedTimeLastDayOfLeapYear(TestArg * t) {
 }
 static void testGetFormattedTimeFirstDayAfterLeapYear(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(0); // UTC
-    std::string expected = "Jan 1 2025, 0:0:0 Z";
+    std::string expected = "Jan 1 2025, 00:00:00 Z";
 
     ASSERT_STRING(t, time, expected);
 }
 static void testGetFormattedTimeMinus5(TestArg * t) {
     std::string time = WylesLibs::Cal::getFormattedDateTime(-500); // EST
-    std::string expected = "Feb 27 2023, 0:0:0 -5:00";
+    std::string expected = "Feb 27 2023, 00:00:00 -5:00";
 
     ASSERT_STRING(t, time, expected);
 }
@@ -86,35 +86,35 @@ static void testGetFormattedTimeMinus5ISO8601(TestArg * t) {
 //  getEpoch from different types, different scenarios, with offset, etc...
 
 static void testGetEpochFromFormattedDateTime(TestArg * t) {
-    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Jan 1 1970, 0:0:0 Z");
+    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Jan 1 1970, 00:00:00 Z");
     uint64_t expected = 0;
 
     ASSERT_UINT64(t, time, expected);
 }
 
 static void testGetEpochFromFormattedDateTimePlus1Day(TestArg * t) {
-    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Jan 2 1970, 0:0:0 Z");
+    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Jan 2 1970, 00:00:00 Z");
     uint64_t expected = 86400;
 
     ASSERT_UINT64(t, time, expected);
 }
 
 static void testGetEpochFromFormattedDateTimePlus1DayMinusEST(TestArg * t) {
-    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Jan 2 1970, 0:0:0 -5:00");
+    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Jan 2 1970, 00:00:00 -5:00");
     uint64_t expected = 68400;
 
     ASSERT_UINT64(t, time, expected);
 }
 
 static void testGetEpochFromFormattedDateTimeRandomDateTime(TestArg * t) {
-    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("May 17 1997, 18:28:5 Z");
+    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("May 17 1997, 18:28:05 Z");
     uint64_t expected = 863893685;
 
     ASSERT_UINT64(t, time, expected);
 }
 
 static void testGetEpochFromFormattedDateTimeLeapYearBeforeLeapDay(TestArg * t) {
-    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Feb 27 2024, 0:0:0 Z"); // UTC
+    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Feb 27 2024, 00:00:00 Z"); // UTC
     uint64_t expected = 1708992000;
 
     ASSERT_UINT64(t, time, expected);
@@ -135,7 +135,7 @@ static void testGetEpochFromFormattedDateTimeLastDayBeforeLeapYear(TestArg * t) 
 }
 
 static void testGetEpochFromFormattedDateTimeFirstDayOfLeapYear(TestArg * t) {
-    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Jan 1 2024, 0:0:0 Z"); // UTC
+    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Jan 1 2024, 00:00:00 Z"); // UTC
     uint64_t expected = 1704067200;
 
     ASSERT_UINT64(t, time, expected);
@@ -149,7 +149,7 @@ static void testGetEpochFromFormattedDateTimeLastDayOfLeapYear(TestArg * t) {
 }
 
 static void testGetEpochFromFormattedDateTimeFirstDayAfterLeapYear(TestArg * t) {
-    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Jan 1 2025, 0:0:0 Z"); // UTC
+    uint64_t time = WylesLibs::Cal::getEpochFromFormattedDateTime("Jan 1 2025, 00:00:00 Z"); // UTC
     uint64_t expected = 1735689600;
 
     ASSERT_UINT64(t, time, expected);

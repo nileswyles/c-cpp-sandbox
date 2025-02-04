@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <limits.h>
 
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED 1
+#include "logger.h"
+
 using namespace WylesLibs::Test;
 
 extern void WylesLibs::Test::ASSERT_STRING(TestArg * t, std::string result, std::string expected) {
@@ -44,7 +48,7 @@ bool Tester::run(const char * name) {
     std::string failed_names;
     for (auto test: this->tests) {
         bool ran_test = false;
-        // TODO: test selection pattern matching?
+        // TODO: test selection pattern matching? list of tests?
         try {
             if (name == nullptr) {
                 runTest(&test);
@@ -57,6 +61,7 @@ bool Tester::run(const char * name) {
             test.arg.fail = true;
             ran_test = true;
             loggerPrintf(LOGGER_INFO, "Exception: %s\n", e.what());
+            printf("\n\nTest Failed!\n");
         }
         if (ran_test) {
             if (test.arg.fail) {

@@ -26,11 +26,6 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
 "
 
-LD_FLAGS="
--l ssl
--l crypto
-"
-
-CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n estream_test $SRC_FILES --log $LOG_LEVEL $LD_FLAGS $DEFINES$TEST_ARG"
+CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n estream_test $SRC_FILES --log $LOG_LEVEL $DEFINES$TEST_ARG"
 echo "    "$CMD
 exec $CMD

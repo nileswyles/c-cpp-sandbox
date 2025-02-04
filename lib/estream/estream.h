@@ -109,10 +109,10 @@ class EStream: public EStreamI<T> {
         LoopCriteria<T> * until_size_criteria;
         ArrayCollector<T> * array_collector;
         std::ios_base::iostate flags;
-        virtual bool readPastBuffer() {
+        bool readPastBuffer() override {
             return this->cursor >= this->els_in_buffer;
         }
-        virtual void fillBuffer() {
+        void fillBuffer() override {
             this->cursor = 0;
             ssize_t ret = ::read(this->fd, this->buffer, this->buffer_size * sizeof(T));
             // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
@@ -315,6 +315,9 @@ class EStream: public EStreamI<T> {
                 loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
+
+            collector->initialize();
+
             // ! IMPORTANT - not thread safe
             if (task != nullptr) {
                 task->initialize();
@@ -322,8 +325,6 @@ class EStream: public EStreamI<T> {
                 task->collector = collector;
                 task->criteria = criteria;
             }
-
-            collector->initialize();
  
             T el = this->peek();
             // TODO:

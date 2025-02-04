@@ -31,6 +31,8 @@ while true; do
 done
 
 # see logger.h for log level values
+# TODO: remember to remove need to set LOGGER_LEVEL... this was a stop-gap to support legacy stuff, need to update all files.
+#		And actually don't need to set GLOBAL_LOGGER_LEVEL in each file.
 DEFINES=$DEFINES"-D GLOBAL_LOGGER_LEVEL=$LOG_LEVEL -D LOGGER_LEVEL=$LOG_LEVEL "
 
 if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then

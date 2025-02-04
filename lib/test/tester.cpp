@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <limits.h>
 
+#undef LOGGER_MODULE_ENABLED
+#define LOGGER_MODULE_ENABLED 1
+#include "logger.h"
+
 using namespace WylesLibs::Test;
 
 extern void WylesLibs::Test::ASSERT_STRING(TestArg * t, std::string result, std::string expected) {

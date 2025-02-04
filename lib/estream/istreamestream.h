@@ -24,8 +24,8 @@ class IStreamEStream: public ByteEStream {
         size_t file_offset;
         size_t chunk_size;
     protected:
-        virtual bool readPastBuffer();
-        virtual void fillBuffer();
+        bool readPastBuffer() override;
+        void fillBuffer() override;
     public:
         IStreamEStream() = default;
         // TODO: std::move? that's interesting

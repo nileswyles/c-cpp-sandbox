@@ -321,10 +321,17 @@ HttpResponse * HttpConnectionETask::requestDispatcher(HttpRequest * request) {
     }
     HttpResponse * response = nullptr;
 
-    HttpProcessorItem test_item(*request, nullptr);
+    HttpProcessorItem test_item(*request, nullptr, {}, {});
+    // TODO: if there's a more optimal hash function for this specific use-case then pivot to that. 
     if (this->server->request_map.contains(test_item)) {
-        RequestProcessor * processor = this->server->request_map[test_item].processor;
-        response = processor(request);
+        HttpProcessorItem actual_item = this->server->request_map[test_item];
+        for (size_t i = 0; i < actual_item.request_filters.size(); i++) {
+            actual_item.request_filters[i](request);
+        }
+        response = actual_item.processor(request);
+        for (size_t i = 0; i < actual_item.response_filters.size(); i++) {
+            actual_item.response_filters[i](response);
+        }
     }
     if (response == nullptr) {
         response = new HttpResponse;

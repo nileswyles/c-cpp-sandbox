@@ -25,6 +25,7 @@ namespace WylesLibs::Http {
         public:
             std::string method;
             Url url;
+            std::string backwards_path; // low-hanging fruit optimization of the request match logic.
             std::string version;
 
             std::map<std::string, SharedArray<std::string>> fields;
@@ -41,13 +42,16 @@ namespace WylesLibs::Http {
             HttpRequest() = default;
             HttpRequest(std::string path, std::string method, std::string content_type = ""): url(Url()), method(method), fields(std::map<std::string, SharedArray<std::string>>()) {
                 url.path = path;
+                for (size_t i = path.size() - 1; i >= 0; i--) {
+                    backwards_path += path[i];
+                }
                 fields[CONTENT_TYPE_KEY] = content_type;
             };
             ~HttpRequest() = default;
 
             bool operator== (HttpRequest& x) {
-                std::string this_string_hash = this->url.path + this->method;
-                std::string x_string_hash = x.url.path + x.method;
+                std::string this_string_hash = this->backwards_path + this->method;
+                std::string x_string_hash = x.backwards_path + x.method;
                 if (this->fields[CONTENT_TYPE_KEY].size() > 0) {
                     SharedArray<std::string> this_content_type = this->fields[CONTENT_TYPE_KEY];
                     this_string_hash += this_content_type.front();
@@ -101,9 +105,12 @@ namespace WylesLibs::Http {
         public:
             HttpRequest request;
             RequestProcessor * processor;
+            SharedArray<RequestFilter> request_filters;
+            SharedArray<ResponseFilter> response_filters;
 
             HttpProcessorItem() = default;
-            HttpProcessorItem(HttpRequest request, RequestProcessor * processor): request(request), processor(processor) {}
+            HttpProcessorItem(HttpRequest request, RequestProcessor * processor, SharedArray<RequestFilter> request_filters, SharedArray<ResponseFilter> response_filters): 
+                request(request), processor(processor), request_filters(request_filters), response_filters(response_filters) {}
             ~HttpProcessorItem() = default;
 
             bool operator== (HttpProcessorItem& x) {
@@ -122,11 +129,24 @@ namespace WylesLibs::Http {
     ); 
     static_assert(sizeof(Url) == 88);
 
-    #define HTTP_GET(path, func, ...) \
-        static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("GET"), ##__VA_ARGS__), func});
+    // usage:
+    //  HTTP_GET_B("/example", "", example, {}, {}) 
+    //      "" value for content type matches all requests that match the path and method.
+    //  HTTP_GET_B("/example", "application/json", example, {request_filter}, {response_filter})
+    //  HTTP_GET_W("/example", example)
 
-    #define HTTP_POST(path, func, ...) \
-        static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("POST"), ##__VA_ARGS__), func});
+    // TOO RISKAYYY? living on the edge but not really? 
+    #define HTTP_GET_B(path, content_type, func, request_filters, response_filters) \
+        static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("GET"), content_type), func, request_filters, response_filters});
+    #define HTTP_GET_W(path, func) \
+        HTTP_GET_B(path, "", func, {}, {})
+
+    #define HTTP_POST_B(path, content_type, func, request_filters, response_filters) \
+        static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("POST"), content_type), func, request_filters, response_filters});
+    #define HTTP_POST_W(path, content_type, func, request_filters, response_filters) \
+        HTTP_POST_B(path, "", func, {}, {})
+
+    // Note to self, be better about procrastination - especially when there's not a lot to unpack.
 };
 
 #endif

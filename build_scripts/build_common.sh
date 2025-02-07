@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
+	WYLESLIBS_BUILD_ROOT_DIR="."
+fi
+
 NAME="program"
 LD_FLAGS=""
 LIB_SEARCH_PATHS=""
@@ -7,7 +11,8 @@ INCLUDE_FILES=""
 DEFINES=""
 SRC_FILES=""
 LOG_LEVEL=0
-RUN_FROM=""
+RUN_FROM="$WYLESLIBS_BUILD_ROOT_DIR"
+OUTPUT_DIR="$WYLESLIBS_BUILD_ROOT_DIR/out"
 PROGRAM_ARG=""
 DEBUG=""
 while true; do
@@ -24,6 +29,7 @@ while true; do
 		-D*) DEFINES="$DEFINES$1 "; shift 1 ;;
 		-s|--source) SRC_FILES="$SRC_FILES$2 "; shift 2 ;;
 		-r|--run-from) RUN_FROM="$2"; shift 2 ;;
+		-o|--output-dir) OUTPUT_DIR="$2"; shift 2 ;;
 		-g) DEBUG="-g "; shift ;;
 		# --) echo "PROGRAM ARG: $@"; break ;;
 		*) PROGRAM_ARG=$@; break;;
@@ -35,20 +41,14 @@ done
 #		And actually don't need to set GLOBAL_LOGGER_LEVEL in each file.
 DEFINES=$DEFINES"-D GLOBAL_LOGGER_LEVEL=$LOG_LEVEL -D LOGGER_LEVEL=$LOG_LEVEL "
 
-if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
-	WYLESLIBS_BUILD_ROOT_DIR="."
-fi
-
 # Standardize this
 INCLUDE_ROOT=$WYLESLIBS_BUILD_ROOT_DIR/lib
 
-if [ "$RUN_FROM" != "" ]; then
-	mkdir $RUN_FROM/out 2> /dev/null
-	PROGRAM_PATH=$RUN_FROM/out/$NAME.out
-else
-	mkdir $WYLESLIBS_BUILD_ROOT_DIR/out 2> /dev/null
-	PROGRAM_PATH=$WYLESLIBS_BUILD_ROOT_DIR/out/$NAME.out
+if [ $(cut -b 1 - <<< $OUTPUT_DIR) != "/" ]; then
+	OUTPUT_DIR="$(pwd)/$OUTPUT_DIR"
 fi
+mkdir $OUTPUT_DIR 2> /dev/null
+PROGRAM_PATH="$OUTPUT_DIR/$NAME.out"
 rm $PROGRAM_PATH 2> /dev/null
 
 if [ -z $CXX_COMPILER ]; then
@@ -65,10 +65,6 @@ $BUILD_CMD
 
 echo "
 ~Executing Program: "
-if [ "$RUN_FROM" != "" ]; then
-	EXEC_CMD="cd $RUN_FROM && out/$NAME.out $PROGRAM_ARG"
-else
-	EXEC_CMD="$PROGRAM_PATH $PROGRAM_ARG"
-fi
+EXEC_CMD="cd $RUN_FROM && $PROGRAM_PATH $PROGRAM_ARG"
 echo "    $EXEC_CMD"
-$EXEC_CMD
+bash -c "$EXEC_CMD"

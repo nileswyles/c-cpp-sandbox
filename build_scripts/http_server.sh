@@ -1,21 +1,23 @@
 #!/bin/bash
 
+if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
+	WYLESLIBS_BUILD_ROOT_DIR="."
+fi
+
 TEST_ARG=""
 DEFINES=""
+OUTPUT_ARG="-o $WYLESLIBS_BUILD_ROOT_DIR/out"
 LOG_LEVEL=0
 while true; do
 	case "$1" in
 		-l|--log) LOG_LEVEL="$2"; shift 2 ;;
 		-D) DEFINES="$DEFINES-D $2 "; shift 2 ;;
+		-o|--output-dir) OUTPUT_ARG="-o $2"; shift 2 ;;
 		*) PROGRAM_ARG=$@; break;;
 	esac
 done
 
 DEFINES="$DEFINES-D WYLESLIBS_SSL_ENABLED=1 "
-
-if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
-	WYLESLIBS_BUILD_ROOT_DIR="."
-fi
 
 # this should work just fine until we have larger projects and require caching individual objects to speed up build times?
 SRC_FILES="
@@ -63,13 +65,10 @@ if [ -n "$WYLESLIBS_GCS_BUILD" ]; then
 fi
 
 
-CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -r $WYLESLIBS_BUILD_ROOT_DIR/http_test --log $LOG_LEVEL $INCLUDE_DIRS $LD_FLAGS $GCS_ARGS $DEFINES$PROGRAM_ARG"
+CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -r $WYLESLIBS_BUILD_ROOT_DIR/http_test --log $LOG_LEVEL $INCLUDE_DIRS $LD_FLAGS $GCS_ARGS $DEFINES$OUTPUT_ARG $PROGRAM_ARG"
 # TODO: revisit quoted strings and whitespace (nl, tabs, etc) for bash shell... Also, wtf is dash shell? zsh and bash I think are mostly identical for most basic things?
 echo "    "$CMD
 exec $CMD
-
-
-
 
 # google-cloud-cpp
 # 	from pkg-config after building "and installing" using build_google.sh

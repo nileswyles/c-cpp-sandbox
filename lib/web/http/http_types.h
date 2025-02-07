@@ -139,25 +139,27 @@ namespace WylesLibs::Http {
     #define HTTPHTTP(method, path, func) \
         HTTP(method, path, "", func, {}, {})
 
-    // #define HTTP_GET(path, content_type, func, request_filters, response_filters) \
-    //     static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("GET"), content_type), func, request_filters, response_filters});
-    // #define HTTP_GETGET(path, func) \
-    //     HTTP_GET(path, "", func, {}, {})
-
-    // #define HTTP_POST_A(path, content_type, func, request_filters, response_filters) \
-    //     static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("POST"), content_type), func, request_filters, response_filters});
-    // #define HTTP_POST_B(path, content_type, func, request_filters, response_filters) \
-    //     HTTP_POST_A(path, "", func, {}, {})
-
-    // #define HTTP_CONNECT(path, content_type, func, request_filters, response_filters) \
-    //     static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("POST"), content_type), func, request_filters, response_filters});
-    // #define HTTP_CONNECTCONNECT(path, content_type, func, request_filters, response_filters) \
-    //     HTTP_CONNECT(path, "", func, {}, {})
-
-    // #define HTTP_DELETE(path, content_type, func, request_filters, response_filters) \
-    //     static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("POST"), content_type), func, request_filters, response_filters});
-    // #define HTTP_DELETE_2(path, content_type, func, request_filters, response_filters) \
-    //     HTTP_DELETE(path, "", func, {}, {})
+    /*
+        #define HTTP_GET(path, content_type, func, request_filters, response_filters) \
+            static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("GET"), content_type), func, request_filters, response_filters});
+        #define HTTP_GETGET(path, func) \
+            HTTP_GET(path, "", func, {}, {})
+ 
+        #define HTTP_POST_A(path, content_type, func, request_filters, response_filters) \
+            static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("POST"), content_type), func, request_filters, response_filters});
+        #define HTTP_POST_B(path, content_type, func, request_filters, response_filters) \
+            HTTP_POST_A(path, "", func, {}, {})
+ 
+        #define HTTP_CONNECT(path, content_type, func, request_filters, response_filters) \
+            static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("POST"), content_type), func, request_filters, response_filters});
+        #define HTTP_CONNECTCONNECT(path, content_type, func, request_filters, response_filters) \
+            HTTP_CONNECT(path, "", func, {}, {})
+ 
+        #define HTTP_DELETE(path, content_type, func, request_filters, response_filters) \
+            static auto func ## _map = WylesLibs::Http::requestMap.uniqueAppend({HttpRequest(std::string(path), std::string("POST"), content_type), func, request_filters, response_filters});
+        #define HTTP_DELETE_2(path, content_type, func, request_filters, response_filters) \
+            HTTP_DELETE(path, "", func, {}, {})
+    */
 
     // Note to self, be better about procrastination while at the same time remaining poignant - especially when there's not a lot to unpacks. space-time! zesty! spicy! me gusta estudiar en la biblioteca!
 };

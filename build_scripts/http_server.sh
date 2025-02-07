@@ -25,6 +25,7 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_array.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/keyvalue/parse.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http_types.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/http_test/main.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/http_test/controllers/example.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/http_test/services/example.cpp

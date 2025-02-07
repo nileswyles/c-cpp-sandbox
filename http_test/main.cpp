@@ -41,9 +41,6 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
 static SharedArray<RequestFilter> requestFilters{};
 static SharedArray<ResponseFilter> responseFilters{};
 
-// initialize requestMap --- see http_types.h and controllers/example.cpp for more details.
-SharedArray<HttpProcessorItem> WylesLibs::Http::requestMap = SharedArray<HttpProcessorItem>();
-
 static HttpServer server_context;
 extern Server * WylesLibs::getServerContext() {
     return dynamic_cast<Server *>(&server_context);

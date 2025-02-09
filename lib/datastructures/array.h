@@ -124,6 +124,15 @@ int nlognsortCompare(ArraySort sortOrder, T A, T B) {
 template<>
 int nlognsortCompare<const char *>(ArraySort sortOrder, const char * A, const char * B);
 
+template<typename T>
+std::string arrayToString(T * e_buf, size_t size) {
+    return std::string((char *)(e_buf), size * sizeof(T));
+}
+template<>
+std::string arrayToString<char *>(char ** e_buf, size_t size);
+template<>
+std::string arrayToString<std::string>(std::string * e_buf, size_t size);
+
 // @
 
 // TODO: thread safety
@@ -485,7 +494,8 @@ class Array {
             return (this->e_buf)[this->size()-1];
         }
         std::string toString() {
-            return std::string((char *)(this->e_buf), this->size() * sizeof(T));
+            // TODO: char * specialization that generates a comma-separated list containing c_strings. update array_test.cpp
+            return arrayToString<T>(this->e_buf, this->size());
         }
         T& operator[] (const size_t pos) {
             size_t i = pos;

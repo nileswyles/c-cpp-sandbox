@@ -12,7 +12,7 @@ while true; do
 done
 
 if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
-	WYLESLIBS_BUILD_ROOT_DIR="."
+	WYLESLIBS_BUILD_ROOT_DIR=`pwd`
 fi
 
 SRC_FILES="
@@ -24,6 +24,7 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/cmder.cpp
 "
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n array_test $SRC_FILES --log $LOG_LEVEL -L$WYLESLIBS_BUILD_ROOT_DIR/build_systems $DEFINES$TEST_ARG"

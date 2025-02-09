@@ -59,3 +59,31 @@ int WylesLibs::nlognsortCompare<const char *>(ArraySort sortOrder, const char * 
     }
     return ret;
 }
+
+// This can be further dried
+template<>
+std::string WylesLibs::arrayToString<char *>(char ** e_buf, size_t size) {
+    std::string ret;
+    for (size_t i = 0; i < size; i++) {
+        if (e_buf[i] != nullptr) {
+            ret += e_buf[i];
+            printf("%s\n", e_buf[i]);
+            if (i < size - 1) {
+                ret += " ";
+            }
+        }
+    }
+    return ret;
+}
+
+template<>
+std::string WylesLibs::arrayToString<std::string>(std::string * e_buf, size_t size) {
+    std::string ret;
+    for (size_t i = 0; i < size; i++) {
+        ret += e_buf[i];
+        if (i < size - 1) {
+            ret += " ";
+        }
+    }
+    return ret;
+}

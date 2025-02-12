@@ -4,10 +4,15 @@
 
 using namespace WylesLibs;
 using namespace WylesLibs::File;
+        
+bool FileManager::exists(std::string path) {
+    return std::filesystem::exists(path);
+}
 
 uint64_t FileManager::stat(std::string path) {
     return std::filesystem::file_size(path);
 }
+
 SharedArray<std::string> FileManager::list(std::string path) {
     SharedArray<std::string> list;
     for (auto const& dir_entry: std::filesystem::directory_iterator{path}) {
@@ -29,9 +34,11 @@ void FileManager::remove(std::string path) {
         // std::filesystem::remove(fs_path);
     // }
 }
+
 void FileManager::move(std::string path, std::string destination_path) {
     std::filesystem::rename(std::filesystem::path{path}, std::filesystem::path{destination_path});
 }
+
 void FileManager::copy(std::string path, std::string destination_path) {
     std::filesystem::copy(std::filesystem::path{path}, std::filesystem::path{destination_path});
 }

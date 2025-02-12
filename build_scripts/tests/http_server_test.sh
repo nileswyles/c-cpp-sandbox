@@ -18,6 +18,11 @@ fi
 SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/http_server_test.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/cmder.cpp
 "

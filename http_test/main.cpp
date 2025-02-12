@@ -10,6 +10,8 @@
 #include "file/file_watcher.h"
 #ifdef WYLESLIBS_GCS_BUILD
 #include "file/file_gcs.h"
+#else
+#include "file/file.h"
 #endif
 
 #include <pthread.h>

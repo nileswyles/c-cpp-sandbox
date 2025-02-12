@@ -91,11 +91,7 @@ class Tester {
             Test test = {
                 .file_name = test_file_name, 
                 .line_number = line_number,
-                // TODO: hmm... would be nice to have a string containing cmd with args for logging
-                //   so maybe need to process that anyways... so maybe keep the params as strings?
-                //      or not... alternatively, implement toString specialization? (and concat) lol... 
                 .function_location = esystem("/scripts/cpp-reflection/tester_function_mapper.pl", {
-                    // ruh-roh
                     const_cast<char *>(("-p " + test_file_name).c_str()), 
                     const_cast<char *>(("-t " + test_name).c_str())
                 }), 

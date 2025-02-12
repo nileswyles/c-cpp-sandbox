@@ -3,13 +3,13 @@
 
 #include "estream/istreamestream.h"
 #include "file/stream_factory.h"
+#include "memory/pointers.h"
 
 #include <ios>
-#include <unistd.h>
 #include <string>
-
 #include <memory>
-#include "memory/pointers.h"
+
+#include <unistd.h>
 
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL
@@ -87,6 +87,7 @@ static SharedArray<uint8_t> read(ESharedPtr<IStreamEStream> s_shared, size_t off
     return file_data;
 }
 
+// ! IMPORTANT - This must maintain thread safety.
 class FileManager {
     protected:
         ESharedPtr<StreamFactory> stream_factory;
@@ -121,6 +122,7 @@ class FileManager {
             return this->stream_factory;
         }
 
+        virtual bool exists(std::string path);
         virtual uint64_t stat(std::string path);
         virtual SharedArray<std::string> list(std::string path);
 

@@ -87,6 +87,32 @@ static SharedArray<uint8_t> read(ESharedPtr<IStreamEStream> s_shared, size_t off
     return file_data;
 }
 
+// TODO: refactored to use string type until I can better architect the EStream stuff... need better templating support
+static std::string readString(ESharedPtr<IStreamEStream> s_shared, size_t offset = 0, size_t size = SIZE_MAX) {
+    IStreamEStream * s = ESHAREDPTR_GET_PTR(s_shared);
+
+    std::string file_data;
+    if (offset != 0) {
+        s->seekg(offset); // read from absolute position defined by offset
+    } // else read from current (relative) position.
+    if (size == SIZE_MAX) {
+        // read until EOF
+        while (true == s->good()) { //  && false == s->eof(); implied
+            uint8_t c = s->get();
+            // good and eof are true, false (respectively) at eof character, so ignore.
+            if (c != 0xFF) {
+                file_data += c;
+            }
+        }
+        // if (true == s->fail()) {
+        //     throw std::runtime_error("Error occured while reading istream until EOF.");
+        // }
+    } else {
+        file_data = s->readString(size);
+    }
+    return file_data;
+}
+
 // ! IMPORTANT - This must maintain thread safety.
 class FileManager {
     protected:
@@ -113,6 +139,13 @@ class FileManager {
         }
         SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
             return File::read(
+                ESharedPtr<IStreamEStream>(
+                    new IStreamEStream(this->stream_factory, path, offset, size)
+                ), 
+            offset, size);
+        }
+        std::string readString(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
+            return File::readString(
                 ESharedPtr<IStreamEStream>(
                     new IStreamEStream(this->stream_factory, path, offset, size)
                 ), 

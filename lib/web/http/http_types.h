@@ -42,7 +42,7 @@ namespace WylesLibs::Http {
             HttpRequest() = default;
             HttpRequest(std::string path, std::string method, std::string content_type = ""): url(Url()), method(method), fields(std::map<std::string, SharedArray<std::string>>()) {
                 url.path = path;
-                for (size_t i = path.size() - 1; i >= 0; i--) {
+                for (int64_t i = path.size() - 1; i >= 0; i--) {
                     backwards_path += path[i];
                 }
                 fields[CONTENT_TYPE_KEY] = content_type;

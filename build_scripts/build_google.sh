@@ -9,7 +9,7 @@ env VCPKG_ROOT=$HOME/vcpkg $HOME/vcpkg/bootstrap-vcpkg.sh
 #   ./build_google.sh BUILD_FROM_SOURCE AND_INSTALL
 #   ./build_google.sh BUILD_FROM_SOURCE AND_INSTALL
 if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
-	WYLESLIBS_BUILD_ROOT_DIR="."
+	WYLESLIBS_BUILD_ROOT_DIR=`pwd`
 fi
 if [ -z $GOOGLE_CLOUD_INSTALL_DIR ]; then
     GOOGLE_CLOUD_INSTALL_DIR="$WYLESLIBS_BUILD_ROOT_DIR/google_cloud_cpp_install"

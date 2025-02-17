@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <limits.h>
 
+#include <iostream>
+
 #undef LOGGER_MODULE_ENABLED
 #define LOGGER_MODULE_ENABLED 1
 #include "logger.h"
@@ -68,9 +70,7 @@ bool Tester::run(const char * name) {
                 failed_names += '\t';
                 failed_names += test.name;
                 failed_names += " -> ";
-                failed_names += test.test_file_name;
-                failed_names += ":";
-                failed_names += std::to_string(test.line_number);
+                failed_names += test.function_location;
                 failed_names += '\n';
                 num_failed++;
             } else {
@@ -98,8 +98,16 @@ bool Tester::run(const char * name) {
 
 void Tester::runTest(Test * test) {
     loggerExec(LOGGER_TEST,
-        printf("\n#######################################\n");
-        printf("\nTest Func: %s -> %s:%d\n\n", test->name.c_str(), test->test_file_name.c_str(), test->line_number);
+        printf("\n#######################################\n\n");
+        printf("  %s\n\n", test->name.c_str());
+        printf("Initialization -> %s:%d\n", test->file_name.c_str(), test->line_number);
+        if (test->declaration_location.size() > 0) {
+            printf("Declaration -> %s\n", test->declaration_location.c_str());
+        }
+        if (test->function_location.size() > 0) {
+            printf("Definition -> %s\n", test->function_location.c_str());
+        }
+        printf("\n");
     );
     if (this->before_each != nullptr) {
         this->before_each(&test->arg);

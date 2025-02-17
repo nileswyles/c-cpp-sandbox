@@ -12,7 +12,7 @@ while true; do
 done
 
 if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
-	WYLESLIBS_BUILD_ROOT_DIR="."
+	WYLESLIBS_BUILD_ROOT_DIR=`pwd`
 fi
 
 SRC_FILES="
@@ -20,7 +20,13 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/enew.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/memory/emalloc.c
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/memory/heap.c
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/cmder.cpp
 "
 
 CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n enew_test $SRC_FILES --log $LOG_LEVEL $DEFINES$TEST_ARG"

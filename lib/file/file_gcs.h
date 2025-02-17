@@ -43,6 +43,7 @@ class GCSFileManager: public FileManager {
         }
         ~GCSFileManager() override final = default;
 
+        bool exists(std::string path) override final;
         uint64_t stat(std::string path) override final;
 
         SharedArray<std::string> list(std::string path) override final;

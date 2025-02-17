@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
-	WYLESLIBS_BUILD_ROOT_DIR="."
+	WYLESLIBS_BUILD_ROOT_DIR=`pwd`
 fi
 # Google Cloud Storage
 # ! IMPORTANT -

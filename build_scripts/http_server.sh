@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
-	WYLESLIBS_BUILD_ROOT_DIR="."
+	WYLESLIBS_BUILD_ROOT_DIR=`pwd`
 fi
 
 TEST_ARG=""
@@ -45,6 +45,7 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/threads/etasker.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/server_connection_etask.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http_connection_etask.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/cmder.cpp
 "
 
 INCLUDE_DIRS="-I $WYLESLIBS_BUILD_ROOT_DIR/http_test"

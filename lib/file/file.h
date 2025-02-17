@@ -3,13 +3,13 @@
 
 #include "estream/istreamestream.h"
 #include "file/stream_factory.h"
+#include "memory/pointers.h"
 
 #include <ios>
-#include <unistd.h>
 #include <string>
-
 #include <memory>
-#include "memory/pointers.h"
+
+#include <unistd.h>
 
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL
@@ -87,6 +87,33 @@ static SharedArray<uint8_t> read(ESharedPtr<IStreamEStream> s_shared, size_t off
     return file_data;
 }
 
+// TODO: refactored to use string type until I can better architect the EStream stuff... need better templating support
+static std::string readString(ESharedPtr<IStreamEStream> s_shared, size_t offset = 0, size_t size = SIZE_MAX) {
+    IStreamEStream * s = ESHAREDPTR_GET_PTR(s_shared);
+
+    std::string file_data;
+    if (offset != 0) {
+        s->seekg(offset); // read from absolute position defined by offset
+    } // else read from current (relative) position.
+    if (size == SIZE_MAX) {
+        // read until EOF
+        while (true == s->good()) { //  && false == s->eof(); implied
+            uint8_t c = s->get();
+            // good and eof are true, false (respectively) at eof character, so ignore.
+            if (c != 0xFF) {
+                file_data += c;
+            }
+        }
+        // if (true == s->fail()) {
+        //     throw std::runtime_error("Error occured while reading istream until EOF.");
+        // }
+    } else {
+        file_data = s->readString(size);
+    }
+    return file_data;
+}
+
+// ! IMPORTANT - This must maintain thread safety.
 class FileManager {
     protected:
         ESharedPtr<StreamFactory> stream_factory;
@@ -117,10 +144,18 @@ class FileManager {
                 ), 
             offset, size);
         }
+        std::string readString(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
+            return File::readString(
+                ESharedPtr<IStreamEStream>(
+                    new IStreamEStream(this->stream_factory, path, offset, size)
+                ), 
+            offset, size);
+        }
         ESharedPtr<StreamFactory> streams() {
             return this->stream_factory;
         }
 
+        virtual bool exists(std::string path);
         virtual uint64_t stat(std::string path);
         virtual SharedArray<std::string> list(std::string path);
 

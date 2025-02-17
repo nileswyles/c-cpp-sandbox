@@ -58,7 +58,7 @@ void NaturalCollector::initialize() {
 
 void NaturalCollector::accumulate(uint8_t& c) {
     this->value = (this->value * 10) + (c - 0x30); 
-    loggerPrintf(LOGGER_DEBUG, "char: 0x%X, value: %lu\n", c, this->value);
+    // loggerPrintf(LOGGER_DEBUG, "char: 0x%X, value: %lu\n", c, this->value);
     if (++digit_count > NUMBER_MAX_DIGITS) {
         std::string msg = "parseNatural: Exceeded natural digit limit.";
         loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
@@ -125,11 +125,11 @@ std::tuple<uint64_t, size_t> ByteEStream::readNatural(std::string until, bool co
             this->get(); // consume until char
         }
     }
-    loggerExec(LOGGER_DEBUG_VERBOSE,
-        if (true == this->good()) {
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed natural, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
-        }
-    );
+    // loggerExec(LOGGER_DEBUG_VERBOSE,
+    //     if (true == this->good()) {
+    //         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Parsed natural, stream is at '%c', [0x%02X]\n", this->peek(), this->peek());
+    //     }
+    // );
     return t;
 }
 

@@ -7,6 +7,7 @@
 #include <string>
 
 namespace WylesLibs::File {
+// ! IMPORTANT - This must maintain thread safety.
 class StreamFactory {
     protected:
         std::set<std::string> writers;

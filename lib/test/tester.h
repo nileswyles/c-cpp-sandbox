@@ -1,14 +1,15 @@
 #ifndef WYLESLIBS_TESTER_H
 #define WYLESLIBS_TESTER_H
 
+#include "datastructures/array.h"
+#include "cmder.h"
+#include "logger.h"
+
 #include <string>
 #include <vector>
 #include <stddef.h>
 #include <stdbool.h>
 #include <signal.h>
-
-#include "datastructures/array.h"
-#include "logger.h"
 
 #define addTest(func)\
     addTestWithName(#func, func, __FILE__, __LINE__);
@@ -23,8 +24,10 @@ typedef void (SuiteFunction)();
 typedef void (TestFunction)(TestArg *);
 
 typedef struct Test {
-    std::string test_file_name;
+    std::string file_name;
     int line_number;
+    std::string function_location;
+    std::string declaration_location;
     std::string name;
     TestFunction * func;
     TestArg arg;
@@ -82,9 +85,24 @@ class Tester {
         }
         Tester(std::string suite_name): Tester(suite_name, nullptr, nullptr, nullptr, nullptr) {}
 
-        void addTestWithName(const char * name, TestFunction * func, const char * test_file_name, int line_number) {
-            std::string s(name);
-            Test test = {.test_file_name = std::string(test_file_name), .line_number = line_number, .name = s, .func = func, .arg = { .fail = TESTER_DEFAULT_TEST_FAIL_VALUE }};
+        void addTestWithName(const char * name, TestFunction * func, const char * file_name, int line_number) {
+            std::string test_name(name);
+            std::string test_file_name(file_name);
+            Test test = {
+                .file_name = test_file_name, 
+                .line_number = line_number,
+                .function_location = esystem("/scripts/cpp-reflection/tester_function_mapper.pl", {
+                    const_cast<char *>(("-p " + test_file_name).c_str()), 
+                    const_cast<char *>(("-t " + test_name).c_str())
+                }), 
+                .declaration_location = esystem("/scripts/cpp-reflection/tester_declaration_mapper.pl", {
+                    const_cast<char *>(("-p " + test_file_name).c_str()), 
+                    const_cast<char *>(("-t " + test_name).c_str())
+                }), 
+                .name = test_name, 
+                .func = func, 
+                .arg = { .fail = TESTER_DEFAULT_TEST_FAIL_VALUE }
+            };
             this->tests.push_back(test);
             this->num_tests++;
         }

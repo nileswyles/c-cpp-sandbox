@@ -188,6 +188,11 @@ class EStream {
                     this->fillBuffer();
                 }
             } else {
+                // TODO: think about whether peeking should throw an exception or not... definetly gets...
+                //      This currently requires checking for good prior to peeks and gets... make sure to take into account streamCollect and any other usages of this (but more importantly streamCollect).
+                //      If so, then can also remove the random loggerExecs...
+                //      maybe want to leave peek checks to caller?
+
                 // throw exception, if using status bits then you should check good outside of this.
                 std::string msg("Read error. No more data in the stream to fill buffer.");
                 loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());

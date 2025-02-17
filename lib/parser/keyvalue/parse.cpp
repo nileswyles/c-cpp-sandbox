@@ -22,12 +22,12 @@ std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(
     }
     while (1) {
         ReaderTaskDisallow<SharedArray<uint8_t>> ignore_whitespace(" \t");
-        SharedArray<uint8_t> field_name = reader->read("=\n", &ignore_whitespace);
+        SharedArray<uint8_t> field_name = reader->read<SharedArray<uint8_t>>("=\n", &ignore_whitespace);
         if (field_name.back() == '\n') {
             // empty line... we are done...
             break;
         }
-        SharedArray<uint8_t> field_value = reader->read(delim_string);
+        SharedArray<uint8_t> field_value = reader->read<SharedArray<uint8_t>>(delim_string);
         if (delim != '\n' && field_value.back() == '\n') {
             // new line instead of delim, so we are done.
             break;

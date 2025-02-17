@@ -329,7 +329,7 @@ static bool parseKey(JsonObject * obj, ByteEStream * r) {
     );
 
     ReaderTaskExtract extract('"', '"');
-    SharedArray<uint8_t> key = r->read(":}", &extract);
+    SharedArray<uint8_t> key = r->read<SharedArray<uint8_t>>(":}", &extract);
 
     std::string key_string = key.toString();
     loggerPrintf(LOGGER_DEBUG, "Parsed Key String with delimeter: '%s'\n", key_string.c_str());

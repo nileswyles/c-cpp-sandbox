@@ -126,6 +126,8 @@ namespace WylesLibs {
                 return EStream<uint8_t>::read<RT>(SharedArray<uint8_t>(until), operation, inclusive);
             }
 
+            // TODO: like this until member template specialization works. or maybe not, that might require a better class name?
+
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
             // "" == DIGIT CLASS criteria
             virtual std::tuple<uint64_t, size_t> readNatural(std::string until = "", bool consume = true);

@@ -35,7 +35,7 @@ class WebsocketJsonRpcConnection: public ConnectionUpgrader {
         //  alright, I know I "c@n'T gr@MM@R" but definetly not that bad...
         uint8_t onConnection(ByteEStream * io) {
             printf("Established websocket connection...\n");
-            printf("MESSAGE FROM CLIENT: %s\n", io->read("}").toString().c_str());
+            printf("MESSAGE FROM CLIENT: %s\n", io->read<SharedArray<uint8_t>>("}").toString().c_str());
             return 1;
         }
 };

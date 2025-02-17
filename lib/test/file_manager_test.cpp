@@ -63,7 +63,7 @@ bool assertDirectory(SharedArray<std::string> directory_list) {
 void testFileManager(TestArg * t) {
     SharedArray<uint8_t> file_data("Store some information in the file.");
     file_manager->write(test_file, file_data, false); // >
-    SharedArray<uint8_t> read_file_data = file_manager->read(test_file);
+    SharedArray<uint8_t> read_file_data = file_manager->read<SharedArray<uint8_t>>(test_file);
     if (false == assertFileData(file_data, read_file_data)) {
         t->fail = true;
         return;
@@ -71,7 +71,7 @@ void testFileManager(TestArg * t) {
 
     // SharedArray<uint8_t> appended_file_data(" Append some information in the file.");
     // file_manager->write(test_file, appended_file_data, true); // >>
-    // read_file_data = file_manager->read(test_file);
+    // read_file_data = file_manager->read<SharedArray<uint8_t>>(test_file);
     // // TODO: char specialization for append?
     // // file_data.removeBack(); // remove NUL char.
     // file_data.remove(file_data.size()-2, 2); // hmm....
@@ -83,7 +83,7 @@ void testFileManager(TestArg * t) {
 
     SharedArray<uint8_t> overwritten_file_data("Store only this information in the file.");
     file_manager->write(test_file, overwritten_file_data, false); // >
-    read_file_data = file_manager->read(test_file);
+    read_file_data = file_manager->read<SharedArray<uint8_t>>(test_file);
     if (false == assertFileData(overwritten_file_data, read_file_data)) {
         t->fail = true;
     } else {
@@ -93,7 +93,7 @@ void testFileManager(TestArg * t) {
 void testFileManagerWriteFileDoesntExist(TestArg * t) {
     SharedArray<uint8_t> file_data("Store some information in the file.");
     file_manager->write(test_file_doesnt_exist, file_data, false); // >
-    SharedArray<uint8_t> read_file_data = file_manager->read(test_file_doesnt_exist);
+    SharedArray<uint8_t> read_file_data = file_manager->read<SharedArray<uint8_t>>(test_file_doesnt_exist);
     if (false == assertFileData(file_data, read_file_data)) {
         t->fail = true;
     } else {
@@ -103,7 +103,7 @@ void testFileManagerWriteFileDoesntExist(TestArg * t) {
 void testFileManagerReadFileDoesntExist(TestArg * t) {
     bool exception = false;
     try {
-        file_manager->read(test_file_doesnt_exist);
+        file_manager->read<SharedArray<uint8_t>>(test_file_doesnt_exist);
     } catch (std::exception& e) {
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "Exception: %s\n", e.what());
         exception = true;

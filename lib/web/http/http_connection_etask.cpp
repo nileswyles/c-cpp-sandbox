@@ -41,7 +41,7 @@ using namespace WylesLibs::Parser;
 static Url parseUrl(ByteEStream * io) {
     Url url;
     // path = /aklmdla/aslmlamk(?)
-    SharedArray<uint8_t> path = io->read("? ");
+    SharedArray<uint8_t> path = io->read<SharedArray<uint8_t>>("? ");
     if ((char)path.back() == '?') {
         // query = key=value&key2=value2
         url.query_map = KeyValue::parse(io, '&');
@@ -63,18 +63,18 @@ void HttpConnectionETask::parseRequest(HttpRequest * request, ByteEStream * io) 
         throw std::runtime_error("lol....");
     }
     // TODO: this is terrible as is... stringyness must work. lower bounds check if can't get removeBack functionality working.
-    request->method = io->read(" ").removeBack().toString();
+    request->method = io->read<SharedArray<uint8_t>>(" ").removeBack().toString();
     request->method = request->method.substr(0, request->method.size()-1);
 
     request->url = parseUrl(io);
 
-    request->version = io->read("\n").removeBack().toString();
+    request->version = io->read<SharedArray<uint8_t>>("\n").removeBack().toString();
     request->version = request->version.substr(0, request->version.size()-1);
 
     request->content_length = SIZE_MAX;
     int field_idx = 0; 
     while (field_idx < HTTP_FIELD_MAX) {
-        std::string field_name = io->read(":\n", &this->server->whitespace_lc_chain).toString();
+        std::string field_name = io->read<SharedArray<uint8_t>>(":\n", &this->server->whitespace_lc_chain).toString();
         if (field_name[field_name.size()-1] == '\n') {
             printf("FOUND EMPTY NEW LINE AFTER PARSING FIELDS\n");
             break;
@@ -90,7 +90,7 @@ void HttpConnectionETask::parseRequest(HttpRequest * request, ByteEStream * io) 
         field_idx++;
         char delimeter = 0x00;
         while (delimeter != '\n') {
-            std::string field_value = io->read(",\n", chain).toString();
+            std::string field_value = io->read<SharedArray<uint8_t>>(",\n", chain).toString();
             // if size == 0, throw an exception idc...
             delimeter = (char)field_value[field_value.size()-1];
             // only process field if it's an actual field, else check delimeter in while loop...
@@ -126,7 +126,7 @@ void HttpConnectionETask::parseRequest(HttpRequest * request, ByteEStream * io) 
             Multipart::FormData::parse(io, request->files, request->form_content, this->server->file_manager);
         } else if ("multipart/byteranges" == request->fields[CONTENT_TYPE_KEY].front()) {
         } else {
-            request->content = ((EStream<uint8_t> *)io)->read((size_t)request->content_length);
+            request->content = ((EStream<uint8_t> *)io)->read<SharedArray<uint8_t>>((size_t)request->content_length);
         }
     }
 }
@@ -182,8 +182,8 @@ HttpResponse * HttpConnectionETask::handleStaticRequest(HttpRequest * request) {
 	if (content_type != "") {
         response = new HttpResponse;
 		if (request->method == "HEAD" || request->method == "GET") {
-            SharedArray<uint8_t> file_data = ESHAREDPTR_GET_PTR(this->server->file_manager)->read(path);
-            char content_length[17];
+            SharedArray<uint8_t> file_data = ESHAREDPTR_GET_PTR(this->server->file_manager)->read<SharedArray<uint8_t>>(path);
+            char content_length[17] = {0};
 			sprintf(content_length, "%ld", file_data.size());
             response->fields["Content-Length"] = std::string(content_length);
 			response->fields["Content-Type"] = content_type;

@@ -23,21 +23,21 @@ static void parse(ByteEStream * io, SharedArray<MultipartFile> files, std::unord
         std::string field_name;
         bool is_file = false;
         MultipartFile file;
-        SharedArray<uint8_t> line = io->read("\n"); // read and consume boundary string
+        SharedArray<uint8_t> line = io->read<SharedArray<uint8_t>>("\n"); // read and consume boundary string
         if (line.at(0) == '-' && line.at(1) == '-') {
             if (line[line.size() - 3] == '-') {
                 // last boundary string, we are done reading files... 
                 break;
             };
             // assume type then range for now...
-            io->read(";"); // read and consume content disposition type because who cares.
+            io->read<SharedArray<uint8_t>>(";"); // read and consume content disposition type because who cares.
 
             is_file = false;
             bool has_name = false;
             for (uint8_t i = 0; i < 2; i++) {
-                std::string field = io->read("=").removeBack().toString();
+                std::string field = io->read<SharedArray<uint8_t>>("=").removeBack().toString();
                 ReaderTaskExtract<SharedArray<uint8_t>> extract('"', '"');
-                std::string value = io->read(";", &extract).removeBack().toString();
+                std::string value = io->read<SharedArray<uint8_t>>(";", &extract).removeBack().toString();
                 if (field == "filename") {
                     is_file = true;
                     if (files.size() > MAX_NUM_FILES_PER_REQUEST) {
@@ -58,7 +58,7 @@ static void parse(ByteEStream * io, SharedArray<MultipartFile> files, std::unord
             if (!has_name) {
                 throw std::runtime_error("Field name required.");
             }
-            io->read("\n"); // consume new line...
+            io->read<SharedArray<uint8_t>>("\n"); // consume new line...
         } else if (field_name != "") {
             if (is_file) {
                 ESHAREDPTR_GET_PTR(file_manager)->write(file.getResourcePath(), line, !new_file);

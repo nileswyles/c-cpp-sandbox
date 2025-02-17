@@ -718,6 +718,12 @@ class SharedArray {
         bool operator!= (const SharedArray<T>& x) {
             return *this->ctrl->ptr != *x.ctrl->ptr;
         }
+
+        // Standard Library (partial) compatability layer. Implement as needed
+        //  + operator and insert overlap (at least partially?) see above.
+        virtual void push_back(const T& value) {
+            return this->ctrl->ptr->push_back(value);
+        }
 };
 
 // @ static

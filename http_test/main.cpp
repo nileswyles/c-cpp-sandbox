@@ -51,21 +51,21 @@ extern Server * WylesLibs::getServerContext() {
 // ! IMPORTANT - this pattern must be implemented in all multithreaded applications that leverage the etasker stuff.
 void sig_handler(int sig, siginfo_t * info, void * context) {
     pthread_t pthread = pthread_self();
-    if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
-        ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
-        etasker->threadSigAction(sig, info, context);
-    } else {
-        raise(sig);
+    if (sig == SIGTERM) {
+        if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
+            ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
+            etasker->threadSigAction(sig, info, context);
+        }
     }
 }
 
 void sig_handler1(int sig) {
     pthread_t pthread = pthread_self();
-    if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
-        ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
-        etasker->threadSigAction(sig, nullptr, nullptr);
-    } else {
-        raise(sig);
+    if (sig == SIGTERM) {
+        if (ETasker::thread_specific_sig_handlers.contains(pthread)) {
+            ETasker * etasker = ETasker::thread_specific_sig_handlers[pthread];
+            etasker->threadSigAction(sig, nullptr, nullptr);
+        }
     }
 }
 
@@ -80,8 +80,8 @@ void initProcessSigHandler() {
     // }
 
     // workaround because idk?
-    signal(SIGKILL, sig_handler1);
-    signal(SIGSEGV, sig_handler1);
+    signal(SIGTERM, sig_handler1);
+    signal(SIGSEGV, SIG_IGN);
 }
 
 int main(int argc, char * argv[]) {

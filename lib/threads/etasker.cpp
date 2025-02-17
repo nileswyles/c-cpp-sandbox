@@ -79,7 +79,7 @@ void * ETasker::timerProcess(void * arg) {
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "start: %ld, timeout: %lu, current_time: %lu\n", ethread.start_time.tv_sec, ethread.timeout_s, t.tv_sec);
             if (static_cast<uint64_t>(ethread.start_time.tv_sec) + ethread.timeout_s <= static_cast<uint64_t>(t.tv_sec)) {
                 loggerPrintf(LOGGER_DEBUG, "Thread expired sending signal.\n");
-                pthread_kill(pthread, SIGKILL);
+                pthread_sigqueue(pthread, SIGTERM, {0});
             }
         }
         pthread_mutex_unlock(&this->mutex);
@@ -90,7 +90,7 @@ void * ETasker::timerProcess(void * arg) {
 void ETasker::threadSigAction(int sig, siginfo_t * info, void * context) {
     pthread_t pthread = pthread_self();
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "sig action: %d for pthread %ld\n", sig, pthread);
-    if (sig == SIGKILL && pthread == this->timer_thread) {
+    if (pthread == this->timer_thread) {
         pthread_mutex_lock(&ETasker::thread_specific_sig_handler_mutex);
         ETasker::thread_specific_sig_handlers.erase(this->timer_thread);
         pthread_mutex_unlock(&ETasker::thread_specific_sig_handler_mutex);
@@ -204,6 +204,8 @@ void ETasker::threadTeardown(bool force) {
 #else
         // TODO: read more about performance impact of this... 
         //      I'm assuming it's less than creating a new thread and comperable to longjmp. Only difference is an extra allocation (of the exception object) since there's only one try catch up the stack?
+        //      The manual (signal(7)) says I need to unblock sig via sigprocmask, but this is working? how does longjmp compare to siglongjmp? longjmp didn't actually work but exceptions did...
+        //      okay yeah, the sigreturn might be called because the signal handler is configured to return to trampoline... so don't need to explicitly unblock via sigprocmask but might be needed for the longjmp...
         throw ETaskerUnWind();
 #endif
     } else {

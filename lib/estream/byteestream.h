@@ -121,9 +121,15 @@ namespace WylesLibs {
                 // ~EStream
             }
 
-            virtual SharedArray<uint8_t> read(std::string until = "\n", ReaderTask * operation = nullptr, bool inclusive = true);
-            virtual std::string readString(size_t n, StreamTask<uint8_t, std::string> * operation = nullptr);
-            virtual std::string readString(std::string until = "\n", StreamTask<uint8_t, std::string> * operation = nullptr, bool inclusive = true);
+            template<typename RT>
+            RT read(const size_t n, StreamTask<uint8_t, RT> * operation = nullptr) {
+                return EStream<uint8_t>::read<RT>(n, operation);
+            }
+            template<typename RT>
+            RT read(std::string until = "\n", StreamTask<uint8_t, RT> * operation = nullptr, bool inclusive = true) {
+                return EStream<uint8_t>::read<RT>(SharedArray<uint8_t>(until), operation, inclusive);
+            }
+
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
             // "" == DIGIT CLASS criteria
             virtual std::tuple<uint64_t, size_t> readNatural(std::string until = "", bool consume = true);
@@ -160,6 +166,15 @@ namespace WylesLibs {
                     SSL_free(this->ssl);
                 }
             }
+            template<typename RT>
+            RT read(const size_t n, StreamTask<uint8_t, RT> * operation = nullptr) {
+                return EStream<uint8_t>::read<RT>(n, operation);
+            }
+            template<typename RT>
+            RT read(std::string until = "\n", StreamTask<uint8_t, RT> * operation = nullptr, bool inclusive = true) {
+                return EStream<uint8_t>::read<RT>(SharedArray<uint8_t>(until), operation, inclusive);
+            }
+
             ssize_t write(uint8_t * b, size_t size) override final;
 
             SSLEStream(SSLEStream && x) = default;

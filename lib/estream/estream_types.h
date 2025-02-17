@@ -111,6 +111,11 @@ namespace WylesLibs {
             virtual void accumulate(SharedArray<T>& els) {
                 throw std::runtime_error("Accumulate function of multiple elements isn't implemented!");
             } // optional...
+
+            // TODO - this could (and probably should) be a template but member function specialization isn't working
+            //      and I don't want to implement the same verbose workaround as in datastructures/array.h.
+            //      idk, it may turn out to be worth it compared to the annoying stream/readertask stuff.
+            //      something to think about later.
             virtual RT collect() = 0;
     };
 

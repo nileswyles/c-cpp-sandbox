@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -30,14 +31,16 @@
 #define LOGGER_MODULE_ENABLED LOGGER_READER_TEST
 #include "logger.h"
 
-#define ReaderTaskChain ReaderTaskChain<SharedArray<uint8_t>>
-#define ReaderTaskLC ReaderTaskLC<SharedArray<uint8_t>>
-#define ReaderTaskUC ReaderTaskUC<SharedArray<uint8_t>>
-#define ReaderTaskDisallow ReaderTaskDisallow<SharedArray<uint8_t>>
-#define ReaderTaskAllow ReaderTaskAllow<SharedArray<uint8_t>>
-#define ReaderTaskExact ReaderTaskExact<SharedArray<uint8_t>>
-#define ReaderTaskTrim ReaderTaskTrim<SharedArray<uint8_t>>
-#define ReaderTaskExtract ReaderTaskExtract<SharedArray<uint8_t>>
+// TODO - This is sort of a work around because of how collectors are designed (see estream_types.h)...
+//      Need to think about whether to use templates in collectors to simplify how this is defined...
+#define ReaderTaskChain ReaderTaskChain<std::string>
+#define ReaderTaskLC ReaderTaskLC<std::string>
+#define ReaderTaskUC ReaderTaskUC<std::string>
+#define ReaderTaskDisallow ReaderTaskDisallow<std::string>
+#define ReaderTaskAllow ReaderTaskAllow<std::string>
+#define ReaderTaskExact ReaderTaskExact<std::string>
+#define ReaderTaskTrim ReaderTaskTrim<std::string>
+#define ReaderTaskExtract ReaderTaskExtract<std::string>
 
 using namespace WylesLibs;
 using namespace WylesLibs::Test;
@@ -71,7 +74,7 @@ static void readUntilAssert(TestArg * t, std::string result, std::string expecte
 }
 
 template<typename T>
-static void readElsAssert(TestArg * t, SharedArray<T> result, SharedArray<T> expected) {
+static void readAssert(TestArg * t, SharedArray<T> result, SharedArray<T> expected) {
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n'%s'\n", buffer_start);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Expected String: %s\n", expected.toString().c_str());
     loggerPrintf(LOGGER_TEST_VERBOSE, "Actual String: %s\n", result.toString().c_str());
@@ -147,7 +150,7 @@ static void testReadUntil(TestArg * t) {
 
     setTestString("TESTSTRINGWITHSPACE BLAH");
 
-    std::string result = reader.read(" ").toString();
+    std::string result = reader.read<std::string>(" ");
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     readUntilAssert(t, result, expected);
@@ -163,7 +166,7 @@ static void testReadUntilLimit(TestArg * t) {
     data += " ";
     setTestString(data.c_str());
     try {
-        std::string result = reader.read(" ").toString();
+        std::string result = reader.read<std::string>(" ");
     } catch (std::exception& e) {
         ASSERT_STRING(t, std::string(e.what()), "Spatial until limit of 65536 reached.");
     }
@@ -175,7 +178,7 @@ static void testReadUntilUpperCase(TestArg * t) {
     setTestString("TESTSTRINGWITHSPACE BLAH");
 
     ReaderTaskUC uppercase;
-    std::string result = reader.read(" ", (ReaderTask *)&uppercase).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&uppercase);
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     readUntilAssert(t, result, expected);
@@ -187,7 +190,7 @@ static void testReadUntilLowerCase(TestArg * t) {
     setTestString("TESTSTRINGWITHSPACE BLAH");
 
     ReaderTaskLC lowercase;
-    std::string result = reader.read(" ", (ReaderTask *)&lowercase).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&lowercase);
     std::string expected = "teststringwithspace ";
 
     readUntilAssert(t, result, expected);
@@ -199,7 +202,7 @@ static void testReadUntilAllow(TestArg * t) {
     setTestString("\"TESTSTRINGWITHSPACE\"BLAH ");
 
     ReaderTaskAllow allow("ABC");
-    std::string result = reader.read(" ", (ReaderTask *)&allow).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&allow);
     std::string expected = "ACBA";
 
     readUntilAssert(t, result, expected);
@@ -213,7 +216,7 @@ static void testReadUntilAllowStrict(TestArg * t) {
     ReaderTaskAllow allow("ABC", true);
     bool exception = false;
     try {
-        std::string result = reader.read(" ", (ReaderTask *)&allow).toString();
+        std::string result = reader.read<std::string>(" ", (ReaderTask *)&allow);
     } catch(std::exception& e) {
         exception = true;
     }
@@ -229,7 +232,7 @@ static void testReadUntilDisallow(TestArg * t) {
     setTestString("TESTSTRING ");
 
     ReaderTaskDisallow disallow("IO");
-    std::string result = reader.read(" ", (ReaderTask *)&disallow).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&disallow);
     std::string expected = "TESTSTRNG ";
 
     readUntilAssert(t, result, expected);
@@ -243,7 +246,7 @@ static void testReadUntilDisallowStrict(TestArg * t) {
     ReaderTaskDisallow disallow("IO", true);
     bool exception = false;
     try {
-        std::string result = reader.read(" ", (ReaderTask *)&disallow).toString();
+        std::string result = reader.read<std::string>(" ", (ReaderTask *)&disallow);
     } catch(std::exception& e) {
         exception = true;
     }
@@ -259,7 +262,7 @@ static void testReadUntilTrim(TestArg * t) {
     setTestString("     TESTSTRINGWITHSPACE     ");
 
     ReaderTaskTrim trim;
-    std::string result = reader.read(" ", (ReaderTask *)&trim).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&trim);
     std::string expected = "TESTSTRINGWITHSPACE";
 
     readUntilAssert(t, result, expected);
@@ -271,7 +274,7 @@ static void testReadUntilLTrim(TestArg * t) {
     setTestString("     TESTSTRINGWITHSPACE");
 
     ReaderTaskTrim trim;
-    std::string result = reader.read(" ", (ReaderTask *)&trim).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&trim);
     std::string expected = "TESTSTRINGWITHSPACE";
 
     readUntilAssert(t, result, expected);
@@ -283,7 +286,7 @@ static void testReadUntilRTrim(TestArg * t) {
     setTestString("TESTSTRINGWITHSPACE     ");
 
     ReaderTaskTrim trim;
-    std::string result = reader.read(" ", (ReaderTask *)&trim).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&trim);
     std::string expected = "TESTSTRINGWITHSPACE";
 
     readUntilAssert(t, result, expected);
@@ -297,7 +300,7 @@ static void testReadUntilDisallowSpaceTrim(TestArg * t) {
     ReaderTaskDisallow disallow(" ");
     ReaderTaskTrim trim;
     disallow.next_operation = &trim;
-    std::string result = reader.read(" ", (ReaderTask *)&disallow).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&disallow);
     std::string expected = "";
 
     readUntilAssert(t, result, expected);
@@ -309,7 +312,7 @@ static void testReadUntilExtract(TestArg * t) {
     setTestString("\"TESTSTRINGWITHSPACE\"    ");
 
     ReaderTaskExtract extract('"','"');
-    std::string result = reader.read(" ", (ReaderTask *)&extract).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&extract);
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     readUntilAssert(t, result, expected);
@@ -326,7 +329,7 @@ static void testReadUntilExtractNonWhiteCharacterAfterRightToken(TestArg * t) {
     ReaderTaskExtract extract('"','"');
     bool exception = false;
     try {
-        std::string result = reader.read(" ", (ReaderTask *)&extract).toString();
+        std::string result = reader.read<std::string>(" ", (ReaderTask *)&extract);
         loggerPrintf(LOGGER_TEST_VERBOSE, "Result:\n'%s'\n", result.c_str());
     } catch (std::exception& e) {
         exception = true;
@@ -342,7 +345,7 @@ static void testReadUntilAllowExtract(TestArg * t) {
     ReaderTaskAllow allow("A\"BC");
     ReaderTaskExtract extract('"', '"');
     allow.next_operation = &extract;
-    std::string result = reader.read(" ", (ReaderTask *)&allow).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&allow);
     std::string expected = "AC";
 
     readUntilAssert(t, result, expected);
@@ -358,7 +361,7 @@ static void testReadUntilAllowExtractException(TestArg * t) {
     allow.next_operation = &extract;
     bool exception = false;
     try {
-        reader.read(" ", (ReaderTask *)&allow).toString();
+        reader.read<std::string>(" ", (ReaderTask *)&allow);
     } catch (std::exception& e) {
         exception = true;
     }
@@ -373,7 +376,7 @@ static void testReadUntilDisallowExtract(TestArg * t) {
     ReaderTaskDisallow disallow("IO");
     ReaderTaskExtract extract('"', '"');
     disallow.next_operation = &extract;
-    std::string result = reader.read(" ", (ReaderTask *)&disallow).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&disallow);
     std::string expected = "TESTSTRNGWTHSPACE ";
 
     readUntilAssert(t, result, expected);
@@ -387,7 +390,7 @@ static void testReadUntilLowerCaseExtract(TestArg * t) {
     ReaderTaskLC lowercase;
     ReaderTaskExtract extract('"','"');
     lowercase.next_operation = &extract;
-    std::string result = reader.read(" ", (ReaderTask *)&lowercase).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&lowercase);
     std::string expected = "teststringwithspace ";
 
     readUntilAssert(t, result, expected);
@@ -401,7 +404,7 @@ static void testReadUntilUpperCaseExtract(TestArg * t) {
     ReaderTaskUC uppercase;
     ReaderTaskExtract extract('"','"');
     uppercase.next_operation = &extract;
-    std::string result = reader.read(" ", (ReaderTask *)&uppercase).toString();
+    std::string result = reader.read<std::string>(" ", (ReaderTask *)&uppercase);
     std::string expected = "TESTSTRINGWITHSPACE ";
 
     readUntilAssert(t, result, expected);
@@ -411,7 +414,7 @@ static void testReadUntilCursorAtUntil(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
     setTestString(" BLAH");
 
-    std::string result = reader.read(" ", nullptr, true).toString();
+    std::string result = reader.read<std::string>(" ", nullptr, true);
     readUntilAssert(t, result, " ");
 }
 
@@ -419,7 +422,7 @@ static void testReadUntilCursorAtUntilNotInclusive(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
     setTestString(" BLAH");
 
-    std::string result = reader.read(" ", nullptr, false).toString();
+    std::string result = reader.read<std::string>(" ", nullptr, false);
     readUntilAssert(t, result, "");
 }
 
@@ -435,7 +438,7 @@ static void testReadUntilFillBufferOnce(TestArg * t) {
     expected[expected_size - 3] = ' ';
     setTestString(expected.c_str());
     
-    std::string result = reader.read(" ").toString();
+    std::string result = reader.read<std::string>(" ");
     readUntilAssert(t, result, "$$$$$$$$$$$ ");
 }
 
@@ -451,7 +454,7 @@ static void testReadUntilFillBufferTwice(TestArg * t) {
     expected[expected_size - 3] = ' ';
     setTestString(expected.c_str());
 
-    std::string result = reader.read(" ").toString();
+    std::string result = reader.read<std::string>(" ");
     readUntilAssert(t, result, "$$$$$$$$$$$$$$$$$$ ");
 }
 
@@ -460,7 +463,7 @@ static void testReadUntilAtEndOfStreamButAlsoUntil(TestArg * t) {
     setTestString(" BLAH|");
 
     std::string expected(" BLAH|");
-    std::string result = reader.read("|", nullptr, true).toString();
+    std::string result = reader.read<std::string>("|", nullptr, true);
 
     loggerPrintf(LOGGER_TEST_VERBOSE, "Test String:\n'%s'\n", buffer_start);
     loggerPrintf(LOGGER_TEST_VERBOSE, "Until char:\n[%x]\n", ' ');
@@ -484,9 +487,9 @@ static void testReadEls(TestArg * t) {
         0x43434343,
         0x44444444
     };
-    SharedArray<uint32_t> result = reader.readEls(4);
+    SharedArray<uint32_t> result = reader.read<SharedArray<uint32_t>>(4);
 
-    readElsAssert<uint32_t>(t, result, expected);
+    readAssert<uint32_t>(t, result, expected);
 }
 
 static void testReadElsFullBuffer(TestArg * t) {
@@ -502,9 +505,9 @@ static void testReadElsFullBuffer(TestArg * t) {
         0x43434343,
         0x44444444
     };
-    SharedArray<uint32_t> result = reader.readEls(buffer_size);
+    SharedArray<uint32_t> result = reader.read<SharedArray<uint32_t>>(buffer_size);
 
-    readElsAssert<uint32_t>(t, result, expected);
+    readAssert<uint32_t>(t, result, expected);
 
     if (t->fail == true) {
         return;
@@ -512,7 +515,7 @@ static void testReadElsFullBuffer(TestArg * t) {
     t->fail = true;
 
     try {
-        SharedArray<uint32_t> lol = reader.readEls(1);
+        SharedArray<uint32_t> lol = reader.read<SharedArray<uint32_t>>(1);
         loggerPrintf(LOGGER_TEST_VERBOSE, "Read didn't throw an exception: 0x%X", lol.at(0));
     } catch(std::exception& e) {
         loggerPrintf(LOGGER_TEST_VERBOSE, "Exception: %s\n", e.what());
@@ -551,9 +554,9 @@ static void testReadElsReaderTask(TestArg * t) {
         0x44444444
     };
     TestReadElsReaderTask task;
-    SharedArray<uint32_t> result = reader.readEls(4, static_cast<StreamTask<uint32_t, SharedArray<uint32_t>> *>(&task));
+    SharedArray<uint32_t> result = reader.read<SharedArray<uint32_t>>(4, static_cast<StreamTask<uint32_t, SharedArray<uint32_t>> *>(&task));
 
-    readElsAssert<uint32_t>(t, result, expected);
+    readAssert<uint32_t>(t, result, expected);
 }
 
 static void testPeek(TestArg * t) {
@@ -885,7 +888,8 @@ static void testReadUntilIStreamEStream(TestArg * t) {
     ESharedPtr<std::basic_stringstream<char>> stream(new std::basic_stringstream<char>("IdkSomeString|"));
     IStreamEStream reader(stream);
 
-    std::string result = reader.read("|").toString();
+    // So, something about templates don't allow overloading?
+    std::string result = reader.read<std::string>("|");
 
     readUntilAssert(t, result, "IdkSomeString|");
 }
@@ -894,7 +898,7 @@ static void testReadElsIStreamEStream(TestArg * t) {
     ESharedPtr<std::basic_stringstream<char>> stream(new std::basic_stringstream<char>("IdkSomeString|"));
     IStreamEStream reader(stream);
 
-    std::string result = reader.readEls(13).toString();
+    std::string result = reader.read<SharedArray<uint8_t>>(13).toString();
 
     readUntilAssert(t, result, "IdkSomeString");
 }
@@ -904,7 +908,10 @@ static void testReadUntilIStreamEStreamReaderTask(TestArg * t) {
     IStreamEStream reader(stream);
 
     ReaderTaskLC lowercase;
-    std::string result = reader.read("|", (ReaderTask *)&lowercase).toString();
+    // std::string result = reader.read<std::string>("|", (ReaderTask *)&lowercase).toString();
+    // TODO: okay sure you can't virtual but still? I was hoping this would at least work, if not, then all of this is useless?
+    //  maybe only remove the no longer necessary EStreamI?
+    std::string result = reader.read<std::string>("|", (ReaderTask *)&lowercase);
 
     readUntilAssert(t, result, "idksomestring|");
 }
@@ -920,6 +927,8 @@ int main(int argc, char * argv[]) {
     //  might want to break only if we see until character and not r_trimming (i.e. not within quotes)... ": ": ' should yield ': ' not ':'. NOTE: left and right most characters aren't included, by design. Can probably parameterize that.
     
     // lol, this is wrong but the sentiment was that behaviour should be defined and documented regardless of direction.
+
+    signal(SIGSEGV, SIG_IGN); // but why?
 
     // make sure to write a test.
     t.addTest(testReadUntil);

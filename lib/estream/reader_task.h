@@ -59,7 +59,7 @@ namespace WylesLibs {
 //
 //      should be fun...
 
-typedef StreamTask<uint8_t, SharedArray<uint8_t>> ReaderTask;
+typedef StreamTask<uint8_t, std::string> ReaderTask;
 
 template<typename RT>
 class ReaderTaskChain: public StreamTask<uint8_t, RT> {

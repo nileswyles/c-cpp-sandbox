@@ -58,35 +58,7 @@
 
 namespace WylesLibs {
 template<typename T>
-class EStreamI {
-    /*
-        Read and Write from file descriptor
-    */
-    protected:
-        virtual bool readPastBuffer() = 0;
-        virtual void fillBuffer() = 0;
-    public:
-        EStreamI() = default;
-        virtual ~EStreamI() = default;
-
-        // standard istream methods
-        virtual T get() = 0;
-        virtual T peek() = 0;
-        virtual void unget() = 0;
-        virtual bool eof() = 0;
-        virtual bool good() = 0;
-        virtual bool fail() = 0;
-        virtual SharedArray<T> readEls(const size_t n, StreamTask<T, SharedArray<T>> * operation = nullptr) = 0;
-        // ! IMPORTANT - inclusive means we read and consume the until character.
-        //      inclusive value of false means the until character stays in the read buffer for the next read.
-        //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
-        //      The default value for the inclusive field is TRUE.
-        virtual SharedArray<T> read(SharedArray<T> until = SharedArray<T>(), StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) = 0;
-        virtual ssize_t write(T * b, size_t size) = 0;
-};
-
-template<typename T>
-class EStream: public EStreamI<T> {
+class EStream {
     /*
         Read and Write from file descriptor
     */
@@ -109,10 +81,12 @@ class EStream: public EStreamI<T> {
         LoopCriteria<T> * until_size_criteria;
         ArrayCollector<T> * array_collector;
         std::ios_base::iostate flags;
-        bool readPastBuffer() override {
+
+        virtual bool readPastBuffer() {
             return this->cursor >= this->els_in_buffer;
         }
-        void fillBuffer() override {
+        
+        virtual void fillBuffer() {
             this->cursor = 0;
             ssize_t ret = ::read(this->fd, this->buffer, this->buffer_size * sizeof(T));
             // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
@@ -189,7 +163,7 @@ class EStream: public EStreamI<T> {
         }
 
         // standard istream methods
-        T get() override {
+        virtual T get() {
             T el = this->peek();
             if (this->cursor == 0 && true == this->ungot) {
                 this->ungot = false;
@@ -204,7 +178,8 @@ class EStream: public EStreamI<T> {
         #endif
             return el;
         }
-        T peek() override {
+
+        virtual T peek() {
             if (true == this->good()) {
                 if (true == this->readPastBuffer()) {
                     if (this->cursor != 0) {
@@ -223,17 +198,20 @@ class EStream: public EStreamI<T> {
             }
             return this->buffer[this->cursor];
         }
-        void unget() override {
+
+        virtual void unget() {
             if (this->cursor == 0) { // fill buffer just called...
                 this->ungot = true;
             } else {
                 this->cursor--; // is the normal case...
             }
         }
-        bool eof() override {
+
+        virtual bool eof() {
             return this->flags & std::ios_base::eofbit;
         }
-        bool good() override {
+
+        virtual bool good() {
             if (this->flags == 0) {
                 if (true == this->readPastBuffer()) {
                     if (this->fd < 0) {
@@ -247,62 +225,35 @@ class EStream: public EStreamI<T> {
             }
             return this->flags == 0;
         }
-        bool fail() override {
+
+        virtual bool fail() {
             return this->flags & std::ios_base::failbit;
         }
-        // TODO: overloading must work
-        SharedArray<T> readEls(const size_t n, StreamTask<T, SharedArray<T>> * operation = nullptr) override {
+
+        template<typename RT>
+        RT read(const size_t n, StreamTask<T, RT> * operation = nullptr) {
             if (n == 0) {
                 throw std::runtime_error("It doesn't make sense to read zero els.");
             } else if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
                 throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
             }
-            SharedArray<T> data;
-            if (operation == nullptr) {
-                size_t els_read = 0;
-                if (true == this->readPastBuffer()) {
-                    this->fillBuffer();
-                } else if (this->cursor == 0 && true == this->ungot) {
-                    this->ungot = false;
-                    data.append(this->ungot_el);
-                    els_read++;
-                }
-                while (els_read < n) {
-                    size_t els_left_to_read = n - els_read;
-                    size_t els_left_in_buffer = this->els_in_buffer - this->cursor;
-                    if (els_left_to_read > els_left_in_buffer) {
-                        // copy data left in buffer and read more
-                        data.append(this->buffer + this->cursor, els_left_in_buffer);
-                        els_read += els_left_in_buffer;
-
-                        this->fillBuffer();
-                    } else {
-                        // else enough data in buffer
-                        data.append(this->buffer + this->cursor, els_left_to_read);
-                        this->cursor += els_left_to_read;
-                        els_read += els_left_to_read;
-                    }
-                } 
-            } else {
-                bool inclusive = true;
-                SharedArray<T> until;
-                *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
-                data = this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
-            }
-            return data;
+            bool inclusive = true;
+            SharedArray<T> until;
+            *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
+            return this->streamCollect<RT>(this->until_size_criteria, operation, dynamic_cast<Collector<T, RT> *>(this->array_collector));
         }
+
         // ! IMPORTANT - inclusive means we read and consume the until character.
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
-        SharedArray<T> read(SharedArray<T> until, StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) override {
+        template<typename RT>
+        RT read(SharedArray<T> until, StreamTask<T, RT> * operation = nullptr , bool inclusive = true) {
             size_t until_size = 0;
             *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
-            return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
+            return this->streamCollect<RT>(this->until_size_criteria, operation, dynamic_cast<Collector<T, RT> *>(this->array_collector));
         }
-        ssize_t write(T * b, size_t size) override {
-            return ::write(this->fd, (void *)b, size * sizeof(T));
-        }
+
         template<typename RT>
         RT streamCollect(LoopCriteria<T> * criteria, StreamTask<T, RT> * task, Collector<T, RT> * collector) {
             if (criteria == nullptr) {
@@ -315,17 +266,17 @@ class EStream: public EStreamI<T> {
                 loggerPrintf(LOGGER_DEBUG, "%s\n", msg.c_str());
                 throw std::runtime_error(msg);
             }
-
+        
             collector->initialize();
-
+        
             // ! IMPORTANT - not thread safe
             if (task != nullptr) {
                 task->initialize();
-
+            
                 task->collector = collector;
                 task->criteria = criteria;
             }
- 
+        
             T el = this->peek();
             // TODO:
             //  would be interesting to support multiple criteria and specify some logic about how they relate... maybe a criteria that combines some?
@@ -346,7 +297,7 @@ class EStream: public EStreamI<T> {
                 }
                 el = this->peek();
             }
-
+        
             if (task != nullptr) {
                 task->flush();
                 // ! IMPORTANT - make sure to reset collector and criteria references in the task, so that you can store tasks as instance variables without keeping collectors live.
@@ -355,6 +306,10 @@ class EStream: public EStreamI<T> {
                 task->criteria = nullptr;
             }
             return collector->collect();
+        }
+
+        virtual ssize_t write(T * b, size_t size) {
+            return ::write(this->fd, (void *)b, size * sizeof(T));
         }
 
         // ! IMPORTANT - purposely not explicitly swaping for all variables for the following reasons:

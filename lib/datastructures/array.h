@@ -522,7 +522,7 @@ class Array {
             }
             return (this->e_buf)[i];
         }
-        // TODO: += doesn't work?
+        // TODO: += doesn't work? hmm.....
         Array<T>& operator+ (Array<T>& x) {
             this->append(x);
             return *this;
@@ -540,6 +540,12 @@ class Array {
         }
         bool operator!= (Array<T>& x) {
             return false == (*this == x);
+        }
+
+        // Standard Library (partial) compatability layer. Implement as needed
+        //  + operator and insert overlap (at least partially?) see above.
+        void push_back(const T& value) {
+            this->append(value);
         }
 };
 

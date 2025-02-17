@@ -62,10 +62,11 @@ static void write(ESharedPtr<std::basic_ostream<char>> s_shared, SharedArray<uin
     s->flush();
 }
 
-static SharedArray<uint8_t> read(ESharedPtr<IStreamEStream> s_shared, size_t offset = 0, size_t size = SIZE_MAX) {
+template<typename RT>
+static RT read(ESharedPtr<IStreamEStream> s_shared, size_t offset = 0, size_t size = SIZE_MAX) {
     IStreamEStream * s = ESHAREDPTR_GET_PTR(s_shared);
 
-    SharedArray<uint8_t> file_data;
+    RT file_data;
     if (offset != 0) {
         s->seekg(offset); // read from absolute position defined by offset
     } // else read from current (relative) position.
@@ -75,40 +76,14 @@ static SharedArray<uint8_t> read(ESharedPtr<IStreamEStream> s_shared, size_t off
             uint8_t c = s->get();
             // good and eof are true, false (respectively) at eof character, so ignore.
             if (c != 0xFF) {
-                file_data.append(c);
+                file_data.push_back(c);
             }
         }
         // if (true == s->fail()) {
         //     throw std::runtime_error("Error occured while reading istream until EOF.");
         // }
     } else {
-        file_data = s->readEls(size);
-    }
-    return file_data;
-}
-
-// TODO: refactored to use string type until I can better architect the EStream stuff... need better templating support
-static std::string readString(ESharedPtr<IStreamEStream> s_shared, size_t offset = 0, size_t size = SIZE_MAX) {
-    IStreamEStream * s = ESHAREDPTR_GET_PTR(s_shared);
-
-    std::string file_data;
-    if (offset != 0) {
-        s->seekg(offset); // read from absolute position defined by offset
-    } // else read from current (relative) position.
-    if (size == SIZE_MAX) {
-        // read until EOF
-        while (true == s->good()) { //  && false == s->eof(); implied
-            uint8_t c = s->get();
-            // good and eof are true, false (respectively) at eof character, so ignore.
-            if (c != 0xFF) {
-                file_data += c;
-            }
-        }
-        // if (true == s->fail()) {
-        //     throw std::runtime_error("Error occured while reading istream until EOF.");
-        // }
-    } else {
-        file_data = s->readString(size);
+        file_data = s->read<RT>(size);
     }
     return file_data;
 }
@@ -137,15 +112,9 @@ class FileManager {
             // s->close();
             ESHAREDPTR_GET_PTR(this->streams())->removeWriter(path);
         }
-        SharedArray<uint8_t> read(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
-            return File::read(
-                ESharedPtr<IStreamEStream>(
-                    new IStreamEStream(this->stream_factory, path, offset, size)
-                ), 
-            offset, size);
-        }
-        std::string readString(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
-            return File::readString(
+        template<typename RT>
+        RT read(std::string path, size_t offset = 0, size_t size = SIZE_MAX) {
+            return File::read<RT>(
                 ESharedPtr<IStreamEStream>(
                     new IStreamEStream(this->stream_factory, path, offset, size)
                 ), 

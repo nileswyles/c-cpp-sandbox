@@ -34,12 +34,12 @@ extern std::string WylesLibs::esystem(const char * cmd, SharedArray<char *> args
     try {
         if (file_manager.exists(tmp_err) && file_manager.stat(tmp_err)) {
             loggerPrintf(LOGGER_INFO, "Message received via Standard Error while executing command: %s\n", cmd_with_args.c_str());
-            loggerPrintf(LOGGER_INFO, "Standard Error: %s\n", file_manager.readString(tmp_err).c_str());
+            loggerPrintf(LOGGER_INFO, "Standard Error: %s\n", file_manager.read<std::string>(tmp_err).c_str());
         } 
         if (file_manager.exists(tmp_out) == 0) {
             loggerPrintf(LOGGER_INFO, "Error executing command: %s, Standard Out file does not exist.\n", cmd_with_args.c_str());
         } else {
-            out_s = file_manager.readString(tmp_out);
+            out_s = file_manager.read<std::string>(tmp_out);
         }
     } catch(std::exception& e) {
         loggerPrintf(LOGGER_INFO, "Exception: %s\n", e.what());

@@ -259,7 +259,7 @@ static int16_t parseReadableOffset(ByteEStream &s) {
 static uint64_t parseReadableDateTime(ByteEStream& s) {
     // {s} {u} {u}, {u}:{u}:{u}
     uint64_t epoch_seconds = 0;
-    std::string month_str = s.readString(" ");
+    std::string month_str = s.read<std::string>(" ");
     loggerPrintf(LOGGER_DEBUG, "month: %s\n", month_str.c_str());
     uint8_t month = MONTH_NUM[month_str];
     isValidMonth(month, UINT8_MAX);

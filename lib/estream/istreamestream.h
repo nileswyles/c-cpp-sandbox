@@ -54,7 +54,14 @@ class IStreamEStream: public ByteEStream {
         bool fail() override;
         virtual void seekg(size_t offset);
 
-        SharedArray<uint8_t> readEls(const size_t n, StreamTask<uint8_t, SharedArray<uint8_t>> * operation = nullptr) override;
+        template<typename RT>
+        RT read(const size_t n, StreamTask<uint8_t, RT> * operation = nullptr) {
+            return EStream<uint8_t>::read<RT>(n, operation);
+        }
+        template<typename RT>
+        RT read(std::string until = "\n", StreamTask<uint8_t, RT> * operation = nullptr, bool inclusive = true) {
+            return EStream<uint8_t>::read<RT>(SharedArray<uint8_t>(until), operation, inclusive);
+        }
 
         ssize_t write(uint8_t * b, size_t size) override;
 

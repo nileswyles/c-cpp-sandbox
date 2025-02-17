@@ -132,12 +132,12 @@ namespace WylesLibs {
 
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
             // "" == DIGIT CLASS criteria
-            virtual std::tuple<uint64_t, size_t> readNatural(std::string until, bool consume = true);
+            virtual std::tuple<uint64_t, size_t> readNatural(std::string until = "", bool consume = true);
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
             virtual std::tuple<uint64_t, size_t> readNatural(size_t n);
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
             // "" == DIGIT CLASS criteria
-            virtual std::tuple<double, size_t, size_t> readDecimal(std::string until, bool consume = true);
+            virtual std::tuple<double, size_t, size_t> readDecimal(std::string until = "", bool consume = true);
             // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
             virtual std::tuple<double, size_t, size_t> readDecimal(size_t n);
 

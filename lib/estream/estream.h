@@ -243,6 +243,11 @@ class EStream {
             return this->streamCollect<RT>(&until_size_criteria, operation, dynamic_cast<Collector<T, RT> *>(this->array_collector));
         }
 
+        template<typename RT>
+        RT read(SharedArray<T> until, bool inclusive = true) {
+            return this->read<RT>(until, nullptr, inclusive);
+        }
+
         // ! IMPORTANT - inclusive means we read and consume the until character.
         //      inclusive value of false means the until character stays in the read buffer for the next read.
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.

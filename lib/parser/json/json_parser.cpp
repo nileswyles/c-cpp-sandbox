@@ -77,7 +77,7 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
 
     c = r->peek();
     if (isDigit(c)) {
-        std::tuple<double, size_t, size_t> t = r->readDecimal();
+        DecimalTuple t = r->read<DecimalTuple>();
         value = std::get<0>(t);
         natural_digits = std::get<1>(t);
         decimal_digits = std::get<2>(t);
@@ -100,7 +100,7 @@ static void parseNumber(JsonArray * obj, ByteEStream * r) {
             r->get();
         }
 
-        uint64_t exp = std::get<0>(r->readNatural());
+        uint64_t exp = std::get<0>(r->read<NaturalTuple>());
         if (exp > FLT_MAX_EXP_ABS) {
             std::string msg = "parseNumber: exponential to large.";
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());

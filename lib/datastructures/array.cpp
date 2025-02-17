@@ -2,6 +2,9 @@
 
 using namespace WylesLibs;
 
+// TODO: hmm... can these be static member functions then no need for friend and just make paramater the array object? 
+//      at least where it makes sense? this is technically less restrictive.
+
 template<>
 void WylesLibs::addElement<const char *>(const char ** buffer, const size_t pos, const char * el) {
     char * new_cstring = newCArray<char>(strlen(el) + 1);

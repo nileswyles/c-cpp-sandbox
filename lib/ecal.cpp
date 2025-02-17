@@ -232,7 +232,7 @@ static int16_t parseReadableOffset(ByteEStream &s) {
             throw std::runtime_error(msg);
         }
 
-        std::tuple<uint64_t, uint8_t> res = s.readNatural();
+        std::tuple<uint64_t, uint8_t> res = s.read<NaturalTuple>();
         int8_t hour_offset = static_cast<uint8_t>(std::get<0>(res));
         if (std::get<1>(res) > 1) {
             std::string msg = "Error parsing offset hour.";
@@ -244,7 +244,7 @@ static int16_t parseReadableOffset(ByteEStream &s) {
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }// read space
-        res = s.readNatural(2);
+        res = s.read<NaturalTuple>(2);
         int8_t min_offset = static_cast<uint8_t>(std::get<0>(res));
         if (std::get<1>(res) > 2) {
             std::string msg = "Error parsing offset min.";
@@ -264,7 +264,7 @@ static uint64_t parseReadableDateTime(ByteEStream& s) {
     uint8_t month = MONTH_NUM[month_str];
     isValidMonth(month, UINT8_MAX);
 
-    std::tuple<uint64_t, uint8_t> res = s.readNatural();
+    std::tuple<uint64_t, uint8_t> res = s.read<NaturalTuple>();
     uint8_t day = static_cast<uint8_t>(std::get<0>(res));
     isValidDay(day, std::get<1>(res));
     if (s.get() != ' ') {
@@ -273,7 +273,7 @@ static uint64_t parseReadableDateTime(ByteEStream& s) {
         throw std::runtime_error(msg);
     } // read space
 
-    res = s.readNatural();
+    res = s.read<NaturalTuple>();
     uint16_t year = static_cast<uint16_t>(std::get<0>(res));
     isValidYear(year, std::get<1>(res));
     if (s.get() != ',') {
@@ -291,7 +291,7 @@ static uint64_t parseReadableDateTime(ByteEStream& s) {
     epoch_seconds += secondsUpUntilMonth(month, year);
     epoch_seconds += (day - 1) * SECONDS_PER_DAY;
 
-    res = s.readNatural();
+    res = s.read<NaturalTuple>();
     uint8_t hr = static_cast<uint8_t>(std::get<0>(res));
     isValidHr(hr, std::get<1>(res));
     if (s.get() != ':') {
@@ -301,7 +301,7 @@ static uint64_t parseReadableDateTime(ByteEStream& s) {
     }// read space
     epoch_seconds += hr * SECONDS_PER_HOUR;
 
-    res = s.readNatural();
+    res = s.read<NaturalTuple>();
     uint8_t min = static_cast<uint8_t>(std::get<0>(res));
     isValidMin(min, std::get<1>(res));
     if (s.get() != ':') {
@@ -311,7 +311,7 @@ static uint64_t parseReadableDateTime(ByteEStream& s) {
     }// read space
     epoch_seconds += min * SECONDS_PER_MINUTE;
 
-    res = s.readNatural();
+    res = s.read<NaturalTuple>();
     uint8_t sec = static_cast<uint8_t>(std::get<0>(res));
     isValidSec(sec, std::get<1>(res));
     if (s.get() != ' ') {
@@ -333,33 +333,33 @@ static uint64_t parseISO8601ReadableDateTime(ByteEStream& s) {
     // TODO:
     //    hmm... on second thought, might not be good idea to use tuple here lol... get/tie/forward? wth is that?
     //    hmm... for now roll with this? 
-    std::tuple<uint64_t, uint8_t> res = s.readNatural("-");
+    std::tuple<uint64_t, uint8_t> res = s.read<NaturalTuple>("-");
     uint16_t year = static_cast<uint16_t>(std::get<0>(res));
     isValidYear(year, std::get<1>(res));
     epoch_seconds += (year - 1970) * SECONDS_PER_NON_LEAP_YEAR;
     epoch_seconds += getNumLeapYears(year) * SECONDS_PER_DAY;
 
-    res = s.readNatural("-");
+    res = s.read<NaturalTuple>("-");
     uint8_t month = static_cast<uint8_t>(std::get<0>(res));
     isValidMonth(month, std::get<1>(res));
     epoch_seconds += secondsUpUntilMonth(month, year);
 
-    res = s.readNatural("T");
+    res = s.read<NaturalTuple>("T");
     uint8_t day = static_cast<uint8_t>(std::get<0>(res));
     isValidDay(day, std::get<1>(res));
     epoch_seconds += (day - 1) * SECONDS_PER_DAY;
 
-    res = s.readNatural(":");
+    res = s.read<NaturalTuple>(":");
     uint8_t hr = static_cast<uint8_t>(std::get<0>(res));
     isValidHr(hr, std::get<1>(res));
     epoch_seconds += hr * SECONDS_PER_HOUR;
 
-    res = s.readNatural(":");
+    res = s.read<NaturalTuple>(":");
     uint8_t min = static_cast<uint8_t>(std::get<0>(res));
     isValidMin(min, std::get<1>(res));
     epoch_seconds += min * SECONDS_PER_MINUTE;
 
-    res = s.readNatural("Z+-", false);
+    res = s.read<NaturalTuple>("Z+-", nullptr, false);
     uint8_t sec = static_cast<uint8_t>(std::get<0>(res));
     isValidSec(sec, std::get<1>(res));
     epoch_seconds += sec;
@@ -375,35 +375,35 @@ static uint64_t parseISO8601DateTime(ByteEStream& s) {
     // {04u}{02u}{02u}T{02u}{02u}{02u}
     uint64_t epoch_seconds = 0;
 
-    std::tuple<uint64_t, uint8_t> res = s.readNatural(4);
+    std::tuple<uint64_t, uint8_t> res = s.read<NaturalTuple>(4);
     uint16_t year = static_cast<uint16_t>(std::get<0>(res));
     isValidYear(year, std::get<1>(res));
     epoch_seconds += (year - 1970) * SECONDS_PER_NON_LEAP_YEAR;
     epoch_seconds += getNumLeapYears(year) * SECONDS_PER_DAY;
 
-    res = s.readNatural(2);
+    res = s.read<NaturalTuple>(2);
     uint8_t month = static_cast<uint8_t>(std::get<0>(res));
     isValidMonth(month, std::get<1>(res));
     epoch_seconds += secondsUpUntilMonth(month, year);
 
-    res = s.readNatural(2);
+    res = s.read<NaturalTuple>(2);
     uint8_t day = static_cast<uint8_t>(std::get<0>(res));
     isValidDay(day, std::get<1>(res));
     epoch_seconds += (day - 1) * SECONDS_PER_DAY;
 
     s.get(); // T
 
-    res = s.readNatural(2);
+    res = s.read<NaturalTuple>(2);
     uint8_t hr = static_cast<uint8_t>(std::get<0>(res));
     isValidHr(hr, std::get<1>(res));
     epoch_seconds += hr * SECONDS_PER_HOUR;
 
-    res = s.readNatural(2);
+    res = s.read<NaturalTuple>(2);
     uint8_t min = static_cast<uint8_t>(std::get<0>(res));
     isValidMin(min, std::get<1>(res));
     epoch_seconds += min * SECONDS_PER_MINUTE;
 
-    res = s.readNatural(2);
+    res = s.read<NaturalTuple>(2);
     uint8_t sec = static_cast<uint8_t>(std::get<0>(res));
     isValidSec(sec, std::get<1>(res));
     epoch_seconds += sec;
@@ -421,14 +421,14 @@ static uint64_t parseISO8601DateTime(ByteEStream& s) {
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }
-        res = s.readNatural(1);
+        res = s.read<NaturalTuple>(1);
         int8_t hour_offset = static_cast<uint8_t>(std::get<0>(res));
         if (std::get<1>(res) > 1) {
             std::string msg = "Error parsing offset hour.";
             loggerPrintf(LOGGER_INFO, "%s\n", msg.c_str());
             throw std::runtime_error(msg);
         }
-        res = s.readNatural(2);
+        res = s.read<NaturalTuple>(2);
         int8_t min_offset = static_cast<uint8_t>(std::get<0>(res));
         if (std::get<1>(res) > 2) {
             std::string msg = "Error parsing offset min.";

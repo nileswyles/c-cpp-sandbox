@@ -81,9 +81,6 @@ void deleteCArrayElement(T * buffer, size_t pos) {
 template<>
 void deleteCArrayElement<const char *>(const char ** buffer, size_t pos);
 
-// TODO: again, member function "specialization" didn't work, so... I think the non-specialization stuff was working lol...
-//  revisit in future.
-
 // TODO: this should be const.
 template<typename T>
 ssize_t arrayFind(T * e_buf, size_t size, T el) {
@@ -135,7 +132,6 @@ std::string arrayToString<std::string>(std::string * e_buf, size_t size);
 
 // @
 
-// TODO: thread safety
 template<typename T>
 class Array {
     protected:
@@ -494,7 +490,6 @@ class Array {
             return (this->e_buf)[this->size()-1];
         }
         std::string toString() {
-            // TODO: char * specialization that generates a comma-separated list containing c_strings. update array_test.cpp
             return arrayToString<T>(this->e_buf, this->size());
         }
         T& operator[] (const size_t pos) {

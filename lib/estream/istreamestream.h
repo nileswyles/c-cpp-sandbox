@@ -59,6 +59,10 @@ class IStreamEStream: public ByteEStream {
             return EStream<uint8_t>::read<RT>(n, operation);
         }
         template<typename RT>
+        RT read(SharedArray<uint8_t> until, StreamTask<uint8_t, RT> * operation = nullptr , bool inclusive = true) {
+            return EStream<uint8_t>::read<RT>(until, operation, inclusive);
+        }
+        template<typename RT>
         RT read(std::string until = "\n", StreamTask<uint8_t, RT> * operation = nullptr, bool inclusive = true) {
             return EStream<uint8_t>::read<RT>(SharedArray<uint8_t>(until), operation, inclusive);
         }

@@ -65,7 +65,7 @@ void NaturalCollector::accumulate(uint8_t& c) {
         throw std::runtime_error(msg);
     }
 }
-std::tuple<uint64_t, size_t> NaturalCollector::collect() {
+NaturalTuple NaturalCollector::collect() {
     // TODO: implement tuple? also is that template args I see of different types? or is it vaargs?
     //  lol, that would be lame and might be worth reimplementing format? 
     return std::make_tuple(this->value, this->digit_count);
@@ -87,23 +87,28 @@ void DecimalCollector::accumulate(uint8_t& c) {
         throw std::runtime_error(msg);
     }
 }
-std::tuple<double, size_t> DecimalCollector::collect() {
-    return std::make_tuple(this->value, this->digit_count);
+
+DecimalTuple DecimalCollector::collect() {
+    return std::make_tuple(this->value, this->digit_count, 0);
 }
 
 // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-std::tuple<uint64_t, size_t> ByteEStream::readNatural(std::string until, bool consume) {
-    std::tuple<uint64_t, size_t> t;
+// TODO: tests with operation - it's not completely functional... look into typedef, type coersion and casting.
+//      other variations of read should implement a specialization - consumers of child classes can subsequently cast and invoke the specialization.
+template<>
+NaturalTuple ByteEStream::read<NaturalTuple>(std::string until, StreamTask<uint8_t, NaturalTuple> * operation, bool consume) {
+    NaturalTuple t;
     if (until == "") { // default
         ByteIsCharClassCriteria char_class_criteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
-        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(dynamic_cast<LoopCriteria<uint8_t> *>(&char_class_criteria), nullptr, this->natural_collector);
+        t = EStream<uint8_t>::streamCollect<NaturalTuple>(dynamic_cast<LoopCriteria<uint8_t> *>(&char_class_criteria), operation, this->natural_collector);
     } else {
         bool inclusive = false;
         size_t until_size = 0;
         LoopCriteria<uint8_t> until_size_criteria(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
 
-        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(&until_size_criteria, nullptr, this->natural_collector);
+        t = EStream<uint8_t>::streamCollect<NaturalTuple>(&until_size_criteria, operation, this->natural_collector);
+        // ! IMPORTANT - Because collector might not have a way of distinguishing between until char and regular. 
         if (true == consume) {
             this->get(); // consume until char
         }
@@ -117,21 +122,22 @@ std::tuple<uint64_t, size_t> ByteEStream::readNatural(std::string until, bool co
 }
 
 // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-std::tuple<uint64_t, size_t> ByteEStream::readNatural(size_t n) {
+template<>
+NaturalTuple ByteEStream::read<NaturalTuple>(size_t n, StreamTask<uint8_t, NaturalTuple> * operation) {
     if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
         throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
     }
-    std::tuple<uint64_t, size_t> t;
+    NaturalTuple t;
     if (n == 0) { // default
         ByteIsCharClassCriteria char_class_criteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
-        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(dynamic_cast<LoopCriteria<uint8_t> *>(&char_class_criteria), nullptr, this->natural_collector);
+        t = EStream<uint8_t>::streamCollect<NaturalTuple>(dynamic_cast<LoopCriteria<uint8_t> *>(&char_class_criteria), operation, this->natural_collector);
     } else {
         bool inclusive = true;
         SharedArray<uint8_t> until;
         LoopCriteria<uint8_t> until_size_criteria(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, SharedArray<uint8_t>(until)));
 
-        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(&until_size_criteria, nullptr, this->natural_collector);
+        t = EStream<uint8_t>::streamCollect<NaturalTuple>(&until_size_criteria, operation, this->natural_collector);
     }
     loggerExec(LOGGER_DEBUG_VERBOSE,
         if (true == this->good()) {
@@ -142,8 +148,9 @@ std::tuple<uint64_t, size_t> ByteEStream::readNatural(size_t n) {
 }
 
 // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-std::tuple<double, size_t, size_t> ByteEStream::readDecimal(std::string until, bool consume) {
-    std::tuple<uint64_t, size_t> natural_value = this->readNatural();
+template<>
+DecimalTuple ByteEStream::read<DecimalTuple>(std::string until, StreamTask<uint8_t, DecimalTuple> * operation, bool consume) {
+    NaturalTuple natural_value = this->read<NaturalTuple>("", nullptr, false);
 
     char c = this->peek();
     if (c != '.') {
@@ -154,18 +161,20 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(std::string until, b
     } else {
         this->get(); // consume .
     }
-    std::tuple<double, size_t> decimal_value;
+    DecimalTuple decimal_value;
     if (until == "") { // default
         ByteIsCharClassCriteria char_class_criteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
-        decimal_value = EStream<uint8_t>::streamCollect<std::tuple<double, size_t>>(&char_class_criteria, nullptr, this->decimal_collector);
+        decimal_value = EStream<uint8_t>::streamCollect<DecimalTuple>(&char_class_criteria, operation, this->decimal_collector);
     } else {
         bool inclusive = false;
         size_t until_size = 0;
         LoopCriteria<uint8_t> until_size_criteria(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
 
-        decimal_value = EStream<uint8_t>::streamCollect<std::tuple<double, size_t>>(&until_size_criteria, nullptr, this->decimal_collector);
-        if (until != "" && true == consume) {
+        decimal_value = EStream<uint8_t>::streamCollect<DecimalTuple>(&until_size_criteria, operation, this->decimal_collector);
+        // ! IMPORTANT - Because collector might not have a way of distinguishing between until char and regular? is digit check to costly? 
+        //      if not digit then exception? I think that was the question I didn't care to further think about... whatever...
+        if (true == consume) {
             this->get(); // consume until char
         }
     }
@@ -178,11 +187,12 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(std::string until, b
 }
 
 // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-std::tuple<double, size_t, size_t> ByteEStream::readDecimal(size_t n) {
+template<>
+DecimalTuple ByteEStream::read<DecimalTuple>(size_t n, StreamTask<uint8_t, DecimalTuple> * operation) {
     if (n > ARBITRARY_LIMIT_BECAUSE_DUMB) {
         throw std::runtime_error("You're reading more than the limit specified... Read less, or you know what, don't read at all.");
     }
-    std::tuple<uint64_t, size_t> natural_value = this->readNatural();
+    NaturalTuple natural_value = this->read<NaturalTuple>("", nullptr, false);
 
     size_t num_natural_digits = std::get<1>(natural_value);
     if (num_natural_digits >= n || this->peek() != '.') {
@@ -193,13 +203,13 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(size_t n) {
     }
  
     size_t num_to_read = n - num_natural_digits - 1;
-    std::tuple<double, size_t> decimal_value;
+    DecimalTuple decimal_value;
     if (num_to_read > 0) { // default
         bool inclusive = true;
         SharedArray<uint8_t> until;
         LoopCriteria<uint8_t> until_size_criteria(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, SharedArray<uint8_t>(until)));
 
-        decimal_value = EStream<uint8_t>::streamCollect<std::tuple<double, size_t>>(&until_size_criteria, nullptr, this->decimal_collector);
+        decimal_value = EStream<uint8_t>::streamCollect<DecimalTuple>(&until_size_criteria, operation, this->decimal_collector);
     }
     loggerExec(LOGGER_DEBUG_VERBOSE,
         if (true == this->good()) {
@@ -208,7 +218,6 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(size_t n) {
     );
     return std::make_tuple(static_cast<double>(std::get<0>(natural_value)) + std::get<0>(decimal_value), num_natural_digits, std::get<1>(decimal_value));
 }
-
 
 #ifdef WYLESLIBS_SSL_ENABLED
 void SSLEStream::fillBuffer() {

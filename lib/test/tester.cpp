@@ -103,7 +103,7 @@ bool Tester::run(const char * name) {
 void Tester::runTest(Test * test) {
     loggerExec(LOGGER_TEST,
         printf("\n#######################################\n\n");
-        printf("  %s\n\n", test->name.c_str());
+        printf("Test Func: %s\n\n", test->name.c_str());
         printf("Initialization -> %s:%d\n", test->file_name.c_str(), test->line_number);
         if (test->declaration_location.size() > 0) {
             printf("Declaration -> %s\n", test->declaration_location.c_str());

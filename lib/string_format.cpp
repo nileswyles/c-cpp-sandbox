@@ -68,7 +68,7 @@ static std::string parseFloatFormat(ByteEStream& s, void * value, StringFormatOp
             c = s.peek();
             if (true == isDigit(c)) {
                 // if you need more than +-128 then you have problems... behavior is undefined.
-                opts.exponential *= static_cast<int8_t>(std::get<0>(s.readNatural()));
+                opts.exponential *= static_cast<int8_t>(std::get<0>(s.read<NaturalTuple>()));
             }
             if (s.peek() != END_OF_FORMAT_CHAR) {
                 std::basic_stringstream<char> ss;
@@ -124,7 +124,7 @@ static void parseStringCaseModifier(std::string value, ByteEStream& s, Arg& arg)
 }
 
 static void parsePositionalNumberModifier(va_list args, ByteEStream& s, StringFormatOpts& opts, Arg& arg) {
-    uint64_t num = std::get<0>(s.readNatural());
+    uint64_t num = std::get<0>(s.read<NaturalTuple>());
     char next = s.peek();
     if (next == 'f' || next == 'e' || next == 'E') {
         opts.precision = static_cast<uint8_t>(num);
@@ -143,7 +143,7 @@ static void parsePositionalNumberModifier(va_list args, ByteEStream& s, StringFo
 }
 
 static void parseReferencedNumberModifier(ByteEStream& s, StringFormatOpts& opts, Arg& arg) {
-    uint64_t num = std::get<0>(s.readNatural());
+    uint64_t num = std::get<0>(s.read<NaturalTuple>());
     char next = s.peek();
     if (next == 'f' || next == 'e' || next == 'E') {
         opts.precision = static_cast<uint8_t>(num);
@@ -363,7 +363,7 @@ static void parseReferenceFormat(Array<Arg>& args, ByteEStream& s, std::basic_st
            ss << "Invalid reference format. A reference format must start with a '" << START_OF_INDICATOR_FORMAT_CHAR << "' and number - the following character was detected: '" << c << "'";
            throw std::runtime_error(ss.str());
         } else {
-            selection = static_cast<size_t>(std::get<0>(s.readNatural())) - 1; // 0 - 1 == SIZE_MAX?
+            selection = static_cast<size_t>(std::get<0>(s.read<NaturalTuple>())) - 1; // 0 - 1 == SIZE_MAX?
             // consumed all digits, at non-digit
        }
     }

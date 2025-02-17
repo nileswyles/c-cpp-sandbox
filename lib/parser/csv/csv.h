@@ -195,7 +195,7 @@ namespace WylesLibs {
                     size_t dummy_digit_count = 0;
                     // TODO: see ByteEStream TODO
                     if (isDigit(b)) {
-                        current_double = ESHAREDPTR_GET_PTR(this->io)->readDecimal();
+                        current_double = ESHAREDPTR_GET_PTR(this->io)->read<DecimalTuple>();
                         continue;
                         // buffer should be at non-numeric
                     } else if (b == (uint8_t)EOF) {

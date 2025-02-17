@@ -82,7 +82,7 @@ static void readAssert(TestArg * t, SharedArray<T> result, SharedArray<T> expect
     ASSERT_ARRAY<T>(t, result, expected);
 }
 
-static void readNaturalAssert(TestArg * t, ByteEStream& r, std::tuple<uint64_t, size_t> result, std::tuple<uint64_t, size_t> expected, char expected_until) {
+static void read<NaturalTuple>Assert(TestArg * t, ByteEStream& r, NaturalTuple result, NaturalTuple expected, char expected_until) {
     uint64_t actual_num = std::get<0>(result);
     size_t actual_num_digits = std::get<1>(result);
     char actual_get = r.get();
@@ -95,7 +95,7 @@ static void readNaturalAssert(TestArg * t, ByteEStream& r, std::tuple<uint64_t, 
     }
 }
 
-static void readDecimalAssert(TestArg * t, ByteEStream& r, std::tuple<double, size_t, size_t> result, std::tuple<double, size_t, size_t> expected, char expected_until) {
+static void read<DecimalTuple>Assert(TestArg * t, ByteEStream& r, DecimalTuple result, DecimalTuple expected, char expected_until) {
     double actual_num = std::get<0>(result);
     size_t actual_num_natural_digits = std::get<1>(result);
     size_t actual_num_decimal_digits = std::get<2>(result);
@@ -112,7 +112,7 @@ static void readDecimalAssert(TestArg * t, ByteEStream& r, std::tuple<double, si
     }
 }
 
-static void readNaturalAssertConsume(TestArg * t, ByteEStream& r, std::tuple<uint64_t, size_t> result, std::tuple<uint64_t, size_t> expected, bool expected_good) {
+static void read<NaturalTuple>AssertConsume(TestArg * t, ByteEStream& r, NaturalTuple result, NaturalTuple expected, bool expected_good) {
     uint64_t actual_num = std::get<0>(result);
     size_t actual_num_digits = std::get<1>(result);
     bool actual_good = r.good();
@@ -126,7 +126,7 @@ static void readNaturalAssertConsume(TestArg * t, ByteEStream& r, std::tuple<uin
     }
 }
 
-static void readDecimalAssertConsume(TestArg * t, ByteEStream& r, std::tuple<double, size_t, size_t> result, std::tuple<double, size_t, size_t> expected, bool expected_good) {
+static void read<DecimalTuple>AssertConsume(TestArg * t, ByteEStream& r, DecimalTuple result, DecimalTuple expected, bool expected_good) {
     double actual_num = std::get<0>(result);
     size_t actual_num_natural_digits = std::get<1>(result);
     size_t actual_num_decimal_digits = std::get<2>(result);
@@ -677,8 +677,8 @@ static void testReadNaturalUntilDigitClassEmpty(TestArg * t) {
     std::string data("|");
     setTestString(data.c_str());
 
-    std::tuple<uint64_t, size_t> result = reader.readNatural();
-    readNaturalAssert(t, reader, result, std::make_tuple(0, 0), '|');
+    NaturalTuple result = reader.read<NaturalTuple>();
+    read<NaturalTuple>Assert(t, reader, result, std::make_tuple(0, 0), '|');
 }
 
 static void testReadNaturalUntilDigitClass(TestArg * t) {
@@ -686,8 +686,8 @@ static void testReadNaturalUntilDigitClass(TestArg * t) {
     std::string data("100000|");
     setTestString(data.c_str());
 
-    std::tuple<uint64_t, size_t> result = reader.readNatural();
-    readNaturalAssert(t, reader, result, std::make_tuple(100000, 6), '|');
+    NaturalTuple result = reader.read<NaturalTuple>();
+    read<NaturalTuple>Assert(t, reader, result, std::make_tuple(100000, 6), '|');
 }
 
 static void testReadNaturalUntil(TestArg * t) {
@@ -695,8 +695,8 @@ static void testReadNaturalUntil(TestArg * t) {
     std::string data("100000|");
     setTestString(data.c_str());
 
-    std::tuple<uint64_t, size_t> result = reader.readNatural("|");
-    readNaturalAssertConsume(t, reader, result, std::make_tuple(100000, 6), false);
+    NaturalTuple result = reader.read<NaturalTuple>("|");
+    read<NaturalTuple>AssertConsume(t, reader, result, std::make_tuple(100000, 6), false);
 }
 
 static void testReadNaturalUntilNoConsume(TestArg * t) {
@@ -704,16 +704,16 @@ static void testReadNaturalUntilNoConsume(TestArg * t) {
     std::string data("100000|");
     setTestString(data.c_str());
 
-    std::tuple<uint64_t, size_t> result = reader.readNatural("|", false);
-    readNaturalAssert(t, reader, result, std::make_tuple(100000, 6), '|');
+    NaturalTuple result = reader.read<NaturalTuple>("|", false);
+    read<NaturalTuple>Assert(t, reader, result, std::make_tuple(100000, 6), '|');
 }
 
 static void testReadNaturalN(TestArg * t) {
     ByteEStream reader(1, READER_RECOMMENDED_BUF_SIZE);
     setTestString("100000");
 
-    std::tuple<uint64_t, size_t> result = reader.readNatural(6);
-    readNaturalAssert(t, reader, result, std::make_tuple(100000, 6), '|');
+    NaturalTuple result = reader.read<NaturalTuple>(6);
+    read<NaturalTuple>Assert(t, reader, result, std::make_tuple(100000, 6), '|');
 }
 
 static void testReadNaturalNDigitClass(TestArg * t) {
@@ -721,8 +721,8 @@ static void testReadNaturalNDigitClass(TestArg * t) {
     std::string data("100000|");
     setTestString(data.c_str());
 
-    std::tuple<uint64_t, size_t> result = reader.readNatural(0);
-    readNaturalAssert(t, reader, result, std::make_tuple(100000, 6), '|');
+    NaturalTuple result = reader.read<NaturalTuple>(0);
+    read<NaturalTuple>Assert(t, reader, result, std::make_tuple(100000, 6), '|');
 }
 
 // TODO: same for until, and n...
@@ -732,8 +732,8 @@ static void testReadDecimalUntilDigitClassEmpty(TestArg * t) {
     std::string data("|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal();
-    readDecimalAssert(t, reader, result, std::make_tuple(0.0, 0, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>();
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(0.0, 0, 0), '|');
 }
 
 static void testReadDecimalDigitClass(TestArg * t) {
@@ -741,8 +741,8 @@ static void testReadDecimalDigitClass(TestArg * t) {
     std::string data("100000.1239000|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal();
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.1239, 6, 7), '|');
+    DecimalTuple result = reader.read<DecimalTuple>();
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.1239, 6, 7), '|');
 }
 
 static void testReadDecimalUntil(TestArg * t) {
@@ -750,8 +750,8 @@ static void testReadDecimalUntil(TestArg * t) {
     std::string data("100000.1239000|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal("|"); // default consume = true
-    readDecimalAssertConsume(t, reader, result, std::make_tuple(100000.1239, 6, 7), false);
+    DecimalTuple result = reader.read<DecimalTuple>("|"); // default consume = true
+    read<DecimalTuple>AssertConsume(t, reader, result, std::make_tuple(100000.1239, 6, 7), false);
 }
 
 static void testReadDecimalUntilNoConsume(TestArg * t) {
@@ -759,8 +759,8 @@ static void testReadDecimalUntilNoConsume(TestArg * t) {
     std::string data("100000.1239000|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal("|", false); // default consume = true
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.1239, 6, 7), '|');
+    DecimalTuple result = reader.read<DecimalTuple>("|", false); // default consume = true
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.1239, 6, 7), '|');
 }
 
 static void testReadDecimalDigitClassNoDecimalPart(TestArg * t) {
@@ -768,8 +768,8 @@ static void testReadDecimalDigitClassNoDecimalPart(TestArg * t) {
     std::string data("100000|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal();
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>();
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
 }
 
 static void testReadDecimalUntilNoDecimalPart(TestArg * t) {
@@ -777,8 +777,8 @@ static void testReadDecimalUntilNoDecimalPart(TestArg * t) {
     std::string data("100000|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal("|");
-    readDecimalAssertConsume(t, reader, result, std::make_tuple(100000.0, 6, 0), false);
+    DecimalTuple result = reader.read<DecimalTuple>("|");
+    read<DecimalTuple>AssertConsume(t, reader, result, std::make_tuple(100000.0, 6, 0), false);
 }
 
 static void testReadDecimalUntilNoConsumeNoDecimalPart(TestArg * t) {
@@ -786,8 +786,8 @@ static void testReadDecimalUntilNoConsumeNoDecimalPart(TestArg * t) {
     std::string data("100000|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal("|", false);
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>("|", false);
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
 }
 
 static void testReadDecimalN(TestArg * t) {
@@ -796,8 +796,8 @@ static void testReadDecimalN(TestArg * t) {
     setTestString(data.c_str());
 
     size_t num_digits = 6;
-    std::tuple<double, size_t, size_t> result = reader.readDecimal(num_digits);
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, num_digits, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>(num_digits);
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, num_digits, 0), '|');
 }
 
 static void testReadDecimalNDigitClass(TestArg * t) {
@@ -805,8 +805,8 @@ static void testReadDecimalNDigitClass(TestArg * t) {
     std::string data("100000|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal(0);
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>(0);
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
 }
 
 static void testReadDecimalLimit(TestArg * t) {
@@ -815,7 +815,7 @@ static void testReadDecimalLimit(TestArg * t) {
     setTestString(data.c_str());
 
     try {
-        reader.readDecimal(4294967297);
+        reader.read<DecimalTuple>(4294967297);
     } catch(std::exception& e) {
         ASSERT_STRING(t, std::string(e.what()), "You're reading more than the limit specified... Read less, or you know what, don't read at all.");
     }
@@ -826,8 +826,8 @@ static void testReadDecimalDigitClassNoDecimalPartDecimal(TestArg * t) {
     std::string data("100000.|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal();
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>();
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
 }
 
 static void testReadDecimalUntilNoDecimalPartDecimal(TestArg * t) {
@@ -835,8 +835,8 @@ static void testReadDecimalUntilNoDecimalPartDecimal(TestArg * t) {
     std::string data("100000.|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal("|", false);
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>("|", false);
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
 }
 
 static void testReadDecimalNNoDecimalPart(TestArg * t) {
@@ -844,8 +844,8 @@ static void testReadDecimalNNoDecimalPart(TestArg * t) {
     std::string data("100000|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal(6);
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>(6);
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
 }
 
 static void testReadDecimalNNoDecimalPartDecimal(TestArg * t) {
@@ -853,8 +853,8 @@ static void testReadDecimalNNoDecimalPartDecimal(TestArg * t) {
     std::string data("100000.|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal(6);
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '.');
+    DecimalTuple result = reader.read<DecimalTuple>(6);
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, 6, 0), '.');
 }
 
 static void testReadDecimalNNoDecimalPartDecimalCorrect(TestArg * t) {
@@ -862,8 +862,8 @@ static void testReadDecimalNNoDecimalPartDecimalCorrect(TestArg * t) {
     std::string data("100000.|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal(7);
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>(7);
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
 }
 
 static void testReadDecimalNDigitClassNoDecimal(TestArg * t) {
@@ -871,8 +871,8 @@ static void testReadDecimalNDigitClassNoDecimal(TestArg * t) {
     std::string data("100000|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal();
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>();
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
 }
 
 static void testReadDecimalNDigitClassNoDecimalPartDecimal(TestArg * t) {
@@ -880,8 +880,8 @@ static void testReadDecimalNDigitClassNoDecimalPartDecimal(TestArg * t) {
     std::string data("100000.|");
     setTestString(data.c_str());
 
-    std::tuple<double, size_t, size_t> result = reader.readDecimal();
-    readDecimalAssert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
+    DecimalTuple result = reader.read<DecimalTuple>();
+    read<DecimalTuple>Assert(t, reader, result, std::make_tuple(100000.0, 6, 0), '|');
 }
 
 static void testReadUntilIStreamEStream(TestArg * t) {

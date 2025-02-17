@@ -112,10 +112,8 @@ namespace WylesLibs {
                 throw std::runtime_error("Accumulate function of multiple elements isn't implemented!");
             } // optional...
 
-            // TODO - this could (and probably should) be a template but member function specialization isn't working
-            //      and I don't want to implement the same verbose workaround as in datastructures/array.h.
-            //      idk, it may turn out to be worth it compared to the annoying stream/readertask stuff.
-            //      something to think about later.
+            // not a member function template because streamCollect accepts the parent of the collector's defined not the actual collector, so collect isn't actually defined.
+            //          just how it is because of how classes and inheritance work... sort of a gap... loss in resolution when template specialization is inherited...
             virtual RT collect() = 0;
     };
 

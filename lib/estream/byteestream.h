@@ -12,6 +12,10 @@
 
 #include <stdint.h>
 
+// as opposed to typedef automatically which would need to coerse?
+#define NaturalTuple std::tuple<uint64_t, size_t>
+#define DecimalTuple std::tuple<double, size_t, size_t>
+
 namespace WylesLibs {
 
     // @ criteria
@@ -54,7 +58,7 @@ namespace WylesLibs {
             std::string collect() override final;
     };
 
-    class NaturalCollector: public Collector<uint8_t, std::tuple<uint64_t, size_t>> {
+    class NaturalCollector: public Collector<uint8_t, NaturalTuple> {
         private:
             size_t digit_count;
             uint64_t value;
@@ -63,10 +67,10 @@ namespace WylesLibs {
             ~NaturalCollector() override = default;
             void initialize() override final;
             void accumulate(uint8_t& c) override final;
-            std::tuple<uint64_t, size_t> collect() override final;
+            NaturalTuple collect() override final;
     };
 
-    class DecimalCollector: public Collector<uint8_t, std::tuple<double, size_t>> {
+    class DecimalCollector: public Collector<uint8_t, DecimalTuple> {
         private:
             double decimal_divisor;
             size_t digit_count;
@@ -76,18 +80,18 @@ namespace WylesLibs {
             ~DecimalCollector() override = default;
             void initialize() override final;
             void accumulate(uint8_t& c) override final;
-            std::tuple<double, size_t> collect() override final;
+            DecimalTuple collect() override final;
     };
 
     class ByteEStream: public EStream<uint8_t> {
         private:
-            static void initByteStreamProcessing(Collector<uint8_t, std::tuple<uint64_t, size_t>>** natural_collector,
-                                        Collector<uint8_t, std::tuple<double, size_t>>** decimal_collector,
+            static void initByteStreamProcessing(Collector<uint8_t, NaturalTuple>** natural_collector,
+                                        Collector<uint8_t, DecimalTuple>** decimal_collector,
                                         Collector<uint8_t, std::string>** string_collector) {
-                *natural_collector = dynamic_cast<Collector<uint8_t, std::tuple<uint64_t, size_t>> *>(
+                *natural_collector = dynamic_cast<Collector<uint8_t, NaturalTuple> *>(
                     new NaturalCollector
                 );
-                *decimal_collector = dynamic_cast<Collector<uint8_t, std::tuple<double, size_t>> *>(
+                *decimal_collector = dynamic_cast<Collector<uint8_t, DecimalTuple> *>(
                     new DecimalCollector
                 );
                 *string_collector = dynamic_cast<Collector<uint8_t, std::string> *>(
@@ -95,8 +99,8 @@ namespace WylesLibs {
                 );
             }
         public:
-            Collector<uint8_t, std::tuple<uint64_t, size_t>> * natural_collector;
-            Collector<uint8_t, std::tuple<double, size_t>> * decimal_collector;
+            Collector<uint8_t, NaturalTuple> * natural_collector;
+            Collector<uint8_t, DecimalTuple> * decimal_collector;
             Collector<uint8_t, std::string> * string_collector;
 
             ByteEStream() {
@@ -122,22 +126,16 @@ namespace WylesLibs {
                 return EStream<uint8_t>::read<RT>(n, operation);
             }
             template<typename RT>
+            RT read(SharedArray<uint8_t> until, StreamTask<uint8_t, RT> * operation = nullptr, bool inclusive = true) {
+                return EStream<uint8_t>::read<RT>(until, operation, inclusive);
+            }
+            // "" == DIGIT CLASS criteria
+            // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
+            // could do without this curly instead of quotes?
+            template<typename RT>
             RT read(std::string until = "\n", StreamTask<uint8_t, RT> * operation = nullptr, bool inclusive = true) {
                 return EStream<uint8_t>::read<RT>(SharedArray<uint8_t>(until), operation, inclusive);
             }
-
-            // TODO: like this until member template specialization works. or maybe not, that might require a better class name?
-
-            // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-            // "" == DIGIT CLASS criteria
-            virtual std::tuple<uint64_t, size_t> readNatural(std::string until = "", bool consume = true);
-            // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-            virtual std::tuple<uint64_t, size_t> readNatural(size_t n);
-            // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-            // "" == DIGIT CLASS criteria
-            virtual std::tuple<double, size_t, size_t> readDecimal(std::string until = "", bool consume = true);
-            // ( ͡° ͜ʖ ͡°) U+1F608 U+1FAF5
-            virtual std::tuple<double, size_t, size_t> readDecimal(size_t n);
 
             ByteEStream(ByteEStream && x) = default;
             ByteEStream& operator=(ByteEStream && x) = default;
@@ -167,6 +165,10 @@ namespace WylesLibs {
             template<typename RT>
             RT read(const size_t n, StreamTask<uint8_t, RT> * operation = nullptr) {
                 return EStream<uint8_t>::read<RT>(n, operation);
+            }
+            template<typename RT>
+            RT read(SharedArray<uint8_t> until, StreamTask<uint8_t, RT> * operation = nullptr , bool inclusive = true) {
+                return EStream<uint8_t>::read<RT>(until, operation, inclusive);
             }
             template<typename RT>
             RT read(std::string until = "\n", StreamTask<uint8_t, RT> * operation = nullptr, bool inclusive = true) {

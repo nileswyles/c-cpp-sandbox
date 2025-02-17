@@ -95,15 +95,15 @@ std::tuple<double, size_t> DecimalCollector::collect() {
 std::tuple<uint64_t, size_t> ByteEStream::readNatural(std::string until, bool consume) {
     std::tuple<uint64_t, size_t> t;
     if (until == "") { // default
-        *this->char_class_criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
+        ByteIsCharClassCriteria char_class_criteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
-        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(dynamic_cast<LoopCriteria<uint8_t> *>(this->char_class_criteria), nullptr, this->natural_collector);
+        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(dynamic_cast<LoopCriteria<uint8_t> *>(&char_class_criteria), nullptr, this->natural_collector);
     } else {
         bool inclusive = false;
         size_t until_size = 0;
-        *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
+        LoopCriteria<uint8_t> until_size_criteria(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
 
-        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(this->until_size_criteria, nullptr, this->natural_collector);
+        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(&until_size_criteria, nullptr, this->natural_collector);
         if (true == consume) {
             this->get(); // consume until char
         }
@@ -123,15 +123,15 @@ std::tuple<uint64_t, size_t> ByteEStream::readNatural(size_t n) {
     }
     std::tuple<uint64_t, size_t> t;
     if (n == 0) { // default
-        *this->char_class_criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
+        ByteIsCharClassCriteria char_class_criteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
-        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(dynamic_cast<LoopCriteria<uint8_t> *>(this->char_class_criteria), nullptr, this->natural_collector);
+        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(dynamic_cast<LoopCriteria<uint8_t> *>(&char_class_criteria), nullptr, this->natural_collector);
     } else {
         bool inclusive = true;
         SharedArray<uint8_t> until;
-        *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, SharedArray<uint8_t>(until)));
+        LoopCriteria<uint8_t> until_size_criteria(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, SharedArray<uint8_t>(until)));
 
-        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(this->until_size_criteria, nullptr, this->natural_collector);
+        t = EStream<uint8_t>::streamCollect<std::tuple<uint64_t, size_t>>(&until_size_criteria, nullptr, this->natural_collector);
     }
     loggerExec(LOGGER_DEBUG_VERBOSE,
         if (true == this->good()) {
@@ -156,15 +156,15 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(std::string until, b
     }
     std::tuple<double, size_t> decimal_value;
     if (until == "") { // default
-        *this->char_class_criteria = ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
+        ByteIsCharClassCriteria char_class_criteria(ByteIsCharClassCriteria::DIGIT_CLASS);
 
-        decimal_value = EStream<uint8_t>::streamCollect<std::tuple<double, size_t>>(this->char_class_criteria, nullptr, this->decimal_collector);
+        decimal_value = EStream<uint8_t>::streamCollect<std::tuple<double, size_t>>(&char_class_criteria, nullptr, this->decimal_collector);
     } else {
         bool inclusive = false;
         size_t until_size = 0;
-        *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
+        LoopCriteria<uint8_t> until_size_criteria(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
 
-        decimal_value = EStream<uint8_t>::streamCollect<std::tuple<double, size_t>>(this->until_size_criteria, nullptr, this->decimal_collector);
+        decimal_value = EStream<uint8_t>::streamCollect<std::tuple<double, size_t>>(&until_size_criteria, nullptr, this->decimal_collector);
         if (until != "" && true == consume) {
             this->get(); // consume until char
         }
@@ -197,9 +197,9 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(size_t n) {
     if (num_to_read > 0) { // default
         bool inclusive = true;
         SharedArray<uint8_t> until;
-        *this->until_size_criteria = LoopCriteria<uint8_t>(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, num_to_read, SharedArray<uint8_t>(until)));
+        LoopCriteria<uint8_t> until_size_criteria(LoopCriteriaInfo<uint8_t>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, SharedArray<uint8_t>(until)));
 
-        decimal_value = EStream<uint8_t>::streamCollect<std::tuple<double, size_t>>(this->until_size_criteria, nullptr, this->decimal_collector);
+        decimal_value = EStream<uint8_t>::streamCollect<std::tuple<double, size_t>>(&until_size_criteria, nullptr, this->decimal_collector);
     }
     loggerExec(LOGGER_DEBUG_VERBOSE,
         if (true == this->good()) {

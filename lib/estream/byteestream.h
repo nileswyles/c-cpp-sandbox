@@ -81,11 +81,9 @@ namespace WylesLibs {
 
     class ByteEStream: public EStream<uint8_t> {
         private:
-            static void initByteStreamProcessing(ByteIsCharClassCriteria** char_class_criteria,
-                                        Collector<uint8_t, std::tuple<uint64_t, size_t>>** natural_collector,
+            static void initByteStreamProcessing(Collector<uint8_t, std::tuple<uint64_t, size_t>>** natural_collector,
                                         Collector<uint8_t, std::tuple<double, size_t>>** decimal_collector,
                                         Collector<uint8_t, std::string>** string_collector) {
-                *char_class_criteria = new ByteIsCharClassCriteria(ByteIsCharClassCriteria::DIGIT_CLASS);
                 *natural_collector = dynamic_cast<Collector<uint8_t, std::tuple<uint64_t, size_t>> *>(
                     new NaturalCollector
                 );
@@ -97,23 +95,21 @@ namespace WylesLibs {
                 );
             }
         public:
-            ByteIsCharClassCriteria * char_class_criteria;
             Collector<uint8_t, std::tuple<uint64_t, size_t>> * natural_collector;
             Collector<uint8_t, std::tuple<double, size_t>> * decimal_collector;
             Collector<uint8_t, std::string> * string_collector;
 
             ByteEStream() {
-                ByteEStream::initByteStreamProcessing(&char_class_criteria, &natural_collector, &decimal_collector, &string_collector);
+                ByteEStream::initByteStreamProcessing(&natural_collector, &decimal_collector, &string_collector);
             }
             ByteEStream(uint8_t * b, const size_t bs): EStream<uint8_t>(b, bs) {
-                ByteEStream::initByteStreamProcessing(&char_class_criteria, &natural_collector, &decimal_collector, &string_collector);
+                ByteEStream::initByteStreamProcessing(&natural_collector, &decimal_collector, &string_collector);
             }
             ByteEStream(const int fd): ByteEStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
             ByteEStream(const int p_fd, const size_t bs): EStream<uint8_t>(p_fd, bs) {
-                ByteEStream::initByteStreamProcessing(&char_class_criteria, &natural_collector, &decimal_collector, &string_collector);
+                ByteEStream::initByteStreamProcessing(&natural_collector, &decimal_collector, &string_collector);
             }
             ~ByteEStream() {
-                delete char_class_criteria;
                 delete natural_collector;
                 delete decimal_collector;
                 delete string_collector;

@@ -63,10 +63,7 @@ class EStream {
         Read and Write from file descriptor
     */
     private:
-        static void initStreamProcessing(LoopCriteria<T> *& until_size_criteria, ArrayCollector<T> *& array_collector) {
-            until_size_criteria = new LoopCriteria<T>(
-                LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, true, 0, SharedArray<T>())
-            );
+        static void initStreamProcessing(ArrayCollector<T> *& array_collector) {
             array_collector = new ArrayCollector<T>();
         }
         struct pollfd poll_fd;
@@ -78,7 +75,6 @@ class EStream {
         size_t buffer_size;
         size_t cursor;
         size_t els_in_buffer;
-        LoopCriteria<T> * until_size_criteria;
         ArrayCollector<T> * array_collector;
         std::ios_base::iostate flags;
 
@@ -118,7 +114,7 @@ class EStream {
             fd = -1;
             new_buffer = false;
             els_in_buffer = 0;
-            EStream::initStreamProcessing(until_size_criteria, array_collector);
+            EStream::initStreamProcessing(array_collector);
         }
         EStream(T * b, const size_t bs) {
             ungot = false;
@@ -131,7 +127,7 @@ class EStream {
             fd = -1;
             new_buffer = false;
             els_in_buffer = bs;
-            EStream::initStreamProcessing(until_size_criteria, array_collector);
+            EStream::initStreamProcessing(array_collector);
         }
         EStream(const int fd): EStream(fd, READER_RECOMMENDED_BUF_SIZE) {}
         EStream(const int p_fd, const size_t bs) {
@@ -150,7 +146,7 @@ class EStream {
             fd = p_fd;
             new_buffer = true;
             els_in_buffer = 0;
-            EStream::initStreamProcessing(until_size_criteria, array_collector);
+            EStream::initStreamProcessing(array_collector);
             poll_fd.fd = p_fd;
             poll_fd.events = POLLIN;
         }
@@ -158,7 +154,6 @@ class EStream {
             if (true == this->new_buffer) {
                 deleteCArray<T>(this->buffer, this->buffer_size);
             }
-            delete this->until_size_criteria;
             delete this->array_collector;
         }
 
@@ -244,8 +239,8 @@ class EStream {
             }
             bool inclusive = true;
             SharedArray<T> until;
-            *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
-            return this->streamCollect<RT>(this->until_size_criteria, operation, dynamic_cast<Collector<T, RT> *>(this->array_collector));
+            LoopCriteria<T> until_size_criteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
+            return this->streamCollect<RT>(&until_size_criteria, operation, dynamic_cast<Collector<T, RT> *>(this->array_collector));
         }
 
         // ! IMPORTANT - inclusive means we read and consume the until character.
@@ -255,8 +250,8 @@ class EStream {
         template<typename RT>
         RT read(SharedArray<T> until, StreamTask<T, RT> * operation = nullptr , bool inclusive = true) {
             size_t until_size = 0;
-            *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
-            return this->streamCollect<RT>(this->until_size_criteria, operation, dynamic_cast<Collector<T, RT> *>(this->array_collector));
+            LoopCriteria<T> until_size_criteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
+            return this->streamCollect<RT>(&until_size_criteria, operation, dynamic_cast<Collector<T, RT> *>(this->array_collector));
         }
 
         template<typename RT>

@@ -70,7 +70,11 @@ bool Tester::run(const char * name) {
                 failed_names += '\t';
                 failed_names += test.name;
                 failed_names += " -> ";
-                failed_names += test.function_location;
+                if (test.function_location.size() == 0) {
+                    failed_names += WylesLibs::format("{s}:{d}\n", test.file_name.c_str(), test.line_number);
+                } else {
+                    failed_names += test.function_location;
+                }
                 failed_names += '\n';
                 num_failed++;
             } else {

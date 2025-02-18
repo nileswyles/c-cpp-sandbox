@@ -31,8 +31,8 @@
 #define LOGGER_MODULE_ENABLED LOGGER_READER_TEST
 #include "logger.h"
 
-// TODO - This is sort of a work around because of how collectors are designed (see estream_types.h)...
-//      Need to think about whether to use templates in collectors to simplify how this is defined...
+// This is sort of a work around because of how collectors are designed (see estream_types.h)...
+//      It just so happens this is the best solution, templates won't help here, etc.
 #define ReaderTaskChain ReaderTaskChain<std::string>
 #define ReaderTaskLC ReaderTaskLC<std::string>
 #define ReaderTaskUC ReaderTaskUC<std::string>

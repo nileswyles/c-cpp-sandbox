@@ -40,13 +40,27 @@ extern void WylesLibs::Test::ASSERT_UINT64(TestArg * t, uint64_t result, uint64_
 }
 
 bool Tester::run(const char * name) {
-    printf("\n-------------------- %s --------------------\n", this->suite_name.c_str());
+    // per suite header section
+    std::string heading = "\n";
+    for (size_t i = 0; i < 20; i++) {
+        heading += "-";
+    }
+    heading += " ";
+    heading += this->suite_name;
+    heading += " ";
+    for (size_t i = 0; i < 20; i++) {
+        heading += "-";
+    }
+    heading += "\n";
+    printf("%s", heading.c_str());
+
     if (this->before != nullptr) {
         this->before();
     }
     size_t num_failed = 0;
     size_t num_passed = 0;
 
+    // per suite tests section
     std::string failed_names;
     for (auto test: this->tests) {
         bool ran_test = false;
@@ -62,8 +76,10 @@ bool Tester::run(const char * name) {
         } catch(std::exception &e) {
             test.arg.fail = true;
             ran_test = true;
-            loggerPrintf(LOGGER_INFO, "Exception: %s\n", e.what());
-            printf("\n\nTest Failed!\n");
+            loggerPrintf(LOGGER_TEST, "Exception: %s\n", e.what());
+            loggerExec(LOGGER_TEST, 
+                printf("\n\nTest Failed!\n");
+            );
         }
         if (ran_test) {
             if (test.arg.fail) {
@@ -71,7 +87,7 @@ bool Tester::run(const char * name) {
                 failed_names += test.name;
                 failed_names += " -> ";
                 if (test.function_location.size() == 0) {
-                    failed_names += WylesLibs::format("{s}:{d}\n", test.file_name.c_str(), test.line_number);
+                    failed_names += WylesLibs::format("{s}:{d}", test.file_name.c_str(), test.line_number);
                 } else {
                     failed_names += test.function_location;
                 }
@@ -83,24 +99,35 @@ bool Tester::run(const char * name) {
         }
     }
 
+    // per suite results section
     loggerExec(LOGGER_TEST,
         printf("\n#######################################\n");
     );
+    // per suite results->failed tests section
     if (num_failed > 0) {
         printf("\n Failed Tests: \n\n");
         printf("%s", failed_names.c_str());
     }
+    // per suite results->results section
     printf("\n Results: %lu passed, %lu failed\n", num_passed, num_failed);
 
     if (this->after != nullptr) {
         this->after();
     }
 
-    printf("\n---------------------------------------\n");
+    // per suite footer section
+    std::string footing = "\n";
+    for (size_t i = 0; i < this->suite_name.size() + 2 + 40; i++) {
+        footing += "-";
+    }
+    footing += "\n";
+    printf("%s", footing.c_str());
+    // printf("%s", heading.c_str());
     return num_failed == 0;
 }
 
 void Tester::runTest(Test * test) {
+    // per test header section
     loggerExec(LOGGER_TEST,
         printf("\n#######################################\n\n");
         printf("Test Func: %s\n\n", test->name.c_str());
@@ -117,6 +144,7 @@ void Tester::runTest(Test * test) {
         this->before_each(&test->arg);
     }
     test->func(&test->arg);
+    // per test results section
     loggerExec(LOGGER_TEST,
         if (test->arg.fail) {
             printf("\n\nTest Failed!\n");

@@ -86,7 +86,7 @@ void deleteCArrayElement<const char *>(const char ** buffer, size_t pos);
 
 // TODO: this should be const.
 template<typename T>
-ssize_t arrayFind(T * e_buf, size_t size, T el) {
+int64_t arrayFind(T * e_buf, size_t size, T el) {
     for (size_t i = 0; i < size; i++) {
         if (e_buf[i] == el) {
             return i;
@@ -95,7 +95,7 @@ ssize_t arrayFind(T * e_buf, size_t size, T el) {
     return -1;
 }
 template<>
-ssize_t arrayFind<const char *>(const char ** e_buf, size_t size, const char * el);
+int64_t arrayFind<const char *>(const char ** e_buf, size_t size, const char * el);
 
 typedef enum ArraySort {
     ARRAY_SORT_UNSORTED,
@@ -426,7 +426,7 @@ class Array {
         // TODO:
         //      this should be const, does const reference have some other semantic?
         Array<T>& removeEl(const T& el) {
-            ssize_t i = this->find(el);
+            int64_t i = this->find(el);
             if (i != -1) {
                 remove(i, 1);
             }
@@ -467,7 +467,7 @@ class Array {
         bool contains(const T& el) {
             return this->find(el) != -1;
         }
-        ssize_t find(const T& el) {
+        int64_t find(const T& el) {
             return arrayFind<T>(this->e_buf, this->size(), el);
         }
         T& at(const size_t pos) {
@@ -652,7 +652,7 @@ class SharedArray {
         bool contains(const T& el) {
             return this->ctrl->ptr->contains(el);
         }
-        ssize_t find(const T& el) {
+        int64_t find(const T& el) {
             return this->ctrl->ptr->find(el);
         }
         T& at(const size_t pos) {

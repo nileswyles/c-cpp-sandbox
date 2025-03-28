@@ -10,7 +10,11 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if defined(_MSC_VER)
+#include "msc_poll.h"
+#else
 #include <poll.h>
+#endif
 
 #include <filesystem>
 
@@ -46,7 +50,7 @@ static const char * buffer_start;
 static const char * buffer;
 
 // ! IMPORTANT - overriding stdlib's implementation of read (which is apparently weakly linked...)... ByteEStream's calls to read use this function. 
-extern ssize_t read(int fd, void * b, size_t nbytes) {
+extern int64_t read(int fd, void * b, size_t nbytes) {
     size_t ret = MIN(nbytes, strlen(buffer));
     memcpy(b, buffer, ret);
     loggerPrintf(LOGGER_DEBUG, "READ RETURNED (%ld): \n", ret);

@@ -2,7 +2,7 @@
 #define WYLESLIBS_ESTREAM_H
 
 #include "estream/estream_types.h"
-
+#include "memory/pointers.h"
 #include "datastructures/array.h"
 #include "string_format.h"
 #include "string_utils.h"
@@ -10,7 +10,6 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
-#include "memory/pointers.h"
 #include <ios>
 #include <istream>
 
@@ -18,7 +17,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <fcntl.h>
+
+#if defined(_MSC_VER)
+#include "msc_poll.h"
+#include "msc_unistd.h"
+#else
 #include <poll.h>
+#include <msc_unistd.h>
+#endif
 
 #ifdef WYLESLIBS_SSL_ENABLED
 #include <openssl/ssl.h>
@@ -82,7 +88,7 @@ class EStreamI {
         //      Otherwise, SharedArray provides a method to cleanly remove the until character after the fact.
         //      The default value for the inclusive field is TRUE.
         virtual SharedArray<T> read(SharedArray<T> until = SharedArray<T>(), StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) = 0;
-        virtual ssize_t write(T * b, size_t size) = 0;
+        virtual int64_t write(T * b, size_t size) = 0;
 };
 
 template<typename T>
@@ -114,7 +120,8 @@ class EStream: public EStreamI<T> {
         }
         void fillBuffer() override {
             this->cursor = 0;
-            ssize_t ret = ::read(this->fd, this->buffer, this->buffer_size * sizeof(T));
+            
+            int64_t ret = ::read(this->fd, this->buffer, this->buffer_size * sizeof(T));
             // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
             if (ret <= 0 || (size_t)ret > this->buffer_size * sizeof(T)) {
                 this->els_in_buffer = 0;
@@ -300,7 +307,7 @@ class EStream: public EStreamI<T> {
             *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
             return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
         }
-        ssize_t write(T * b, size_t size) override {
+        int64_t write(T * b, size_t size) override {
             return ::write(this->fd, (void *)b, size * sizeof(T));
         }
         template<typename RT>

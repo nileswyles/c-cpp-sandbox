@@ -9,8 +9,6 @@
 #include <string>
 #include <memory>
 
-#include <unistd.h>
-
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL
 #define GLOBAL_LOGGER_LEVEL 0

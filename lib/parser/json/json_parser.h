@@ -13,6 +13,8 @@
 
 #include "global_consts.h"
 
+#include "msc_crt_secure.h"
+
 using namespace WylesLibs;
 using namespace WylesLibs::File;
 

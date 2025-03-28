@@ -63,7 +63,7 @@ ESharedPtr<std::basic_ostream<char>> GCSStreamFactory::writer(std::string path) 
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
-    this->writers.insert(path); 
+    this->writers.append(path); 
     pthread_mutex_unlock(&this->writers_lock);
     // TODO: std::move?
     return ESharedPtr<std::basic_ostream<char>>(

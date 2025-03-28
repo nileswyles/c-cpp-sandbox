@@ -1,11 +1,18 @@
 #include "datastructures/array.h"
+#include "msc_crt_secure.h"
 
 using namespace WylesLibs;
 
 template<>
 void WylesLibs::addElement<const char *>(const char ** buffer, const size_t pos, const char * el) {
-    char * new_cstring = newCArray<char>(strlen(el) + 1);
+    size_t new_length = strlen(el) + 1;
+    char * new_cstring = newCArray<char>(new_length);
+#if defined(_MSC_VER)
+    // TODO: This is retarded.
+    strcpy_s(new_c_string, new_length, el);
+#else
     strcpy(new_cstring, el);
+#endif
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "String copied: %p, '%s'\n", el, el);
     loggerPrintf(LOGGER_DEBUG_VERBOSE, "New String: %p, '%s'\n", new_cstring, new_cstring);
     buffer[pos] = new_cstring;
@@ -42,7 +49,7 @@ void WylesLibs::deleteCArrayElement<const char *>(const char ** buffer, size_t p
 }
 
 template<>
-ssize_t WylesLibs::arrayFind<const char *>(const char ** e_buf, size_t size, const char * el) {
+int64_t WylesLibs::arrayFind<const char *>(const char ** e_buf, size_t size, const char * el) {
     for (size_t i = 0; i < size; i++) {
         if (strcmp(e_buf[i], el) == 0) {
             return i;

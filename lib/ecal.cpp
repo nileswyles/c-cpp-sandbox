@@ -8,47 +8,8 @@
 
 #include <stdint.h>
 
-#define SECONDS_PER_HOUR 3600 // 60 * 60
-#define SECONDS_PER_MINUTE 60
-#define SECONDS_PER_DAY 86400 // 60 * 60 * 24
-#define SECONDS_PER_NON_LEAP_YEAR 31536000 // 365 * 60 * 60 * 24
-
-#define MONTHS_IN_YEAR 12
-#define SIZE_MONTHS_ARRAY MONTHS_IN_YEAR + 1
-
 using namespace WylesLibs;
-
-static constexpr uint32_t RUNNING_SECONDS_UP_UNTIL_MONTH_NON_LEAP_YEAR[SIZE_MONTHS_ARRAY] = {
-    0,
-    SECONDS_PER_DAY * (31),                                                        // jan (up until feb), index 2)
-    SECONDS_PER_DAY * (31 + 28),                                                   // jan + feb (up until march), index 3)
-    SECONDS_PER_DAY * (31 + 28 + 31),                                              // april
-    SECONDS_PER_DAY * (31 + 28 + 31 + 30),                                         // may
-    SECONDS_PER_DAY * (31 + 28 + 31 + 30 + 31),                                    // june
-    SECONDS_PER_DAY * (31 + 28 + 31 + 30 + 31 + 30),                               // july
-    SECONDS_PER_DAY * (31 + 28 + 31 + 30 + 31 + 30 + 31),                          // august
-    SECONDS_PER_DAY * (31 + 28 + 31 + 30 + 31 + 30 + 31 + 31),                     // sept
-    SECONDS_PER_DAY * (31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30),                // oct
-    SECONDS_PER_DAY * (31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31),           // nov
-    SECONDS_PER_DAY * (31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30),      // dec
-    SECONDS_PER_DAY * (31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30 + 31), // start of new year.
-};
-
-static constexpr uint32_t RUNNING_SECONDS_UP_UNTIL_MONTH_LEAP_YEAR[SIZE_MONTHS_ARRAY] = {
-    0,
-    SECONDS_PER_DAY * (31),                                                        // jan (up until feb), index 2)
-    SECONDS_PER_DAY * (31 + 29),                                                   // jan + feb (up until march), index 3)
-    SECONDS_PER_DAY * (31 + 29 + 31),                                              // april
-    SECONDS_PER_DAY * (31 + 29 + 31 + 30),                                         // may
-    SECONDS_PER_DAY * (31 + 29 + 31 + 30 + 31),                                    // june
-    SECONDS_PER_DAY * (31 + 29 + 31 + 30 + 31 + 30),                               // july
-    SECONDS_PER_DAY * (31 + 29 + 31 + 30 + 31 + 30 + 31),                          // august
-    SECONDS_PER_DAY * (31 + 29 + 31 + 30 + 31 + 30 + 31 + 31),                     // sept
-    SECONDS_PER_DAY * (31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30),                // oct
-    SECONDS_PER_DAY * (31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31),           // nov
-    SECONDS_PER_DAY * (31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30),      // dec
-    SECONDS_PER_DAY * (31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30 + 31), // start of new year.
-};
+using namespace WylesLibs::Cal;
 
 static constexpr const char * MONTH_NAME[SIZE_MONTHS_ARRAY] = {
     "",
@@ -80,34 +41,6 @@ static std::map<std::string, uint8_t> MONTH_NUM{
     {"Nov ", 11},
     {"Dec ", 12}
 };
-
-static bool isLeapYear(uint16_t year) {
-    return year % 4 == 0 && (year % 100 != 0 || (year % 100 == 0 && year % 400 == 0));
-}
-
-static uint32_t secondsUpUntilMonth(uint8_t month, uint16_t year) {
-    const uint32_t * running_seconds_up_until_month;
-    if (true == isLeapYear(year)) {
-        running_seconds_up_until_month = &(RUNNING_SECONDS_UP_UNTIL_MONTH_LEAP_YEAR[0]);
-    } else {
-        running_seconds_up_until_month = &(RUNNING_SECONDS_UP_UNTIL_MONTH_NON_LEAP_YEAR[0]);
-    }
-    return running_seconds_up_until_month[month - 1];
-}
-
-static uint16_t getNumLeapYears(uint16_t year) {
-    uint16_t num_leap_years = 0;
-    uint16_t year_cursor = 1972;
-    while (year_cursor < year) {
-        loggerPrintf(LOGGER_DEBUG, "year_cursor: %u, year: %u\n", year_cursor, year);
-        if (isLeapYear(year_cursor)) { 
-            num_leap_years++;
-        }
-        year_cursor += 4;
-    }
-    loggerPrintf(LOGGER_DEBUG, "num leap years: %u\n", num_leap_years);
-    return num_leap_years;
-}
 
 extern std::string WylesLibs::Cal::getFormattedDateTime(int16_t offset, WylesLibs::Cal::DATETIME_FORMAT format) {
     uint64_t epoch_seconds = WylesLibs::Cal::getZonedEpochTime(offset);

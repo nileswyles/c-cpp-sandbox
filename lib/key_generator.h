@@ -2,10 +2,16 @@
 #define SEQUENCE_ID_GENERATOR_H
 
 #include <memory>
+#if defined(_MSC_VER)
+// if windows, use stdlib mutexes
+#include <mutex>
+#else
+// if linux, definetly use pthreads
+#include <pthread.h>
+#endif
 #include "memory/pointers.h"
 
 #include <math.h>
-#include <pthread.h>
 #include <string>
 #include <stdlib.h>
 
@@ -81,7 +87,11 @@ class UniqueKeyGeneratorStore {
 class UniqueKeyGenerator {
     private:
         UniqueKeyGeneratorStore store;
+        #if defined(_MSC_VER)
         pthread_mutex_t mutex;
+        #else
+        std::mutex mutex;
+        #endif
         uint64_t current;
         bool default_constructed;
     public:
@@ -114,33 +124,63 @@ class UniqueKeyGenerator {
         UniqueKeyGenerator(ServerConfig config, UniqueKeyGeneratorStore store): store(store) {
             current = 0;
             store.refresh(current);
+            #if defined(_MSC_VER)
+            #else
             pthread_mutex_init(&mutex, nullptr);
+            #endif
             default_constructed = false;
         }
         virtual ~UniqueKeyGenerator() {
             // ! IMPORTANT - because base destructor is implictly called by derived classes. This appears to be the best solution at the moment.
             if (false == default_constructed) {
+                #if defined(_MSC_VER)
+                this->mutex.lock();
+                #else
                 pthread_mutex_lock(&this->mutex);
+                #endif
                 SharedArray<uint8_t> data;
                 UniqueKeyGenerator::valToHexCharArray(data, current, 8);
                 store.flush(data);
+                #if defined(_MSC_VER)
+                this->mutex.unlock();
+                #else
                 pthread_mutex_unlock(&this->mutex);
                 pthread_mutex_destroy(&this->mutex);
+                #endif
             }
         }
         virtual std::string next() {
+            #if defined(_MSC_VER)
+            this->mutex.lock();
+            #else
             pthread_mutex_lock(&this->mutex);
+            #endif
             this->current++;
 
             SharedArray<uint8_t> data;
             UniqueKeyGenerator::valToHexCharArray(data, current, 8);
+
+            #if defined(_MSC_VER)
+            this->mutex.unlock();
+            #else
             pthread_mutex_unlock(&this->mutex);
+            #endif
             return data.toString();
         }
         virtual uint64_t nextAsInteger() {
+            #if defined(_MSC_VER)
+            this->mutex.lock();
+            #else
             pthread_mutex_lock(&this->mutex);
+            #endif
+
             this->current++;
+
+            #if defined(_MSC_VER)
+            this->mutex.unlock();
+            #else
             pthread_mutex_unlock(&this->mutex);
+            #endif
             return current;
         }
 };

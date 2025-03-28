@@ -230,7 +230,7 @@ std::tuple<double, size_t, size_t> ByteEStream::readDecimal(size_t n) {
 #ifdef WYLESLIBS_SSL_ENABLED
 void SSLEStream::fillBuffer() {
     this->cursor = 0;
-    ssize_t ret = SSL_read(this->ssl, this->buffer, this->buffer_size * sizeof(uint8_t)); // TODO: sizeof(uint8_t) == 1;
+    int64_t ret = SSL_read(this->ssl, this->buffer, this->buffer_size * sizeof(uint8_t)); // TODO: sizeof(uint8_t) == 1;
     // IMPORTANT - STRICTLY BLOCKING FILE DESCRIPTORS!
     if (ret <= 0 || (size_t)ret > this->buffer_size * sizeof(uint8_t)) {
         this->els_in_buffer = 0;
@@ -243,7 +243,7 @@ void SSLEStream::fillBuffer() {
     }
 }
 
-ssize_t SSLEStream::write(uint8_t * b, size_t size) {
+int64_t SSLEStream::write(uint8_t * b, size_t size) {
     return SSL_write(this->ssl, (void *)b, size);
 }
 

@@ -60,7 +60,7 @@ void FileWatcher::initialize(ESharedPtr<FileWatcher> ptr) {
 static void * watcherRun(void * arg) {
     char buf[FILE_WATCHER_SIZE];
     const struct inotify_event *event;
-    ssize_t len;
+    int64_t len;
     try {
         /* Loop while events can be read from inotify file descriptor. */
         struct pollfd poll_fd;

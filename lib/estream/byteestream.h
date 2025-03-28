@@ -160,7 +160,7 @@ namespace WylesLibs {
                     SSL_free(this->ssl);
                 }
             }
-            ssize_t write(uint8_t * b, size_t size) override final;
+            int64_t write(uint8_t * b, size_t size) override final;
 
             SSLEStream(SSLEStream && x) = default;
             SSLEStream& operator=(SSLEStream && x) = default;

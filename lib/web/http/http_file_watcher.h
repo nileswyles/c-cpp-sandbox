@@ -6,7 +6,11 @@
 #include "datastructures/array.h"
 #include "web/http/config.h"
 
+#if defined(_MSC_VER)
+#include "msc_poll.h"
+#else
 #include <poll.h>
+#endif
 #include <sys/inotify.h>
 #include <unordered_map>
 #include <string>

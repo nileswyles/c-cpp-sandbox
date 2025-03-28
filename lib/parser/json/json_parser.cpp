@@ -4,7 +4,6 @@
 #include "string_utils.h"
 
 #include <stdbool.h>
-#include <unistd.h>
 
 #include <tuple>
 

@@ -6,7 +6,6 @@
 #include <string>
 #include <memory>
 #include "memory/pointers.h"
-#include <unistd.h>
 #include <fcntl.h>
 
 #include "string_utils.h"

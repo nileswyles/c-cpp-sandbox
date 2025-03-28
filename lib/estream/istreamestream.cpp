@@ -74,6 +74,6 @@ SharedArray<uint8_t> IStreamEStream::readEls(const size_t n, StreamTask<uint8_t,
     }
     return data;
 }
-ssize_t IStreamEStream::write(uint8_t * b, size_t size) {
+int64_t IStreamEStream::write(uint8_t * b, size_t size) {
     throw std::runtime_error("This function is not available for this extension of ByteEStream base.");
 }

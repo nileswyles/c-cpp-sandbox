@@ -1,20 +1,34 @@
 #ifndef WYLESLIBS_ESTREAM_FACTORY_H
 #define WYLESLIBS_ESTREAM_FACTORY_H
 
-#include <set>
 #include <memory>
-#include "memory/pointers.h"
 #include <string>
+
+#include "datastructures/array.h"
+#include "memory/pointers.h"
+
+#if defined(_MSC_VER)
+#include <mutex>
+#else
+#include <pthread.h>
+#endif
 
 namespace WylesLibs::File {
 // ! IMPORTANT - This must maintain thread safety.
 class StreamFactory {
     protected:
-        std::set<std::string> writers;
+        SharedArray<std::string> writers;
+        #if defined(_MSC_VER)
+        std::mutex writers_lock;
+        #else
         pthread_mutex_t writers_lock;
+        #endif
     public:
         StreamFactory() {
+            #if defined(_MSC_VER)
+            #else
             pthread_mutex_init(&writers_lock, nullptr);
+            #endif
         }
         virtual ~StreamFactory() = default;
         virtual ESharedPtr<std::basic_istream<char>> reader(std::string path, size_t offset = 0, size_t size = SIZE_MAX);

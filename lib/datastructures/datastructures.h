@@ -2,11 +2,11 @@
 #define WYLESLIBS_DATASTRUCTURES_H
 
 #include "datastructures/array.h"
+#include "memory/pointers.h"
 
 #include <map>
 #include <string>
 #include <memory>
-#include "memory/pointers.h"
 
 #ifndef ALGO_SIGNED_LONG
 #define ALGO_SIGNED_LONG int64_t
@@ -47,7 +47,7 @@ namespace WylesLibs {
     class MatrixVector: public SharedArray<T> {
         private:
             // TODO: might move this to MatrixVector as originally considered lol... MAKE UP YOUR MIND!
-            MatrixVectorView * view;
+            MatrixVectorView * view_obj;
         public:
             MatrixVector() = default;
             MatrixVector(std::initializer_list<T> list): SharedArray<T>(list) {}
@@ -56,7 +56,7 @@ namespace WylesLibs {
                 if (initial_cap <= 1) {
                     throw std::runtime_error("View must have at least two elements (remember inclusive).");
                 }
-                this->view = new MatrixVectorView(0, initial_cap - 1);
+                this->view_obj = new MatrixVectorView(0, initial_cap - 1);
             }
             // view
             MatrixVector(const MatrixVector<T>& other, size_t start, size_t end) {
@@ -67,34 +67,37 @@ namespace WylesLibs {
                     if (view_size <= 0 || view_size > this->ctrl->ptr->size()) {
                         throw std::runtime_error("Invalid view coordinates.");
                     }
-                    this->view = new MatrixVectorView(start, end);
+                    this->view_obj = new MatrixVectorView(start, end);
                 }
             }
             ~MatrixVector() {
                 if (this->ctrl == nullptr || this->ctrl->instance_count == 1) {
-                    delete this->view;
+                    delete this->view_obj;
                 }
                 // ~SharedArray();
             };
+            MatrixVector<T>& view(size_t start, size_t end) {
+                return MatrixVector<T>(this, start, end);
+            }
             size_t viewEnd() {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     // TODO: must have at least one element?
                     return this->size() - 1;
                 } else {
                     // # inclusive...
-                    return this->view->end;
+                    return this->view_obj->end;
                 }
             }
             size_t viewStart() {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     return 0;
                 } else {
                     // # inclusive...
-                    return this->view->start;
+                    return this->view_obj->start;
                 }
             }
             MatrixVector<T>& insert(const size_t pos, const T * els, const size_t num_els) override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     this->ctrl->ptr->insert(pos, els, num_els);
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -104,7 +107,7 @@ namespace WylesLibs {
                 return *this;
             }
             MatrixVector<T>& insert(const size_t pos, const T& el) override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     this->ctrl->ptr->insert(pos, el);
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -114,7 +117,7 @@ namespace WylesLibs {
                 return *this;
             }
             MatrixVector<T>& uniqueAppend(const T& el) override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     this->ctrl->ptr->uniqueAppend(el);
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -124,7 +127,7 @@ namespace WylesLibs {
                 return *this;
             }
             MatrixVector<T>& append(const T& el) override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     this->ctrl->ptr->append(el);
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -134,7 +137,7 @@ namespace WylesLibs {
                 return *this;
             }
             MatrixVector<T>& append(const MatrixVector<T>& other) {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     return this->append(other.begin(), other.size());
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -143,7 +146,7 @@ namespace WylesLibs {
                 }
             }
             MatrixVector<T>& append(const T * els, const size_t num_els) override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     this->ctrl->ptr->append(els, num_els);
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -153,7 +156,7 @@ namespace WylesLibs {
                 return *this;
             }
             MatrixVector<T>& remove(const size_t pos, const size_t num_els) override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     this->ctrl->ptr->remove(pos, num_els);
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -163,7 +166,7 @@ namespace WylesLibs {
                 return *this;
             }
             MatrixVector<T>& removeEl(const T& el) override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     this->ctrl->ptr->removeEl(el);
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -173,7 +176,7 @@ namespace WylesLibs {
                 return *this;
             }
             MatrixVector<T>& remove(const size_t pos) override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     this->ctrl->ptr->remove(pos);
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -183,7 +186,7 @@ namespace WylesLibs {
                 return *this;
             }
             MatrixVector<T>& removeFront() override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     this->ctrl->ptr->removeFront();
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -193,7 +196,7 @@ namespace WylesLibs {
                 return *this;
             }
             MatrixVector<T>& removeBack() override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     this->ctrl->ptr->removeBack();
                 } else {
                     std::string message = "Cannot modify a view-only matrix vector.";
@@ -203,7 +206,7 @@ namespace WylesLibs {
                 return *this;
             }
             size_t size() override {
-                if (this->view == nullptr) {
+                if (this->view_obj == nullptr) {
                     return this->ctrl->ptr->size();
                 } else {
                     // # inclusive...
@@ -310,11 +313,11 @@ namespace WylesLibs {
                         }
                     }
                 }
-                return equals && this->view == other.view;
+                return equals && this->view_obj == other.view_obj;
             }
             T& operator[] (const size_t pos) {
                 size_t i = pos;
-                if (this->view != nullptr) {
+                if (this->view_obj != nullptr) {
                     i += this->viewStart();
                     if (i > this->viewEnd()) {
                         std::runtime_error("Attempting to access element outside of MatrixVector.");
@@ -328,25 +331,25 @@ namespace WylesLibs {
             // copy constructor - containerization code remains here
             MatrixVector(const MatrixVector<T>& other) {
                 this->ctrl = other.ctrl;
-                this->view = other.view;
+                this->view_obj = other.view_obj;
                 this->ctrl->instance_count++;
             }
             // copy assignment - containerization code remains here
             MatrixVector<T>& operator= (const MatrixVector<T>& other)  {
                 this->ctrl = other.ctrl;
-                this->view = other.view;
+                this->view_obj = other.view_obj;
                 this->ctrl->instance_count++;
                 return *this;
             }
             // Move constructor
             MatrixVector(MatrixVector<T>&& x) {
                 std::swap(this->ctrl, x.ctrl);
-                std::swap(this->view, x.view);
+                std::swap(this->view_obj, x.view_obj);
             }
             // Move assignment
             MatrixVector<T>& operator= (MatrixVector<T>&& x) {
                 std::swap(this->ctrl, x.ctrl);
-                std::swap(this->view, x.view);
+                std::swap(this->view_obj, x.view_obj);
                 return *this;
             }
     };
@@ -409,16 +412,16 @@ namespace WylesLibs {
                 return copy;
             }
             Matrix<T> view(size_t x_start, size_t x_end, size_t y_start, size_t y_end) {
-                ssize_t x_size = (ssize_t)x_end - x_start;
-                ssize_t y_size = (ssize_t)y_end - y_start;
+                int64_t x_size = (int64_t)x_end - x_start;
+                int64_t y_size = (int64_t)y_end - y_start;
                 // ! IMPORTANT 
                 //      -Wsigncompare 
                 //      Solution:
-                //          cast from size_t to ssize_t. Overflow very unlikely.
+                //          cast from size_t to int64_t. Overflow very unlikely.
                 if (y_start >= this->rows() ||
                         x_start >= this->columns() ||
-                        x_size == 0 || x_size > (ssize_t)this->columns() || 
-                        y_size == 0 || y_size > (ssize_t)this->rows()) {
+                        x_size == 0 || x_size > (int64_t)this->columns() || 
+                        y_size == 0 || y_size > (int64_t)this->rows()) {
                     throw std::runtime_error("Invalid view coordinates.");
                 }
                 Matrix<T> view;

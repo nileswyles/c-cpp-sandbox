@@ -44,7 +44,11 @@ ESharedPtr<std::basic_istream<char>> StreamFactory::reader(std::string path, siz
 }
 
 ESharedPtr<std::basic_ostream<char>> StreamFactory::writer(std::string path) {
+    #if defined(_MSC_VER)
+    this->writers_lock.lock();
+    #else
     pthread_mutex_lock(&this->writers_lock);
+    #endif
     if (true == this->writers.contains(path)) {
         // TODO: maybe just return writer again...
         // return nullptr;
@@ -55,8 +59,12 @@ ESharedPtr<std::basic_ostream<char>> StreamFactory::writer(std::string path) {
         loggerPrintf(LOGGER_DEBUG_VERBOSE, "%s\n", msg.c_str());
         throw std::runtime_error(msg);
     }
-    this->writers.insert(path); 
+    this->writers.append(path); 
+    #if defined(_MSC_VER)
+    this->writers_lock.unlock();
+    #else
     pthread_mutex_unlock(&this->writers_lock);
+    #endif
     return ESharedPtr<std::basic_ostream<char>>(
         dynamic_cast<std::basic_ostream<char> *>(
             ofstream
@@ -68,8 +76,16 @@ ESharedPtr<std::basic_ostream<char>> StreamFactory::writer(std::string path) {
 //      or implement my own streams that implements close... gcs doesn't support close anyways? but will this be an issue for other solutions?
 //      not as extensible?
 void StreamFactory::removeWriter(std::string path) {
+    #if defined(_MSC_VER)
+    this->writers_lock.lock();
+    #else
     pthread_mutex_lock(&this->writers_lock);
+    #endif
 //      for now let's assume destructors flush and close appropriately...
-    this->writers.erase(path);
+    this->writers.removeEl(path);
+    #if defined(_MSC_VER)
+    this->writers_lock.unlock();
+    #else
     pthread_mutex_unlock(&this->writers_lock);
+    #endif
 }

@@ -3,7 +3,11 @@
 
 #include "datastructures/array.h"
 
+#if defined(_MSC_VER)
+#include "msc_poll.h"
+#else
 #include <poll.h>
+#endif
 #include <sys/inotify.h>
 #include <map>
 #include <string>

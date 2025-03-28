@@ -56,7 +56,7 @@ class IStreamEStream: public ByteEStream {
 
         SharedArray<uint8_t> readEls(const size_t n, StreamTask<uint8_t, SharedArray<uint8_t>> * operation = nullptr) override;
 
-        ssize_t write(uint8_t * b, size_t size) override;
+        int64_t write(uint8_t * b, size_t size) override;
 
         IStreamEStream(IStreamEStream && x) = default;
         IStreamEStream& operator=(IStreamEStream && x) = default;

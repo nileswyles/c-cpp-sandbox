@@ -4,7 +4,7 @@
 
 int main() {
     int * blah[10];
-    ssize_t ret = read(-1, blah, 1);
+    int64_t ret = read(-1, blah, 1);
     printf("%ld\n", ret);
     reader reader = {0}; // explicitly initialize to zero, I think {0} == {};
     reader_initialize(&reader, -1);

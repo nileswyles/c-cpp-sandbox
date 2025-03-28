@@ -53,7 +53,7 @@ extern int reader_peek_for_empty_line(reader * const r) {
     } else if (r->cursor + 1 >= r->bytes_in_buffer) { 
         // read and append to buffer...
         uint8_t * tmp[r->buf_size - 1];
-        ssize_t ret = read(r->fd, tmp, r->buf_size - 1);
+        int64_t ret = read(r->fd, tmp, r->buf_size - 1);
         if (ret < 1 || (size_t)ret > (r->buf_size - 1)) {
             return -1;
         } else {
@@ -185,7 +185,7 @@ extern int read_chunk_non_blocking_fd(int fd, uint8_t ** p) {
     bool read_something = false;
     // TODO: limit size of this buffer?
     while (1) {
-        ssize_t res = read(fd, buf, 4096);
+        int64_t res = read(fd, buf, 4096);
         if (res > 0) {
             read_something = true;
             uint8_t * new_p = (uint8_t *)malloc((bytes_read + res)*sizeof(uint8_t));
@@ -225,7 +225,7 @@ extern int read_chunk_non_blocking_fd(int fd, uint8_t ** p) {
 
 static int fill_buffer(reader * const r) {
     r->cursor = 0;
-    ssize_t ret = read(r->fd, r->buf, r->buf_size);
+    int64_t ret = read(r->fd, r->buf, r->buf_size);
     // TODO: retry on EAGAIN?, revisit possible errors...
     if (ret == -1 || (size_t)ret > r->buf_size) {
         r->bytes_in_buffer = 0; // uint

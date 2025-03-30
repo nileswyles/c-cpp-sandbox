@@ -9,7 +9,7 @@ void WylesLibs::addElement<const char *>(const char ** buffer, const size_t pos,
     char * new_cstring = newCArray<char>(new_length);
 #if defined(_MSC_VER)
     // TODO: This is retarded.
-    strcpy_s(new_c_string, new_length, el);
+    strcpy_s(new_cstring, new_length, el);
 #else
     strcpy(new_cstring, el);
 #endif

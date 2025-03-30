@@ -1,3 +1,5 @@
+#pragma once
+
 #if defined(_MSC_VER)
 
 // ! IMPORTANT - This is required by FD based estreams.

@@ -26,6 +26,7 @@
 
 namespace WylesLibs {
 
+    // @
     class MatrixVectorView {
         public:
             // ptr?
@@ -48,6 +49,13 @@ namespace WylesLibs {
         private:
             // TODO: might move this to MatrixVector as originally considered lol... MAKE UP YOUR MIND!
             MatrixVectorView * view_obj;
+
+            static void assertArraySizes(const MatrixVector<T>& v1, const MatrixVector<T>& v2) {
+                if (v1.size() != v2.size()) {
+                    printf("%lu, %lu\n", v1.size(), v2.size());
+                    throw std::runtime_error("Vector sizes should equal.");
+                }
+            }
         public:
             MatrixVector() = default;
             MatrixVector(std::initializer_list<T> list): SharedArray<T>(list) {}
@@ -77,8 +85,8 @@ namespace WylesLibs {
                 }
                 // ~SharedArray();
             };
-            MatrixVector<T>& view(size_t start, size_t end) {
-                return MatrixVector<T>(this, start, end);
+            void view(MatrixVector<T> * cont, size_t start, size_t end) {
+                *cont = MatrixVector<T>(this, start, end);
             }
             size_t viewEnd() {
                 if (this->view_obj == nullptr) {
@@ -215,7 +223,7 @@ namespace WylesLibs {
                 }
             }
             ALGO_UNSIGNED_INT euclidean(const MatrixVector<T>& v) {
-                assertArraySizes(*this, v);
+                MatrixVector::assertArraySizes(*this, v);
                 size_t size = this->size();
                 ALGO_SIGNED_INT sum = 0;
                 for (size_t i = 0; i < size; i++) {
@@ -224,7 +232,7 @@ namespace WylesLibs {
                 return sqrt(sum);
             }
             ALGO_UNSIGNED_INT manhattan(const MatrixVector<T>& v) {
-                assertArraySizes(*this, v);
+                MatrixVector::assertArraySizes(*this, v);
                 // # no C! lol, ef the pythagorean theorem.
                 size_t size = this->size();
                 ALGO_SIGNED_INT sum = 0;
@@ -242,7 +250,7 @@ namespace WylesLibs {
                 return copy;
             }
             MatrixVector<T>& operator+ (const MatrixVector<T>& m) {
-                assertArraySizes<T>(*this, m);
+                MatrixVector::assertArraySizes(*this, m);
          
                 size_t size = this->size();
                 MatrixVector<T> add(size);
@@ -252,7 +260,7 @@ namespace WylesLibs {
                 return add;
             }
             MatrixVector<T>& operator- (const MatrixVector<T>& m) {
-                assertArraySizes<T>(*this, m);
+                MatrixVector::assertArraySizes(*this, m);
          
                 size_t size = this->size();
                 MatrixVector<T> sub(size);
@@ -266,7 +274,7 @@ namespace WylesLibs {
                 //  TODO: look up proof of that ^
                 //  applications:  
                 //      law of cosines
-                assertArraySizes<T>(*this, m);
+                MatrixVector::assertArraySizes(*this, m);
          
                 size_t size = this->size();
                 T dot = 0;
@@ -361,6 +369,18 @@ namespace WylesLibs {
     //  Also, tensor is just Matrix<MatrixVector<T>>?
     template<typename T>
     class Matrix {
+        private:
+            // TODO: lol, this is interesting...
+            static void assertMatrixSizes(const Matrix<T>& m1, const Matrix<T>& m2) {
+                if (m1.rows() != m2.rows() || m1.columns() != m2.columns()) {
+                    throw std::runtime_error("Invalid shape of matricies.");
+                }
+            }
+            static void assertTMatrixSizes(const Matrix<T>& m1, const Matrix<T>& m2) {
+                if (m1.rows() != m2.columns() || m1.columns() != m2.rows()) {
+                    throw std::runtime_error("Invalid shape of matricies.");
+                }
+            }
         protected:
             // TODO: yeah, so this means an extra 2-ptrs per row... (ctrl, view - in MatrixVector) should be fine... flat not so useful in this situation lol
             MatrixVector<MatrixVector<T>> matrix;
@@ -384,7 +404,7 @@ namespace WylesLibs {
                 return (*this)[0].size();
             }
             MatrixVector<ALGO_UNSIGNED_INT> euclidean(const Matrix<T>& m) {
-                assertMatrixSizes<T>(*this, m);
+                Matrix::assertMatrixSizes(*this, m);
                 size_t rows = this->rows();
                 MatrixVector<T> m_out(this->columns());
                 for (size_t i = 0; i < rows; i++) {
@@ -393,7 +413,7 @@ namespace WylesLibs {
                 return m_out; 
             }
             MatrixVector<ALGO_UNSIGNED_INT> manhattan(const Matrix<T>& m) {
-                assertMatrixSizes<T>(*this, m);
+                Matrix::assertMatrixSizes(*this, m);
                 size_t rows = this->rows();
                 MatrixVector<T> m_out(this->columns());
                 for (size_t i = 0; i < rows; i++) {
@@ -436,7 +456,7 @@ namespace WylesLibs {
                 return view;
             }
             Matrix<T>& operator+ (const Matrix<T>& m) {
-                assertMatrixSizes<T>(*this, m);
+                Matrix::assertMatrixSizes(*this, m);
                 Matrix<T> add;
                 for (size_t x = 0; x < this->rows(); x++) {
                     for (size_t y = 0; y < this->columns(); y++) {
@@ -446,7 +466,7 @@ namespace WylesLibs {
                 return add;
             }
             Matrix<T>& operator- (const Matrix<T>& m) {
-                assertMatrixSizes<T>(*this, m);
+                Matrix::assertMatrixSizes(*this, m);
                 Matrix<T> sub;
                 for (size_t x = 0; x < this->rows(); x++) {
                     for (size_t y = 0; y < this->columns(); y++) {
@@ -456,7 +476,7 @@ namespace WylesLibs {
                 return sub;
             }
             Matrix<T>& operator* (const Matrix<T>& m) {
-                assertTMatrixSizes<T>(*this, m);
+                Matrix::assertTMatrixSizes(*this, m);
                 Matrix<T> mul;
                 return mul;
             }
@@ -522,26 +542,5 @@ namespace WylesLibs {
             virtual ~Graph() = default;
     };
 
-    // @
-
-    template<typename T>
-    static void assertArraySizes(const MatrixVector<T>& v1, const MatrixVector<T>& v2) {
-        if (v1.size() != v2.size()) {
-            printf("%lu, %lu\n", v1.size(), v2.size());
-            throw std::runtime_error("Vector sizes should equal.");
-        }
-    }
-    template<typename T>
-    static void assertMatrixSizes(const Matrix<T>& m1, const Matrix<T>& m2) {
-        if (m1.rows() != m2.rows() || m1.columns() != m2.columns()) {
-            throw std::runtime_error("Invalid shape of matricies.");
-        }
-    }
-    template<typename T>
-    static void assertTMatrixSizes(const Matrix<T>& m1, const Matrix<T>& m2) {
-        if (m1.rows() != m2.columns() || m1.columns() != m2.rows()) {
-            throw std::runtime_error("Invalid shape of matricies.");
-        }
-    }
 };
 #endif

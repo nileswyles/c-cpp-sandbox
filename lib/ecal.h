@@ -1,6 +1,7 @@
 #ifndef WYLESLIBS_ECAL_H
 #define WYLESLIBS_ECAL_H
 
+#include <stdint.h>
 #include <string>
 
 namespace WylesLibs::Cal {

@@ -23,7 +23,7 @@
 #include "msc_unistd.h"
 #else
 #include <poll.h>
-#include <msc_unistd.h>
+#include <unistd.h>
 #endif
 
 #ifdef WYLESLIBS_SSL_ENABLED

@@ -1,7 +1,9 @@
 #include "parser/json/json.h"
+#include "datastructures/array.h"
+#include "memory/pointers.h"
+
 #include <iostream>
 #include <memory>
-#include "memory/pointers.h"
 
 // #include "test/tester.h"
 #include "tester.h"
@@ -21,6 +23,8 @@ using namespace WylesLibs::Parser::Json;
 class Nested: public JsonBase {
     public:
         std::string name;
+        // TODO: lol, I think I was testing something. This needs refactoring.
+        //      there are a few ways to approach the nested null value and it's up to the implementer.
         Nested * nested;
         // Nested() = default;
         Nested(): name(""), nested(nullptr) {}
@@ -68,11 +72,11 @@ class User: public JsonBase {
         std::string name;
         std::string attributes;
         double dec;
-        std::vector<bool> arr;
+        SharedArray<bool> arr;
         Nested nested;
 
         // User() = default;
-        User(): name(""), attributes(""), dec(0), arr(std::vector<bool>()), nested(Nested()) {}
+        User(): name(""), attributes(""), dec(0), arr(SharedArray<bool>()), nested(Nested()) {}
         // TODO: specify required fields
         User(ESharedPtr<JsonObject> obj_shared): User() {
             JsonObject * obj = ESHAREDPTR_GET_PTR(obj_shared);
@@ -312,6 +316,24 @@ static void testPretty(TestArg * t);
 int main(int argc, char * argv[]) {
     Tester t("Json Parser Tests");
 
+    JsonObject obj{
+        // ahh that's right, overloading between bool and number. typedef and overloading?
+        {"test_number", 127.7},
+        {"test_boolean", true},
+        {"test_string", "a lot of quirks"}
+    };
+    obj.toJsonString();
+    ESharedPtr<JsonObject> shared_obj = ESharedPtr<JsonObject>(new JsonObject(obj));
+
+    // can you uniform initialize and new? lol. I think so...
+    JsonObject * obj = new JsonObject({
+        // ahh that's right, overloading between bool and number. typedef and overloading?
+        {"test_number", 127.7},
+        {"test_boolean", true},
+        {"test_string", "a lot of quirks"}
+    });
+    ESharedPtr<JsonObject> shared_obj = ESharedPtr<JsonObject>(obj);
+
     t.addTest(testJsonNestedObject);
     t.addTest(testJsonNestedArray);
     t.addTest(testJsonArray);
@@ -347,7 +369,7 @@ int main(int argc, char * argv[]) {
 
 static void testJsonArray(TestArg * t) {
     std::string s("[false, true, false, false]");
-    std::vector<bool> expected{false, true, false, false};
+    SharedArray<bool> expected{false, true, false, false};
     try {
         size_t i = 0;
         JsonValue * obj = ESHAREDPTR_GET_PTR(parse(s));
@@ -417,7 +439,7 @@ static void testJsonObjectWithArray(TestArg * t) {
     s += "}\n";
 
     User expected;
-    std::vector<bool> expected_arr{false, true, false, false};
+    SharedArray<bool> expected_arr{false, true, false, false};
     expected.arr = expected_arr;
 
     parseObjectAndAssert(t, s, expected, 1);
@@ -439,7 +461,7 @@ static void testJsonAll(TestArg * t) {
     User expected;
     expected.name = "username";
     expected.attributes = "attributes for user";
-    std::vector<bool> expected_arr{false, true, false, false};
+    SharedArray<bool> expected_arr{false, true, false, false};
     expected.arr = expected_arr;
     expected.dec = 272727.1111;
     // expected.nested = nested_obj;
@@ -543,14 +565,14 @@ static void testPretty(TestArg * t) {
             "name": "username",
             "attributes": "attributes for user",
             "arr": [
-                    false,
-                    true,
-                    false,
-                    false
+                false,
+                true,
+                false,
+                false
             ],
             "dec": 272727.1111,
             "nested": {
-                    "nestedname": "nestedvalue"
+                "nestedname": "nestedvalue"
             },
             "nullvalue": null
         }

@@ -1,11 +1,4 @@
-#include "json_parser.h"
-#include "json_array.h"
-#include "json_object.h"
-#include "string_utils.h"
-
-#include <stdbool.h>
-
-#include <tuple>
+#include "parser/json/json_parser.h"
 
 #ifndef LOGGER_JSON_PARSER
 #define LOGGER_JSON_PARSER 1
@@ -142,7 +135,11 @@ static void parseString(JsonArray * obj, ByteEStream * r) {
 
     char c = r->get();
     loggerPrintf(LOGGER_DEBUG, "First char: %c\n", c);
-    std::string s;
+    #if defined(JSON_STRING_PLATFORM_STRING_UWP_CX)
+    std::wstring s;
+    #else
+    jstring s;
+    #endif
     char prev_c = (char)0x00;
     size_t string_count = 0;
     while (MAX_LENGTH_OF_JSON_STRING_VALUES > string_count && (c != '"' || prev_c == '\\')) {
@@ -159,22 +156,43 @@ static void parseString(JsonArray * obj, ByteEStream * r) {
         */
         if (prev_c == '\\') {
             if (c == 'b') { // backspace
-                s += '\b';
+                s += (jchar)'\b';
             } else if (c == 'f') { // form feed
-                s += '\f';
+                s += (jchar)'\f';
             } else if (c == 'n') { // newline
-                s += '\n';
+                s += (jchar)'\n';
             } else if (c == 'r') { // carraige return
-                s += '\r';
+                s += (jchar)'\r';
             } else if (c == 't') { // tab
-                s += '\t';
+                s += (jchar)'\t';
             } else if (c == 'u') { // unicode
-                for (uint8_t x = 0; x < 4; x = x + 2) {
+                // \u00000000 full 32-bit (with padding) is required.
+                //      The alternatives don't sit well with me lol... At least this way it's predictable
+                #if defined(JSON_STRING_U32)
+                char32_t unicode_char = 0;
+                uint8_t trunc_at = 8;
+                #elif defined(JSON_STRING_U16)
+                char16_t unicode_char = 0;
+                uint8_t trunc_at = 4;
+                #elif defined(JSON_STRING_PLATFORM_STRING_UWP_CX)
+                wchar_t unicode_char = 0;
+                uint8_t trunc_at = 4;
+                #elif defined(JSON_STRING_WSTRING)
+                wchar_t unicode_char = 0;
+                uint8_t trunc_at = 4;
+                #else
+                char unicode_char = 0;
+                uint8_t trunc_at = 2;
+                #endif
+
+                for (uint8_t x = 0; x < 8; x = x + 2) {
                     // so, this takes a hex string and converts to it's binary value.
                     //  i.e. "0F" -> 0x0F;
 
-                    // TODO: very lame that I have to cast to access public, overloaded functions from base class.
-                    s += hexToChar(r->readString(2));
+                    //  LE assumed...
+                    if (x < trunc_at) {
+                        unicode_char |= hexToChar(r->readString(2)) << x * 4;
+                    }
                 }
             } else {
                 // actual characters can just be appended.
@@ -194,7 +212,12 @@ static void parseString(JsonArray * obj, ByteEStream * r) {
         throw std::runtime_error(msg);
     }
 
+    #if defined(JSON_STRING_PLATFORM_STRING_UWP_CX)
+    Platform::String^ win = ref new Platform::String(s.data(), s.size());
+    obj->addValue((JsonValue *) new JsonString(win));
+    #else
     obj->addValue((JsonValue *) new JsonString(s));
+    #endif
 
     loggerExec(LOGGER_DEBUG,
         if (true == r->good()) {
@@ -450,8 +473,7 @@ extern std::string WylesLibs::Parser::Json::pretty(std::string json) {
     std::string pretty;
     uint8_t depth = 0;
 
-    // LOL... allow spaces in between quotes!
-    bool allow_spaces = false;
+    bool allow_all = false;
     for (auto c: json) {
         if (c == '{' || c == '[') {
             pretty += c;
@@ -477,12 +499,34 @@ extern std::string WylesLibs::Parser::Json::pretty(std::string json) {
             pretty += c;
             pretty += ' ';
         } else if (c == '\"') {
-            allow_spaces = !allow_spaces;
+            allow_all = !allow_all;
             pretty += c;
-        } else if (isAlpha(c) || isDigit(c) || c == '.' || (allow_spaces && c == ' ')) {
+        } else if (true == allow_all) {
+            // allow any character in between quotes else if not any of the expected - ignore.
             pretty += c;
         }
     }
 
     return pretty;
+}
+
+// ! IMPORTANT - T must implement the JsonBase interface.
+template<typename T>
+extern std::string WylesLibs::Parser::Json::toString(std::map<std::string, T> r, size_t depth) {
+    std::string json;
+    json += "{";
+    std::string spaces = WylesLibs::Parser::Json::tabing[depth];
+    for (auto el = r.begin(); el != r.end(); ++el) {
+        json += spaces;
+        json += el->first;
+        json += ":";
+        json += el.second.toJsonString();
+        if (el != r.end() - 1) {
+            json += ",";
+        }
+        json += "\n";
+    }
+    json += "}\n";
+
+    return pretty(json);
 }

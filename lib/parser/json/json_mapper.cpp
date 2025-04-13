@@ -1,6 +1,8 @@
-#include "json_mapper.h"
+#include "parser/json/json_mapper.h"
 
 using namespace WylesLibs::Parser::Json;
+
+// TODO: need to figure out this non-sense.
 
 // template<class T>
 // T WylesLibs::Parser::Json::setVariableFromJsonValue(JsonValue * value) {
@@ -44,11 +46,11 @@ double WylesLibs::Parser::Json::setVariableFromJsonValue<double>(JsonValue * val
 }
 
 template<>
-std::string WylesLibs::Parser::Json::setVariableFromJsonValue<std::string>(JsonValue * value) {
+jstring WylesLibs::Parser::Json::setVariableFromJsonValue<jstring>(JsonValue * value) {
     JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == STRING) {
-        std::string s = ((JsonString *)value)->getValue();
+        jstring s = ((JsonString *)value)->getValue();
         loggerPrintf(LOGGER_DEBUG, "value: %s\n", s.c_str());
         return s;
     } else {
@@ -58,7 +60,7 @@ std::string WylesLibs::Parser::Json::setVariableFromJsonValue<std::string>(JsonV
 }
 
 template<class T>
-void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue(JsonValue * value, std::vector<T>& arr) {
+void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue(JsonValue * value, SharedArray<T>& arr) {
     JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
@@ -67,7 +69,26 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue(JsonValue * value, 
             JsonValue * array_value = array->at(i);
             JsonType array_type = array_value->type;
             if (array_type == OBJECT) {
-                arr->push_back(setVariableFromJsonValue<T>(array_value));
+                arr.append(setVariableFromJsonValue<T>(array_value));
+            }
+        }
+    } else {
+        loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+    }
+}
+
+template<class T>
+void WylesLibs::Parser::Json::setArrayPointerVariablesFromJsonValue(JsonValue * value, SharedArray<T *>& arr) {
+    JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+    if (type == ARRAY) {
+        JsonArray * array = (JsonArray *)value;
+        for (size_t i = 0; i < array->size(); i++) {
+            JsonValue * array_value = array->at(i);
+            JsonType array_type = array_value->type;
+            if (array_type == OBJECT) {
+                arr.append(setPointerVariableFromJsonValue<T>(array_value));
             }
         }
     } else {
@@ -77,7 +98,7 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue(JsonValue * value, 
 }
 
 template<>
-void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<bool>(JsonValue * value, std::vector<bool>& arr) {
+void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<bool>(JsonValue * value, SharedArray<bool>& arr) {
     JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
@@ -86,7 +107,7 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<bool>(JsonValue * v
             JsonValue * array_value = (*array)[i];
             JsonType array_type = array_value->type;
             if (array_type == BOOLEAN) {
-                arr.push_back(setVariableFromJsonValue<bool>(array_value));
+                arr.append(setVariableFromJsonValue<bool>(array_value));
             }
         }
     } else {
@@ -96,7 +117,7 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<bool>(JsonValue * v
 }
 
 template<>
-void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<double>(JsonValue * value, std::vector<double>& arr) {
+void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<double>(JsonValue * value, SharedArray<double>& arr) {
     JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
@@ -105,7 +126,7 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<double>(JsonValue *
             JsonValue * array_value = array->at(i);
             JsonType array_type = array_value->type;
             if (array_type == NUMBER) {
-                arr.push_back(setVariableFromJsonValue<double>(array_value));
+                arr.append(setVariableFromJsonValue<double>(array_value));
             }
         }
     } else {
@@ -115,7 +136,7 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<double>(JsonValue *
 }
 
 template<>
-void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<std::string>(JsonValue * value, std::vector<std::string>& arr) {
+void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<jstring>(JsonValue * value, SharedArray<jstring>& arr) {
     JsonType type = value->type;
     loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
     if (type == ARRAY) {
@@ -124,7 +145,112 @@ void WylesLibs::Parser::Json::setArrayVariablesFromJsonValue<std::string>(JsonVa
             JsonValue * array_value = array->at(i);
             JsonType array_type = array_value->type;
             if (array_type == STRING) {
-                arr.push_back(setVariableFromJsonValue<std::string>(array_value));
+                arr.append(setVariableFromJsonValue<jstring>(array_value));
+            }
+        }
+    } else {
+        loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+    }
+}
+
+template<class T>
+void WylesLibs::Parser::Json::setMapVariableFromJsonValue(JsonValue * value, std::string key, std::map<std::string, T>& map) {
+    JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+    if (type == OBJECT) {
+        JsonObject * obj = (JsonObject *)value;
+        for (auto node: *obj) {
+            JsonValue * el_value = node.second;
+            if (el_value->type == OBJECT) {
+                map[key] = setVariableFromJsonValue<T>(el_value);
+            } else {
+                loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+                throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+            }
+        }
+    } else {
+        loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+    }
+}
+
+template<class T>
+void WylesLibs::Parser::Json::setMapPointerVariableFromJsonValue(JsonValue * value, std::string key, std::map<std::string, T *>& map) {
+    JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+    if (type == OBJECT) {
+        JsonObject * obj = (JsonObject *)value;
+        for (auto node: *obj) {
+            JsonValue * el_value = node.second;
+            if (el_value->type == OBJECT) {
+                map[key] = setVariableFromJsonValue<T>(el_value);
+            } else {
+                loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+                throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+            }
+        }
+    } else {
+        loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+    }
+}
+
+template<>
+void WylesLibs::Parser::Json::setMapVariableFromJsonValue<bool>(JsonValue * value, std::string key, std::map<std::string, bool>& map) {
+    JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+    if (type == Parser::Json::OBJECT) {
+        JsonObject * obj = (JsonObject *)value;
+        for (auto node: *obj) {
+            JsonValue * el_value = node.second;
+            if (el_value->type == Parser::Json::BOOLEAN) {
+                map[key] = setVariableFromJsonValue<bool>(el_value);
+            } else {
+                loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+                throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+            }
+        }
+    } else {
+        loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+    }
+}
+
+template<>
+void WylesLibs::Parser::Json::setMapVariableFromJsonValue<double>(JsonValue * value, std::string key, std::map<std::string, double>& map) {
+    JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+    if (type == OBJECT) {
+        JsonObject * obj = (JsonObject *)value;
+        for (auto node: *obj) {
+            JsonValue * el_value = node.second;
+            if (el_value->type == NUMBER) {
+                map[key] = setVariableFromJsonValue<double>(el_value);
+            } else {
+                loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+                throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+            }
+        }
+    } else {
+        loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+        throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
+    }
+}
+
+template<>
+void WylesLibs::Parser::Json::setMapVariableFromJsonValue<jstring>(JsonValue * value, std::string key, std::map<std::string, jstring>& map) {
+    JsonType type = value->type;
+    loggerPrintf(LOGGER_DEBUG, "value type: %d\n", type);
+    if (type == OBJECT) {
+        JsonObject * obj = (JsonObject *)value;
+        for (auto node: *obj) {
+            JsonValue * el_value = node.second;
+            if (el_value->type == STRING) {
+                map[key] = setVariableFromJsonValue<jstring>(el_value);
+            } else {
+                loggerPrintf(LOGGER_INFO, "%s\n", ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE.c_str());
+                throw std::runtime_error(ERR_MSG_SET_VARIABLE_FROM_JSON_VALUE);
             }
         }
     } else {

@@ -264,6 +264,7 @@ class Array {
         virtual ~Array() {
             deleteCArray<T>(e_buf, e_size);
         }
+        // TODO: This was a fun project but eventually get working with STL algorithms? what's required beyond iterator? comparison operators?
         Array<T>& sort(ArraySort sortOrder) {
             if (sortOrder != ARRAY_SORT_UNSORTED && e_sorted != sortOrder) {
                 e_sorted = sortOrder;
@@ -451,6 +452,9 @@ class Array {
             }
             return remove(this->size()-1);
         }
+        T * data() {
+            return this->e_buf;
+        }
         T * begin() {
             return this->e_buf;
         }
@@ -635,6 +639,9 @@ class SharedArray {
         virtual SharedArray<T>& removeBack() {
             this->ctrl->ptr->removeBack();
             return *this;
+        }
+        T * data() {
+            return this->ctrl->ptr->data();
         }
         T * begin() {
             return this->ctrl->ptr->begin();

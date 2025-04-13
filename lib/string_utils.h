@@ -50,6 +50,22 @@ namespace WylesLibs {
         return ret;
     }
 
+    static std::wstring u32StringToWString(std::u32string& wstr) {
+        std::wstring str;
+        for (auto c : wstr) {
+            str += (wchar_t)c;
+        }
+        return str;
+    }
+
+    static std::string u32StringToString(std::u32string& wstr) {
+        std::string str;
+        for (auto c : wstr) {
+            str += (char)c;
+        }
+        return str;
+    }
+
     class StringFormatOpts {
         public:
             static constexpr uint8_t NO_SIGN = 0x0;
@@ -89,7 +105,7 @@ namespace WylesLibs {
         if (opts.base == 16) {
             s += "0x";
         }
-        size_t digit_count = 1;
+        uint8_t digit_count = 1;
         while (num / divisor >= opts.base) {
             divisor *= opts.base;
             digit_count++;
@@ -193,23 +209,23 @@ namespace WylesLibs {
         int16_t precision_count = -1;
         size_t divisor = 1;
         size_t digit_count = 1;
-        size_t digit_count_before_decimal = 0;
+        uint8_t digit_count_before_decimal = 0;
         size_t start_index = 0;
-        size_t decimal_idx;
+        uint64_t decimal_idx;
         char digit;
         size_t i = 0;
 
         // process exponential
         if (opts.exponential == 0) {
-            decimal_idx = pow(10, opts.precision);
+            decimal_idx = (uint64_t)pow(10, opts.precision);
             num *= decimal_idx;
         } else if (opts.exponential > 0) {
-            decimal_idx = pow(10, opts.precision + opts.exponential);
+            decimal_idx = (uint64_t)pow(10, opts.precision + opts.exponential);
             num *= pow(10, opts.precision);
         } else {
             int16_t abs_exponential = -1 * opts.exponential;
             num *= pow(10, abs_exponential + opts.precision);
-            decimal_idx = pow(10, opts.precision);
+            decimal_idx = (uint64_t)pow(10, opts.precision);
         }
         if (errno == ERANGE) {
             throw std::runtime_error("Math error detected.");

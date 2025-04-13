@@ -23,6 +23,7 @@ static void parse(ByteEStream * io, SharedArray<MultipartFile> files, std::unord
         std::string field_name;
         bool is_file = false;
         MultipartFile file;
+        // TODO: need to bring in other estream changes to support this.
         SharedArray<uint8_t> line = io->read("\n"); // read and consume boundary string
         if (line.at(0) == '-' && line.at(1) == '-') {
             if (line[line.size() - 3] == '-') {
@@ -61,7 +62,7 @@ static void parse(ByteEStream * io, SharedArray<MultipartFile> files, std::unord
             io->read("\n"); // consume new line...
         } else if (field_name != "") {
             if (is_file) {
-                ESHAREDPTR_GET_PTR(file_manager)->write(file.getResourcePath(), line, !new_file);
+                ESHAREDPTR_GET_PTR(file_manager)->write<SharedArray<uint8_t>>(file.getResourcePath(), line, !new_file);
                 new_file = false;
             } else {
                 form_content[field_name] += line.toString();

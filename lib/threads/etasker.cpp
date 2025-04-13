@@ -5,8 +5,8 @@
 
 using namespace WylesLibs;
 
-pthread_mutex_t ETasker::thread_specific_sig_handler_mutex = PTHREAD_MUTEX_INITIALIZER;
-std::map<pthread_t, ETasker *> ETasker::thread_specific_sig_handlers = std::map<pthread_t, ETasker *>();
+static pthread_mutex_t ETasker::thread_specific_sig_handler_mutex = PTHREAD_MUTEX_INITIALIZER;
+extern std::map<pthread_t, ETasker *> ETasker::thread_specific_sig_handlers = std::map<pthread_t, ETasker *>();
 
 void ETasker::setThreadTimeout(uint64_t ts) {
     pthread_mutex_lock(&this->mutex);

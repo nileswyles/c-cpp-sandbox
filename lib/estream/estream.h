@@ -293,7 +293,7 @@ class EStream: public EStreamI<T> {
             } else {
                 bool inclusive = true;
                 SharedArray<T> until;
-                *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
+                *this->until_size_criteria = LoopCriteria<T>(LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_NUM_ELEMENTS, inclusive, n, until));
                 data = this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
             }
             return data;
@@ -304,7 +304,7 @@ class EStream: public EStreamI<T> {
         //      The default value for the inclusive field is TRUE.
         SharedArray<T> read(SharedArray<T> until, StreamTask<T, SharedArray<T>> * operation = nullptr, bool inclusive = true) override {
             size_t until_size = 0;
-            *this->until_size_criteria = LoopCriteria(LoopCriteriaInfo(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
+            *this->until_size_criteria = LoopCriteria<T>(LoopCriteriaInfo<T>(LOOP_CRITERIA_UNTIL_MATCH, inclusive, until_size, until));
             return this->streamCollect<SharedArray<T>>(this->until_size_criteria, operation, dynamic_cast<Collector<T, SharedArray<T>> *>(this->array_collector));
         }
         int64_t write(T * b, size_t size) override {

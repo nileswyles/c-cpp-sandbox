@@ -1,5 +1,18 @@
 #include "parser/keyvalue/parse.h"
 
+extern std::string WylesLibs::Parser::KeyValue::toString(std::unordered_map<std::string, std::string> map, char key_delim, char delim) {
+    std::string kv;
+    for (auto el: map) {
+        kv += el.first;
+        kv += key_delim;
+        kv += el.second;
+        kv += delim;
+    }
+    kv += '\n';
+
+    return kv;
+}
+
 std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(std::string s, char key_delim, char delim) {
     loggerPrintf(LOGGER_DEBUG, "JSON: \n");
     loggerPrintf(LOGGER_DEBUG, "%s\n", s.c_str());
@@ -12,7 +25,7 @@ std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(
     return parse(&r, key_delim, delim);
 }
 
-// ! IMPORTANT - Newline after kv string is required.
+// ! IMPORTANT - Newline after kv string is no longer required.
 std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(ByteEStream * reader, char key_delim, char delim) {
     std::unordered_map<std::string, std::string> data;
 
@@ -20,7 +33,7 @@ std::unordered_map<std::string, std::string> WylesLibs::Parser::KeyValue::parse(
     if (delim != '\n') {
         delim_string += delim;
     }
-    while (1) {
+    while (true == reader->good()) {
         ReaderTaskDisallow<SharedArray<uint8_t>> ignore_whitespace(" \t");
         SharedArray<uint8_t> field_name = reader->read("=\n", &ignore_whitespace);
         if (field_name.back() == '\n') {

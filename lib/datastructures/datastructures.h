@@ -59,9 +59,11 @@ namespace WylesLibs {
         public:
             MatrixVector() = default;
             MatrixVector(std::initializer_list<T> list): SharedArray<T>(list) {}
+            MatrixVector(std::string s): SharedArray<T>(s) {}
             MatrixVector(SharedArray<T> a): SharedArray<T>(a) {}
             MatrixVector(const size_t initial_cap): MatrixVector<T>(initial_cap, false) {}
             MatrixVector(const size_t initial_cap, bool is_view): SharedArray<T>(initial_cap) {
+                // TODO: what in the world? this needs unit testing but I'm not sure this was the intended functionality here.
                 if (initial_cap <= 1) {
                     throw std::runtime_error("View must have at least two elements (remember inclusive).");
                 }
@@ -105,6 +107,7 @@ namespace WylesLibs {
                     return this->view_obj->start;
                 }
             }
+            // TODO: lol, didn't implement the begin/end functionality here.
             MatrixVector<T>& insert(const size_t pos, const T * els, const size_t num_els) override {
                 if (this->view_obj == nullptr) {
                     this->ctrl->ptr->insert(pos, els, num_els);

@@ -13,6 +13,7 @@ uint64_t FileManager::stat(std::string path) {
     return std::filesystem::file_size(path);
 }
 
+// TODO: regex filtering.
 SharedArray<std::string> FileManager::list(std::string path) {
     SharedArray<std::string> list;
     for (auto const& dir_entry: std::filesystem::directory_iterator{path}) {

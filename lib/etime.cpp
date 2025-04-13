@@ -74,7 +74,7 @@ static Array<int16_t> OFFSETS{
     1400
 };
 
-static int8_t APPLICATION_TIME_OFFSET = 0; // UTC is default
+static int16_t APPLICATION_TIME_OFFSET = 0; // UTC is default
 
 extern uint32_t WylesLibs::Cal::secondsUpUntilMonth(uint8_t month, uint16_t year) {
     const uint32_t * running_seconds_up_until_month;
@@ -118,11 +118,11 @@ extern uint64_t WylesLibs::Cal::getZonedEpochTime(int16_t& offset) {
     SYSTEMTIME st;
     GetSystemTime(&st);
 
-    uint64_t seconds = (st.wYear - 1970) * SECONDS_PER_NON_LEAP_YEAR;
+    uint64_t seconds = ((uint16_t)st.wYear - 1970) * SECONDS_PER_NON_LEAP_YEAR;
     seconds += secondsUpUntilMonth(st.wMonth, st.wYear);
-    seconds += st.wHour * SECONDS_PER_HOUR;
-    seconds += st.wMinute * SECONDS_PER_MINUTE;
-    seconds += st.wSecond;
+    seconds += (uint16_t)st.wHour * SECONDS_PER_HOUR;
+    seconds += (uint16_t)st.wMinute * SECONDS_PER_MINUTE;
+    seconds += (uint16_t)st.wSecond;
 
     return seconds;
     #else

@@ -14,16 +14,24 @@ using namespace WylesLibs::File;
 
 namespace WylesLibs {
 
-class ServerConfig: public JsonBase {
+class ServerConfig: public JsonObjectMap {
+    protected:
+        std::string toJsonElements() override {
+            std::string s("\"resources_root\": ");
+            s += JsonString(this->resources_root).toJsonString();
+            return s;
+        }
+
     public:
         std::string filepath;
-        std::string resources_root;
+        std::u32string resources_root;
 
         ServerConfig(): resources_root("./") {}
         ServerConfig(std::string filepath): ServerConfig(
-            parseFile(ESharedPtr<StreamFactory>(new StreamFactory), filepath)
+            parseFile(ESharedPtr<StreamFactory>(new StreamFactory), filepath), filepath
         ) {}
-        ServerConfig(ESharedPtr<JsonValue> obj_shared) {
+        ServerConfig(ESharedPtr<JsonValue> obj_shared, std::string fp) {
+            filepath = fp;
             JsonObject * obj = dynamic_cast<JsonObject *>(ESHAREDPTR_GET_PTR(obj_shared));
             loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             bool resources_root_required = true;
@@ -32,7 +40,7 @@ class ServerConfig: public JsonBase {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if (key == "resources_root") {
-                    resources_root = setVariableFromJsonValue<std::string>(value);
+                    resources_root = setVariableFromJsonValue<std::u32string>(value);
                     resources_root_required = false;
                 }
             }
@@ -43,12 +51,6 @@ class ServerConfig: public JsonBase {
             }
         }
         ~ServerConfig() override = default;
-
-        std::string toJsonElements() {
-            std::string s("\"resources_root\": ");
-            s += JsonString(this->resources_root).toJsonString();
-            return s;
-        }
 
         bool operator == (const ServerConfig& other) {
             if(this->resources_root != other.resources_root) {

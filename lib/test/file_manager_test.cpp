@@ -62,7 +62,7 @@ bool assertDirectory(SharedArray<std::string> directory_list) {
 
 void testFileManager(TestArg * t) {
     SharedArray<uint8_t> file_data("Store some information in the file.");
-    file_manager->write(test_file, file_data, false); // >
+    file_manager->write<SharedArray<uint8_t>>(test_file, file_data, false); // >
     SharedArray<uint8_t> read_file_data = file_manager->read(test_file);
     if (false == assertFileData(file_data, read_file_data)) {
         t->fail = true;
@@ -70,7 +70,7 @@ void testFileManager(TestArg * t) {
     }
 
     // SharedArray<uint8_t> appended_file_data(" Append some information in the file.");
-    // file_manager->write(test_file, appended_file_data, true); // >>
+    // file_manager->write<SharedArray<uint8_t>>(test_file, appended_file_data, true); // >>
     // read_file_data = file_manager->read(test_file);
     // // TODO: char specialization for append?
     // // file_data.removeBack(); // remove NUL char.
@@ -82,7 +82,7 @@ void testFileManager(TestArg * t) {
     // }
 
     SharedArray<uint8_t> overwritten_file_data("Store only this information in the file.");
-    file_manager->write(test_file, overwritten_file_data, false); // >
+    file_manager->write<SharedArray<uint8_t>>(test_file, overwritten_file_data, false); // >
     read_file_data = file_manager->read(test_file);
     if (false == assertFileData(overwritten_file_data, read_file_data)) {
         t->fail = true;
@@ -92,7 +92,7 @@ void testFileManager(TestArg * t) {
 }
 void testFileManagerWriteFileDoesntExist(TestArg * t) {
     SharedArray<uint8_t> file_data("Store some information in the file.");
-    file_manager->write(test_file_doesnt_exist, file_data, false); // >
+    file_manager->write<SharedArray<uint8_t>>(test_file_doesnt_exist, file_data, false); // >
     SharedArray<uint8_t> read_file_data = file_manager->read(test_file_doesnt_exist);
     if (false == assertFileData(file_data, read_file_data)) {
         t->fail = true;

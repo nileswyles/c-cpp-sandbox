@@ -101,10 +101,10 @@ class ESharedPtr {
             return this->isNullPtr();
         }
         bool operator==(const ESharedPtr<T>& x) {
-            return (*this->ctrl_container)->ptr == (*x->ctrl_container)->ptr;
+            return (*this->ctrl_container)->ptr == (*x.ctrl_container)->ptr;
         }
         bool operator!=(const ESharedPtr<T>& x) {
-            return (*this->ctrl_container)->ptr != (*x->ctrl_container)->ptr;
+            return (*this->ctrl_container)->ptr != (*x.ctrl_container)->ptr;
         }
         ESharedPtr<T>& operator=(T * ptr) {
             (*this->ctrl_container)->ptr = ptr;

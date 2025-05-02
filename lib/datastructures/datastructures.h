@@ -245,12 +245,15 @@ namespace WylesLibs {
                 return sqrt(sum);
             }
             // copy (not copy constructor)
-            MatrixVector<T> copy(const MatrixVector<T>& other) {
-                MatrixVector<T> copy(other.cap());
-                for (size_t i = other.viewStart(); i <= other.viewEnd(); i++) {
-                    copy.append(other[i]);
+            MatrixVector<T> copy(size_t initial_cap = SIZE_MAX) {
+                if (initial_cap == SIZE_MAX) {
+                    initial_cap = this->cap();
                 }
-                return copy;
+                MatrixVector<T> c(initial_cap < this->size() ? this->cap(): initial_cap);
+                for (size_t i = this->viewStart(); i <= this->viewEnd(); i++) {
+                    c.append((*this)[i]);
+                }
+                return c;
             }
             MatrixVector<T>& operator+ (const MatrixVector<T>& m) {
                 MatrixVector::assertArraySizes(*this, m);
@@ -286,6 +289,8 @@ namespace WylesLibs {
                 }
                 return dot;
             }
+
+#if defined(MATRIX_VECTOR_SCALAR_ADDITION)
             MatrixVector<T>& operator+ (const T& b) {
                 size_t size = this->size();
                 MatrixVector<T> add(size);
@@ -294,6 +299,7 @@ namespace WylesLibs {
                 }
                 return add;
             }
+#endif
             MatrixVector<T>& operator- (const T& b) {
                 size_t size = this->size();
                 MatrixVector<T> sub(size);
@@ -340,6 +346,13 @@ namespace WylesLibs {
                 }
                 return (*this->ctrl->ptr)[i];
             }
+
+#if !defined(MATRIX_VECTOR_SCALAR_ADDITION)
+            MatrixVector<T>& operator+ (T& x) {
+                this->append(x);
+                return *this;
+            }
+#endif
             // copy constructor - containerization code remains here
             MatrixVector(const MatrixVector<T>& other) {
                 this->ctrl = other.ctrl;

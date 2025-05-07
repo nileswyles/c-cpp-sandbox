@@ -25,6 +25,7 @@ fi
 
 SRC_FILES="
 $WYLESLIBS_BUILD_ROOT_DIR/cpping/$SORT_FILE.cpp
+$WYLESLIBS_BUILD_ROOT_DIR/lib/default_logger_config.cpp
 "
 
 mkdir $WYLESLIBS_BUILD_ROOT_DIR/out 2> /dev/null

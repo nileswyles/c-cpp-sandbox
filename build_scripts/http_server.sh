@@ -46,6 +46,7 @@ SRC_FILES="
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/server_connection_etask.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http_connection_etask.cpp
 -s $WYLESLIBS_BUILD_ROOT_DIR/lib/cmder.cpp
+-s $WYLESLIBS_BUILD_ROOT_DIR/lib/default_logger_config.cpp
 "
 
 INCLUDE_DIRS="-I $WYLESLIBS_BUILD_ROOT_DIR/http_test"

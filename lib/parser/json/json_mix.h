@@ -64,7 +64,7 @@ namespace WylesLibs::Parser::Json {
             ~JsonValue() override = default;
 
             std::string toJsonString() {
-                return "";
+                return "null";
             }
 
             template<typename T>

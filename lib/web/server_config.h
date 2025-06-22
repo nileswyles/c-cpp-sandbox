@@ -14,7 +14,7 @@ using namespace WylesLibs::File;
 
 namespace WylesLibs {
 
-class ServerConfig: public JsonObjectMap {
+class ServerConfig: public StrictJsonObject {
     protected:
         std::string toJsonElements() override {
             std::string s("\"resources_root\": ");

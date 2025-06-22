@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <tuple>
+#include <filesystem>
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -25,7 +26,7 @@ using namespace WylesLibs::File;
 namespace WylesLibs::Parser::Json {
     // @
 
-    extern ESharedPtr<JsonValue> parseFile(ESharedPtr<StreamFactory> stream_factory, std::string file_path);
+    extern ESharedPtr<JsonValue> parseFile(ESharedPtr<StreamFactory> stream_factory, std::string file_path, bool exceptions = false);
     extern ESharedPtr<JsonValue> parse(std::string json);
     extern ESharedPtr<JsonValue> parse(SharedArray<uint8_t> json);
     extern ESharedPtr<JsonValue> parse(ByteEStream * r, size_t& i);

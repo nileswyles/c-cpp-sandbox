@@ -9,6 +9,9 @@
 #include "datastructures/array.h"
 #include "parser/multipart/multipart_file.h"
 #include "parser/json/json.h"
+#include "estream/byteestream.h"
+
+#include "string_format.h"
 
 using namespace WylesLibs;
 using namespace WylesLibs::Parser::Json;
@@ -68,24 +71,87 @@ namespace WylesLibs::Http {
     class HttpResponse {
         public:
             std::string status_code;
-            std::string method;
             std::string version;
             std::unordered_map<std::string, std::string> fields;
-            std::unordered_map<std::string, std::string> cookies;
+            SharedArray<std::string> cookies;
             SharedArray<uint8_t> content;
+            size_t content_length;
 
             HttpResponse(): version("HTTP/1.1"), status_code("500") {
     			fields["Connection"].append("close");
             }
             ~HttpResponse() = default;
 
+            HttpResponse(SharedArray<uint8_t> data) {
+                ReaderTaskDisallow<SharedArray<uint8_t>> whitespace_chain;
+                ReaderTaskDisallow<SharedArray<uint8_t>> whitespace_lc_chain;
+                ReaderTaskLC<SharedArray<uint8_t>> lowercase_task;
+                HttpServer::initializeEStreamTasks(whitespace_chain, whitespace_lc_chain, lowercase_task);
+
+                this->cookies.remove(0, this->cookies.size());
+                this->fields.clear();
+
+                ByteEStream io(data.begin(), data.size());
+                this->version = io->read(" ").removeBack().toString();
+                SharedArray<uint8_t> status_code = io->read(" \n");
+                if (status_code.back() == ' ') {
+                    io->read("\n");
+                }
+                this->status_code = status_code.removeBack().toString();
+      
+                int field_idx = 0; 
+                while (field_idx < HTTP_FIELD_MAX) {
+                    std::string field_name = io->read(":\n", &whitespace_lc_chain).toString();
+                    if (field_name[field_name.size()-1] == '\n') {
+                        printf("FOUND EMPTY NEW LINE AFTER PARSING FIELDS\n");
+                        break;
+                    }
+                    field_name = field_name.substr(0, field_name.size()-1);
+      
+                    loggerPrintf(LOGGER_DEBUG, "field_name: '%s'\n", field_name.c_str());
+      
+                    ReaderTaskChain<SharedArray<uint8_t>> * chain = &whitespace_chain;
+                    if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name.c_str())) {
+                        chain = &whitespace_lc_chain;
+                    }
+                    field_idx++;
+                    char delimeter = 0x00;
+                    while (delimeter != '\n') {
+                        std::string field_value = io->read(",\n", chain).toString();
+                        // if size == 0, throw an exception idc...
+                        delimeter = (char)field_value[field_value.size()-1];
+                        // only process field if it's an actual field, else check delimeter in while loop...
+                        if (field_value.size() >= 2) {
+                            field_value = field_value.substr(0, field_value.size()-2);
+      
+                            loggerPrintf(LOGGER_DEBUG, "delimeter: '0x%x', field_value: '%s'\n", delimeter, field_value.c_str());
+                     
+                            if (field_name == "set-cookie") {
+                                this->cookies.append(field_value);
+                            } else {
+                                this->fields[field_name].append(field_value);
+                            }
+                            if (field_name == "content-length") {
+                                this->content_length = atoi(field_value.c_str());
+                            }
+                        }
+                    }
+                }
+                // TODO: read until EOF without exception?
+                this->content = io->readEls(data.size()-1-io->cursor);
+                if (field_idx == HTTP_FIELD_MAX) {
+                    throw std::runtime_error("Too many fields in request.");
+                }
+            }
+
             std::string toString() {
                 // header = this->version + " " + strconv.Itoa(status_code) + " " + status_map[r.StatusCode] + "\n";
                 std::string response = this->version + " " + this->status_code + "\n";
+                response += WylesLibs::format("Content-Length: {d}", content.size());
                 for (const auto& [key, value] : this->fields) {
     				response += key + ": " + value + "\n";
     			}
-                for (const auto& [key, value] : this->cookies) {
+                for (const auto& value : this->cookies) {
     				response += "set-cookie: " + value + "\n";
     			}
     			response += "\n";

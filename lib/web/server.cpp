@@ -33,12 +33,12 @@ void Server::setInitialConnectionTimeout(int fd, uint64_t timeout_s) {
     tasker.initial_timeout_s = timeout_s;
 }
 
-void Server::setSocketTimeout(int fd, uint64_t timeout_s) {
+void Server::setSocketTimeout(int fd, uint64_t timeout_s, uint64_t timeout_usec) {
     socklen_t timeval_len = sizeof(struct timeval);
 
     struct timeval timeout = {
         .tv_sec = static_cast<__time_t>(timeout_s),
-        .tv_usec = 0,
+        .tv_usec = static_cast<__time_t>(timeout_usec),
     };
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, timeval_len);
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, timeval_len);

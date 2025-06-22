@@ -406,10 +406,19 @@ static void parseObject(JsonObject * obj, ByteEStream * r) {
     loggerPrintf(LOGGER_DEBUG, "Broke out of key parsing loop...\n");
 }
 
-extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parseFile(ESharedPtr<StreamFactory> stream_factory, std::string file_path) {
-    size_t i = 0;
-    IStreamEStream r(stream_factory, file_path);
-    return parse(dynamic_cast<ByteEStream *>(&r), i);
+extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parseFile(ESharedPtr<StreamFactory> stream_factory, std::string file_path, bool exceptions) {
+    if(false == std::filesystem::exists(file_path)) {
+        if (true == exceptions) {
+            throw std::runtime_error("The file doesn't exist - unable to parse.");
+        } else {
+            ESharedPtr<JsonValue> obj(dynamic_cast<JsonValue *>(new JsonObject(0)));
+            return obj;
+        }
+    } else {
+        size_t i = 0;
+        IStreamEStream r(stream_factory, file_path);
+        return parse(dynamic_cast<ByteEStream *>(&r), i);
+    }
 }
 
 extern ESharedPtr<JsonValue> WylesLibs::Parser::Json::parse(std::string json) {

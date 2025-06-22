@@ -56,13 +56,6 @@ static SharedArray<const char *> FIELD_VALUES_TO_LOWER_CASE{
 
 class HttpServer: public Server {
     private:
-        static void initializeEStreamTasks(ReaderTaskDisallow<SharedArray<uint8_t>>& whitespace_chain, ReaderTaskDisallow<SharedArray<uint8_t>>& whitespace_lc_chain, ReaderTaskLC<SharedArray<uint8_t>>& lowercase_task) {
-            lowercase_task = ReaderTaskLC<SharedArray<uint8_t>>();
-            whitespace_chain.to_disallow = "\t ";
-            whitespace_lc_chain.to_disallow = "\t ";
-            whitespace_lc_chain.next_operation = &lowercase_task;
-        }
-
         static void initializeStaticPaths(HttpServerConfig config, ThreadSafeMap<std::string, std::string>& static_paths) {
             loggerPrintf(LOGGER_DEBUG, "Static Paths: %s\n", config.static_path.c_str());
             for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(config.static_path)) {
@@ -133,6 +126,13 @@ class HttpServer: public Server {
         }
 
     public:
+        static void initializeEStreamTasks(ReaderTaskDisallow<SharedArray<uint8_t>>& whitespace_chain, ReaderTaskDisallow<SharedArray<uint8_t>>& whitespace_lc_chain, ReaderTaskLC<SharedArray<uint8_t>>& lowercase_task) {
+            lowercase_task = ReaderTaskLC<SharedArray<uint8_t>>();
+            whitespace_chain.to_disallow = "\t ";
+            whitespace_lc_chain.to_disallow = "\t ";
+            whitespace_lc_chain.next_operation = &lowercase_task;
+        }
+
         RequestProcessor * processor;
         SharedArray<HttpProcessorItem> request_map;
         // std::map<HttpRequest, RequestProcessor *> request_map;

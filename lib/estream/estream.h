@@ -110,7 +110,6 @@ class EStream: public EStreamI<T> {
     protected:
         T * buffer;
         size_t buffer_size;
-        size_t cursor;
         size_t els_in_buffer;
         LoopCriteria<T> * until_size_criteria;
         ArrayCollector<T> * array_collector;
@@ -134,6 +133,7 @@ class EStream: public EStreamI<T> {
             }
         }
     public:
+        size_t cursor;
 #if ESTREAM_STREAM_LOG_ENABLE == 1 && GLOBAL_LOGGER_LEVEL >= LOGGER_DEBUG
         std::string stream_log; 
 #endif

@@ -30,7 +30,7 @@ namespace WylesLibs {
             void disableConnectionTimeout(int fd);
             void setConnectionTimeout(int fd, uint64_t timeout_s);
             void setInitialConnectionTimeout(int fd, uint64_t timeout_s);
-            void setSocketTimeout(int fd, uint64_t timeout_s);
+            void setSocketTimeout(int fd, uint64_t timeout_s, uint64_t timeout_usec = 0);
             void setInitialSocketTimeout(int fd, uint64_t timeout_s);
             uint64_t getConnectionTimeout(int fd);
             uint64_t getSocketTimeout(int fd);

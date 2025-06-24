@@ -14,7 +14,6 @@ namespace WylesLibs {
         private:
             HttpServer * server;
 
-            void parseRequest(HttpRequest * request, ByteEStream * reader);
             void processRequest(ByteEStream * io, HttpRequest * request);
             HttpResponse * handleStaticRequest(HttpRequest * request);
             bool handleWebsocketRequest(ByteEStream * io, HttpRequest * request);

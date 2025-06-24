@@ -41,8 +41,6 @@
 // #define WYLESLIBS_HTTP_DEBUG 0
 // #endif
 
-#define HTTP_FIELD_MAX 64
-
 using namespace WylesLibs;
 using namespace WylesLibs::Paths;
 using namespace WylesLibs::File;
@@ -109,14 +107,9 @@ class HttpServer: public Server {
         // prerequisites,
         //  to be initialized
         static void construct(HttpServerConfig config, ESharedPtr<FileManager> file_manager,
-
                                             ThreadSafeMap<std::string, std::string>& static_paths,
                                             SSL_CTX *& ssl_context,
-                                            ReaderTaskDisallow<SharedArray<uint8_t>>& whitespace_chain,
-                                            ReaderTaskDisallow<SharedArray<uint8_t>>& whitespace_lc_chain,
-                                            ReaderTaskLC<SharedArray<uint8_t>>& lowercase_task,
                                             UniqueKeyGenerator& key_generator) {
-            initializeEStreamTasks(whitespace_chain, whitespace_lc_chain, lowercase_task);
             initializeStaticPaths(config, static_paths);
             initializeSSLContext(config, ssl_context);
             key_generator = UniqueKeyGenerator(config, UniqueKeyGeneratorStore(file_manager, Paths::join(config.resources_root, "sequence_store")));
@@ -126,13 +119,6 @@ class HttpServer: public Server {
         }
 
     public:
-        static void initializeEStreamTasks(ReaderTaskDisallow<SharedArray<uint8_t>>& whitespace_chain, ReaderTaskDisallow<SharedArray<uint8_t>>& whitespace_lc_chain, ReaderTaskLC<SharedArray<uint8_t>>& lowercase_task) {
-            lowercase_task = ReaderTaskLC<SharedArray<uint8_t>>();
-            whitespace_chain.to_disallow = "\t ";
-            whitespace_lc_chain.to_disallow = "\t ";
-            whitespace_lc_chain.next_operation = &lowercase_task;
-        }
-
         RequestProcessor * processor;
         SharedArray<HttpProcessorItem> request_map;
         // std::map<HttpRequest, RequestProcessor *> request_map;
@@ -144,10 +130,6 @@ class HttpServer: public Server {
         SSL_CTX * ssl_context;
 
         ESharedPtr<HttpFileWatcher> file_watcher;
-
-        ReaderTaskDisallow<SharedArray<uint8_t>> whitespace_chain;
-        ReaderTaskDisallow<SharedArray<uint8_t>> whitespace_lc_chain;
-        ReaderTaskLC<SharedArray<uint8_t>> lowercase_task;
 
         HttpServerConfig config;
 
@@ -175,9 +157,6 @@ class HttpServer: public Server {
                         this->file_manager,
                         this->static_paths, 
                         this->ssl_context, 
-                        this->whitespace_chain, 
-                        this->whitespace_lc_chain,
-                        this->lowercase_task,
                         this->key_generator);
         }
         HttpServer(HttpServerConfig config, 
@@ -197,9 +176,6 @@ class HttpServer: public Server {
                         this->file_manager,
                         this->static_paths, 
                         this->ssl_context, 
-                        this->whitespace_chain, 
-                        this->whitespace_lc_chain,
-                        this->lowercase_task,
                         this->key_generator);
         }
         ~HttpServer() {

@@ -38,99 +38,6 @@ using namespace WylesLibs;
 using namespace WylesLibs::Http;
 using namespace WylesLibs::Parser;
 
-static Url parseUrl(ByteEStream * io) {
-    Url url;
-    // path = /aklmdla/aslmlamk(?)
-    SharedArray<uint8_t> path = io->read("? ");
-    if ((char)path.back() == '?') {
-        // query = key=value&key2=value2
-        url.query_map = KeyValue::parse(io, '&');
-    }
-
-    // TODO: because removeBack functionality of the array class isn't working...
-    //  ByteEStream can probably use string for readuntil but let's roll with this for now.
-    //  Hesitant for obvious reasons...
-    std::string pathString = path.toString();
-
-    // TODO: if lower bounds check...
-    url.path = pathString.substr(0, pathString.size()-1);
-
-    return url;
-}
-
-void HttpConnectionETask::parseRequest(HttpRequest * request, ByteEStream * io) {
-    if (request == NULL || io == NULL) {
-        throw std::runtime_error("lol....");
-    }
-    // TODO: this is terrible as is... stringyness must work. lower bounds check if can't get removeBack functionality working.
-    request->method = io->read(" ").removeBack().toString();
-    request->method = request->method.substr(0, request->method.size()-1);
-
-    request->url = parseUrl(io);
-
-    request->version = io->read("\n").removeBack().toString();
-    request->version = request->version.substr(0, request->version.size()-1);
-
-    request->content_length = SIZE_MAX;
-    int field_idx = 0; 
-    while (field_idx < HTTP_FIELD_MAX) {
-        std::string field_name = io->read(":\n", &this->server->whitespace_lc_chain).toString();
-        if (field_name[field_name.size()-1] == '\n') {
-            printf("FOUND EMPTY NEW LINE AFTER PARSING FIELDS\n");
-            break;
-        }
-        field_name = field_name.substr(0, field_name.size()-1);
-
-        loggerPrintf(LOGGER_DEBUG, "field_name: '%s'\n", field_name.c_str());
-
-        ReaderTaskChain<SharedArray<uint8_t>> * chain = &this->server->whitespace_chain;
-        if (FIELD_VALUES_TO_LOWER_CASE.contains(field_name.c_str())) {
-            chain = &this->server->whitespace_lc_chain;
-        }
-        field_idx++;
-        char delimeter = 0x00;
-        while (delimeter != '\n') {
-            std::string field_value = io->read(",\n", chain).toString();
-            // if size == 0, throw an exception idc...
-            delimeter = (char)field_value[field_value.size()-1];
-            // only process field if it's an actual field, else check delimeter in while loop...
-            if (field_value.size() >= 2) {
-                field_value = field_value.substr(0, field_value.size()-2);
-
-                loggerPrintf(LOGGER_DEBUG, "delimeter: '0x%x', field_value: '%s'\n", delimeter, field_value.c_str());
-         
-                request->fields[field_name].append(field_value);
-                if (field_name == "content-length") {
-                    request->content_length = atoi(field_value.c_str());
-                }
-            }
-        }
-    }
-    if (field_idx == HTTP_FIELD_MAX) {
-        throw std::runtime_error("Too many fields in request.");
-    }
-
-    if (request->method == "POST" && request->fields[CONTENT_TYPE_KEY].size() > 0 && request->content_length != SIZE_MAX) {
-        loggerPrintf(LOGGER_DEBUG, "Content-Type: %s, Content-Length: %ld\n", request->fields[CONTENT_TYPE_KEY].front().c_str(), request->content_length);
-        if ("application/json" == request->fields[CONTENT_TYPE_KEY].front()) {
-            size_t i = 0;
-            request->json_content = Json::parse(io, i);
-        } else if ("application/x-www-form-urlencoded" == request->fields[CONTENT_TYPE_KEY].front()) {
-            request->form_content = KeyValue::parse(io, '&');
-        } else if ("multipart/formdata" == request->fields[CONTENT_TYPE_KEY].front()) {
-            // at 128Kb/s can transfer just under 2Mb (bits...) in 15s.
-            //  if set min transfer rate at 128Kb/s, 
-            //  timeout = content_length*8/SERVER_MINIMUM_CONNECTION_SPEED (bits/bps) 
-            this->server->setConnectionTimeout(io->fd, request->content_length * 8 / SERVER_MINIMUM_CONNECTION_SPEED);
-            nice(-4);
-            Multipart::FormData::parse(io, request->files, request->form_content, this->server->file_manager);
-        } else if ("multipart/byteranges" == request->fields[CONTENT_TYPE_KEY].front()) {
-        } else {
-            request->content = ((EStream<uint8_t> *)io)->read((size_t)request->content_length);
-        }
-    }
-}
-
 void HttpConnectionETask::processRequest(ByteEStream * io, HttpRequest * request) {
         HttpResponse * response = this->handleStaticRequest(request); 
         if (response != nullptr) {
@@ -360,7 +267,6 @@ void HttpConnectionETask::run() {
 #ifdef WYLESLIBS_SSL_ENABLED
     SSLEStream sslio;
 #endif
-    HttpRequest request;
     ByteEStream * io;
     bool acceptedTLS = false;
     try {
@@ -377,7 +283,7 @@ void HttpConnectionETask::run() {
         eio = ByteEStream(this->fd);
         io = &eio;
 #endif
-        this->parseRequest(&request, io);
+        HttpRequest request(io, this->server);
         loggerPrintf(LOGGER_DEBUG, "Request path: '%s', method: '%s'\n", request.url.path.c_str(), request.method.c_str());
         this->processRequest(io, &request);
     } catch (const std::exception& e) {

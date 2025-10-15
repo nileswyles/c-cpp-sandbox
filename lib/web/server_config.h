@@ -24,7 +24,7 @@ class ServerConfig: public StrictJsonObject {
 
     public:
         std::string filepath;
-        std::u32string resources_root;
+        std::string resources_root;
 
         ServerConfig(): resources_root("./") {}
         ServerConfig(std::string filepath): ServerConfig(
@@ -33,14 +33,13 @@ class ServerConfig: public StrictJsonObject {
         ServerConfig(ESharedPtr<JsonValue> obj_shared, std::string fp) {
             filepath = fp;
             JsonObject * obj = dynamic_cast<JsonObject *>(ESHAREDPTR_GET_PTR(obj_shared));
-            loggerPrintf(LOGGER_DEBUG_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             bool resources_root_required = true;
-            for (size_t i = 0; i < obj->keys.size(); i++) {
-                std::string key = obj->keys.at(i);
+            for (auto e: *obj) {
+                std::string key = e.first;
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
-                JsonValue * value = obj->values.at(i);
+                JsonValue * value = e.second;
                 if (key == "resources_root") {
-                    resources_root = setVariableFromJsonValue<std::u32string>(value);
+                    resources_root = setVariableFromJsonValue<std::string>(value);
                     resources_root_required = false;
                 }
             }

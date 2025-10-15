@@ -68,14 +68,14 @@ class HttpServerConfig: public ServerConfig {
         }
 
     public:
-        std::u32string static_path;
-        std::u32string root_html_file;
-        std::u32string address;
+        std::string static_path;
+        std::string root_html_file;
+        std::string address;
         uint16_t port;
         bool tls_enabled;
-        std::u32string path_to_trust_chain_cert;
-        std::u32string path_to_cert; // pem to include private key?, or p7/p12 file?
-        std::u32string path_to_private_key;
+        std::string path_to_trust_chain_cert;
+        std::string path_to_cert; // pem to include private key?, or p7/p12 file?
+        std::string path_to_private_key;
         bool client_auth_enabled;
 
         HttpServerConfig(): static_path("./"), root_html_file("index.html"), address("127.0.0.1"), port(8080) {}
@@ -112,27 +112,27 @@ class HttpServerConfig: public ServerConfig {
                 loggerPrintf(LOGGER_DEBUG_VERBOSE, "Key: %s\n", key.c_str());
                 JsonValue * value = obj->values.at(i);
                 if (key == "static_path") {
-                    static_path = setVariableFromJsonValue<std::u32string>(value);
+                    static_path = setVariableFromJsonValue<std::string>(value);
                     required_fields.erase("static_path");
                 } else if (key == "address") {
-                    address = setVariableFromJsonValue<std::u32string>(value);
+                    address = setVariableFromJsonValue<std::string>(value);
                     required_fields.erase("address");
                 } else if (key == "port") {
                     port = (uint16_t)setVariableFromJsonValue<double>(value);
                     required_fields.erase("port");
                 } else if (key == "root_html_file") {
-                    root_html_file = setVariableFromJsonValue<std::u32string>(value);
+                    root_html_file = setVariableFromJsonValue<std::string>(value);
                     required_fields.erase("root_html_file");
                 } else if (key == "tls_enabled") {
                     tls_enabled = setVariableFromJsonValue<bool>(value);
                 } else if (key == "path_to_trust_chain_cert") {
-                    path_to_trust_chain_cert = setVariableFromJsonValue<std::u32string>(value);
+                    path_to_trust_chain_cert = setVariableFromJsonValue<std::string>(value);
                     tls_required_fields.erase("path_to_trust_chain_cert");
                 } else if (key == "path_to_cert") {
-                    path_to_cert = setVariableFromJsonValue<std::u32string>(value);
+                    path_to_cert = setVariableFromJsonValue<std::string>(value);
                     tls_required_fields.erase("path_to_cert");
                 } else if (key == "path_to_private_key") {
-                    path_to_private_key = setVariableFromJsonValue<std::u32string>(value);
+                    path_to_private_key = setVariableFromJsonValue<std::string>(value);
                     tls_required_fields.erase("path_to_private_key");
                 } else if (key == "client_auth_enabled") {
                     client_auth_enabled = setVariableFromJsonValue<bool>(value);

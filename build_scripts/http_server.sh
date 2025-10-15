@@ -1,12 +1,12 @@
 #!/bin/bash
 
-if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
-	WYLESLIBS_BUILD_ROOT_DIR=`pwd`
+if [ -z $WYLESLIBS_WORKSPACE_ROOT_DIR ]; then
+	WYLESLIBS_WORKSPACE_ROOT_DIR=`pwd`
 fi
 
 TEST_ARG=""
 DEFINES=""
-OUTPUT_ARG="-o $WYLESLIBS_BUILD_ROOT_DIR/out"
+OUTPUT_ARG="-o $WYLESLIBS_WORKSPACE_ROOT_DIR/out"
 LOG_LEVEL=0
 while true; do
 	case "$1" in
@@ -21,35 +21,35 @@ DEFINES="$DEFINES-D WYLESLIBS_SSL_ENABLED=1 "
 
 # this should work just fine until we have larger projects and require caching individual objects to speed up build times?
 SRC_FILES="
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_parser.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_mapper.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_object.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/json/json_array.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/parser/keyvalue/parse.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http_types.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/http_test/main.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/http_test/controllers/example.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/http_test/services/example.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/server.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_watcher.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http_file_watcher.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/threads/etasker.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/server_connection_etask.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/web/http/http_connection_etask.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/cmder.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/default_logger_config.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/parser/json/json_parser.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/parser/json/json_mapper.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/parser/json/json_object.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/parser/json/json_array.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/parser/keyvalue/parse.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/web/http/http.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/web/http/http_types.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/http_test/main.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/http_test/controllers/example.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/http_test/services/example.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/estream/byteestream.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/estream/istreamestream.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/web/server.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/file/file_watcher.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/web/http/http_file_watcher.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/datastructures/array.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/file/file.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/file/stream_factory.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/string_format.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/ecal.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/etime.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/threads/etasker.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/web/server_connection_etask.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/web/http/http_connection_etask.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/cmder.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/logger_config_default.cpp
 "
 
-INCLUDE_DIRS="-I $WYLESLIBS_BUILD_ROOT_DIR/http_test"
+INCLUDE_DIRS="-I $WYLESLIBS_WORKSPACE_ROOT_DIR/http_test"
 
 LD_FLAGS="
 -l ssl
@@ -59,15 +59,15 @@ LD_FLAGS="
 # ! IMPORTANT - 
 # 	to run the GCS build, set WYLESLIBS_GCS_BUILD=1
 if [ -n "$WYLESLIBS_GCS_BUILD" ]; then
-	GCS_ARGS=`$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/generate_gcs_arguments.sh`
+	GCS_ARGS=`$WYLESLIBS_WORKSPACE_ROOT_DIR/build_scripts/generate_gcs_arguments.sh`
 	DEFINES="$DEFINES -D WYLESLIBS_GCS_BUILD=1 "
-	SRC_FILES="$SRC_FILES -s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file_gcs.cpp
-		-s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory_gcs.cpp
+	SRC_FILES="$SRC_FILES -s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/file/file_gcs.cpp
+		-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/file/stream_factory_gcs.cpp
 	"
 fi
 
 
-CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -r $WYLESLIBS_BUILD_ROOT_DIR/http_test --log $LOG_LEVEL $INCLUDE_DIRS $LD_FLAGS $GCS_ARGS $DEFINES$OUTPUT_ARG $PROGRAM_ARG"
+CMD="$WYLESLIBS_WORKSPACE_ROOT_DIR/build_scripts/build_common.sh -n http_server $SRC_FILES -r $WYLESLIBS_WORKSPACE_ROOT_DIR/http_test --log $LOG_LEVEL $INCLUDE_DIRS $LD_FLAGS $GCS_ARGS $DEFINES$OUTPUT_ARG $PROGRAM_ARG"
 # TODO: revisit quoted strings and whitespace (nl, tabs, etc) for bash shell... Also, wtf is dash shell? zsh and bash I think are mostly identical for most basic things?
 echo "    "$CMD
 exec $CMD
@@ -83,8 +83,8 @@ exec $CMD
 # # cflags
 # GCS_CXXFLAGS="pkg-config $PKG_NAMES --cflags"
 # -DNOMINMAX 
-# -I$WYLESLIBS_BUILD_ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/storage/../../include 
-# -I$WYLESLIBS_BUILD_ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/../../include 
+# -I$WYLESLIBS_WORKSPACE_ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/storage/../../include 
+# -I$WYLESLIBS_WORKSPACE_ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/../../include 
 # -I/usr/include/x86_64-linux-gnu
 
 # # -l
@@ -114,5 +114,5 @@ exec $CMD
 
 # # -L
 # GCS_CXXLDFLAGS=`pkg-config $PKG_NAMES --libs-only-L`
-# -L$WYLESLIBS_BUILD_ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/storage/../../lib 
-# -L$WYLESLIBS_BUILD_ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/../../lib
+# -L$WYLESLIBS_WORKSPACE_ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/storage/../../lib 
+# -L$WYLESLIBS_WORKSPACE_ROOT_DIR/google-cloud-cpp/cmake-out/google/cloud/../../lib

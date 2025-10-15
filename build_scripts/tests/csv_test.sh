@@ -13,25 +13,26 @@ while true; do
 	esac
 done
 
-if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
-	WYLESLIBS_BUILD_ROOT_DIR=`pwd`
+if [ -z $WYLESLIBS_WORKSPACE_ROOT_DIR ]; then
+	WYLESLIBS_WORKSPACE_ROOT_DIR=`pwd`
 fi
 
 SRC_FILES="
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/csv_test.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/test/tester.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/datastructures/array.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/byteestream.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/estream/istreamestream.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/file.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/file/stream_factory.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/string_format.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/ecal.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/etime.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/cmder.cpp
--s $WYLESLIBS_BUILD_ROOT_DIR/lib/default_logger_config.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/test/csv_test.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/test/tester.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/datastructures/array.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/estream/byteestream.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/estream/istreamestream.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/file/file.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/file/stream_factory.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/string_format.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/ecal.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/etime.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/cmder.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/logger_config_default.cpp
+-s $WYLESLIBS_WORKSPACE_ROOT_DIR/lib/paths.cpp
 "
 
-CMD="$WYLESLIBS_BUILD_ROOT_DIR/build_scripts/build_common.sh -n csv_test $SRC_FILES --log $LOG_LEVEL $DEBUG$DEFINES$TEST_ARG"
+CMD="$WYLESLIBS_WORKSPACE_ROOT_DIR/build_scripts/build_common.sh -n csv_test $SRC_FILES --log $LOG_LEVEL $DEBUG$DEFINES$TEST_ARG"
 echo "    "$CMD
 exec $CMD

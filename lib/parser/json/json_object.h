@@ -119,6 +119,7 @@ namespace WylesLibs::Parser::Json {
         public:
             size_t depth;
             //  This is really only designed this way to simplify the json parsing and invocation code.
+            //  TODO: maybe tighten this up a bit... Json parser needs to be updated, not something I wanted to do right away.
             JsonArray values;
             JsonObject(): JsonObject(0) {}
             JsonObject(std::initializer_list<JsonNode> compile): JsonObject(compile, 0) {}
@@ -156,6 +157,13 @@ namespace WylesLibs::Parser::Json {
             void addNode(std::string key, JsonObject * value);
 
             void removeNode(std::string key);
+
+            size_t numKeys() {
+                return this->keys.size();
+            }
+            size_t numValues() {
+                return this->values.size();
+            }
 
             // This along with operator overloading of other JsonValue types provides a way of working with Json. For simple tasks I suppose?
             JsonValue * at(std::string key);

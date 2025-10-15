@@ -88,9 +88,9 @@ class UniqueKeyGenerator {
     private:
         UniqueKeyGeneratorStore store;
         #if defined(_MSC_VER)
-        pthread_mutex_t mutex;
-        #else
         std::mutex mutex;
+        #else
+        pthread_mutex_t mutex;
         #endif
         uint64_t current;
         bool default_constructed;

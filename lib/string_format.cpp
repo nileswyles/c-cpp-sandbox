@@ -401,6 +401,7 @@ static void deleteArgs(Array<Arg>& args) {
         } else if (c == 'f') {
             delete (double *)arg.ptr;
         } else if (c == 's') {
+            // TODO: review this. This might need to be casted to "const char *" unless I made conversion for DS
             delete (std::string *)arg.ptr;
         } else if (c != WYLESLIBS_STRING_FORMAT_DEFAULT_ARG_TYPE_CHAR && arg.ptr != nullptr) {
             std::basic_stringstream<char> ss;

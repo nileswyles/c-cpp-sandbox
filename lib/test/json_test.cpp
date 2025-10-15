@@ -30,9 +30,9 @@ class Nested: public JsonBase {
         Nested(): name(""), nested(nullptr) {}
         Nested(ESharedPtr<JsonObject> obj_shared): Nested() {
             JsonObject * obj = ESHAREDPTR_GET_PTR(obj_shared);
-            for (size_t i = 0; i < obj->keys.size(); i++) {
-                std::string key = obj->keys.at(i);
-                JsonValue * value = obj->values.at(i);
+            for (auto e: *obj) {
+                std::string key = e.first;
+                JsonValue * value = e.second;
                 if(key == "nested_name") {
                     name = setVariableFromJsonValue<std::string>(value);
                 }
@@ -80,12 +80,11 @@ class User: public JsonBase {
         // TODO: specify required fields
         User(ESharedPtr<JsonObject> obj_shared): User() {
             JsonObject * obj = ESHAREDPTR_GET_PTR(obj_shared);
-            loggerPrintf(LOGGER_TEST_VERBOSE, "Num Keys: %lu\n", obj->keys.size());
             std::string key;
-            for (size_t i = 0; i < obj->keys.size(); i++) {
-                key = obj->keys.at(i);
+            for (auto e: *obj) {
+                std::string key = e.first;
                 loggerPrintf(LOGGER_TEST_VERBOSE, "Key: %s\n", key.c_str());
-                JsonValue * value = obj->values.at(i);
+                JsonValue * value = e.second;
                 if (key == "name") {
                     name = setVariableFromJsonValue<std::string>(value);
                 } else if (key == "attributes") {
@@ -226,16 +225,16 @@ static void parseObjectAndAssert(TestArg * t, std::string s, User expected, size
             if (user != expected) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "User object mismatch.\n");
             }
-            if (ESHAREDPTR_GET_PTR(obj_shared)->keys.size() != expected_size) {
+            if (ESHAREDPTR_GET_PTR(obj_shared)->numKeys() != expected_size) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "Unexpected number of keys.\n");
             }
-            if (ESHAREDPTR_GET_PTR(obj_shared)->values.size() != expected_size) {
+            if (ESHAREDPTR_GET_PTR(obj_shared)->numValues() != expected_size) {
                 loggerPrintf(LOGGER_TEST_VERBOSE, "Unexpected number of values.\n");
             }
 
             if (user == expected 
-                && ESHAREDPTR_GET_PTR(obj_shared)->keys.size() == expected_size 
-                && ESHAREDPTR_GET_PTR(obj_shared)->values.size() == expected_size) {
+                && ESHAREDPTR_GET_PTR(obj_shared)->numKeys() == expected_size 
+                && ESHAREDPTR_GET_PTR(obj_shared)->numValues() == expected_size) {
                 t->fail = false;
             }
         }
@@ -316,23 +315,23 @@ static void testPretty(TestArg * t);
 int main(int argc, char * argv[]) {
     Tester t("Json Parser Tests");
 
-    JsonObject obj{
-        // ahh that's right, overloading between bool and number. typedef and overloading?
-        {"test_number", 127.7},
-        {"test_boolean", true},
-        {"test_string", "a lot of quirks"}
-    };
-    obj.toJsonString();
-    ESharedPtr<JsonObject> shared_obj = ESharedPtr<JsonObject>(new JsonObject(obj));
+    // JsonObject obj{
+    //     // ahh that's right, overloading between bool and number. typedef and overloading?
+    //     {"test_number", 127.7},
+    //     {"test_boolean", true},
+    //     {"test_string", "a lot of quirks"}
+    // };
+    // obj.toJsonString();
+    // ESharedPtr<JsonObject> shared_obj = ESharedPtr<JsonObject>(new JsonObject(obj));
 
     // can you uniform initialize and new? lol. I think so...
-    JsonObject * obj = new JsonObject({
-        // ahh that's right, overloading between bool and number. typedef and overloading?
-        {"test_number", 127.7},
-        {"test_boolean", true},
-        {"test_string", "a lot of quirks"}
-    });
-    ESharedPtr<JsonObject> shared_obj = ESharedPtr<JsonObject>(obj);
+    // JsonObject * obj = new JsonObject({
+    //     // ahh that's right, overloading between bool and number. typedef and overloading?
+    //     {"test_number", 127.7},
+    //     {"test_boolean", true},
+    //     {"test_string", "a lot of quirks"}
+    // });
+    // ESharedPtr<JsonObject> shared_obj = ESharedPtr<JsonObject>(obj);
 
     t.addTest(testJsonNestedObject);
     t.addTest(testJsonNestedArray);

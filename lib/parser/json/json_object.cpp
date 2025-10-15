@@ -118,6 +118,9 @@ void JsonObject::removeNode(std::string key) {
             break;
         }
     }
+    if (idx < this->numValues()) {
+        this->values.remove(idx);
+    }
 }
 
 JsonValue * JsonObject::at(std::string key) {

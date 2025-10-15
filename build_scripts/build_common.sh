@@ -1,20 +1,26 @@
 #!/bin/bash
 
-if [ -z $WYLESLIBS_BUILD_ROOT_DIR ]; then
-	WYLESLIBS_BUILD_ROOT_DIR=`pwd`
+if [ -z $WYLESLIBS_WORKSPACE_ROOT_DIR ]; then
+	# typically run scripts from the c-cpp-sandbox workspace root directory
+	WYLESLIBS_WORKSPACE_ROOT_DIR=`pwd`
+fi
+
+if [ -z $SCRIPTS_DIR ]; then
+	SCRIPTS_DIR="$WYLESLIBS_WORKSPACE_ROOT_DIR/.devcontainer/linux_goodness/scripts"
 fi
 
 NAME="program"
+LOG_LEVEL=0
 LD_FLAGS=""
 LIB_SEARCH_PATHS=""
 INCLUDE_FILES=""
 DEFINES=""
 SRC_FILES=""
-LOG_LEVEL=0
-RUN_FROM="$WYLESLIBS_BUILD_ROOT_DIR"
-OUTPUT_DIR="$WYLESLIBS_BUILD_ROOT_DIR/out"
-PROGRAM_ARG=""
+RUN_FROM="$WYLESLIBS_WORKSPACE_ROOT_DIR"
+OUTPUT_DIR="$WYLESLIBS_WORKSPACE_ROOT_DIR/out"
+OPTIMIZATION="-O3 "
 DEBUG=""
+PROGRAM_ARG=""
 while true; do
 	case "$1" in
         -n|--name) NAME="$2"; shift 2 ;;
@@ -30,7 +36,10 @@ while true; do
 		-s|--source) SRC_FILES="$SRC_FILES$2 "; shift 2 ;;
 		-r|--run-from) RUN_FROM="$2"; shift 2 ;;
 		-o|--output-dir) OUTPUT_DIR="$2"; shift 2 ;;
-		-g) DEBUG="-g "; shift ;;
+		-O) OPTIMIZATION="-O$2 "; shift 2 ;;
+		-Og) DEBUG="-g "; OPTIMIZATION="-Og " shift ;;
+		-O*) OPTIMIZATION="$1 "; shift ;;
+		-g) DEBUG="-g "; OPTIMIZATION="-Og " shift ;;
 		# --) echo "PROGRAM ARG: $@"; break ;;
 		*) PROGRAM_ARG=$@; break;;
 	esac
@@ -42,7 +51,7 @@ done
 DEFINES=$DEFINES"-D GLOBAL_LOGGER_LEVEL=$LOG_LEVEL -D LOGGER_LEVEL=$LOG_LEVEL "
 
 # Standardize this
-INCLUDE_ROOT=$WYLESLIBS_BUILD_ROOT_DIR/lib
+INCLUDE_ROOT=$WYLESLIBS_WORKSPACE_ROOT_DIR/lib
 
 if [ $(cut -b 1 - <<< $OUTPUT_DIR) != "/" ]; then
 	OUTPUT_DIR="$(pwd)/$OUTPUT_DIR"
@@ -55,16 +64,16 @@ if [ -z $CXX_COMPILER ]; then
 	CXX_COMPILER="g++"
 fi
 
-REMOVED_WARNING_FLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-function -Wno-reorder -Wno-deprecated-declarations"
+REMOVED_WARNING_FLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-function -Wno-reorder -Wno-deprecated-declarations -Wno-format -Wno-overloaded-virtual -Wno-maybe-uninitialized -Wno-unused-result"
 
 echo "
 ~Build: "
-BUILD_CMD="$CXX_COMPILER $DEBUG$SRC_FILES-I $INCLUDE_ROOT $INCLUDE_FILES$LIB_SEARCH_PATHS$DEFINES$LD_FLAGS-std=c++20 -Wall $REMOVED_WARNING_FLAGS -o $PROGRAM_PATH"
+BUILD_CMD="$CXX_COMPILER $DEBUG$SRC_FILES-I $INCLUDE_ROOT $INCLUDE_FILES$LIB_SEARCH_PATHS$DEFINES$LD_FLAGS$OPTIMIZATION-std=c++20 -Wall $REMOVED_WARNING_FLAGS -o $PROGRAM_PATH"
 echo "    $BUILD_CMD"
 $BUILD_CMD
 
 echo "
 ~Executing Program: "
-EXEC_CMD="cd $RUN_FROM && $PROGRAM_PATH $PROGRAM_ARG"
+EXEC_CMD="cd $RUN_FROM && SCRIPTS_DIR=$SCRIPTS_DIR && $PROGRAM_PATH $PROGRAM_ARG"
 echo "    $EXEC_CMD"
 bash -c "$EXEC_CMD"

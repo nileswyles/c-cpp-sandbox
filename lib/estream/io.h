@@ -42,7 +42,6 @@ static void write(ESharedPtr<std::basic_ostream<char>> s_shared, T buffer, bool 
         // TODO: I think expected behavior here is to overwrite file... if size < current size, this file should end at new size....
         s->seekp(0);
     }
-    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Writing to file stream:\n%s\n", buffer.toString().c_str());
     s->write((char *)buffer.data(), buffer.size()); // binary output
     s->flush();
 }
@@ -52,7 +51,6 @@ static void write(ESharedPtr<std::basic_ostream<char>> s_shared, T buffer, size_
     std::basic_ostream<char> * s = ESHAREDPTR_GET_PTR(s_shared);
 
     s->seekp(offset);
-    loggerPrintf(LOGGER_DEBUG_VERBOSE, "Writing to file stream:\n%s\n", buffer.toString().c_str());
     s->write((const char *)buffer.data(), buffer.size()); // binary output
     s->flush();
 }

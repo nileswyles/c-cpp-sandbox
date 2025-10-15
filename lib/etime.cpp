@@ -113,7 +113,7 @@ extern uint64_t WylesLibs::Cal::getUTCEpochTime() {
     return WylesLibs::Cal::getZonedEpochTime(offset);
 }
 
-extern uint64_t WylesLibs::Cal::getZonedEpochTime(int16_t& offset) {
+extern __attribute__((weak)) uint64_t WylesLibs::Cal::getZonedEpochTime(int16_t& offset) {
     #if defined(_MSC_VER)
     SYSTEMTIME st;
     GetSystemTime(&st);

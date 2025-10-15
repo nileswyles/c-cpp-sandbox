@@ -88,14 +88,19 @@ class Tester {
         void addTestWithName(const char * name, TestFunction * func, const char * file_name, int line_number) {
             std::string test_name(name);
             std::string test_file_name(file_name);
+            const char * sd = getenv("SCRIPTS_DIR");
+            std::string scripts_dir("/scripts");
+            if (sd != nullptr) {
+                scripts_dir = sd;
+            }
             Test test = {
                 .file_name = test_file_name, 
                 .line_number = line_number,
-                .function_location = esystem("/scripts/cpp-reflection/tester_function_mapper.pl", {
+                .function_location = esystem((scripts_dir + std::string("/cpp-reflection/tester_function_mapper.pl")).c_str(), {
                     const_cast<char *>(("-p " + test_file_name).c_str()), 
                     const_cast<char *>(("-t " + test_name).c_str())
                 }), 
-                .declaration_location = esystem("/scripts/cpp-reflection/tester_declaration_mapper.pl", {
+                .declaration_location = esystem((scripts_dir + std::string("/cpp-reflection/tester_declaration_mapper.pl")).c_str(), {
                     const_cast<char *>(("-p " + test_file_name).c_str()), 
                     const_cast<char *>(("-t " + test_name).c_str())
                 }), 

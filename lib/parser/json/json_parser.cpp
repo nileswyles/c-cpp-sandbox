@@ -524,7 +524,7 @@ template<typename T>
 extern std::string WylesLibs::Parser::Json::toString(std::map<std::string, T> r, size_t depth) {
     std::string json;
     json += "{";
-    std::string spaces = WylesLibs::Parser::Json::tabing[depth];
+    std::string spaces = WylesLibs::Parser::Json::spacing[depth];
     for (auto el = r.begin(); el != r.end(); ++el) {
         json += spaces;
         json += el->first;

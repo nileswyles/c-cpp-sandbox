@@ -1,12 +1,12 @@
 #ifndef WYLESLIBS_HTTP_SERVER_CONFIG_H
 #define WYLESLIBS_HTTP_SERVER_CONFIG_H
 
-#include "parser/json/json.h"
-#include "web/server_config.h"
-#include "file/stream_factory.h"
+#include "json.h"
+#include "server_config.h"
+#include "stream_factory.h"
 
 #include <memory>
-#include "memory/pointers.h"
+#include "pointers.h"
 #include <set>
 #include <string>
 

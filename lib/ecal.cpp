@@ -1,7 +1,7 @@
 #include "ecal.h"
 #include "string_format.h"
 #include "etime.h"
-#include "estream/byteestream.h"
+#include "byteestream.h"
 
 #include <string>
 #include <map>

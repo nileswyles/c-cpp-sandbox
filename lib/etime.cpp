@@ -1,6 +1,6 @@
 #include "etime.h"
 #include "string_format.h"
-#include "datastructures/array.h"
+#include "array.h"
 
 #include <string>
 #include <stdexcept>

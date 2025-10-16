@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_TESTER_H
 #define WYLESLIBS_TESTER_H
 
-#include "datastructures/array.h"
+#include "array.h"
 #include "cmder.h"
 #include "logger.h"
 
@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #define addTest(func)\
     addTestWithName(#func, func, __FILE__, __LINE__);

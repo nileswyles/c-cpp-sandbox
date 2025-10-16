@@ -1,7 +1,7 @@
-#include "web/http/http_connection_etask.h"
-#include "web/http/http.h"
-#include "estream/byteestream.h"
-#include "parser/keyvalue/parse.h"
+#include "http_connection_etask.h"
+#include "http.h"
+#include "byteestream.h"
+#include "parse.h"
 
 #include "paths.h"
 #include <iostream>

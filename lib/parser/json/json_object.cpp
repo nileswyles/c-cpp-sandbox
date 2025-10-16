@@ -1,4 +1,4 @@
-#include "parser/json/json_object.h"
+#include "json_object.h"
 
 #include <stdexcept>
 

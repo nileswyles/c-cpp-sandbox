@@ -1,8 +1,8 @@
 #include "string_format.h"
 
-#include "datastructures/array.h"
+#include "array.h"
 #include "string_utils.h"
-#include "estream/byteestream.h"
+#include "byteestream.h"
 
 #include <iostream>
 #include <sstream>

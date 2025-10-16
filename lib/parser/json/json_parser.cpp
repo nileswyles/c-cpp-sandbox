@@ -1,4 +1,4 @@
-#include "parser/json/json_parser.h"
+#include "json_parser.h"
 
 #ifndef LOGGER_JSON_PARSER
 #define LOGGER_JSON_PARSER 1

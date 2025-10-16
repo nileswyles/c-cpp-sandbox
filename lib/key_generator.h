@@ -9,17 +9,17 @@
 // if linux, definetly use pthreads
 #include <pthread.h>
 #endif
-#include "memory/pointers.h"
+#include "pointers.h"
 
 #include <math.h>
 #include <string>
 #include <stdlib.h>
 
-#include "datastructures/array.h"
-#include "web/server_config.h"
+#include "array.h"
+#include "server_config.h"
 #include "paths.h"
-#include "file/file.h"
-#include "estream/byteestream.h"
+#include "file.h"
+#include "byteestream.h"
 #include "string_utils.h"
 
 // make sure global logger level is initialized

@@ -1,4 +1,4 @@
-#include "web/http/http_file_watcher.h"
+#include "http_file_watcher.h"
 #include "paths.h"
 
 using namespace WylesLibs::Http;

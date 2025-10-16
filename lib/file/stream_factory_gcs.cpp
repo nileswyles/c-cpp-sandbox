@@ -1,4 +1,4 @@
-#include "file/stream_factory_gcs.h"
+#include "stream_factory_gcs.h"
 #include "paths.h"
 
 // make sure global logger level is initialized...

@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_SERVER_CONNECTION_ETASK_H
 #define WYLESLIBS_SERVER_CONNECTION_ETASK_H
 
-#include "threads/etasker.h"
+#include "etasker.h"
 
 namespace WylesLibs {
     class ServerConnectionETask: public ETask {

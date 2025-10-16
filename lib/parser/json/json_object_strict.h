@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "file/file.h"
-#include "parser/json/json_mix.h"
+#include "file.h"
+#include "json_mix.h"
 
 using namespace WylesLibs;
 using namespace WylesLibs::File;

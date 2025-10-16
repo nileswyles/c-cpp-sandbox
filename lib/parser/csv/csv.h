@@ -1,15 +1,15 @@
 #ifndef WYLESLIBS_CSV_H
 #define WYLESLIBS_CSV_H
 
-#include "estream/byteestream.h"
+#include "byteestream.h"
 
 #include <string>
 #include <memory>
-#include "memory/pointers.h"
+#include "pointers.h"
 #include <fcntl.h>
 
 #include "string_utils.h"
-#include "datastructures/datastructures.h"
+#include "datastructures.h"
 
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL

@@ -1,4 +1,4 @@
-#include "estream/istreamestream.h"
+#include "istreamestream.h"
 
 #define MAX_STREAM_LOG_SIZE 255
 #define ARBITRARY_LIMIT_BECAUSE_DUMB 4294967296

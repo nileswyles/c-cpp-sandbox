@@ -2,7 +2,7 @@
 #define LOGGER_HTTP_EXAMPLE_CONTROLLER 1
 #endif
 
-#include "controllers/example.h"
+#include "example.h"
 
 #undef LOGGER_MODULE_ENABLED
 #define LOGGER_MODULE_ENABLED LOGGER_HTTP_EXAMPLE_CONTROLLER

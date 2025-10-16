@@ -1,13 +1,13 @@
 #include "tester.h"
 
-#include "datastructures/array.h"
-#include "file/file_watcher.h"
+#include "array.h"
+#include "file_watcher.h"
 #include "paths.h"
 
 #include <unistd.h>
 #include <stdlib.h>
 #include <memory>
-#include "memory/pointers.h"
+#include "pointers.h"
 
 #ifndef LOGGER_FILE_WATCHER_TEST
 #define LOGGER_FILE_WATCHER_TEST 1

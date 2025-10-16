@@ -1,4 +1,4 @@
-#include "datastructures/array.h"
+#include "array.h"
 
 #include <stdio.h>
 

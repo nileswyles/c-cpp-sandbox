@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_ALGO_H
 #define WYLESLIBS_ALGO_H
 
-#include "datastructures/datastructures.h"
+#include "datastructures.h"
 
 namespace WylesLibs {
     // TODO: 

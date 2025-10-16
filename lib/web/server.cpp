@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-#include "threads/etasker.h"
+#include "etasker.h"
 
 #define MAX_CONNECTIONS (1 << 16)
 

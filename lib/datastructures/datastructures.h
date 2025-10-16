@@ -1,8 +1,8 @@
 #ifndef WYLESLIBS_DATASTRUCTURES_H
 #define WYLESLIBS_DATASTRUCTURES_H
 
-#include "datastructures/array.h"
-#include "memory/pointers.h"
+#include "array.h"
+#include "pointers.h"
 
 #include <map>
 #include <string>

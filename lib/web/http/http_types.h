@@ -4,13 +4,13 @@
 #include <unordered_map>
 #include <map>
 
-#include "memory/pointers.h"
-#include "web/authorization.h"
-#include "web/server.h"
-#include "datastructures/array.h"
-#include "parser/multipart/multipart_file.h"
-#include "parser/json/json.h"
-#include "estream/byteestream.h"
+#include "pointers.h"
+#include "authorization.h"
+#include "server.h"
+#include "array.h"
+#include "multipart_file.h"
+#include "json.h"
+#include "byteestream.h"
 
 #include "string_format.h"
 

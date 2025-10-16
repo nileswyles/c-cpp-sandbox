@@ -1,9 +1,9 @@
 #ifndef WYLESLIBS_ESTREAM_H
 #define WYLESLIBS_ESTREAM_H
 
-#include "estream/estream_types.h"
-#include "memory/pointers.h"
-#include "datastructures/array.h"
+#include "estream_types.h"
+#include "pointers.h"
+#include "array.h"
 #include "string_format.h"
 #include "string_utils.h"
 

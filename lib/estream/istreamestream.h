@@ -1,13 +1,13 @@
 #ifndef WYLESLIBS_ISTREAMESTREAM_H
 #define WYLESLIBS_ISTREAMESTREAM_H
 
-#include "estream/byteestream.h"
-#include "file/stream_factory.h"
+#include "byteestream.h"
+#include "stream_factory.h"
 
 #include <string>
 #include <stdexcept>
 #include <memory>
-#include "memory/pointers.h"
+#include "pointers.h"
 #include <ios>
 #include <istream>
 

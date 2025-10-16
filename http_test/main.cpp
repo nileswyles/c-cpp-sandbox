@@ -1,17 +1,17 @@
-#include "web/http/http.h"
-#include "web/http/http_types.h"
-#include "web/http/connection.h"
-#include "web/http/config.h"
-#include "web/http/http_connection_etask.h"
-#include "web/services.h"
+#include "http.h"
+#include "http_types.h"
+#include "connection.h"
+#include "config.h"
+#include "http_connection_etask.h"
+#include "services.h"
 
-#include "controllers/example.h"
+#include "example.h"
 
-#include "file/file_watcher.h"
+#include "file_watcher.h"
 #ifdef WYLESLIBS_GCS_BUILD
-#include "file/file_gcs.h"
+#include "file_gcs.h"
 #else
-#include "file/file.h"
+#include "file.h"
 #endif
 
 #include <pthread.h>

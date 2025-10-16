@@ -2,7 +2,7 @@
 #define WYLESLIBS_CLIENT_H
 
 #include "stdint.h"
-#include "datastructures/array.h"
+#include "array.h"
 
 namespace WylesLibs {
     class Client {

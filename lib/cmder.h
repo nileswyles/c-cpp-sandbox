@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_CMDER_H
 #define WYLESLIBS_CMDER_H
 
-#include "datastructures/array.h"
+#include "array.h"
 
 #include <string>
 

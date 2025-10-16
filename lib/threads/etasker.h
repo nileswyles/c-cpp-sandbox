@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_ETASKER_H
 #define WYLESLIBS_ETASKER_H
 
-#include "memory/pointers.h"
+#include "pointers.h"
 #include "string_format.h"
 
 #include <list>

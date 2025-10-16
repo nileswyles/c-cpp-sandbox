@@ -1,7 +1,7 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
-#include "memory/pointers.h"
+#include "pointers.h"
 
 #include <stdint.h>
 #include <stddef.h>

@@ -5,10 +5,10 @@
 #include <string>
 #include <unordered_map>
 
-#include "web/server_config.h"
-#include "web/services.h"
-#include "parser/multipart/multipart_file.h"
-#include "datastructures/array.h"
+#include "server_config.h"
+#include "services.h"
+#include "multipart_file.h"
+#include "array.h"
 
 using namespace WylesLibs;
 

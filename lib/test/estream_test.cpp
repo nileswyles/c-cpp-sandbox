@@ -1,5 +1,5 @@
 #include "tester.h"
-#include "estream/byteestream.h"
+#include "byteestream.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -18,7 +18,7 @@
 
 #include <filesystem>
 
-#include "file/file.h"
+#include "file.h"
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 

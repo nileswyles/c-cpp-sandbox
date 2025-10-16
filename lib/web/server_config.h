@@ -2,11 +2,11 @@
 #define WYLESLIBS_SERVER_CONFIG_H
 
 #include "string_format.h"
-#include "parser/json/json.h"
-#include "file/stream_factory.h"
+#include "json.h"
+#include "stream_factory.h"
 
 #include <memory>
-#include "memory/pointers.h"
+#include "pointers.h"
 
 using namespace WylesLibs;
 using namespace WylesLibs::Parser::Json;

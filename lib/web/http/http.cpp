@@ -1,6 +1,6 @@
 #include "http.h"
 
-#include "web/http/http_connection_etask.h"
+#include "http_connection_etask.h"
 
 // make sure global logger level is initialized...
 #ifndef GLOBAL_LOGGER_LEVEL

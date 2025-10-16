@@ -1,11 +1,11 @@
 #ifndef WYLESLIBS_FILES_H
 #define WYLESLIBS_FILES_H
 
-#include "estream/istreamestream.h"
-#include "estream/io.h"
-#include "datastructures/array.h"
-#include "file/stream_factory.h"
-#include "memory/pointers.h"
+#include "istreamestream.h"
+#include "io.h"
+#include "array.h"
+#include "stream_factory.h"
+#include "pointers.h"
 
 #include <ios>
 #include <string>

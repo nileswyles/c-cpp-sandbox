@@ -1,11 +1,11 @@
 #ifndef WYLESLIBS_HTTP_CONNECTION_ETASK_H
 #define WYLESLIBS_HTTP_CONNECTION_ETASK_H  
 
-#include "web/server_connection_etask.h"
-#include "web/http/http_types.h"
-#include "web/http/http.h"
-#include "parser/json/json.h"
-#include "estream/byteestream.h"
+#include "server_connection_etask.h"
+#include "http_types.h"
+#include "http.h"
+#include "json.h"
+#include "byteestream.h"
 
 using namespace WylesLibs::Http;
 

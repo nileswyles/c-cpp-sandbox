@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_KV_PARSE_H
 #define WYLESLIBS_KV_PARSE_H
 
-#include "estream/byteestream.h"
+#include "byteestream.h"
 
 #include <string>
 #include <unordered_map>

@@ -1,10 +1,10 @@
 #ifndef WYLESLIBS_BYTE_STREAM_H
 #define WYLESLIBS_BYTE_STREAM_H
 
-#include "estream/estream_types.h"
-#include "estream/estream.h"
-#include "estream/reader_task.h"
-#include "datastructures/array.h"
+#include "estream_types.h"
+#include "estream.h"
+#include "reader_task.h"
+#include "array.h"
 
 #include <stdexcept>
 #include <memory>

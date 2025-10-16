@@ -1,13 +1,13 @@
 #ifndef WYLESLIBS_GCS_STREAM_FACTORY_H
 #define WYLESLIBS_GCS_STREAM_FACTORY_H
 
-#include "file/stream_factory.h"
+#include "stream_factory.h"
 #include <memory>
-#include "memory/pointers.h"
+#include "pointers.h"
 #include <string>
 
 // TODO: compiler flags to not have to rely on google?
-#include "google/cloud/storage/client.h"
+#include "client.h"
 
 namespace WylesLibs::File {
 class GCSStreamFactory: public StreamFactory {

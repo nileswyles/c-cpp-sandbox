@@ -1,4 +1,4 @@
-#include "datastructures/array.h"
+#include "array.h"
 #include "msc_crt_secure.h"
 
 using namespace WylesLibs;

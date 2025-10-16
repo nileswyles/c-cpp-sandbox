@@ -1,17 +1,17 @@
 #include "tester.h"
 #ifdef WYLESLIBS_GCS_BUILD
-#include "file/file_gcs.h"
-#include "google/cloud/log.h"
+#include "file_gcs.h"
+#include "log.h"
 #else
-#include "file/file.h"
+#include "file.h"
 #endif
-#include "datastructures/array.h"
+#include "array.h"
 #include "paths.h"
 
 #include <iostream>
 
 #include <memory>
-#include "memory/pointers.h"
+#include "pointers.h"
 
 #ifndef LOGGER_FILE_MANAGER_TEST
 #define LOGGER_FILE_MANAGER_TEST 1

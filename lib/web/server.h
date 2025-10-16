@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 #include "key_generator.h"
-#include "threads/etasker.h"
-#include "file/file.h"
-#include "web/server_config.h"
+#include "etasker.h"
+#include "file.h"
+#include "server_config.h"
 
 #define SERVER_MINIMUM_CONNECTION_SPEED 131072 // 128kbps
 #define INITIAL_CONNECTION_TIMEOUT_S 15

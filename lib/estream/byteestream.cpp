@@ -1,4 +1,4 @@
-#include "estream/byteestream.h"
+#include "byteestream.h"
 
 #include "string_format.h"
 

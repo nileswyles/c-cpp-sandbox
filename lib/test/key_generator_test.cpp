@@ -1,10 +1,10 @@
 #include "tester.h"
 #include "key_generator.h"
-#include "file/file.h"
-#include "datastructures/array.h"
+#include "file.h"
+#include "array.h"
 
 #include <memory>
-#include "memory/pointers.h"
+#include "pointers.h"
 #include <sstream>
 
 #ifndef LOGGER_KEY_GENERATOR_TEST

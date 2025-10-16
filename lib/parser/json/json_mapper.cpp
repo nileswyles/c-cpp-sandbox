@@ -1,4 +1,4 @@
-#include "parser/json/json_mapper.h"
+#include "json_mapper.h"
 
 using namespace WylesLibs::Parser::Json;
 

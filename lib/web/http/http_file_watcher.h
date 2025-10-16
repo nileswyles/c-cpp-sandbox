@@ -1,10 +1,10 @@
 #ifndef WYLESLIBS_HTTP_FILE_WATCHER_H
 #define WYLESLIBS_HTTP_FILE_WATCHER_H
 
-#include "file/file_watcher.h"
+#include "file_watcher.h"
 #include "thread_safe_map.h"
-#include "datastructures/array.h"
-#include "web/http/config.h"
+#include "array.h"
+#include "config.h"
 
 #if defined(_MSC_VER)
 #include "msc_poll.h"

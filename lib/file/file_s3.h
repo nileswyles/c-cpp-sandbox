@@ -1,8 +1,8 @@
 #ifndef WYLESLIBS_FILES3_H
 #define WYLESLIBS_FILES3_H
 
-#include "estream/byteestream.h"
-#include "file/file.h"
+#include "byteestream.h"
+#include "file.h"
 
 #include <string>
 

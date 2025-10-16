@@ -1,11 +1,11 @@
 #ifndef WYLESLIBS_JSON_OBJECT_H
 #define WYLESLIBS_JSON_OBJECT_H
 
-#include "parser/json/json_mix.h"
-#include "parser/json/json_parser.h"
-#include "parser/json/json_array.h"
-#include "parser/json/json_node.h"
-#include "parser/json/jstring.h"
+#include "json_mix.h"
+#include "json_parser.h"
+#include "json_array.h"
+#include "json_node.h"
+#include "jstring.h"
 
 #include <iterator>
 #include <algorithm>

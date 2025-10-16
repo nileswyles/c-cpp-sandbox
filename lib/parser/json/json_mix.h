@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "parser/json/jstring.h"
-#include "file/file.h"
+#include "jstring.h"
+#include "file.h"
 #include "string_format.h"
 #include "string_utils.h"
 #include "global_consts.h"

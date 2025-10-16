@@ -1,8 +1,8 @@
 #ifndef WYLESLIBS_READER_TASK_H
 #define WYLESLIBS_READER_TASK_H
 
-#include "estream/estream_types.h"
-#include "datastructures/array.h"
+#include "estream_types.h"
+#include "array.h"
 #include "string_utils.h"
 
 #include <string>

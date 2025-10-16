@@ -1,11 +1,11 @@
-#include "parser/json/json.h"
-#include "datastructures/array.h"
-#include "memory/pointers.h"
+#include "json.h"
+#include "array.h"
+#include "pointers.h"
 
 #include <iostream>
 #include <memory>
 
-// #include "test/tester.h"
+// #include "tester.h"
 #include "tester.h"
 
 #ifndef LOGGER_JSON_TEST

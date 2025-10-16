@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_FILE_WATCHER_H
 #define WYLESLIBS_FILE_WATCHER_H
 
-#include "datastructures/array.h"
+#include "array.h"
 
 #if defined(_MSC_VER)
 #include "msc_poll.h"
@@ -13,7 +13,7 @@
 #include <string>
 
 #include <memory>
-#include "memory/pointers.h"
+#include "pointers.h"
 
 namespace WylesLibs {
     class FileWatcher {

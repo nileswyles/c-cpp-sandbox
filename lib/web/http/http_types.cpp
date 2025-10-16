@@ -1,4 +1,4 @@
-#include "web/http/http_types.h"
+#include "http_types.h"
 
 using namespace WylesLibs::Http;
 

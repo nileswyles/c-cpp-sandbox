@@ -21,21 +21,21 @@
 #include <openssl/ssl.h>
 
 #include "key_generator.h"
-#include "web/http/http_types.h"
-#include "memory/pointers.h"
-#include "estream/estream.h"
-#include "estream/reader_task.h"
-#include "estream/byteestream.h"
-#include "web/server.h"
+#include "http_types.h"
+#include "pointers.h"
+#include "estream.h"
+#include "reader_task.h"
+#include "byteestream.h"
+#include "server.h"
 #include "config.h"
 #include "connection.h"
-#include "web/authorization.h"
-#include "parser/multipart/parse_formdata.h"
-#include "web/http/http_file_watcher.h"
+#include "authorization.h"
+#include "parse_formdata.h"
+#include "http_file_watcher.h"
 #include "thread_safe_map.h"
-#include "file/file.h"
+#include "file.h"
 #include "paths.h"
-#include "datastructures/array.h"
+#include "array.h"
 
 // #ifndef WYLESLIBS_HTTP_DEBUG
 // #define WYLESLIBS_HTTP_DEBUG 0

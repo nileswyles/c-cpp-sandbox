@@ -4,8 +4,8 @@
 #include <memory>
 #include <string>
 
-#include "datastructures/array.h"
-#include "memory/pointers.h"
+#include "array.h"
+#include "pointers.h"
 
 #if defined(_MSC_VER)
 #include <mutex>

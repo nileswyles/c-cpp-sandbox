@@ -1,9 +1,9 @@
 #ifndef WYLESLIBS_JSON_ARRAY_H
 #define WYLESLIBS_JSON_ARRAY_H
 
-#include "parser/json/json_node.h"
-#include "parser/json/json_mix.h"
-#include "parser/json/jstring.h"
+#include "json_node.h"
+#include "json_mix.h"
+#include "jstring.h"
 
 #include <vector>
 #include <string>

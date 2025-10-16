@@ -1,6 +1,6 @@
-#include "parser/json/json_array.h"
-#include "parser/json/json_object.h"
-#include "parser/json/json_mix.h"
+#include "json_array.h"
+#include "json_object.h"
+#include "json_mix.h"
 
 using namespace WylesLibs::Parser::Json;
 

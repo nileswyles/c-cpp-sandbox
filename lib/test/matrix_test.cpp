@@ -1,5 +1,5 @@
 #include "tester.h"
-#include "parser/csv/csv.h"
+#include "csv.h"
 
 #ifndef LOGGER_CSV_TEST
 #define LOGGER_CSV_TEST 1

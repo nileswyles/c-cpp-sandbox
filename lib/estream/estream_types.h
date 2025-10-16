@@ -1,8 +1,8 @@
 #ifndef WYLESLIBS_ESTREAM_TYPES_H
 #define WYLESLIBS_ESTREAM_TYPES_H
 
-#include "datastructures/array.h"
-#include "memory/pointers.h"
+#include "array.h"
+#include "pointers.h"
 #include "string_format.h"
 
 #include <stdexcept>

@@ -1,7 +1,7 @@
 #ifndef WYLESLIBS_JSON_NODE_H
 #define WYLESLIBS_JSON_NODE_H
 
-#include "parser/json/jstring.h"
+#include "jstring.h"
 #include <vector>
 #include <string>
 

@@ -1,9 +1,9 @@
-#include "file/file_watcher.h"
+#include "file_watcher.h"
 #include <unistd.h>
 
 #include <pthread.h>
 #include <memory>
-#include "memory/pointers.h"
+#include "pointers.h"
 
 using namespace WylesLibs;
 

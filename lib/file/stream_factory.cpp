@@ -1,4 +1,4 @@
-#include "file/stream_factory.h"
+#include "stream_factory.h"
 #include "paths.h"
 
 #include <fstream>

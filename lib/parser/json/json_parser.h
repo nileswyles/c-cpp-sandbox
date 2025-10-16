@@ -9,16 +9,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "memory/pointers.h"
-#include "datastructures/array.h"
-#include "estream/byteestream.h"
-#include "file/file.h"
+#include "pointers.h"
+#include "array.h"
+#include "byteestream.h"
+#include "file.h"
 #include "string_utils.h"
 #include "string_format.h"
 
-#include "parser/json/json_mix.h"
-#include "parser/json/json_object.h"
-#include "parser/json/json_array.h"
+#include "json_mix.h"
+#include "json_object.h"
+#include "json_array.h"
 
 using namespace WylesLibs;
 using namespace WylesLibs::File;

@@ -1,16 +1,16 @@
 #ifndef WYLESLIBS_FILEGCS_H
 #define WYLESLIBS_FILEGCS_H
 
-#include "estream/byteestream.h"
-#include "file/file.h"
-#include "file/stream_factory_gcs.h"
+#include "byteestream.h"
+#include "file.h"
+#include "stream_factory_gcs.h"
 
 #include <string>
 #include <fstream>
 #include <unordered_map>
 
 // TODO: compiler flags to not have to rely on google?
-#include "google/cloud/storage/client.h"
+#include "client.h"
 
 #ifndef LOGGER_FILE
 #define LOGGER_FILE 1
